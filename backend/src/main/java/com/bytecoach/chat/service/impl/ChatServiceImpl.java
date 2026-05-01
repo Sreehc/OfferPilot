@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,16 +34,20 @@ public class ChatServiceImpl implements ChatService {
     private final AiOrchestratorService aiOrchestratorService;
     private final ObjectMapper objectMapper;
 
+    @Lazy
+    @org.springframework.beans.factory.annotation.Autowired
+    private ChatServiceImpl self;
+
     @Override
     public ChatSendVO send(Long userId, ChatSendRequest request) {
-        // Phase 1: persist user message in its own transaction
-        ChatSession session = persistUserMessage(userId, request);
+        // Phase 1: persist user message in its own transaction (via proxy)
+        ChatSession session = self.persistUserMessage(userId, request);
 
         // Phase 2: call LLM outside any transaction
         ChatSendVO result = aiOrchestratorService.answerChat(request);
 
-        // Phase 3: persist assistant message and update session
-        persistAssistantMessage(session, userId, result);
+        // Phase 3: persist assistant message and update session (via proxy)
+        self.persistAssistantMessage(session, userId, result);
         result.setSessionId(session.getId());
         result.setSessionTitle(session.getTitle());
         return result;

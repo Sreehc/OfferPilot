@@ -32,6 +32,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,6 +51,10 @@ public class InterviewServiceImpl implements InterviewService {
     private final CategoryService categoryService;
     private final AiOrchestratorService aiOrchestratorService;
     private final DashboardService dashboardService;
+
+    @Lazy
+    @Autowired
+    private InterviewServiceImpl self;
 
     @Override
     @Transactional
@@ -111,8 +117,8 @@ public class InterviewServiceImpl implements InterviewService {
     }
 
     @Override
-    @Transactional
     public InterviewAnswerVO answer(Long userId, InterviewAnswerRequest request) {
+        // Phase 1: load context and enrich request (lightweight, no LLM)
         InterviewSession session = getOwnedSession(userId, request.getSessionId());
         if (!"in_progress".equals(session.getStatus())) {
             throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "interview session is already finished");
@@ -124,7 +130,6 @@ public class InterviewServiceImpl implements InterviewService {
                 .findFirst()
                 .orElseThrow(() -> new BusinessException(ResultCode.NOT_FOUND.getCode(), "question not in this session"));
 
-        // Look up question details for AI context
         Question question = questionMapper.selectById(request.getQuestionId());
         if (question != null) {
             request.setQuestionTitle(question.getTitle());
@@ -132,42 +137,14 @@ public class InterviewServiceImpl implements InterviewService {
             request.setScoreStandard(question.getScoreStandard());
         }
 
-        // Call AI for scoring
+        // Phase 2: call LLM outside any transaction
         InterviewAnswerVO aiResult = aiOrchestratorService.scoreInterviewAnswer(request);
 
-        // Persist the answer record
-        currentRecord.setUserAnswer(request.getAnswer());
-        currentRecord.setScore(aiResult.getScore());
-        currentRecord.setComment(aiResult.getComment());
-        currentRecord.setFollowUp(aiResult.getFollowUp());
-        recordMapper.updateById(currentRecord);
+        // Phase 3: persist result and advance session (in transaction)
+        boolean addedToWrong = self.persistAnswerAndAdvance(userId, session, currentRecord, records, request, aiResult);
 
-        // Auto-add to wrong book if score below threshold
-        boolean addedToWrong = false;
-        if (aiResult.getScore() != null && aiResult.getScore().compareTo(WRONG_THRESHOLD) < 0) {
-            addedToWrong = true;
-            currentRecord.setIsWrong(1);
-            recordMapper.updateById(currentRecord);
-            addToWrongBook(userId, request, aiResult);
-        }
-
-        // Determine if there is a next question
         int currentIndex = session.getCurrentIndex();
         boolean hasNext = currentIndex < session.getQuestionCount();
-
-        if (hasNext) {
-            // Advance to next question
-            session.setCurrentIndex(currentIndex + 1);
-            sessionMapper.updateById(session);
-        } else {
-            // Finish the session
-            finishSession(session, records, currentRecord);
-            dashboardService.evictCache(userId);
-        }
-
-        if (addedToWrong) {
-            dashboardService.evictCache(userId);
-        }
 
         return InterviewAnswerVO.builder()
                 .score(aiResult.getScore())
@@ -177,6 +154,42 @@ public class InterviewServiceImpl implements InterviewService {
                 .addedToWrongBook(addedToWrong)
                 .hasNextQuestion(hasNext)
                 .build();
+    }
+
+    @Transactional
+    public boolean persistAnswerAndAdvance(Long userId, InterviewSession session, InterviewRecord currentRecord,
+                                           List<InterviewRecord> records, InterviewAnswerRequest request,
+                                           InterviewAnswerVO aiResult) {
+        currentRecord.setUserAnswer(request.getAnswer());
+        currentRecord.setScore(aiResult.getScore());
+        currentRecord.setComment(aiResult.getComment());
+        currentRecord.setFollowUp(aiResult.getFollowUp());
+        recordMapper.updateById(currentRecord);
+
+        boolean addedToWrong = false;
+        if (aiResult.getScore() != null && aiResult.getScore().compareTo(WRONG_THRESHOLD) < 0) {
+            addedToWrong = true;
+            currentRecord.setIsWrong(1);
+            recordMapper.updateById(currentRecord);
+            addToWrongBook(userId, request, aiResult);
+        }
+
+        int currentIndex = session.getCurrentIndex();
+        boolean hasNext = currentIndex < session.getQuestionCount();
+
+        if (hasNext) {
+            session.setCurrentIndex(currentIndex + 1);
+            sessionMapper.updateById(session);
+        } else {
+            finishSession(session, records, currentRecord);
+            dashboardService.evictCache(userId);
+        }
+
+        if (addedToWrong) {
+            dashboardService.evictCache(userId);
+        }
+
+        return addedToWrong;
     }
 
     @Override

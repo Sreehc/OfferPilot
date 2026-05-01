@@ -10,6 +10,9 @@ import com.bytecoach.interview.vo.InterviewAnswerVO;
 import com.bytecoach.interview.vo.InterviewCurrentQuestionVO;
 import com.bytecoach.interview.vo.InterviewDetailVO;
 import com.bytecoach.security.util.SecurityUtils;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "模拟面试", description = "AI 驱动的模拟面试与评分")
 @RestController
 @RequestMapping("/api/interview")
 @RequiredArgsConstructor
@@ -26,23 +30,27 @@ public class InterviewController {
 
     private final InterviewService interviewService;
 
+    @Operation(summary = "开始面试", description = "根据方向抽取题目并创建面试会话")
     @PostMapping("/start")
     public Result<InterviewCurrentQuestionVO> start(@Valid @RequestBody InterviewStartRequest request) {
         return Result.success(interviewService.start(currentUserId(), request));
     }
 
+    @Operation(summary = "当前题目", description = "获取面试会话的当前题目")
     @GetMapping("/current/{sessionId}")
-    public Result<InterviewCurrentQuestionVO> current(@PathVariable Long sessionId) {
+    public Result<InterviewCurrentQuestionVO> current(@Parameter(description = "会话 ID") @PathVariable Long sessionId) {
         return Result.success(interviewService.current(currentUserId(), sessionId));
     }
 
+    @Operation(summary = "提交答案", description = "提交答案并获取 AI 评分")
     @PostMapping("/answer")
     public Result<InterviewAnswerVO> answer(@Valid @RequestBody InterviewAnswerRequest request) {
         return Result.success(interviewService.answer(currentUserId(), request));
     }
 
+    @Operation(summary = "面试详情", description = "查看面试会话的所有题目和评分")
     @GetMapping("/detail/{sessionId}")
-    public Result<InterviewDetailVO> detail(@PathVariable Long sessionId) {
+    public Result<InterviewDetailVO> detail(@Parameter(description = "会话 ID") @PathVariable Long sessionId) {
         return Result.success(interviewService.detail(currentUserId(), sessionId));
     }
 

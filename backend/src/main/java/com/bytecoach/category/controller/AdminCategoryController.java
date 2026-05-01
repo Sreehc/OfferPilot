@@ -3,6 +3,9 @@ package com.bytecoach.category.controller;
 import com.bytecoach.category.dto.CategoryUpsertRequest;
 import com.bytecoach.category.vo.CategoryVO;
 import com.bytecoach.common.api.Result;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -13,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "分类管理", description = "管理员操作：分类 CRUD")
 @RestController
 @RequestMapping("/api/admin/category")
 @RequiredArgsConstructor
@@ -20,18 +24,21 @@ public class AdminCategoryController {
 
     private final com.bytecoach.category.service.CategoryService categoryService;
 
+    @Operation(summary = "新增分类")
     @PostMapping("/add")
     public Result<CategoryVO> add(@Valid @RequestBody CategoryUpsertRequest request) {
         return Result.success(categoryService.createCategory(request));
     }
 
+    @Operation(summary = "更新分类")
     @PutMapping("/update")
     public Result<CategoryVO> update(@Valid @RequestBody CategoryUpsertRequest request) {
         return Result.success(categoryService.updateCategory(request));
     }
 
+    @Operation(summary = "删除分类")
     @DeleteMapping("/delete/{id}")
-    public Result<Void> delete(@PathVariable Long id) {
+    public Result<Void> delete(@Parameter(description = "分类 ID") @PathVariable Long id) {
         categoryService.deleteCategory(id);
         return Result.success();
     }
