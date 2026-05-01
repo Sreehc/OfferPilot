@@ -6,6 +6,7 @@ import com.bytecoach.category.entity.Category;
 import com.bytecoach.category.service.CategoryService;
 import com.bytecoach.common.api.ResultCode;
 import com.bytecoach.common.exception.BusinessException;
+import com.bytecoach.dashboard.service.DashboardService;
 import com.bytecoach.interview.dto.InterviewAnswerRequest;
 import com.bytecoach.interview.dto.InterviewStartRequest;
 import com.bytecoach.interview.entity.InterviewRecord;
@@ -47,6 +48,7 @@ public class InterviewServiceImpl implements InterviewService {
     private final WrongQuestionMapper wrongQuestionMapper;
     private final CategoryService categoryService;
     private final AiOrchestratorService aiOrchestratorService;
+    private final DashboardService dashboardService;
 
     @Override
     @Transactional
@@ -160,6 +162,11 @@ public class InterviewServiceImpl implements InterviewService {
         } else {
             // Finish the session
             finishSession(session, records, currentRecord);
+            dashboardService.evictCache(userId);
+        }
+
+        if (addedToWrong) {
+            dashboardService.evictCache(userId);
         }
 
         return InterviewAnswerVO.builder()

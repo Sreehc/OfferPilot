@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.bytecoach.common.api.ResultCode;
 import com.bytecoach.common.dto.PageResult;
 import com.bytecoach.common.exception.BusinessException;
+import com.bytecoach.dashboard.service.DashboardService;
 import com.bytecoach.question.entity.Question;
 import com.bytecoach.question.mapper.QuestionMapper;
 import com.bytecoach.wrong.dto.WrongMasteryUpdateRequest;
@@ -26,6 +27,7 @@ public class WrongServiceImpl implements WrongService {
 
     private final WrongQuestionMapper wrongQuestionMapper;
     private final QuestionMapper questionMapper;
+    private final DashboardService dashboardService;
 
     @Override
     public PageResult<WrongQuestionVO> list(Long userId, int pageNum, int pageSize) {
@@ -100,6 +102,7 @@ public class WrongServiceImpl implements WrongService {
     public void delete(Long userId, Long id) {
         WrongQuestion wrong = getOwnedWrong(userId, id);
         wrongQuestionMapper.deleteById(wrong.getId());
+        dashboardService.evictCache(userId);
     }
 
     private WrongQuestion getOwnedWrong(Long userId, Long id) {

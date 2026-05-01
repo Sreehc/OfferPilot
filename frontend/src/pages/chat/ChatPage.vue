@@ -61,7 +61,7 @@
         </el-select>
       </div>
 
-      <div class="mt-5 flex-1 space-y-4 overflow-y-auto pr-1">
+      <div ref="messageContainer" class="mt-5 flex-1 space-y-4 overflow-y-auto pr-1">
         <article
           v-for="message in messages"
           :key="message.id"
@@ -104,9 +104,12 @@
           placeholder="输入你的问题。知识库问答会先检索 `knowledge_chunk`，普通问答直接发给 LLM。"
           @keydown.enter.exact.prevent="submitChat"
         />
-        <el-button :loading="sending" type="primary" size="large" class="action-button transition active:translate-y-px" @click="submitChat">
-          发送
-        </el-button>
+        <div class="flex flex-col gap-2">
+          <el-button :loading="sending" type="primary" size="large" class="action-button transition active:translate-y-px" @click="submitChat">
+            发送
+          </el-button>
+          <span class="text-center text-xs text-slate-400">Enter 发送</span>
+        </div>
       </div>
     </section>
   </div>
@@ -116,7 +119,7 @@
 import { ElMessage } from 'element-plus'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { deleteChatSessionApi, fetchChatMessagesApi, fetchChatSessionsApi, sendChatApi } from '@/api/chat'
 import type { ChatMessageItem, ChatSessionItem } from '@/types/api'
 
@@ -127,6 +130,15 @@ const mode = ref<'chat' | 'rag'>('rag')
 const prompt = ref('')
 const loadingMessages = ref(false)
 const sending = ref(false)
+const messageContainer = ref<HTMLElement | null>(null)
+
+const scrollToBottom = () => {
+  nextTick(() => {
+    if (messageContainer.value) {
+      messageContainer.value.scrollTop = messageContainer.value.scrollHeight
+    }
+  })
+}
 const sessionPage = ref(1)
 const sessionPageSize = ref(20)
 const sessionTotal = ref(0)
@@ -162,6 +174,7 @@ const loadMessages = async (sessionId: number) => {
   try {
     const response = await fetchChatMessagesApi(sessionId)
     messages.value = response.data
+    scrollToBottom()
   } catch {
     ElMessage.error('消息历史加载失败')
   } finally {
@@ -212,6 +225,7 @@ const submitChat = async () => {
     prompt.value = ''
     await loadSessions()
     await loadMessages(response.data.sessionId)
+    scrollToBottom()
   } catch {
     ElMessage.error('问答发送失败')
   } finally {

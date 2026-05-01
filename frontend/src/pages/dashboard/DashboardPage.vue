@@ -109,20 +109,23 @@
             </div>
           </div>
 
-          <div v-if="overview.weakPoints.length" class="surface-muted mt-5 divide-y divide-slate-200/70 overflow-hidden">
-            <div v-for="point in overview.weakPoints" :key="point.categoryName" class="px-4 py-4">
-              <div class="flex items-center justify-between gap-3 text-sm">
-                <div>
-                  <div class="font-semibold text-ink">{{ point.categoryName }}</div>
-                  <div class="text-slate-500">错题 {{ point.wrongCount }} · 平均分 {{ formatScore(point.score) }}</div>
+          <div v-if="overview.weakPoints.length" class="mt-5">
+            <div ref="radarChartRef" class="mx-auto" style="width: 100%; height: 280px;"></div>
+            <div class="surface-muted mt-3 divide-y divide-slate-200/70 overflow-hidden">
+              <div v-for="point in overview.weakPoints" :key="point.categoryName" class="px-4 py-4">
+                <div class="flex items-center justify-between gap-3 text-sm">
+                  <div>
+                    <div class="font-semibold text-ink">{{ point.categoryName }}</div>
+                    <div class="text-slate-500">错题 {{ point.wrongCount }} · 平均分 {{ formatScore(point.score) }}</div>
+                  </div>
+                  <div class="text-2xl font-semibold tracking-[-0.03em] text-accent">{{ point.wrongCount }}</div>
                 </div>
-                <div class="text-2xl font-semibold tracking-[-0.03em] text-accent">{{ point.wrongCount }}</div>
-              </div>
-              <div class="mt-2 h-2 rounded-full bg-slate-200">
-                <div
-                  class="h-2 rounded-full bg-accent/80"
-                  :style="{ width: `${Math.min(point.wrongCount * 20, 100)}%` }"
-                ></div>
+                <div class="mt-2 h-2 rounded-full bg-slate-200">
+                  <div
+                    class="h-2 rounded-full bg-accent/80"
+                    :style="{ width: `${Math.min(point.wrongCount * 20, 100)}%` }"
+                  ></div>
+                </div>
               </div>
             </div>
           </div>
@@ -178,7 +181,8 @@
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import { computed, onMounted, ref } from 'vue'
+import * as echarts from 'echarts'
+import { computed, nextTick, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { fetchDashboardOverviewApi } from '@/api/dashboard'
 import type { DashboardOverview, RecentInterviewItem } from '@/types/api'
 import { useAuthStore } from '@/stores/auth'
@@ -187,6 +191,8 @@ import { storage } from '@/utils/storage'
 const authStore = useAuthStore()
 const loading = ref(true)
 const guideDismissed = ref(false)
+const radarChartRef = ref<HTMLElement | null>(null)
+let radarChart: echarts.ECharts | null = null
 const overview = ref<DashboardOverview>({
   learningCount: 0,
   averageScore: 0,
@@ -263,6 +269,41 @@ const interviewTitle = (interview: RecentInterviewItem) => {
 const statusLabel = (status: string) => {
   return status === 'finished' ? 'finished' : status
 }
+
+const renderRadarChart = () => {
+  if (!radarChartRef.value || !overview.value.weakPoints.length) return
+  if (radarChart) radarChart.dispose()
+  radarChart = echarts.init(radarChartRef.value)
+  const points = overview.value.weakPoints
+  const maxWrong = Math.max(...points.map((p) => p.wrongCount), 1)
+  radarChart.setOption({
+    radar: {
+      indicator: points.map((p) => ({ name: p.categoryName, max: maxWrong + 2 })),
+      shape: 'circle',
+      splitNumber: 4,
+      axisName: { color: '#64748b', fontSize: 12 },
+      splitArea: { areaStyle: { color: ['rgba(47,79,157,0.04)', 'rgba(47,79,157,0.08)'] } }
+    },
+    series: [{
+      type: 'radar',
+      data: [{
+        value: points.map((p) => p.wrongCount),
+        name: '错题数',
+        areaStyle: { color: 'rgba(47,79,157,0.2)' },
+        lineStyle: { color: '#2f4f9d', width: 2 },
+        itemStyle: { color: '#2f4f9d' }
+      }]
+    }]
+  })
+}
+
+watch(() => overview.value.weakPoints, () => {
+  nextTick(renderRadarChart)
+}, { deep: true })
+
+onBeforeUnmount(() => {
+  if (radarChart) radarChart.dispose()
+})
 
 onMounted(() => {
   void loadOverview()

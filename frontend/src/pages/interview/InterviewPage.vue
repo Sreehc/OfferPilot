@@ -87,7 +87,13 @@
 
         <!-- Answering State -->
         <div v-else-if="phase === 'answering'" class="flex flex-1 flex-col">
-          <p class="section-kicker">Your Answer</p>
+          <div class="flex items-center justify-between">
+            <p class="section-kicker">Your Answer</p>
+            <div class="flex items-center gap-2 text-sm">
+              <span class="text-slate-500">倒计时</span>
+              <span class="font-semibold tabular-nums" :class="countdown <= 30 ? 'text-red-500' : 'text-accent'">{{ formatCountdown(countdown) }}</span>
+            </div>
+          </div>
           <el-input
             v-model="answerText"
             type="textarea"
@@ -95,6 +101,7 @@
             placeholder="请在此输入你的回答。尽量覆盖关键点，结构化表达会获得更高分数。"
             class="mt-4 flex-1"
             size="large"
+            @keydown.ctrl.enter.prevent="handleSubmitAnswer"
           />
           <div class="mt-4 flex gap-3">
             <el-button
@@ -106,6 +113,7 @@
             >
               提交答案
             </el-button>
+            <span class="self-center text-xs text-slate-400">Ctrl + Enter 快捷提交</span>
           </div>
         </div>
 
@@ -127,7 +135,7 @@
             style="border-radius: var(--radius-lg); background: linear-gradient(180deg, #365ab0 0%, #2f4f9d 100%);"
           >
             <div class="text-xs uppercase tracking-[0.24em] text-white/60">AI Score</div>
-            <div class="mt-3 text-5xl font-semibold tracking-[-0.03em]">{{ lastResult?.score ?? '-' }}</div>
+            <div class="mt-3 text-5xl font-semibold tracking-[-0.03em]">{{ animatedScore }}</div>
             <p class="mt-4 text-sm leading-7 text-white/80">{{ lastResult?.comment }}</p>
           </div>
 
@@ -226,7 +234,7 @@
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import {
   currentQuestionApi,
   interviewDetailApi,
@@ -250,6 +258,67 @@ const currentQuestion = ref<InterviewCurrentQuestion | null>(null)
 const lastResult = ref<InterviewAnswerResult | null>(null)
 const detail = ref<InterviewDetail | null>(null)
 
+// Countdown timer (5 minutes per question)
+const COUNTDOWN_SECONDS = 300
+const countdown = ref(COUNTDOWN_SECONDS)
+let countdownTimer: ReturnType<typeof setInterval> | null = null
+
+const formatCountdown = (seconds: number) => {
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return `${m}:${String(s).padStart(2, '0')}`
+}
+
+const startCountdown = () => {
+  stopCountdown()
+  countdown.value = COUNTDOWN_SECONDS
+  countdownTimer = setInterval(() => {
+    countdown.value--
+    if (countdown.value <= 0) {
+      stopCountdown()
+      ElMessage.warning('答题时间已到，自动提交')
+      void handleSubmitAnswer()
+    }
+  }, 1000)
+}
+
+const stopCountdown = () => {
+  if (countdownTimer) {
+    clearInterval(countdownTimer)
+    countdownTimer = null
+  }
+}
+
+onBeforeUnmount(stopCountdown)
+
+// Score animation
+const animatedScore = ref<string>('-')
+let scoreAnimFrame: ReturnType<typeof requestAnimationFrame> | null = null
+
+const animateScore = (target: number) => {
+  if (scoreAnimFrame) cancelAnimationFrame(scoreAnimFrame)
+  const duration = 800
+  const startTime = performance.now()
+  const tick = (now: number) => {
+    const elapsed = now - startTime
+    const progress = Math.min(elapsed / duration, 1)
+    const eased = 1 - Math.pow(1 - progress, 3) // ease-out cubic
+    animatedScore.value = String(Math.round(target * eased))
+    if (progress < 1) {
+      scoreAnimFrame = requestAnimationFrame(tick)
+    }
+  }
+  scoreAnimFrame = requestAnimationFrame(tick)
+}
+
+watch(() => lastResult.value?.score, (score) => {
+  if (score != null) {
+    animateScore(Number(score))
+  } else {
+    animatedScore.value = '-'
+  }
+})
+
 const progressPercent = computed(() => {
   if (!currentQuestion.value) return 0
   const { currentIndex, questionCount: total } = currentQuestion.value
@@ -268,6 +337,7 @@ const handleStart = async () => {
     lastResult.value = null
     detail.value = null
     phase.value = 'answering'
+    startCountdown()
     ElMessage.success('面试已开始，请回答第一题')
   } catch {
     ElMessage.error('启动面试失败，请确认题库中有对应方向的题目')
@@ -284,6 +354,7 @@ const handleSubmitAnswer = async () => {
   if (!currentQuestion.value) return
 
   phase.value = 'scoring'
+  stopCountdown()
   submitting.value = true
   try {
     const response = await submitAnswerApi({
@@ -310,6 +381,7 @@ const handleNextQuestion = async () => {
     answerText.value = ''
     lastResult.value = null
     phase.value = 'answering'
+    startCountdown()
   } catch {
     ElMessage.error('获取下一题失败')
   }

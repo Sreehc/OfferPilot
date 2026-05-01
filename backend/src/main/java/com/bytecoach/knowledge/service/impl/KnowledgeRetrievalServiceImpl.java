@@ -36,9 +36,28 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
         if (keywords.isEmpty()) {
             return List.of();
         }
-        List<KnowledgeChunk> chunks = knowledgeChunkMapper.selectList(
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<KnowledgeChunk>()
-                        .orderByAsc(KnowledgeChunk::getDocId, KnowledgeChunk::getChunkIndex));
+
+        // DB-level pre-filter: only load chunks whose content matches at least one keyword
+        // This avoids loading the entire chunk table into memory.
+        // For better performance, consider adding FULLTEXT INDEX on knowledge_chunk.content:
+        //   ALTER TABLE knowledge_chunk ADD FULLTEXT INDEX ft_content (content) WITH PARSER ngram;
+        // and switching to MATCH ... AGAINST syntax.
+        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<KnowledgeChunk> chunkQuery =
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<KnowledgeChunk>();
+        // Build OR conditions: content LIKE '%keyword1%' OR content LIKE '%keyword2%' ...
+        boolean first = true;
+        for (String keyword : keywords) {
+            String likePattern = "%" + keyword.toLowerCase() + "%";
+            if (first) {
+                chunkQuery.like(KnowledgeChunk::getContent, keyword);
+                first = false;
+            } else {
+                chunkQuery.or().like(KnowledgeChunk::getContent, keyword);
+            }
+        }
+        chunkQuery.orderByAsc(KnowledgeChunk::getDocId, KnowledgeChunk::getChunkIndex);
+        List<KnowledgeChunk> chunks = knowledgeChunkMapper.selectList(chunkQuery);
+
         if (chunks.isEmpty()) {
             return List.of();
         }

@@ -34,8 +34,22 @@ public class ChatServiceImpl implements ChatService {
     private final ObjectMapper objectMapper;
 
     @Override
-    @Transactional
     public ChatSendVO send(Long userId, ChatSendRequest request) {
+        // Phase 1: persist user message in its own transaction
+        ChatSession session = persistUserMessage(userId, request);
+
+        // Phase 2: call LLM outside any transaction
+        ChatSendVO result = aiOrchestratorService.answerChat(request);
+
+        // Phase 3: persist assistant message and update session
+        persistAssistantMessage(session, userId, result);
+        result.setSessionId(session.getId());
+        result.setSessionTitle(session.getTitle());
+        return result;
+    }
+
+    @Transactional
+    public ChatSession persistUserMessage(Long userId, ChatSendRequest request) {
         ChatSession session = request.getSessionId() == null
                 ? createSession(userId, request.getMessage(), request.getMode())
                 : getOwnedSession(userId, request.getSessionId());
@@ -43,16 +57,17 @@ public class ChatServiceImpl implements ChatService {
             session.setMode(request.getMode());
         }
         persistMessage(session.getId(), userId, "user", "text", request.getMessage(), null);
-        ChatSendVO result = aiOrchestratorService.answerChat(request);
+        return session;
+    }
+
+    @Transactional
+    public void persistAssistantMessage(ChatSession session, Long userId, ChatSendVO result) {
         persistMessage(session.getId(), userId, "assistant",
                 result.getReferences() == null || result.getReferences().isEmpty() ? "text" : "reference",
                 result.getAnswer(), result.getReferences());
-        session.setTitle(refreshTitleIfNeeded(session.getTitle(), request.getMessage()));
+        session.setTitle(refreshTitleIfNeeded(session.getTitle(), result.getAnswer()));
         session.setLastMessageTime(LocalDateTime.now());
         chatSessionMapper.updateById(session);
-        result.setSessionId(session.getId());
-        result.setSessionTitle(session.getTitle());
-        return result;
     }
 
     @Override
