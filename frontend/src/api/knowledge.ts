@@ -1,10 +1,12 @@
 import { request } from '@/utils/http'
-import type { KnowledgeDocItem, KnowledgeSearchResult } from '@/types/api'
+import type { KnowledgeDocItem, KnowledgeSearchResult, PageResult } from '@/types/api'
 
 export interface KnowledgeListQuery {
   categoryId?: number
   keyword?: string
   status?: KnowledgeDocItem['status']
+  pageNum?: number
+  pageSize?: number
 }
 
 export interface KnowledgeImportPayload {
@@ -14,7 +16,7 @@ export interface KnowledgeImportPayload {
 }
 
 export const fetchKnowledgeDocsApi = (params?: KnowledgeListQuery) => {
-  return request<KnowledgeDocItem[]>({ url: '/knowledge/list', method: 'get', params })
+  return request<PageResult<KnowledgeDocItem>>({ url: '/knowledge/list', method: 'get', params })
 }
 
 export const searchKnowledgeApi = (query: string) => {

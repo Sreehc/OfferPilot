@@ -36,6 +36,17 @@
         <div class="font-semibold text-ink">还没有会话</div>
         <p class="mt-2 text-sm leading-6 text-slate-500">直接发起第一个问题，系统会自动创建会话标题并开始沉淀历史。</p>
       </div>
+
+      <div v-if="sessionTotalPages > 1" class="mt-4 flex justify-center">
+        <el-pagination
+          v-model:current-page="sessionPage"
+          :page-size="sessionPageSize"
+          :total="sessionTotal"
+          layout="prev, pager, next"
+          small
+          @current-change="handleSessionPageChange"
+        />
+      </div>
     </section>
 
     <section class="paper-panel flex min-h-[580px] flex-col p-5">
@@ -116,6 +127,10 @@ const mode = ref<'chat' | 'rag'>('rag')
 const prompt = ref('')
 const loadingMessages = ref(false)
 const sending = ref(false)
+const sessionPage = ref(1)
+const sessionPageSize = ref(20)
+const sessionTotal = ref(0)
+const sessionTotalPages = ref(0)
 
 marked.setOptions({
   breaks: true,
@@ -128,11 +143,18 @@ const currentTitle = computed(() => {
 })
 
 const loadSessions = async (selectLatest = false) => {
-  const response = await fetchChatSessionsApi()
-  sessions.value = response.data
+  const response = await fetchChatSessionsApi(sessionPage.value, sessionPageSize.value)
+  sessions.value = response.data.records
+  sessionTotal.value = response.data.total
+  sessionTotalPages.value = response.data.totalPages
   if (selectLatest && sessions.value.length) {
     await selectSession(sessions.value[0].id, sessions.value[0].mode)
   }
+}
+
+const handleSessionPageChange = (page: number) => {
+  sessionPage.value = page
+  void loadSessions()
 }
 
 const loadMessages = async (sessionId: number) => {

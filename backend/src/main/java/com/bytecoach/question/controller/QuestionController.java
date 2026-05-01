@@ -1,9 +1,9 @@
 package com.bytecoach.question.controller;
 
 import com.bytecoach.common.api.Result;
+import com.bytecoach.common.dto.PageResult;
 import com.bytecoach.question.dto.QuestionQuery;
 import com.bytecoach.question.vo.QuestionVO;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -19,7 +19,7 @@ public class QuestionController {
     private final com.bytecoach.question.service.QuestionService questionService;
 
     @GetMapping("/list")
-    public Result<List<QuestionVO>> list(@ModelAttribute QuestionQuery query) {
+    public Result<PageResult<QuestionVO>> list(@ModelAttribute QuestionQuery query) {
         return Result.success(questionService.listQuestions(query));
     }
 

@@ -1,5 +1,5 @@
 import { request } from '@/utils/http'
-import type { ChatMessageItem, ChatSendResult, ChatSessionItem } from '@/types/api'
+import type { ChatMessageItem, ChatSendResult, ChatSessionItem, PageResult } from '@/types/api'
 
 export interface ChatSendPayload {
   sessionId?: number
@@ -7,8 +7,8 @@ export interface ChatSendPayload {
   message: string
 }
 
-export const fetchChatSessionsApi = () => {
-  return request<ChatSessionItem[]>({ url: '/chat/sessions', method: 'get' })
+export const fetchChatSessionsApi = (pageNum = 1, pageSize = 20) => {
+  return request<PageResult<ChatSessionItem>>({ url: '/chat/sessions', method: 'get', params: { pageNum, pageSize } })
 }
 
 export const fetchChatMessagesApi = (sessionId: number) => {

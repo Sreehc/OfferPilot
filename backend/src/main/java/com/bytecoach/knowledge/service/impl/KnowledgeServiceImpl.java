@@ -1,9 +1,12 @@
 package com.bytecoach.knowledge.service.impl;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.bytecoach.category.entity.Category;
 import com.bytecoach.category.service.CategoryService;
 import com.bytecoach.common.api.ResultCode;
+import com.bytecoach.common.dto.PageResult;
 import com.bytecoach.common.exception.BusinessException;
 import com.bytecoach.knowledge.dto.KnowledgeImportRequest;
 import com.bytecoach.knowledge.dto.KnowledgeListQuery;
@@ -50,17 +53,24 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
     private final ObjectMapper objectMapper;
 
     @Override
-    public List<KnowledgeDocVO> listDocs(KnowledgeListQuery query) {
-        List<KnowledgeDoc> docs = lambdaQuery()
+    public PageResult<KnowledgeDocVO> listDocs(KnowledgeListQuery query) {
+        Page<KnowledgeDoc> page = new Page<>(query.getPageNum(), query.getPageSize());
+        IPage<KnowledgeDoc> result = page(page, lambdaQuery()
                 .eq(query.getCategoryId() != null, KnowledgeDoc::getCategoryId, query.getCategoryId())
                 .eq(StringUtils.hasText(query.getStatus()), KnowledgeDoc::getStatus, query.getStatus())
                 .and(StringUtils.hasText(query.getKeyword()), wrapper -> wrapper
                         .like(KnowledgeDoc::getTitle, query.getKeyword())
                         .or()
                         .like(KnowledgeDoc::getSummary, query.getKeyword()))
-                .orderByDesc(KnowledgeDoc::getUpdateTime)
-                .list();
-        return buildDocVOs(docs);
+                .orderByDesc(KnowledgeDoc::getUpdateTime));
+        List<KnowledgeDocVO> voList = buildDocVOs(result.getRecords());
+        return PageResult.<KnowledgeDocVO>builder()
+                .records(voList)
+                .total(result.getTotal())
+                .pageNum(query.getPageNum())
+                .pageSize(query.getPageSize())
+                .totalPages((int) result.getPages())
+                .build();
     }
 
     @Override

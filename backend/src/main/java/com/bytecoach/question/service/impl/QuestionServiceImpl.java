@@ -1,9 +1,12 @@
 package com.bytecoach.question.service.impl;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.bytecoach.category.entity.Category;
 import com.bytecoach.category.service.CategoryService;
 import com.bytecoach.common.api.ResultCode;
+import com.bytecoach.common.dto.PageResult;
 import com.bytecoach.common.exception.BusinessException;
 import com.bytecoach.question.dto.QuestionQuery;
 import com.bytecoach.question.dto.QuestionUpsertRequest;
@@ -26,21 +29,30 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
     private final CategoryService categoryService;
 
     @Override
-    public List<QuestionVO> listQuestions(QuestionQuery query) {
-        List<Question> questions = lambdaQuery()
+    public PageResult<QuestionVO> listQuestions(QuestionQuery query) {
+        Page<Question> page = new Page<>(query.getPageNum(), query.getPageSize());
+        IPage<Question> result = page(page, lambdaQuery()
                 .eq(query.getCategoryId() != null, Question::getCategoryId, query.getCategoryId())
                 .eq(StringUtils.hasText(query.getDifficulty()), Question::getDifficulty, query.getDifficulty())
                 .and(StringUtils.hasText(query.getKeyword()), wrapper -> wrapper
                         .like(Question::getTitle, query.getKeyword())
                         .or()
                         .like(Question::getTags, query.getKeyword()))
-                .orderByDesc(Question::getUpdateTime)
-                .list();
+                .orderByDesc(Question::getUpdateTime));
         Map<Long, Category> categoryMap = categoryService.listByIds(
-                        questions.stream().map(Question::getCategoryId).distinct().toList())
+                        result.getRecords().stream().map(Question::getCategoryId).distinct().toList())
                 .stream()
                 .collect(Collectors.toMap(Category::getId, Function.identity()));
-        return questions.stream().map(question -> toVO(question, categoryMap.get(question.getCategoryId()))).toList();
+        List<QuestionVO> voList = result.getRecords().stream()
+                .map(question -> toVO(question, categoryMap.get(question.getCategoryId())))
+                .toList();
+        return PageResult.<QuestionVO>builder()
+                .records(voList)
+                .total(result.getTotal())
+                .pageNum(query.getPageNum())
+                .pageSize(query.getPageSize())
+                .totalPages((int) result.getPages())
+                .build();
     }
 
     @Override

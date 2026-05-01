@@ -2,6 +2,7 @@ package com.bytecoach.wrong.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.bytecoach.common.api.ResultCode;
+import com.bytecoach.common.dto.PageResult;
 import com.bytecoach.common.exception.BusinessException;
 import com.bytecoach.question.entity.Question;
 import com.bytecoach.question.mapper.QuestionMapper;
@@ -27,36 +28,49 @@ public class WrongServiceImpl implements WrongService {
     private final QuestionMapper questionMapper;
 
     @Override
-    public List<WrongQuestionVO> list(Long userId) {
+    public PageResult<WrongQuestionVO> list(Long userId, int pageNum, int pageSize) {
+        long total = wrongQuestionMapper.selectCount(
+                new LambdaQueryWrapper<WrongQuestion>().eq(WrongQuestion::getUserId, userId));
+
+        int offset = (Math.max(pageNum, 1) - 1) * Math.max(pageSize, 1);
         List<WrongQuestion> wrongs = wrongQuestionMapper.selectList(
                 new LambdaQueryWrapper<WrongQuestion>()
                         .eq(WrongQuestion::getUserId, userId)
-                        .orderByDesc(WrongQuestion::getUpdateTime));
+                        .orderByDesc(WrongQuestion::getUpdateTime)
+                        .last("LIMIT " + Math.max(pageSize, 1) + " OFFSET " + offset));
 
+        List<WrongQuestionVO> voList;
         if (wrongs.isEmpty()) {
-            return List.of();
+            voList = List.of();
+        } else {
+            Set<Long> questionIds = wrongs.stream()
+                    .map(WrongQuestion::getQuestionId)
+                    .collect(Collectors.toSet());
+            Map<Long, Question> questionMap = questionMapper.selectBatchIds(questionIds)
+                    .stream()
+                    .collect(Collectors.toMap(Question::getId, Function.identity(), (a, b) -> a));
+            voList = wrongs.stream()
+                    .map(wrong -> {
+                        Question q = questionMap.get(wrong.getQuestionId());
+                        return WrongQuestionVO.builder()
+                                .id(wrong.getId())
+                                .questionId(wrong.getQuestionId())
+                                .title(q != null ? q.getTitle() : "Unknown")
+                                .masteryLevel(wrong.getMasteryLevel())
+                                .standardAnswer(wrong.getStandardAnswer())
+                                .errorReason(wrong.getErrorReason())
+                                .build();
+                    })
+                    .toList();
         }
 
-        Set<Long> questionIds = wrongs.stream()
-                .map(WrongQuestion::getQuestionId)
-                .collect(Collectors.toSet());
-        Map<Long, Question> questionMap = questionMapper.selectBatchIds(questionIds)
-                .stream()
-                .collect(Collectors.toMap(Question::getId, Function.identity(), (a, b) -> a));
-
-        return wrongs.stream()
-                .map(wrong -> {
-                    Question q = questionMap.get(wrong.getQuestionId());
-                    return WrongQuestionVO.builder()
-                            .id(wrong.getId())
-                            .questionId(wrong.getQuestionId())
-                            .title(q != null ? q.getTitle() : "Unknown")
-                            .masteryLevel(wrong.getMasteryLevel())
-                            .standardAnswer(wrong.getStandardAnswer())
-                            .errorReason(wrong.getErrorReason())
-                            .build();
-                })
-                .toList();
+        return PageResult.<WrongQuestionVO>builder()
+                .records(voList)
+                .total(total)
+                .pageNum(pageNum)
+                .pageSize(pageSize)
+                .totalPages((int) Math.ceil((double) total / Math.max(pageSize, 1)))
+                .build();
     }
 
     @Override

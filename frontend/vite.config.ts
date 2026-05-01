@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { fileURLToPath, URL } from 'node:url'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
@@ -12,6 +13,10 @@ export default defineConfig({
   server: {
     port: 5173,
     host: '0.0.0.0'
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom'
   }
 })
 

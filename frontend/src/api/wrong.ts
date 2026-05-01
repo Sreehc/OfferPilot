@@ -1,12 +1,12 @@
 import { request } from '@/utils/http'
-import type { WrongQuestionItem } from '@/types/api'
+import type { PageResult, WrongQuestionItem } from '@/types/api'
 
 export interface WrongMasteryPayload {
   masteryLevel: 'not_started' | 'reviewing' | 'mastered'
 }
 
-export const fetchWrongListApi = () => {
-  return request<WrongQuestionItem[]>({ url: '/wrong/list', method: 'get' })
+export const fetchWrongListApi = (pageNum = 1, pageSize = 20) => {
+  return request<PageResult<WrongQuestionItem>>({ url: '/wrong/list', method: 'get', params: { pageNum, pageSize } })
 }
 
 export const fetchWrongDetailApi = (id: number) => {

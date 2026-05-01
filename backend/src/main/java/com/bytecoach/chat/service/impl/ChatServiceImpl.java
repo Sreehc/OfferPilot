@@ -13,6 +13,7 @@ import com.bytecoach.chat.vo.ChatMessageVO;
 import com.bytecoach.chat.vo.ChatSendVO;
 import com.bytecoach.chat.vo.ChatSessionVO;
 import com.bytecoach.common.api.ResultCode;
+import com.bytecoach.common.dto.PageResult;
 import com.bytecoach.common.exception.BusinessException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -55,11 +56,17 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public List<ChatSessionVO> listSessions(Long userId) {
-        return chatSessionMapper.selectList(new LambdaQueryWrapper<ChatSession>()
-                        .eq(ChatSession::getUserId, userId)
-                        .orderByDesc(ChatSession::getLastMessageTime, ChatSession::getUpdateTime))
-                .stream()
+    public PageResult<ChatSessionVO> listSessions(Long userId, int pageNum, int pageSize) {
+        long total = chatSessionMapper.selectCount(new LambdaQueryWrapper<ChatSession>()
+                .eq(ChatSession::getUserId, userId));
+
+        int offset = (Math.max(pageNum, 1) - 1) * Math.max(pageSize, 1);
+        List<ChatSession> sessions = chatSessionMapper.selectList(new LambdaQueryWrapper<ChatSession>()
+                .eq(ChatSession::getUserId, userId)
+                .orderByDesc(ChatSession::getLastMessageTime, ChatSession::getUpdateTime)
+                .last("LIMIT " + Math.max(pageSize, 1) + " OFFSET " + offset));
+
+        List<ChatSessionVO> voList = sessions.stream()
                 .map(session -> ChatSessionVO.builder()
                         .id(session.getId())
                         .title(session.getTitle())
@@ -68,6 +75,14 @@ public class ChatServiceImpl implements ChatService {
                         .updateTime(session.getUpdateTime())
                         .build())
                 .toList();
+
+        return PageResult.<ChatSessionVO>builder()
+                .records(voList)
+                .total(total)
+                .pageNum(pageNum)
+                .pageSize(pageSize)
+                .totalPages((int) Math.ceil((double) total / Math.max(pageSize, 1)))
+                .build();
     }
 
     @Override

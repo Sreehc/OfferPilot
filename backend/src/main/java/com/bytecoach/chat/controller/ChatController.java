@@ -7,6 +7,7 @@ import com.bytecoach.chat.vo.ChatSendVO;
 import com.bytecoach.chat.vo.ChatSessionVO;
 import com.bytecoach.common.api.Result;
 import com.bytecoach.common.api.ResultCode;
+import com.bytecoach.common.dto.PageResult;
 import com.bytecoach.common.exception.BusinessException;
 import com.bytecoach.security.util.SecurityUtils;
 import jakarta.validation.Valid;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -33,8 +35,10 @@ public class ChatController {
     }
 
     @GetMapping("/sessions")
-    public Result<List<ChatSessionVO>> sessions() {
-        return Result.success(chatService.listSessions(currentUserId()));
+    public Result<PageResult<ChatSessionVO>> sessions(
+            @RequestParam(defaultValue = "1") int pageNum,
+            @RequestParam(defaultValue = "20") int pageSize) {
+        return Result.success(chatService.listSessions(currentUserId(), pageNum, pageSize));
     }
 
     @GetMapping("/messages/{sessionId}")

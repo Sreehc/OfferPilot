@@ -107,6 +107,16 @@
                   </div>
                 </div>
               </article>
+
+              <div v-if="questionTotalPages > 1" class="mt-4 flex justify-center">
+                <el-pagination
+                  v-model:current-page="questionPage"
+                  :page-size="questionPageSize"
+                  :total="questionTotal"
+                  layout="prev, pager, next"
+                  @current-change="handleQuestionPageChange"
+                />
+              </div>
             </div>
           </div>
         </el-tab-pane>
@@ -168,6 +178,16 @@
                   </div>
                 </div>
               </article>
+
+              <div v-if="knowledgeTotalPages > 1" class="mt-4 flex justify-center">
+                <el-pagination
+                  v-model:current-page="knowledgePage"
+                  :page-size="knowledgePageSize"
+                  :total="knowledgeTotal"
+                  layout="prev, pager, next"
+                  @current-change="handleKnowledgePageChange"
+                />
+              </div>
             </div>
           </div>
         </el-tab-pane>
@@ -195,6 +215,16 @@ const questionLoading = ref(false)
 const knowledgeLoading = ref(false)
 const knowledgeImporting = ref<string | null>(null)
 const knowledgeActionId = ref<string | null>(null)
+
+const questionPage = ref(1)
+const questionPageSize = ref(20)
+const questionTotal = ref(0)
+const questionTotalPages = ref(0)
+
+const knowledgePage = ref(1)
+const knowledgePageSize = ref(20)
+const knowledgeTotal = ref(0)
+const knowledgeTotalPages = ref(0)
 
 const categoryForm = reactive<{
   id?: number
@@ -264,14 +294,23 @@ const loadQuestions = async () => {
     const response = await fetchQuestionsApi({
       categoryId: questionFilter.categoryId,
       difficulty: questionFilter.difficulty,
-      keyword: questionFilter.keyword || undefined
+      keyword: questionFilter.keyword || undefined,
+      pageNum: questionPage.value,
+      pageSize: questionPageSize.value
     })
-    questions.value = response.data
+    questions.value = response.data.records
+    questionTotal.value = response.data.total
+    questionTotalPages.value = response.data.totalPages
   } catch {
     ElMessage.error('题库加载失败')
   } finally {
     questionLoading.value = false
   }
+}
+
+const handleQuestionPageChange = (page: number) => {
+  questionPage.value = page
+  void loadQuestions()
 }
 
 const loadKnowledgeDocs = async () => {
@@ -280,14 +319,23 @@ const loadKnowledgeDocs = async () => {
     const response = await fetchKnowledgeDocsApi({
       categoryId: knowledgeFilter.categoryId,
       status: knowledgeFilter.status,
-      keyword: knowledgeFilter.keyword || undefined
+      keyword: knowledgeFilter.keyword || undefined,
+      pageNum: knowledgePage.value,
+      pageSize: knowledgePageSize.value
     })
-    knowledgeDocs.value = response.data
+    knowledgeDocs.value = response.data.records
+    knowledgeTotal.value = response.data.total
+    knowledgeTotalPages.value = response.data.totalPages
   } catch {
     ElMessage.error('知识文档加载失败')
   } finally {
     knowledgeLoading.value = false
   }
+}
+
+const handleKnowledgePageChange = (page: number) => {
+  knowledgePage.value = page
+  void loadKnowledgeDocs()
 }
 
 const saveCategory = async () => {

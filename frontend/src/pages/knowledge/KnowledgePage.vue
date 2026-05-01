@@ -45,21 +45,33 @@
       </div>
     </section>
 
-    <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      <article v-for="doc in docs" :key="doc.id" class="metric-card">
-        <div class="flex items-center justify-between gap-3">
-          <h4 class="font-semibold">{{ doc.title }}</h4>
-          <span class="hard-chip" :class="doc.status === 'indexed' ? '!bg-accent !text-white' : '!bg-white/80 !text-slate-600'">
-            {{ doc.status }}
-          </span>
-        </div>
-        <p class="mt-2 text-sm text-slate-500">{{ doc.categoryName || '未分配分类' }}</p>
-        <p class="mt-3 text-sm leading-6 text-slate-600">{{ doc.summary || '暂无摘要' }}</p>
-        <div class="mt-4 flex items-center justify-between text-xs uppercase tracking-[0.22em] text-slate-400">
-          <span>chunks {{ doc.chunkCount ?? 0 }}</span>
-          <span>{{ formatDate(doc.updateTime) }}</span>
-        </div>
-      </article>
+    <section>
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <article v-for="doc in docs" :key="doc.id" class="metric-card">
+          <div class="flex items-center justify-between gap-3">
+            <h4 class="font-semibold">{{ doc.title }}</h4>
+            <span class="hard-chip" :class="doc.status === 'indexed' ? '!bg-accent !text-white' : '!bg-white/80 !text-slate-600'">
+              {{ doc.status }}
+            </span>
+          </div>
+          <p class="mt-2 text-sm text-slate-500">{{ doc.categoryName || '未分配分类' }}</p>
+          <p class="mt-3 text-sm leading-6 text-slate-600">{{ doc.summary || '暂无摘要' }}</p>
+          <div class="mt-4 flex items-center justify-between text-xs uppercase tracking-[0.22em] text-slate-400">
+            <span>chunks {{ doc.chunkCount ?? 0 }}</span>
+            <span>{{ formatDate(doc.updateTime) }}</span>
+          </div>
+        </article>
+      </div>
+
+      <div v-if="totalPages > 1" class="mt-6 flex justify-center">
+        <el-pagination
+          v-model:current-page="currentPage"
+          :page-size="pageSize"
+          :total="total"
+          layout="prev, pager, next"
+          @current-change="handlePageChange"
+        />
+      </div>
     </section>
 
     <section class="paper-panel p-6">
@@ -99,6 +111,10 @@ const searchResult = ref<KnowledgeSearchResult | null>(null)
 const loadingDocs = ref(false)
 const searching = ref(false)
 const searchQuery = ref('JVM 垃圾回收器分类')
+const currentPage = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
+const totalPages = ref(0)
 const filters = reactive<{
   categoryId?: number
   keyword: string
@@ -120,14 +136,23 @@ const loadDocs = async () => {
     const response = await fetchKnowledgeDocsApi({
       categoryId: filters.categoryId,
       keyword: filters.keyword || undefined,
-      status: filters.status
+      status: filters.status,
+      pageNum: currentPage.value,
+      pageSize: pageSize.value
     })
-    docs.value = response.data
+    docs.value = response.data.records
+    total.value = response.data.total
+    totalPages.value = response.data.totalPages
   } catch {
     ElMessage.error('知识文档加载失败')
   } finally {
     loadingDocs.value = false
   }
+}
+
+const handlePageChange = (page: number) => {
+  currentPage.value = page
+  void loadDocs()
 }
 
 const runSearch = async () => {
@@ -150,6 +175,7 @@ const resetFilters = () => {
   filters.categoryId = undefined
   filters.keyword = ''
   filters.status = undefined
+  currentPage.value = 1
   void loadDocs()
 }
 

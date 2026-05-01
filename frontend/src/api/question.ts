@@ -1,10 +1,12 @@
 import { request } from '@/utils/http'
-import type { QuestionItem } from '@/types/api'
+import type { PageResult, QuestionItem } from '@/types/api'
 
 export interface QuestionQuery {
   categoryId?: number
   difficulty?: QuestionItem['difficulty']
   keyword?: string
+  pageNum?: number
+  pageSize?: number
 }
 
 export type QuestionPayload = Omit<QuestionItem, 'id' | 'categoryName' | 'createTime' | 'updateTime'> & {
@@ -12,7 +14,7 @@ export type QuestionPayload = Omit<QuestionItem, 'id' | 'categoryName' | 'create
 }
 
 export const fetchQuestionsApi = (params?: QuestionQuery) => {
-  return request<QuestionItem[]>({ url: '/question/list', method: 'get', params })
+  return request<PageResult<QuestionItem>>({ url: '/question/list', method: 'get', params })
 }
 
 export const fetchQuestionDetailApi = (id: number) => {

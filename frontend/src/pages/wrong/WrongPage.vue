@@ -6,7 +6,7 @@
         <div>
           <p class="section-kicker">Wrong Book</p>
           <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
-            {{ items.length }} 道错题待复习
+            {{ total }} 道错题待复习
           </h3>
           <p class="mt-2 text-sm leading-6 text-slate-500">
             低分面试题自动沉淀到此处，标记掌握状态后可在计划中安排复习。
@@ -45,81 +45,94 @@
     </section>
 
     <!-- Wrong Items Grid -->
-    <section v-else class="grid gap-4 xl:grid-cols-3 md:grid-cols-2">
-      <article
-        v-for="item in filteredItems"
-        :key="item.id"
-        class="metric-card cursor-pointer"
-        :class="expandedId === item.id ? 'ring-2 ring-accent/20' : ''"
-        @click="toggleExpand(item.id)"
-      >
-        <!-- Header -->
-        <div class="flex items-start justify-between gap-3">
-          <span class="font-semibold text-ink leading-snug">{{ item.title }}</span>
-          <span
-            class="hard-chip shrink-0"
-            :class="masteryChipClass(item.masteryLevel)"
-          >
-            {{ masteryLabel(item.masteryLevel) }}
-          </span>
-        </div>
-
-        <!-- Error Reason (collapsed preview) -->
-        <p class="mt-3 text-sm leading-6 text-slate-600">
-          {{ item.errorReason || '暂无错误原因记录' }}
-        </p>
-
-        <!-- Expanded Detail -->
-        <div v-if="expandedId === item.id" class="mt-4 space-y-3 border-t border-slate-200/60 pt-4">
-          <!-- User Answer -->
-          <div v-if="item.standardAnswer">
-            <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">标准答案</div>
-            <p class="mt-1 text-sm leading-6 text-slate-700">{{ item.standardAnswer }}</p>
+    <section v-else>
+      <div class="grid gap-4 xl:grid-cols-3 md:grid-cols-2">
+        <article
+          v-for="item in filteredItems"
+          :key="item.id"
+          class="metric-card cursor-pointer"
+          :class="expandedId === item.id ? 'ring-2 ring-accent/20' : ''"
+          @click="toggleExpand(item.id)"
+        >
+          <!-- Header -->
+          <div class="flex items-start justify-between gap-3">
+            <span class="font-semibold text-ink leading-snug">{{ item.title }}</span>
+            <span
+              class="hard-chip shrink-0"
+              :class="masteryChipClass(item.masteryLevel)"
+            >
+              {{ masteryLabel(item.masteryLevel) }}
+            </span>
           </div>
 
-          <!-- Mastery Toggle -->
-          <div>
-            <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">掌握状态</div>
-            <div class="mt-2 flex flex-wrap gap-2">
-              <button
-                v-for="level in masteryLevels"
-                :key="level.value"
-                type="button"
-                class="hard-chip cursor-pointer transition-all"
-                :class="item.masteryLevel === level.value
-                  ? '!bg-accent !text-white'
-                  : '!bg-white/80 !text-slate-600 hover:!bg-slate-100'"
-                @click.stop="handleMasteryChange(item.id, level.value)"
+          <!-- Error Reason (collapsed preview) -->
+          <p class="mt-3 text-sm leading-6 text-slate-600">
+            {{ item.errorReason || '暂无错误原因记录' }}
+          </p>
+
+          <!-- Expanded Detail -->
+          <div v-if="expandedId === item.id" class="mt-4 space-y-3 border-t border-slate-200/60 pt-4">
+            <!-- User Answer -->
+            <div v-if="item.standardAnswer">
+              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">标准答案</div>
+              <p class="mt-1 text-sm leading-6 text-slate-700">{{ item.standardAnswer }}</p>
+            </div>
+
+            <!-- Mastery Toggle -->
+            <div>
+              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">掌握状态</div>
+              <div class="mt-2 flex flex-wrap gap-2">
+                <button
+                  v-for="level in masteryLevels"
+                  :key="level.value"
+                  type="button"
+                  class="hard-chip cursor-pointer transition-all"
+                  :class="item.masteryLevel === level.value
+                    ? '!bg-accent !text-white'
+                    : '!bg-white/80 !text-slate-600 hover:!bg-slate-100'"
+                  @click.stop="handleMasteryChange(item.id, level.value)"
+                >
+                  {{ level.label }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-2 pt-1">
+              <RouterLink
+                :to="`/interview`"
+                class="hard-button-secondary !min-h-9 !px-3 !py-1 text-xs"
+                @click.stop
               >
-                {{ level.label }}
+                再次练习
+              </RouterLink>
+              <button
+                type="button"
+                class="text-xs text-slate-400 transition hover:text-red-500"
+                @click.stop="handleDelete(item.id)"
+              >
+                删除
               </button>
             </div>
           </div>
 
-          <!-- Actions -->
-          <div class="flex gap-2 pt-1">
-            <RouterLink
-              :to="`/interview`"
-              class="hard-button-secondary !min-h-9 !px-3 !py-1 text-xs"
-              @click.stop
-            >
-              再次练习
-            </RouterLink>
-            <button
-              type="button"
-              class="text-xs text-slate-400 transition hover:text-red-500"
-              @click.stop="handleDelete(item.id)"
-            >
-              删除
-            </button>
+          <!-- Collapsed hint -->
+          <div v-else class="mt-3 text-xs tracking-[0.2em] text-slate-400">
+            点击展开详情
           </div>
-        </div>
+        </article>
+      </div>
 
-        <!-- Collapsed hint -->
-        <div v-else class="mt-3 text-xs tracking-[0.2em] text-slate-400">
-          点击展开详情
-        </div>
-      </article>
+      <!-- Pagination -->
+      <div v-if="totalPages > 1" class="mt-6 flex justify-center">
+        <el-pagination
+          v-model:current-page="currentPage"
+          :page-size="pageSize"
+          :total="total"
+          layout="prev, pager, next"
+          @current-change="handlePageChange"
+        />
+      </div>
     </section>
   </div>
 </template>
@@ -134,6 +147,10 @@ const items = ref<WrongQuestionItem[]>([])
 const loading = ref(true)
 const expandedId = ref<number | null>(null)
 const filterMastery = ref<string>('')
+const currentPage = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
+const totalPages = ref(0)
 
 const masteryLevels = [
   { value: 'not_started' as const, label: '未开始' },
@@ -149,13 +166,20 @@ const filteredItems = computed(() => {
 const loadData = async () => {
   loading.value = true
   try {
-    const response = await fetchWrongListApi()
-    items.value = response.data
+    const response = await fetchWrongListApi(currentPage.value, pageSize.value)
+    items.value = response.data.records
+    total.value = response.data.total
+    totalPages.value = response.data.totalPages
   } catch {
     ElMessage.error('错题列表加载失败')
   } finally {
     loading.value = false
   }
+}
+
+const handlePageChange = (page: number) => {
+  currentPage.value = page
+  void loadData()
 }
 
 const toggleExpand = (id: number) => {
