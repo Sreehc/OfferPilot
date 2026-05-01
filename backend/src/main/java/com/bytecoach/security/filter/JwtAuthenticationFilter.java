@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -20,8 +21,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    private static final String BLACKLIST_PREFIX = "jwt:blacklist:";
+
     private final JwtTokenUtil jwtTokenUtil;
     private final DbUserDetailsService userDetailsService;
+    private final StringRedisTemplate redisTemplate;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -29,6 +33,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = jwtTokenUtil.resolveToken(request.getHeader("Authorization"));
         if (token != null && jwtTokenUtil.validateToken(token)
                 && SecurityContextHolder.getContext().getAuthentication() == null) {
+            // Check if token is blacklisted
+            if (isTokenBlacklisted(token)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
             Claims claims = jwtTokenUtil.parseClaims(token);
             UserDetails userDetails = userDetailsService.loadUserByUsername(claims.getSubject());
             UsernamePasswordAuthenticationToken authenticationToken =
@@ -38,5 +47,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
         filterChain.doFilter(request, response);
     }
-}
 
+    private boolean isTokenBlacklisted(String token) {
+        try {
+            return Boolean.TRUE.equals(redisTemplate.hasKey(BLACKLIST_PREFIX + token));
+        } catch (Exception e) {
+            // Redis unavailable — degrade gracefully (allow the request)
+            return false;
+        }
+    }
+}

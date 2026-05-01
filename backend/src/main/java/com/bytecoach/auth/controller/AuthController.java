@@ -31,8 +31,8 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public Result<Void> logout() {
-        authService.logout();
+    public Result<Void> logout(@org.springframework.web.bind.annotation.RequestHeader(value = "Authorization", required = false) String authorization) {
+        authService.logout(authorization);
         return Result.success();
     }
 

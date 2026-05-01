@@ -16,6 +16,8 @@ bytecoach:
   security:
     jwt-secret: ${BYTECOACH_JWT_SECRET:ByteCoachJwtSecretByteCoachJwtSecret123456}
     jwt-expire-seconds: ${BYTECOACH_JWT_EXPIRE_SECONDS:86400}
+  cors:
+    origins: ${BYTECOACH_CORS_ORIGINS:http://localhost:5173}
   ai:
     llm:
       enabled: ${BYTECOACH_LLM_ENABLED:false}

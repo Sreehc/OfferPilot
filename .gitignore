@@ -5,5 +5,8 @@ frontend/dist/
 .DS_Store
 *.iml
 *.log
-docs/
-deploy/
+
+# Production secrets — never commit
+backend/src/main/resources/application-prod.yml
+.env.production
+.env.local

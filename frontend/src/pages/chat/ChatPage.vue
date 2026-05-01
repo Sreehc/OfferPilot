@@ -104,6 +104,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 import { computed, onMounted, ref } from 'vue'
 import { deleteChatSessionApi, fetchChatMessagesApi, fetchChatSessionsApi, sendChatApi } from '@/api/chat'
 import type { ChatMessageItem, ChatSessionItem } from '@/types/api'
@@ -196,7 +197,7 @@ const submitChat = async () => {
   }
 }
 
-const renderMarkdown = (value: string) => marked.parse(value || '') as string
+const renderMarkdown = (value: string) => DOMPurify.sanitize(marked.parse(value || '') as string)
 
 onMounted(async () => {
   await loadSessions(true)

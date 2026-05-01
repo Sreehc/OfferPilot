@@ -9,5 +9,5 @@ public interface AuthService {
 
     LoginResponse login(LoginRequest request);
 
-    void logout();
+    void logout(String authorizationHeader);
 }
