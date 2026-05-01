@@ -7,15 +7,15 @@ import lombok.Data;
 @Data
 public class RegisterRequest {
     @NotBlank(message = "cannot be blank")
-    @Size(min = 4, max = 32, message = "length must be between 4 and 32")
+    @Size(min = 3, max = 64, message = "length must be between 3 and 64")
     private String username;
 
     @NotBlank(message = "cannot be blank")
-    @Size(min = 6, max = 32, message = "length must be between 6 and 32")
+    @Size(min = 6, max = 128, message = "length must be between 6 and 128")
     private String password;
 
     @NotBlank(message = "cannot be blank")
-    @Size(max = 32, message = "length must be less than or equal to 32")
+    @Size(max = 64, message = "length must be less than or equal to 64")
     private String nickname;
 }
 

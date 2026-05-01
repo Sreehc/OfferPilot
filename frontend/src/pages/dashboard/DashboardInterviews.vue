@@ -1,0 +1,67 @@
+<template>
+  <article class="paper-panel p-6">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <p class="section-kicker">Recent Interviews</p>
+        <h3 class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-ink">最近面试结果</h3>
+      </div>
+      <RouterLink class="accent-link text-sm font-semibold" to="/interview">开始下一场</RouterLink>
+    </div>
+
+    <div v-if="interviews.length" class="mt-6 space-y-3">
+      <div
+        v-for="interview in interviews"
+        :key="interview.sessionId"
+        class="surface-card surface-card-hover p-4"
+      >
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs uppercase tracking-[0.28em] text-slate-500">{{ interview.direction }}</div>
+            <div class="mt-2 text-lg font-semibold text-ink">{{ interviewTitle(interview) }}</div>
+          </div>
+          <div class="text-right">
+            <div class="text-3xl font-semibold tracking-[-0.03em] text-ink">{{ formatScore(interview.totalScore) }}</div>
+            <div class="mt-1 text-xs uppercase tracking-[0.22em] text-slate-500">{{ statusLabel(interview.status) }}</div>
+          </div>
+        </div>
+        <div class="mt-3 text-sm text-slate-500">{{ formatDate(interview.finishedAt) }}</div>
+      </div>
+    </div>
+
+    <div v-else class="empty-state-card mt-6">
+      <div class="font-semibold text-ink">还没有面试记录</div>
+      <p class="mt-2 text-sm leading-6 text-slate-500">
+        先完成一场 3-5 题的模拟面试，首页才会开始积累最近结果和平均分。
+      </p>
+    </div>
+  </article>
+</template>
+
+<script setup lang="ts">
+import type { RecentInterviewItem } from '@/types/api'
+
+defineProps<{
+  interviews: RecentInterviewItem[]
+}>()
+
+const formatScore = (score: number): string => {
+  return Number.isInteger(score) ? String(score) : score.toFixed(2)
+}
+
+const formatDate = (dateTime: string): string => {
+  return new Intl.DateTimeFormat('zh-CN', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(new Date(dateTime))
+}
+
+const interviewTitle = (interview: RecentInterviewItem): string => {
+  return interview.status === 'finished' ? '已完成模拟面试' : '进行中的模拟面试'
+}
+
+const statusLabel = (status: string): string => {
+  return status === 'finished' ? 'finished' : status
+}
+</script>

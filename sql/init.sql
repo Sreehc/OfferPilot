@@ -137,6 +137,7 @@ CREATE TABLE IF NOT EXISTS wrong_question (
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     KEY idx_wrong_question_user_id (user_id),
+    UNIQUE KEY uk_user_question (user_id, question_id),
     CONSTRAINT ck_wrong_source_type CHECK (source_type IN ('interview', 'chat'))
 );
 

@@ -57,6 +57,7 @@ public class DefaultAiOrchestratorService implements AiOrchestratorService {
         String userPrompt = buildScoreUserPrompt(request);
         String rawContent;
 
+        log.info("LLM scoring request: questionId={}, questionTitle={}", request.getQuestionId(), request.getQuestionTitle());
         try {
             AiChatResponse scoreResponse = llmGateway.chatCompletion(AiChatRequest.builder()
                     .systemPrompt(promptTemplateService.interviewScorePrompt())
@@ -64,12 +65,15 @@ public class DefaultAiOrchestratorService implements AiOrchestratorService {
                     .references(List.of())
                     .build());
             rawContent = scoreResponse.getContent();
+            log.debug("LLM scoring raw response length: {}", rawContent.length());
         } catch (RuntimeException exception) {
             log.warn("LLM call failed for interview scoring, using fallback: {}", exception.getMessage());
             rawContent = "";
         }
 
-        return parseScoreResponse(rawContent, request);
+        InterviewAnswerVO result = parseScoreResponse(rawContent, request);
+        log.info("Interview score result: questionId={}, score={}, addedToWrongBook={}", request.getQuestionId(), result.getScore(), result.getAddedToWrongBook());
+        return result;
     }
 
     private String buildScoreUserPrompt(InterviewAnswerRequest request) {
@@ -155,15 +159,19 @@ public class DefaultAiOrchestratorService implements AiOrchestratorService {
     }
 
     private AiChatResponse callModel(String systemPrompt, String userPrompt, List<KnowledgeSearchVO.Reference> references) {
+        log.info("LLM chat request: mode={}, refCount={}, promptLength={}", references.isEmpty() ? "chat" : "rag", references.size(), userPrompt.length());
         try {
-            return llmGateway.chatCompletion(AiChatRequest.builder()
+            AiChatResponse response = llmGateway.chatCompletion(AiChatRequest.builder()
                     .systemPrompt(systemPrompt)
                     .userPrompt(userPrompt)
                     .references(references.stream()
                             .map(reference -> reference.getDocTitle() + ": " + reference.getSnippet())
                             .toList())
                     .build());
+            log.debug("LLM chat response length: {}", response.getContent().length());
+            return response;
         } catch (RuntimeException exception) {
+            log.warn("LLM chat call failed, using fallback: {}", exception.getMessage());
             return AiChatResponse.builder().content("").raw("fallback").build();
         }
     }

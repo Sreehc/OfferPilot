@@ -11,185 +11,59 @@
     <section class="paper-panel p-6">
       <el-tabs v-model="activeTab">
         <el-tab-pane label="分类管理" name="category">
-          <div class="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
-            <div class="surface-muted p-4">
-              <div class="text-sm font-semibold text-ink">{{ categoryForm.id ? '编辑分类' : '新增分类' }}</div>
-              <div class="mt-4 space-y-3">
-                <el-input v-model="categoryForm.name" placeholder="分类名称" size="large" />
-                <el-select v-model="categoryForm.type" placeholder="分类类型" size="large" class="w-full">
-                  <el-option label="question" value="question" />
-                  <el-option label="knowledge" value="knowledge" />
-                  <el-option label="interview" value="interview" />
-                </el-select>
-                <el-input-number v-model="categoryForm.sortOrder" :min="0" class="w-full" />
-              </div>
-              <div class="mt-4 flex gap-3">
-                <el-button :loading="categorySaving" type="primary" class="action-button" @click="saveCategory">
-                  {{ categoryForm.id ? '保存修改' : '新增分类' }}
-                </el-button>
-                <el-button class="hard-button-secondary" @click="resetCategoryForm">重置</el-button>
-              </div>
-            </div>
-
-            <div class="space-y-3">
-              <article v-for="item in categories" :key="item.id" class="surface-card p-4">
-                <div class="flex items-start justify-between gap-3">
-                  <div>
-                    <div class="font-semibold text-ink">{{ item.name }}</div>
-                    <div class="mt-1 text-xs uppercase tracking-[0.22em] text-slate-500">{{ item.type }}</div>
-                  </div>
-                  <div class="flex gap-2">
-                    <button type="button" class="accent-link text-sm font-semibold" @click="editCategory(item)">编辑</button>
-                    <button type="button" class="text-sm text-slate-500 transition hover:text-red-500" @click="removeCategory(item.id)">删除</button>
-                  </div>
-                </div>
-              </article>
-            </div>
-          </div>
+          <AdminCategoryTab
+            :categories="categories"
+            :form="categoryForm"
+            :saving="categorySaving"
+            @save="saveCategory"
+            @edit="editCategory"
+            @remove="removeCategory"
+            @reset="resetCategoryForm"
+          />
         </el-tab-pane>
 
         <el-tab-pane label="题库管理" name="question">
-          <div class="grid gap-4 xl:grid-cols-[380px_minmax(0,1fr)]">
-            <div class="surface-muted p-4">
-              <div class="text-sm font-semibold text-ink">{{ questionForm.id ? '编辑题目' : '新增题目' }}</div>
-              <div class="mt-4 space-y-3">
-                <el-input v-model="questionForm.title" placeholder="题目标题" size="large" />
-                <el-select v-model="questionForm.categoryId" placeholder="题目分类" size="large" class="w-full">
-                  <el-option v-for="item in questionCategories" :key="item.id" :label="item.name" :value="item.id" />
-                </el-select>
-                <el-select v-model="questionForm.difficulty" placeholder="难度" size="large" class="w-full">
-                  <el-option label="easy" value="easy" />
-                  <el-option label="medium" value="medium" />
-                  <el-option label="hard" value="hard" />
-                </el-select>
-                <el-input v-model="questionForm.tags" placeholder="标签，例如：Spring,AOP" size="large" />
-                <el-input v-model="questionForm.standardAnswer" type="textarea" :rows="5" placeholder="标准答案" />
-              </div>
-              <div class="mt-4 flex gap-3">
-                <el-button :loading="questionSaving" type="primary" class="action-button" @click="saveQuestion">
-                  {{ questionForm.id ? '保存修改' : '新增题目' }}
-                </el-button>
-                <el-button class="hard-button-secondary" @click="resetQuestionForm">重置</el-button>
-              </div>
-            </div>
-
-            <div class="space-y-4">
-              <div class="grid gap-3 md:grid-cols-3">
-                <el-select v-model="questionFilter.categoryId" clearable placeholder="分类筛选" size="large">
-                  <el-option v-for="item in questionCategories" :key="item.id" :label="item.name" :value="item.id" />
-                </el-select>
-                <el-select v-model="questionFilter.difficulty" clearable placeholder="难度筛选" size="large">
-                  <el-option label="easy" value="easy" />
-                  <el-option label="medium" value="medium" />
-                  <el-option label="hard" value="hard" />
-                </el-select>
-                <el-input v-model="questionFilter.keyword" clearable placeholder="关键字" size="large" />
-              </div>
-
-              <div class="flex gap-3">
-                <el-button :loading="questionLoading" type="primary" class="action-button" @click="loadQuestions">刷新题库</el-button>
-                <el-button class="hard-button-secondary" @click="resetQuestionFilter">重置筛选</el-button>
-              </div>
-
-              <article v-for="item in questions" :key="item.id" class="surface-card p-4">
-                <div class="flex items-start justify-between gap-4">
-                  <div class="min-w-0">
-                    <div class="font-semibold text-ink">{{ item.title }}</div>
-                    <div class="mt-2 flex flex-wrap gap-2 text-xs uppercase tracking-[0.2em] text-slate-500">
-                      <span>{{ item.categoryName }}</span>
-                      <span>{{ item.difficulty }}</span>
-                    </div>
-                    <p class="mt-3 text-sm leading-6 text-slate-600">{{ item.standardAnswer || '暂无标准答案' }}</p>
-                  </div>
-                  <div class="flex shrink-0 gap-2">
-                    <button type="button" class="accent-link text-sm font-semibold" @click="editQuestion(item)">编辑</button>
-                    <button type="button" class="text-sm text-slate-500 transition hover:text-red-500" @click="removeQuestion(item.id)">删除</button>
-                  </div>
-                </div>
-              </article>
-
-              <div v-if="questionTotalPages > 1" class="mt-4 flex justify-center">
-                <el-pagination
-                  v-model:current-page="questionPage"
-                  :page-size="questionPageSize"
-                  :total="questionTotal"
-                  layout="prev, pager, next"
-                  @current-change="handleQuestionPageChange"
-                />
-              </div>
-            </div>
-          </div>
+          <AdminQuestionTab
+            v-model:current-page="questionPage"
+            :questions="questions"
+            :categories="questionCategories"
+            :form="questionForm"
+            :filter="questionFilter"
+            :saving="questionSaving"
+            :loading="questionLoading"
+            :page-size="questionPageSize"
+            :total="questionTotal"
+            :total-pages="questionTotalPages"
+            @save="saveQuestion"
+            @edit="editQuestion"
+            @remove="removeQuestion"
+            @reset="resetQuestionForm"
+            @filter-reset="resetQuestionFilter"
+            @load="loadQuestions"
+            @page-change="handleQuestionPageChange"
+          />
         </el-tab-pane>
 
         <el-tab-pane label="文档管理" name="knowledge">
-          <div class="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
-            <div class="surface-muted p-4">
-              <div class="text-sm font-semibold text-ink">导入内置知识资料</div>
-              <div class="mt-4 space-y-3">
-                <div v-for="seed in builtInSeeds" :key="seed.seedKey" class="surface-card p-4">
-                  <div class="font-semibold text-ink">{{ seed.title }}</div>
-                  <p class="mt-2 text-sm leading-6 text-slate-600">{{ seed.summary }}</p>
-                  <div class="mt-3 flex items-center justify-between">
-                    <span class="text-xs uppercase tracking-[0.2em] text-slate-400">{{ seed.seedKey }}</span>
-                    <el-button :loading="knowledgeImporting === seed.seedKey" type="primary" class="action-button !min-h-9 !px-3" @click="importSeed(seed.seedKey)">
-                      导入
-                    </el-button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="space-y-4">
-              <div class="grid gap-3 md:grid-cols-3">
-                <el-select v-model="knowledgeFilter.categoryId" clearable placeholder="知识分类" size="large">
-                  <el-option v-for="item in knowledgeCategories" :key="item.id" :label="item.name" :value="item.id" />
-                </el-select>
-                <el-select v-model="knowledgeFilter.status" clearable placeholder="状态筛选" size="large">
-                  <el-option label="draft" value="draft" />
-                  <el-option label="parsed" value="parsed" />
-                  <el-option label="indexed" value="indexed" />
-                </el-select>
-                <el-input v-model="knowledgeFilter.keyword" clearable placeholder="标题/摘要关键字" size="large" />
-              </div>
-
-              <div class="flex gap-3">
-                <el-button :loading="knowledgeLoading" type="primary" class="action-button" @click="loadKnowledgeDocs">刷新文档</el-button>
-                <el-button class="hard-button-secondary" @click="resetKnowledgeFilter">重置筛选</el-button>
-              </div>
-
-              <article v-for="doc in knowledgeDocs" :key="doc.id" class="surface-card p-4">
-                <div class="flex items-start justify-between gap-4">
-                  <div>
-                    <div class="font-semibold text-ink">{{ doc.title }}</div>
-                    <div class="mt-2 flex flex-wrap gap-2 text-xs uppercase tracking-[0.2em] text-slate-500">
-                      <span>{{ doc.categoryName || '未分配分类' }}</span>
-                      <span>{{ doc.status }}</span>
-                      <span>chunks {{ doc.chunkCount ?? 0 }}</span>
-                    </div>
-                    <p class="mt-3 text-sm leading-6 text-slate-600">{{ doc.summary || '暂无摘要' }}</p>
-                  </div>
-                  <div class="flex shrink-0 gap-2">
-                    <el-button :loading="knowledgeActionId === `rechunk-${doc.id}`" class="hard-button-secondary !min-h-9 !px-3" @click="rechunkDoc(doc.id)">
-                      重切分
-                    </el-button>
-                    <el-button :loading="knowledgeActionId === `reindex-${doc.id}`" type="primary" class="action-button !min-h-9 !px-3" @click="reindexDoc(doc.id)">
-                      重建索引
-                    </el-button>
-                  </div>
-                </div>
-              </article>
-
-              <div v-if="knowledgeTotalPages > 1" class="mt-4 flex justify-center">
-                <el-pagination
-                  v-model:current-page="knowledgePage"
-                  :page-size="knowledgePageSize"
-                  :total="knowledgeTotal"
-                  layout="prev, pager, next"
-                  @current-change="handleKnowledgePageChange"
-                />
-              </div>
-            </div>
-          </div>
+          <AdminKnowledgeTab
+            v-model:current-page="knowledgePage"
+            :docs="knowledgeDocs"
+            :categories="knowledgeCategories"
+            :filter="knowledgeFilter"
+            :seeds="builtInSeeds"
+            :loading="knowledgeLoading"
+            :importing="knowledgeImporting"
+            :action-id="knowledgeActionId"
+            :page-size="knowledgePageSize"
+            :total="knowledgeTotal"
+            :total-pages="knowledgeTotalPages"
+            @import="importSeed"
+            @rechunk="rechunkDoc"
+            @reindex="reindexDoc"
+            @filter-reset="resetKnowledgeFilter"
+            @load="loadKnowledgeDocs"
+            @page-change="handleKnowledgePageChange"
+          />
         </el-tab-pane>
       </el-tabs>
     </section>
@@ -199,6 +73,9 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import AdminCategoryTab from './AdminCategoryTab.vue'
+import AdminQuestionTab from './AdminQuestionTab.vue'
+import AdminKnowledgeTab from './AdminKnowledgeTab.vue'
 import { addCategoryApi, deleteCategoryApi, fetchCategoriesApi, updateCategoryApi } from '@/api/category'
 import { fetchKnowledgeDocsApi, importKnowledgeSeedApi, rechunkKnowledgeDocApi, reindexKnowledgeDocApi } from '@/api/knowledge'
 import { addQuestionApi, deleteQuestionApi, fetchQuestionsApi, updateQuestionApi } from '@/api/question'

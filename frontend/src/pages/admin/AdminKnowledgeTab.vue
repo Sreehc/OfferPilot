@@ -1,0 +1,111 @@
+<template>
+  <div class="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
+    <div class="surface-muted p-4">
+      <div class="text-sm font-semibold text-ink">导入内置知识资料</div>
+      <div class="mt-4 space-y-3">
+        <div v-for="seed in seeds" :key="seed.seedKey" class="surface-card p-4">
+          <div class="font-semibold text-ink">{{ seed.title }}</div>
+          <p class="mt-2 text-sm leading-6 text-slate-600">{{ seed.summary }}</p>
+          <div class="mt-3 flex items-center justify-between">
+            <span class="text-xs uppercase tracking-[0.2em] text-slate-400">{{ seed.seedKey }}</span>
+            <el-button :loading="importing === seed.seedKey" type="primary" class="action-button !min-h-9 !px-3" @click="emit('import', seed.seedKey)">
+              导入
+            </el-button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-4">
+      <div class="grid gap-3 md:grid-cols-3">
+        <el-select v-model="filter.categoryId" clearable placeholder="知识分类" size="large">
+          <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
+        </el-select>
+        <el-select v-model="filter.status" clearable placeholder="状态筛选" size="large">
+          <el-option label="draft" value="draft" />
+          <el-option label="parsed" value="parsed" />
+          <el-option label="indexed" value="indexed" />
+        </el-select>
+        <el-input v-model="filter.keyword" clearable placeholder="标题/摘要关键字" size="large" />
+      </div>
+
+      <div class="flex gap-3">
+        <el-button :loading="loading" type="primary" class="action-button" @click="emit('load')">刷新文档</el-button>
+        <el-button class="hard-button-secondary" @click="emit('filterReset')">重置筛选</el-button>
+      </div>
+
+      <article v-for="doc in docs" :key="doc.id" class="surface-card p-4">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <div class="font-semibold text-ink">{{ doc.title }}</div>
+            <div class="mt-2 flex flex-wrap gap-2 text-xs uppercase tracking-[0.2em] text-slate-500">
+              <span>{{ doc.categoryName || '未分配分类' }}</span>
+              <span>{{ doc.status }}</span>
+              <span>chunks {{ doc.chunkCount ?? 0 }}</span>
+            </div>
+            <p class="mt-3 text-sm leading-6 text-slate-600">{{ doc.summary || '暂无摘要' }}</p>
+          </div>
+          <div class="flex shrink-0 gap-2">
+            <el-button :loading="actionId === `rechunk-${doc.id}`" class="hard-button-secondary !min-h-9 !px-3" @click="emit('rechunk', doc.id)">
+              重切分
+            </el-button>
+            <el-button :loading="actionId === `reindex-${doc.id}`" type="primary" class="action-button !min-h-9 !px-3" @click="emit('reindex', doc.id)">
+              重建索引
+            </el-button>
+          </div>
+        </div>
+      </article>
+
+      <div v-if="totalPages > 1" class="mt-4 flex justify-center">
+        <el-pagination
+          v-model:current-page="currentPage"
+          :page-size="pageSize"
+          :total="total"
+          layout="prev, pager, next"
+          @current-change="(page: number) => emit('pageChange', page)"
+        />
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import type { CategoryItem, KnowledgeDocItem } from '@/types/api'
+
+interface KnowledgeFilter {
+  categoryId?: number
+  status?: KnowledgeDocItem['status']
+  keyword: string
+}
+
+interface SeedItem {
+  seedKey: string
+  title: string
+  summary: string
+}
+
+const props = defineProps<{
+  docs: KnowledgeDocItem[]
+  categories: CategoryItem[]
+  filter: KnowledgeFilter
+  seeds: SeedItem[]
+  loading: boolean
+  importing: string | null
+  actionId: string | null
+  currentPage: number
+  pageSize: number
+  total: number
+  totalPages: number
+}>()
+
+const currentPage = defineModel<number>('currentPage', { default: 1 })
+
+const emit = defineEmits<{
+  import: [seedKey: string]
+  rechunk: [id: number]
+  reindex: [id: number]
+  filterReset: []
+  load: []
+  pageChange: [page: number]
+}>()
+</script>
