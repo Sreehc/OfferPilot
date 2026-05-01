@@ -106,8 +106,18 @@ npm run dev
 
 ## 当前实现状态
 
-- 已完成：monorepo 结构、后端公共能力、`JWT` 鉴权骨架、`LLM gateway` 接口层、前端路由与登录态骨架、`/admin` 路由壳、初始化 SQL、部署样例
-- 当前接口大多为占位实现，便于后续按既定顺序接入数据库和真实业务逻辑
+- **认证**：注册、登录、登出（JWT + Redis 黑名单）
+- **智能问答**：Chat / RAG 两种模式，支持知识库引用
+- **模拟面试**：AI 评分、点评、标准答案、追问，自动入错题本
+- **错题本**：自动沉淀低分题，掌握状态三态切换
+- **学习计划**：基于薄弱点 AI 生成 N 天计划，任务状态追踪
+- **数据看板**：学习次数、平均分、错题数、计划完成率、薄弱点雷达图
+- **知识库**：内置种子资料导入、切分、检索
+- **管理后台**：分类、题库、知识文档 CRUD（ADMIN 角色）
+- **安全**：JWT 鉴权、CORS、XSS 防护、DTO 参数校验
+- **性能**：Redis 缓存、事务范围优化、DB 级预过滤、LLM 超时重试
+- **代码质量**：TypeScript strict 模式、Checkstyle、日志轮转、全局错误边界
+- **部署**：Dockerfile + docker-compose 生产方案、Actuator 健康检查
 
 ## 推荐开发顺序
 
@@ -119,6 +129,36 @@ npm run dev
 6. `Wrong`
 7. `Plan`
 8. `/admin` 最小管理闭环
+
+## 生产部署
+
+```bash
+# 设置环境变量
+export BYTECOACH_JWT_SECRET=your-secret-key
+export BYTECOACH_DB_PASSWORD=your-db-password
+export BYTECOACH_CORS_ORIGINS=https://your-domain.com
+export BYTECOACH_LLM_API_KEY=your-api-key
+
+# 一键启动
+cd deploy
+docker compose -f docker-compose.prod.yml up -d
+```
+
+访问 `http://localhost` 即可打开前端，API 通过 Nginx 反向代理到后端。
+
+健康检查：`http://localhost:8080/actuator/health`
+
+## 运行测试
+
+```bash
+# 后端测试
+cd backend
+mvn test
+
+# 前端测试
+cd frontend
+npm run test
+```
 
 ## 相关文档
 

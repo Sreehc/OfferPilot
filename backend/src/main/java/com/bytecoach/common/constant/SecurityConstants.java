@@ -12,6 +12,7 @@ public final class SecurityConstants {
             "/api/auth/register",
             "/api/auth/login",
             "/api/auth/ping",
+            "/actuator/health",
             "/doc.html",
             "/swagger-ui.html",
             "/swagger-ui/**",

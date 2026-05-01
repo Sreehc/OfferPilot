@@ -1,15 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import AppLayout from '@/layouts/AppLayout.vue'
-import AdminPage from '@/pages/admin/AdminPage.vue'
-import LoginPage from '@/pages/auth/LoginPage.vue'
-import RegisterPage from '@/pages/auth/RegisterPage.vue'
-import ChatPage from '@/pages/chat/ChatPage.vue'
-import DashboardPage from '@/pages/dashboard/DashboardPage.vue'
-import InterviewPage from '@/pages/interview/InterviewPage.vue'
-import KnowledgePage from '@/pages/knowledge/KnowledgePage.vue'
-import NotFoundPage from '@/pages/NotFoundPage.vue'
-import PlanPage from '@/pages/plan/PlanPage.vue'
-import WrongPage from '@/pages/wrong/WrongPage.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const pageMeta = {
@@ -55,50 +44,50 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      component: AppLayout,
+      component: () => import('@/layouts/AppLayout.vue'),
       meta: { requiresAuth: true },
       redirect: '/dashboard',
       children: [
         {
           path: 'dashboard',
           name: 'dashboard',
-          component: DashboardPage,
+          component: () => import('@/pages/dashboard/DashboardPage.vue'),
           meta: pageMeta.dashboard
         },
         {
           path: 'chat',
           name: 'chat',
-          component: ChatPage,
+          component: () => import('@/pages/chat/ChatPage.vue'),
           meta: pageMeta.chat
         },
         {
           path: 'knowledge',
           name: 'knowledge',
-          component: KnowledgePage,
+          component: () => import('@/pages/knowledge/KnowledgePage.vue'),
           meta: pageMeta.knowledge
         },
         {
           path: 'interview',
           name: 'interview',
-          component: InterviewPage,
+          component: () => import('@/pages/interview/InterviewPage.vue'),
           meta: pageMeta.interview
         },
         {
           path: 'wrong',
           name: 'wrong',
-          component: WrongPage,
+          component: () => import('@/pages/wrong/WrongPage.vue'),
           meta: pageMeta.wrong
         },
         {
           path: 'plan',
           name: 'plan',
-          component: PlanPage,
+          component: () => import('@/pages/plan/PlanPage.vue'),
           meta: pageMeta.plan
         },
         {
           path: 'admin',
           name: 'admin',
-          component: AdminPage,
+          component: () => import('@/pages/admin/AdminPage.vue'),
           meta: pageMeta.admin
         }
       ]
@@ -106,19 +95,19 @@ const router = createRouter({
     {
       path: '/login',
       name: 'login',
-      component: LoginPage,
+      component: () => import('@/pages/auth/LoginPage.vue'),
       meta: { guestOnly: true }
     },
     {
       path: '/register',
       name: 'register',
-      component: RegisterPage,
+      component: () => import('@/pages/auth/RegisterPage.vue'),
       meta: { guestOnly: true }
     },
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
-      component: NotFoundPage
+      component: () => import('@/pages/NotFoundPage.vue')
     }
   ]
 })

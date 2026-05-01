@@ -1,0 +1,43 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${BYTECOACH_DB_HOST:mysql}:${BYTECOACH_DB_PORT:3306}/${BYTECOACH_DB_NAME:bytecoach}?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: ${BYTECOACH_DB_USERNAME:bytecoach}
+    password: ${BYTECOACH_DB_PASSWORD:?BYTECOACH_DB_PASSWORD is required}
+  data:
+    redis:
+      host: ${BYTECOACH_REDIS_HOST:redis}
+      port: ${BYTECOACH_REDIS_PORT:6379}
+      database: ${BYTECOACH_REDIS_DB:0}
+      password: ${BYTECOACH_REDIS_PASSWORD:}
+      timeout: 5s
+
+bytecoach:
+  security:
+    jwt-secret: ${BYTECOACH_JWT_SECRET:?BYTECOACH_JWT_SECRET is required}
+    jwt-expire-seconds: ${BYTECOACH_JWT_EXPIRE_SECONDS:86400}
+  cors:
+    origins: ${BYTECOACH_CORS_ORIGINS:?BYTECOACH_CORS_ORIGINS is required}
+  ai:
+    llm:
+      enabled: ${BYTECOACH_LLM_ENABLED:true}
+      base-url: ${BYTECOACH_LLM_BASE_URL:https://api.openai.com/v1}
+      api-key: ${BYTECOACH_LLM_API_KEY:?BYTECOACH_LLM_API_KEY is required}
+      model: ${BYTECOACH_LLM_MODEL:gpt-4.1-mini}
+      timeout-seconds: ${BYTECOACH_LLM_TIMEOUT_SECONDS:30}
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    # Disable SQL logging in production
+    log-impl: org.apache.ibatis.logging.nop.NopLoggingImpl
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+

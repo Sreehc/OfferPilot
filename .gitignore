@@ -7,6 +7,5 @@ frontend/dist/
 *.log
 
 # Production secrets — never commit
-backend/src/main/resources/application-prod.yml
 .env.production
 .env.local

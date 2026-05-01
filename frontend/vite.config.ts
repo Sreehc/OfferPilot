@@ -20,6 +20,18 @@ export default defineConfig({
       }
     }
   },
+  build: {
+    target: 'es2020',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'element-plus': ['element-plus'],
+          'echarts': ['echarts'],
+          'vendor': ['vue', 'vue-router', 'pinia', 'axios']
+        }
+      }
+    }
+  },
   test: {
     globals: true,
     environment: 'jsdom'
