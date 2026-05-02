@@ -17,12 +17,12 @@
           @drop.prevent="handleDrop"
         >
           <div class="text-sm text-slate-500">拖拽文件到此处，或点击选择</div>
-          <div class="text-xs text-slate-400">支持 .md / .txt，单文件最大 5MB</div>
+          <div class="text-xs text-slate-400">支持 .md / .txt / .pdf，单文件最大 20MB</div>
           <el-upload
             :show-file-list="false"
             :before-upload="handleBeforeUpload"
             :http-request="handleUpload"
-            accept=".md,.markdown,.txt,.text"
+            accept=".md,.markdown,.txt,.text,.pdf"
           >
             <el-button :loading="uploading" type="primary" size="large" class="action-button">
               选择文件上传
@@ -237,7 +237,7 @@ const handlePageChange = (page: number) => {
 }
 
 const handleBeforeUpload = (file: File) => {
-  const maxSize = 5 * 1024 * 1024
+  const maxSize = 20 * 1024 * 1024
   if (file.size > maxSize) {
     ElMessage.error('文件大小不能超过 5MB')
     return false

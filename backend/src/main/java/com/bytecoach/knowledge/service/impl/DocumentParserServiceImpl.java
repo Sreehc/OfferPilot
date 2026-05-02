@@ -12,6 +12,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tika.metadata.Metadata;
+import org.apache.tika.parser.AutoDetectParser;
+import org.apache.tika.parser.ParseContext;
+import org.apache.tika.sax.BodyContentHandler;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -19,21 +23,31 @@ import org.springframework.util.StringUtils;
 @Service
 public class DocumentParserServiceImpl implements DocumentParserService {
 
-    private static final Set<String> SUPPORTED_EXTENSIONS = Set.of("md", "markdown", "txt", "text");
+    private static final Set<String> SUPPORTED_EXTENSIONS = Set.of("md", "markdown", "txt", "text", "pdf");
     private static final int MAX_CHUNK_SIZE = 800;
     private static final int MIN_CHUNK_SIZE = 50;
+    private static final int TIKA_MAX_CHARS = 1_000_000; // 1MB text limit for Tika extraction
 
     @Override
     public List<String> parse(InputStream inputStream, String fileName) {
         String extension = getExtension(fileName);
-        String content = readAll(inputStream);
-        if (!StringUtils.hasText(content)) {
-            return List.of();
-        }
         return switch (extension) {
-            case "md", "markdown" -> splitMarkdown(content);
-            case "txt", "text" -> splitPlainText(content);
-            default -> splitPlainText(content);
+            case "md", "markdown" -> {
+                String content = readAll(inputStream);
+                yield StringUtils.hasText(content) ? splitMarkdown(content) : List.of();
+            }
+            case "txt", "text" -> {
+                String content = readAll(inputStream);
+                yield StringUtils.hasText(content) ? splitPlainText(content) : List.of();
+            }
+            case "pdf" -> {
+                String content = extractPdfText(inputStream);
+                yield StringUtils.hasText(content) ? splitPlainText(content) : List.of();
+            }
+            default -> {
+                String content = readAll(inputStream);
+                yield StringUtils.hasText(content) ? splitPlainText(content) : List.of();
+            }
         };
     }
 
@@ -48,6 +62,24 @@ public class DocumentParserServiceImpl implements DocumentParserService {
     }
 
     /**
+     * Extract text from PDF using Apache Tika.
+     */
+    private String extractPdfText(InputStream inputStream) {
+        try {
+            BodyContentHandler handler = new BodyContentHandler(TIKA_MAX_CHARS);
+            Metadata metadata = new Metadata();
+            AutoDetectParser parser = new AutoDetectParser();
+            parser.parse(inputStream, handler, metadata, new ParseContext());
+            String text = handler.toString();
+            log.info("PDF parsed: {} chars extracted, metadata={}", text.length(), metadata.toString());
+            return text;
+        } catch (Exception e) {
+            log.error("PDF parsing failed: {}", e.getMessage());
+            return "";
+        }
+    }
+
+    /**
      * Split Markdown by headings, preserving heading context in each chunk.
      */
     private List<String> splitMarkdown(String content) {
@@ -58,18 +90,15 @@ public class DocumentParserServiceImpl implements DocumentParserService {
 
         for (String line : lines) {
             if (line.matches("^#{1,4}\\s+.*")) {
-                // New heading: flush current chunk if it has content
                 if (current.length() >= MIN_CHUNK_SIZE) {
                     chunks.add(current.toString().trim());
                 } else if (current.length() > 0) {
-                    // Merge small chunk with next
                     currentHeading = current.toString().trim();
                 }
                 current = new StringBuilder();
                 current.append(line).append("\n");
             } else {
                 current.append(line).append("\n");
-                // Split large chunks at paragraph boundaries
                 if (current.length() >= MAX_CHUNK_SIZE && line.isBlank()) {
                     chunks.add(current.toString().trim());
                     current = new StringBuilder();
@@ -82,7 +111,6 @@ public class DocumentParserServiceImpl implements DocumentParserService {
         if (current.length() >= MIN_CHUNK_SIZE) {
             chunks.add(current.toString().trim());
         } else if (current.length() > 0 && !chunks.isEmpty()) {
-            // Append small trailing chunk to last chunk
             String last = chunks.remove(chunks.size() - 1);
             chunks.add(last + "\n\n" + current.toString().trim());
         }
