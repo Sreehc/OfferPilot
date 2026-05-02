@@ -137,37 +137,51 @@ public class RedisVectorStoreService implements VectorStoreService {
     public List<VectorSearchResult> search(float[] queryEmbedding, int limit) {
         String indexName = vectorProperties.getIndexName();
         byte[] queryBytes = floatArrayToBytes(queryEmbedding);
-
         String query = "*=>[KNN " + limit + " @embedding $BLOB AS score]";
+
         try {
-            var result = jedis.ftSearch(indexName, query,
-                    redis.clients.jedis.search.SearchParams.searchParams()
-                            .addParam("BLOB", queryBytes)
-                            .setSortBy("score", true)
-                            .setLimit(0, limit)
-                            .setNoContent(false));
+            // Build raw FT.SEARCH command with binary PARAMS support
+            byte[][] args = new byte[][]{
+                    SafeEncoder.encode("FT.SEARCH"),
+                    SafeEncoder.encode(indexName),
+                    SafeEncoder.encode(query),
+                    SafeEncoder.encode("PARAMS"), SafeEncoder.encode("2"),
+                    SafeEncoder.encode("BLOB"), queryBytes,
+                    SafeEncoder.encode("SORTBY"), SafeEncoder.encode("score"),
+                    SafeEncoder.encode("LIMIT"), SafeEncoder.encode("0"),
+                    SafeEncoder.encode(String.valueOf(limit))
+            };
 
+            ProtocolCommand ftSearch = () -> SafeEncoder.encode("FT.SEARCH");
+            List<Object> result;
+            try (Connection conn = jedis.getPool().getResource()) {
+                conn.sendCommand(ftSearch, args);
+                result = (List<Object>) conn.getOne();
+            }
+
+            // Response: [count, id1, [field, val, ...], id2, [field, val, ...], ...]
             List<VectorSearchResult> results = new ArrayList<>();
-            var docs = result.getDocuments();
-            if (docs == null) return results;
+            if (result == null || result.size() < 2) return results;
 
-            for (var doc : docs) {
-                var properties = doc.getProperties();
-                if (properties == null) continue;
+            for (int i = 1; i + 1 < result.size(); i += 2) {
+                List<Object> fields = (List<Object>) result.get(i + 1);
+                if (fields == null) continue;
 
                 Long chunkId = null;
                 Long docId = null;
                 float score = 0f;
 
-                for (var prop : properties) {
-                    switch (prop.getKey()) {
-                        case "chunkId" -> chunkId = Long.parseLong(prop.getValue().toString());
-                        case "docId" -> docId = Long.parseLong(prop.getValue().toString());
+                for (int j = 0; j + 1 < fields.size(); j += 2) {
+                    String key = SafeEncoder.encode((byte[]) fields.get(j));
+                    byte[] valBytes = (byte[]) fields.get(j + 1);
+                    String val = SafeEncoder.encode(valBytes);
+                    switch (key) {
+                        case "chunkId" -> chunkId = Long.parseLong(val);
+                        case "docId" -> docId = Long.parseLong(val);
                         case "score" -> {
                             try {
-                                // RediSearch returns distance; similarity = 1 - distance for COSINE
-                                float distance = Float.parseFloat(prop.getValue().toString());
-                                score = 1f - distance;
+                                float distance = Float.parseFloat(val);
+                                score = 1f - distance; // COSINE: similarity = 1 - distance
                             } catch (NumberFormatException ignored) {
                             }
                         }
