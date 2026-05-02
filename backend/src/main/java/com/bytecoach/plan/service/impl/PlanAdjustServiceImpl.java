@@ -427,5 +427,4 @@ public class PlanAdjustServiceImpl implements PlanAdjustService {
                 .build();
     }
 
-    private record PlanTask(int day, String type, String content) {}
 }
