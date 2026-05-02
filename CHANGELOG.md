@@ -1,5 +1,63 @@
 # Changelog
 
+## Phase 2.5 — 用户体验增强 + Phase 2.6 — 性能与可观测性 (2026-05-03)
+
+### 暗色模式
+
+- Tailwind `darkMode: 'class'` + CSS 变量暗色主题（`.dark` 类切换）
+- `useTheme` composable：localStorage 持久化 + 系统偏好自动检测
+- AppLayout 顶部月亮/太阳图标切换按钮
+- body、paper-panel、surface-card 等组件暗色适配
+
+### 快捷键
+
+- `Cmd/Ctrl + K`：全局搜索弹窗（页面名称模糊匹配 + Enter 跳转）
+- `Cmd/Ctrl + B`：切换侧边栏显示/隐藏
+- AppLayout 统一监听 keydown 事件
+
+### 错题导出
+
+- `GET /api/wrong/export`：导出全部错题为 Markdown 文件
+- 按掌握状态分组（未开始/复习中/已掌握），包含标准答案和错误原因
+- WrongPage 新增「导出 MD」按钮，Blob 下载
+
+### 头像上传
+
+- `POST /api/user/avatar`：上传头像图片（2MB 限制，仅图片格式）
+- 文件保存到 `./uploads/avatars/`，URL 存入 user 表
+- AppShellHeader 头像区域 hover 显示相机图标，点击触发文件选择
+- AuthStore 新增 `persistUser()` 方法
+
+### 接口限流
+
+- `RateLimitInterceptor`：Redis 滑动窗口，60 次/分钟/IP
+- 排除登录和注册接口
+- 超限时返回 HTTP 429 + 自定义错误信息
+
+### LLM 配额管理
+
+- `LlmQuotaService`：Redis 每用户每日 100 次调用限制
+- 集成到 `OpenAiCompatibleLlmGateway`，自动从 SecurityContext 获取用户
+- `ResultCode.TOO_MANY_REQUESTS` (429) 枚举值
+
+### 慢查询日志
+
+- MybatisPlusConfig 新增 `slowQueryInterceptor`：SQL 执行超过 500ms 告警
+- 基于 MyBatis StatementHandler 拦截器实现
+
+### 请求日志
+
+- `RequestLoggingInterceptor`：记录所有 `/api/**` 请求的耗时
+- 超过 500ms 的请求自动 WARN 级别日志
+- `WebMvcConfig` 注册两个拦截器
+
+### 前端性能
+
+- `lighthouserc.js`：Lighthouse CI 配置（性能 ≥ 0.8, 可访问性 ≥ 0.9）
+- `npm run lhci` 脚本
+
+---
+
 ## Phase 2.4 — 面试历史与复盘 (2026-05-03)
 
 ### 面试历史

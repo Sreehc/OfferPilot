@@ -10,6 +10,7 @@ public enum ResultCode {
     FORBIDDEN(403, "forbidden"),
     NOT_FOUND(404, "not found"),
     VALIDATION_ERROR(422, "validation error"),
+    TOO_MANY_REQUESTS(429, "too many requests"),
     SERVER_ERROR(500, "server error");
 
     private final int code;

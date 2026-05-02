@@ -11,7 +11,8 @@
     "lint:fix": "eslint src/ --fix",
     "format": "prettier --write \"src/**/*.{ts,vue,css,json}\"",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "lhci": "lhci autorun"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",

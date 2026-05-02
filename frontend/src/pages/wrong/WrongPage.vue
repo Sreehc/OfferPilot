@@ -18,6 +18,9 @@
             <el-option label="复习中" value="reviewing" />
             <el-option label="已掌握" value="mastered" />
           </el-select>
+          <el-button size="large" class="hard-button-secondary" :loading="exporting" @click="handleExport">
+            导出 MD
+          </el-button>
           <el-button size="large" class="hard-button-secondary" @click="loadData">刷新</el-button>
         </div>
       </div>
@@ -140,11 +143,12 @@
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
-import { deleteWrongApi, fetchWrongListApi, updateMasteryApi } from '@/api/wrong'
+import { deleteWrongApi, exportWrongMarkdownApi, fetchWrongListApi, updateMasteryApi } from '@/api/wrong'
 import type { WrongQuestionItem } from '@/types/api'
 
 const items = ref<WrongQuestionItem[]>([])
 const loading = ref(true)
+const exporting = ref(false)
 const expandedId = ref<number | null>(null)
 const filterMastery = ref<string>('')
 const currentPage = ref(1)
@@ -180,6 +184,25 @@ const loadData = async () => {
 const handlePageChange = (page: number) => {
   currentPage.value = page
   void loadData()
+}
+
+const handleExport = async () => {
+  exporting.value = true
+  try {
+    const response = await exportWrongMarkdownApi()
+    const blob = new Blob([response.data], { type: 'text/markdown' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'wrong-questions.md'
+    a.click()
+    URL.revokeObjectURL(url)
+    ElMessage.success('错题已导出为 Markdown')
+  } catch {
+    ElMessage.error('导出失败，请稍后重试')
+  } finally {
+    exporting.value = false
+  }
 }
 
 const toggleExpand = (id: number) => {

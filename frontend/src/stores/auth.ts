@@ -54,6 +54,12 @@ export const useAuthStore = defineStore('auth', () => {
     storage.clearUser()
   }
 
+  function persistUser() {
+    if (user.value) {
+      storage.setUser(user.value)
+    }
+  }
+
   return {
     token,
     user,
@@ -62,6 +68,7 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     restoreProfile,
     logout,
-    clear
+    clear,
+    persistUser
   }
 })

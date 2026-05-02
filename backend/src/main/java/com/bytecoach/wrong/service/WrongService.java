@@ -9,6 +9,8 @@ public interface WrongService {
 
     PageResult<WrongQuestionVO> list(Long userId, int pageNum, int pageSize);
 
+    List<WrongQuestionVO> listAll(Long userId);
+
     WrongQuestionVO detail(Long userId, Long id);
 
     void updateMastery(Long userId, Long id, WrongMasteryUpdateRequest request);

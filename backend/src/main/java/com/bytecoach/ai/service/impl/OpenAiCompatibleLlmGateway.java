@@ -4,8 +4,10 @@ import com.bytecoach.ai.config.LlmProperties;
 import com.bytecoach.ai.dto.AiChatRequest;
 import com.bytecoach.ai.dto.AiChatResponse;
 import com.bytecoach.ai.service.LlmGateway;
+import com.bytecoach.ai.service.LlmQuotaService;
 import com.bytecoach.common.api.ResultCode;
 import com.bytecoach.common.exception.BusinessException;
+import com.bytecoach.security.util.SecurityUtils;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,10 +30,17 @@ public class OpenAiCompatibleLlmGateway implements LlmGateway {
 
     private final LlmProperties llmProperties;
     private final RestClient.Builder restClientBuilder;
+    private final LlmQuotaService llmQuotaService;
 
     @Override
     @SuppressWarnings("unchecked")
     public AiChatResponse chatCompletion(AiChatRequest request) {
+        // Check per-user daily LLM quota
+        Long userId = SecurityUtils.getCurrentUserId();
+        if (userId != null) {
+            llmQuotaService.checkAndConsume(userId);
+        }
+
         if (!llmProperties.isEnabled()) {
             throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "LLM is not enabled");
         }

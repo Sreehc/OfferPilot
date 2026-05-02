@@ -76,6 +76,39 @@ public class WrongServiceImpl implements WrongService {
     }
 
     @Override
+    public List<WrongQuestionVO> listAll(Long userId) {
+        List<WrongQuestion> wrongs = wrongQuestionMapper.selectList(new LambdaQueryWrapper<WrongQuestion>()
+                .eq(WrongQuestion::getUserId, userId)
+                .orderByAsc(WrongQuestion::getMasteryLevel)
+                .orderByDesc(WrongQuestion::getCreateTime));
+
+        if (wrongs.isEmpty()) {
+            return List.of();
+        }
+
+        Set<Long> questionIds = wrongs.stream()
+                .map(WrongQuestion::getQuestionId)
+                .collect(Collectors.toSet());
+        Map<Long, Question> questionMap = questionMapper.selectBatchIds(questionIds)
+                .stream()
+                .collect(Collectors.toMap(Question::getId, Function.identity(), (a, b) -> a));
+
+        return wrongs.stream()
+                .map(w -> {
+                    Question q = questionMap.get(w.getQuestionId());
+                    return WrongQuestionVO.builder()
+                            .id(w.getId())
+                            .questionId(w.getQuestionId())
+                            .title(q != null ? q.getTitle() : "Unknown")
+                            .masteryLevel(w.getMasteryLevel())
+                            .standardAnswer(q != null ? q.getStandardAnswer() : null)
+                            .errorReason(w.getErrorReason())
+                            .build();
+                })
+                .toList();
+    }
+
+    @Override
     public WrongQuestionVO detail(Long userId, Long id) {
         WrongQuestion wrong = getOwnedWrong(userId, id);
         Question q = questionMapper.selectById(wrong.getQuestionId());

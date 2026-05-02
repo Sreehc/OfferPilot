@@ -25,6 +25,22 @@
   --ease-hard: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.dark {
+  color-scheme: dark;
+  --bc-ink: #e8ecf4;
+  --bc-accent: #6b8fd4;
+  --bc-accent-strong: #8ba8e0;
+  --bc-shell: #0f1219;
+  --bc-surface: rgba(22, 27, 38, 0.88);
+  --bc-surface-solid: #161b26;
+  --bc-surface-muted: #1c2233;
+  --bc-surface-soft: #121722;
+  --bc-border: rgba(200, 210, 225, 0.08);
+  --bc-border-strong: rgba(200, 210, 225, 0.14);
+  --bc-shadow: 0 14px 36px rgba(0, 0, 0, 0.3);
+  --bc-shadow-soft: 0 8px 22px rgba(0, 0, 0, 0.2);
+}
+
 html,
 body,
 #app {
@@ -41,6 +57,21 @@ body {
     radial-gradient(circle at top left, rgba(47, 79, 157, 0.05), transparent 24%),
     radial-gradient(circle at top right, rgba(123, 143, 184, 0.06), transparent 28%),
     linear-gradient(180deg, #f7f8fb 0%, #f2f5fa 48%, #eef2f7 100%);
+  background-size:
+    32px 32px,
+    32px 32px,
+    auto,
+    auto,
+    auto;
+}
+
+.dark body {
+  background:
+    linear-gradient(rgba(99, 114, 139, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 114, 139, 0.02) 1px, transparent 1px),
+    radial-gradient(circle at top left, rgba(47, 79, 157, 0.04), transparent 24%),
+    radial-gradient(circle at top right, rgba(123, 143, 184, 0.03), transparent 28%),
+    linear-gradient(180deg, #0f1219 0%, #121722 48%, #0f1219 100%);
   background-size:
     32px 32px,
     32px 32px,
@@ -70,6 +101,10 @@ a {
   box-shadow:
     var(--bc-shadow),
     inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.dark .paper-panel {
+  box-shadow: var(--bc-shadow);
 }
 
 .section-kicker {
