@@ -16,7 +16,7 @@ import redis.clients.jedis.Connection;
 import redis.clients.jedis.DefaultJedisClientConfig;
 import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisPooled;
-import redis.clients.jedis.ProtocolCommand;
+import redis.clients.jedis.commands.ProtocolCommand;
 import redis.clients.jedis.exceptions.JedisDataException;
 import redis.clients.jedis.util.SafeEncoder;
 import redis.clients.jedis.params.ScanParams;
@@ -106,7 +106,7 @@ public class RedisVectorStoreService implements VectorStoreService {
         jedis.hset(key, "chunkId", String.valueOf(chunkId));
         jedis.hset(key, "docId", String.valueOf(docId));
         jedis.hset(key, "content", content != null ? content : "");
-        jedis.hset(key, "embedding", embeddingBytes);
+        jedis.hset(SafeEncoder.encode(key), SafeEncoder.encode("embedding"), embeddingBytes);
         return key;
     }
 
