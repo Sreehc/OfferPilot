@@ -10,7 +10,7 @@ public class InterviewStartRequest {
     @NotBlank(message = "cannot be blank")
     private String direction;
 
-    @Min(value = 3, message = "must be at least 3")
+    @Min(value = 1, message = "must be at least 1")
     @Max(value = 5, message = "must be at most 5")
     private Integer questionCount = 3;
 
