@@ -12,10 +12,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 import org.springframework.stereotype.Service;
+import redis.clients.jedis.Connection;
 import redis.clients.jedis.DefaultJedisClientConfig;
 import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisPooled;
+import redis.clients.jedis.ProtocolCommand;
 import redis.clients.jedis.exceptions.JedisDataException;
+import redis.clients.jedis.util.SafeEncoder;
 import redis.clients.jedis.params.ScanParams;
 import redis.clients.jedis.resps.ScanResult;
 
@@ -70,22 +73,27 @@ public class RedisVectorStoreService implements VectorStoreService {
 
     private void createIndex(String indexName) {
         try {
-            jedis.ftCreate(indexName,
-                    redis.clients.jedis.search.IndexOptions.defaultOptions(),
-                    new redis.clients.jedis.search.Schema()
-                            .addNumericField("chunkId")
-                            .addNumericField("docId")
-                            .addTextField("content", 1.0)
-                            .addVectorField("embedding",
-                                    redis.clients.jedis.search.VectorField.VectorAlgorithm.HNSW,
-                                    new java.util.HashMap<>() {{
-                                        put("TYPE", "FLOAT32");
-                                        put("DIM", "1536");
-                                        put("DISTANCE_METRIC", "COSINE");
-                                        put("M", "16");
-                                        put("EF_CONSTRUCTION", "200");
-                                    }}));
-            log.info("Created Redis vector index '{}'", indexName);
+            // Use raw Connection to send FT.CREATE — avoids Jedis 5.x search API changes
+            String[] args = {
+                    indexName,
+                    "PREFIX", "1", "bytecoach:chunk:",
+                    "SCHEMA",
+                    "chunkId", "NUMERIC",
+                    "docId", "NUMERIC",
+                    "content", "TEXT", "WEIGHT", "1.0",
+                    "embedding", "VECTOR", "HNSW", "6",
+                    "TYPE", "FLOAT32",
+                    "DIM", "1536",
+                    "DISTANCE_METRIC", "COSINE",
+                    "M", "16",
+                    "EF_CONSTRUCTION", "200"
+            };
+            ProtocolCommand ftCreate = () -> SafeEncoder.encode("FT.CREATE");
+            try (Connection conn = jedis.getPool().getResource()) {
+                conn.sendCommand(ftCreate, SafeEncoder.encodeMany(args));
+                Object result = conn.getOne();
+                log.info("Created Redis vector index '{}': {}", indexName, result);
+            }
         } catch (Exception e) {
             log.error("Failed to create Redis vector index: {}", e.getMessage());
         }
