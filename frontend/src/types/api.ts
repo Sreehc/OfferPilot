@@ -157,7 +157,19 @@ export interface InterviewDetail {
   status: string
   totalScore: number
   questionCount: number
+  startTime?: string
+  endTime?: string
   records: InterviewRecordItem[]
+}
+
+export interface InterviewHistoryItem {
+  sessionId: number
+  direction: string
+  status: string
+  totalScore: number
+  questionCount: number
+  startTime?: string
+  endTime?: string
 }
 
 export interface WrongQuestionItem {

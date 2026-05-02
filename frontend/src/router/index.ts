@@ -73,6 +73,18 @@ const router = createRouter({
           meta: pageMeta.interview
         },
         {
+          path: 'interview/history',
+          name: 'interview-history',
+          component: () => import('@/pages/interview/InterviewHistoryPage.vue'),
+          meta: { kicker: 'Interview History', title: '面试历史记录', subtitle: '查看所有已完成的面试记录。' }
+        },
+        {
+          path: 'interview/detail/:id',
+          name: 'interview-detail',
+          component: () => import('@/pages/interview/InterviewDetailPage.vue'),
+          meta: { kicker: 'Interview Detail', title: '面试详情', subtitle: '查看面试复盘和答案对比。' }
+        },
+        {
           path: 'wrong',
           name: 'wrong',
           component: () => import('@/pages/wrong/WrongPage.vue'),

@@ -2,6 +2,7 @@ package com.bytecoach.interview.controller;
 
 import com.bytecoach.common.api.Result;
 import com.bytecoach.common.api.ResultCode;
+import com.bytecoach.common.dto.PageResult;
 import com.bytecoach.common.exception.BusinessException;
 import com.bytecoach.interview.dto.InterviewAnswerRequest;
 import com.bytecoach.interview.dto.InterviewStartRequest;
@@ -9,17 +10,20 @@ import com.bytecoach.interview.service.InterviewService;
 import com.bytecoach.interview.vo.InterviewAnswerVO;
 import com.bytecoach.interview.vo.InterviewCurrentQuestionVO;
 import com.bytecoach.interview.vo.InterviewDetailVO;
+import com.bytecoach.interview.vo.InterviewHistoryVO;
 import com.bytecoach.security.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "模拟面试", description = "AI 驱动的模拟面试与评分")
@@ -52,6 +56,22 @@ public class InterviewController {
     @GetMapping("/detail/{sessionId}")
     public Result<InterviewDetailVO> detail(@Parameter(description = "会话 ID") @PathVariable Long sessionId) {
         return Result.success(interviewService.detail(currentUserId(), sessionId));
+    }
+
+    @Operation(summary = "面试历史", description = "分页查看面试历史记录，可按方向筛选")
+    @GetMapping("/history")
+    public Result<PageResult<InterviewHistoryVO>> history(
+            @Parameter(description = "方向筛选") @RequestParam(required = false) String direction,
+            @Parameter(description = "页码") @RequestParam(defaultValue = "1") int pageNum,
+            @Parameter(description = "每页数量") @RequestParam(defaultValue = "10") int pageSize) {
+        return Result.success(interviewService.history(currentUserId(), direction, pageNum, pageSize));
+    }
+
+    @Operation(summary = "面试趋势", description = "获取最近面试成绩趋势数据（用于折线图）")
+    @GetMapping("/trend")
+    public Result<List<InterviewHistoryVO>> trend(
+            @Parameter(description = "数量限制") @RequestParam(defaultValue = "20") int limit) {
+        return Result.success(interviewService.trendData(currentUserId(), limit));
     }
 
     private Long currentUserId() {

@@ -1,6 +1,7 @@
 package com.bytecoach.interview.vo;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.Builder;
 import lombok.Data;
@@ -13,6 +14,8 @@ public class InterviewDetailVO {
     private String status;
     private BigDecimal totalScore;
     private Integer questionCount;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
     private List<InterviewRecordVO> records;
 
     @Data

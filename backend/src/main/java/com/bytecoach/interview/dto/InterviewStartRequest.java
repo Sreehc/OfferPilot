@@ -13,5 +13,11 @@ public class InterviewStartRequest {
     @Min(value = 3, message = "must be at least 3")
     @Max(value = 5, message = "must be at most 5")
     private Integer questionCount = 3;
+
+    /**
+     * If set, this question will be included as the first question in the interview.
+     * Used for re-answering wrong questions.
+     */
+    private Long reanswerQuestionId;
 }
 

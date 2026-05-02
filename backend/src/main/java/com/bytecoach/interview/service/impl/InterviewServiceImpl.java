@@ -1,10 +1,12 @@
 package com.bytecoach.interview.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.bytecoach.ai.service.AiOrchestratorService;
 import com.bytecoach.category.entity.Category;
 import com.bytecoach.category.service.CategoryService;
 import com.bytecoach.common.api.ResultCode;
+import com.bytecoach.common.dto.PageResult;
 import com.bytecoach.common.exception.BusinessException;
 import com.bytecoach.dashboard.service.DashboardService;
 import com.bytecoach.interview.dto.InterviewAnswerRequest;
@@ -17,6 +19,7 @@ import com.bytecoach.interview.service.InterviewService;
 import com.bytecoach.interview.vo.InterviewAnswerVO;
 import com.bytecoach.interview.vo.InterviewCurrentQuestionVO;
 import com.bytecoach.interview.vo.InterviewDetailVO;
+import com.bytecoach.interview.vo.InterviewHistoryVO;
 import com.bytecoach.question.entity.Question;
 import com.bytecoach.question.mapper.QuestionMapper;
 import com.bytecoach.wrong.entity.WrongQuestion;
@@ -60,6 +63,16 @@ public class InterviewServiceImpl implements InterviewService {
     @Transactional
     public InterviewCurrentQuestionVO start(Long userId, InterviewStartRequest request) {
         List<Question> questions = pickQuestions(request.getDirection(), request.getQuestionCount());
+
+        // If reanswerQuestionId is set, ensure it's the first question
+        if (request.getReanswerQuestionId() != null) {
+            Question reanswerQ = questionMapper.selectById(request.getReanswerQuestionId());
+            if (reanswerQ != null) {
+                questions.removeIf(q -> q.getId().equals(reanswerQ.getId()));
+                questions.add(0, reanswerQ);
+            }
+        }
+
         if (questions.isEmpty()) {
             throw new BusinessException(ResultCode.NOT_FOUND.getCode(),
                     "no questions found for direction: " + request.getDirection());
@@ -226,8 +239,63 @@ public class InterviewServiceImpl implements InterviewService {
                 .status(session.getStatus())
                 .totalScore(session.getTotalScore())
                 .questionCount(session.getQuestionCount())
+                .startTime(session.getStartTime())
+                .endTime(session.getEndTime())
                 .records(recordVOs)
                 .build();
+    }
+
+    @Override
+    public PageResult<InterviewHistoryVO> history(Long userId, String direction, int pageNum, int pageSize) {
+        LambdaQueryWrapper<InterviewSession> wrapper = new LambdaQueryWrapper<InterviewSession>()
+                .eq(InterviewSession::getUserId, userId)
+                .eq(InterviewSession::getStatus, "finished")
+                .eq(direction != null && !direction.isEmpty(), InterviewSession::getDirection, direction)
+                .orderByDesc(InterviewSession::getCreateTime);
+
+        Page<InterviewSession> page = sessionMapper.selectPage(new Page<>(pageNum, pageSize), wrapper);
+
+        List<InterviewHistoryVO> records = page.getRecords().stream()
+                .map(s -> InterviewHistoryVO.builder()
+                        .sessionId(s.getId())
+                        .direction(s.getDirection())
+                        .status(s.getStatus())
+                        .totalScore(s.getTotalScore())
+                        .questionCount(s.getQuestionCount())
+                        .startTime(s.getStartTime())
+                        .endTime(s.getEndTime())
+                        .build())
+                .toList();
+
+        return PageResult.<InterviewHistoryVO>builder()
+                .records(records)
+                .total(page.getTotal())
+                .pageNum(pageNum)
+                .pageSize(pageSize)
+                .totalPages((int) Math.ceil((double) page.getTotal() / pageSize))
+                .build();
+    }
+
+    @Override
+    public List<InterviewHistoryVO> trendData(Long userId, int limit) {
+        List<InterviewSession> sessions = sessionMapper.selectList(new LambdaQueryWrapper<InterviewSession>()
+                .eq(InterviewSession::getUserId, userId)
+                .eq(InterviewSession::getStatus, "finished")
+                .isNotNull(InterviewSession::getTotalScore)
+                .orderByAsc(InterviewSession::getCreateTime)
+                .last("LIMIT " + limit));
+
+        return sessions.stream()
+                .map(s -> InterviewHistoryVO.builder()
+                        .sessionId(s.getId())
+                        .direction(s.getDirection())
+                        .status(s.getStatus())
+                        .totalScore(s.getTotalScore())
+                        .questionCount(s.getQuestionCount())
+                        .startTime(s.getStartTime())
+                        .endTime(s.getEndTime())
+                        .build())
+                .toList();
     }
 
     // ──────────────────────────────────────────────

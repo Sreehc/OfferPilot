@@ -1,5 +1,38 @@
 # Changelog
 
+## Phase 2.4 — 面试历史与复盘 (2026-05-03)
+
+### 面试历史
+
+- `GET /api/interview/history`：分页查询面试历史，支持按方向筛选
+- `InterviewHistoryVO`：包含 sessionId、direction、totalScore、questionCount、startTime、endTime
+- `InterviewHistoryPage.vue`：历史列表页（分页、方向筛选、按时间排序），路由 `/interview/history`
+
+### 面试详情复盘
+
+- `InterviewDetailVO` 增加 startTime、endTime 字段
+- `InterviewDetailPage.vue`：详情页（总分、每题 AI 点评、用户答案 vs 标准答案对比展示），路由 `/interview/detail/:id`
+- 每道题左右分栏对比：我的回答（橙色标记）vs 标准答案（绿色标记）
+
+### 面试趋势
+
+- `GET /api/interview/trend`：获取最近面试成绩趋势数据
+- `DashboardInterviewTrend.vue`：ECharts 折线图，展示分数变化趋势 + 60 分及格线
+- Dashboard 页面集成趋势图表
+
+### 重新作答
+
+- `InterviewStartRequest` 增加 `reanswerQuestionId` 字段
+- 错题详情页「重新作答」按钮跳转到 Interview 并预加载指定题目
+- InterviewPage 自动识别 `?reanswer=` 参数并发起单题面试
+
+### Dashboard 集成
+
+- DashboardInterviews 组件增加「全部历史」链接
+- 最近面试结果卡片可点击跳转到详情页
+
+---
+
 ## Phase 2.3 — 动态学习计划 (2026-05-03)
 
 ### 计划健康评估

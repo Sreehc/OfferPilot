@@ -22,6 +22,8 @@
         <DashboardWeakPoints :weak-points="overview.weakPoints" :plan-completion-rate="overview.planCompletionRate" :plan-health-score="overview.planHealthScore ?? 100" />
       </section>
 
+      <DashboardInterviewTrend :trend-data="trendData" :loading="trendLoading" />
+
       <section class="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
         <article class="paper-panel p-6">
           <p class="section-kicker">Quick Actions</p>
@@ -69,13 +71,17 @@ import DashboardGuideCard from './DashboardGuideCard.vue'
 import DashboardMetrics from './DashboardMetrics.vue'
 import DashboardInterviews from './DashboardInterviews.vue'
 import DashboardWeakPoints from './DashboardWeakPoints.vue'
+import DashboardInterviewTrend from './DashboardInterviewTrend.vue'
 import { fetchDashboardOverviewApi } from '@/api/dashboard'
-import type { DashboardOverview } from '@/types/api'
+import { fetchInterviewTrendApi } from '@/api/interview'
+import type { DashboardOverview, InterviewHistoryItem } from '@/types/api'
 import { useAuthStore } from '@/stores/auth'
 import { storage } from '@/utils/storage'
 
 const authStore = useAuthStore()
 const loading = ref(true)
+const trendLoading = ref(true)
+const trendData = ref<InterviewHistoryItem[]>([])
 const guideDismissed = ref(false)
 const overview = ref<DashboardOverview>({
   learningCount: 0,
@@ -134,11 +140,24 @@ const loadOverview = async () => {
   }
 }
 
+const loadTrend = async () => {
+  trendLoading.value = true
+  try {
+    const response = await fetchInterviewTrendApi(20)
+    trendData.value = response.data || []
+  } catch {
+    // Silently fail — trend is supplementary
+  } finally {
+    trendLoading.value = false
+  }
+}
+
 const formatScore = (score: number): string => {
   return Number.isInteger(score) ? String(score) : score.toFixed(2)
 }
 
 onMounted(() => {
   void loadOverview()
+  void loadTrend()
 })
 </script>

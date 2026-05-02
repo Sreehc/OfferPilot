@@ -100,11 +100,11 @@
             <!-- Actions -->
             <div class="flex gap-2 pt-1">
               <RouterLink
-                :to="`/interview`"
+                :to="`/interview?reanswer=${item.questionId}`"
                 class="hard-button-secondary !min-h-9 !px-3 !py-1 text-xs"
                 @click.stop
               >
-                再次练习
+                重新作答
               </RouterLink>
               <button
                 type="button"

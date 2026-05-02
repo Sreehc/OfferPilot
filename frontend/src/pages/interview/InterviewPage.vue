@@ -234,7 +234,8 @@
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import {
   currentQuestionApi,
   interviewDetailApi,
@@ -242,6 +243,8 @@ import {
   submitAnswerApi
 } from '@/api/interview'
 import type { InterviewAnswerResult, InterviewCurrentQuestion, InterviewDetail } from '@/types/api'
+
+const route = useRoute()
 
 type Phase = 'idle' | 'answering' | 'scoring' | 'result' | 'finished'
 
@@ -325,12 +328,13 @@ const progressPercent = computed(() => {
   return Math.round(((currentIndex - 1) / total) * 100)
 })
 
-const handleStart = async () => {
+const handleStart = async (reanswerQuestionId?: number) => {
   starting.value = true
   try {
     const response = await startInterviewApi({
       direction: direction.value,
-      questionCount: questionCount.value
+      questionCount: reanswerQuestionId ? 1 : questionCount.value,
+      ...(reanswerQuestionId ? { reanswerQuestionId } : {})
     })
     currentQuestion.value = response.data
     answerText.value = ''
@@ -416,4 +420,13 @@ const handleNewInterview = () => {
   detail.value = null
   answerText.value = ''
 }
+
+onMounted(() => {
+  // Auto-start if reanswer query param is present (from wrong book)
+  const reanswerId = route.query.reanswer
+  if (reanswerId) {
+    questionCount.value = 1
+    void handleStart(Number(reanswerId))
+  }
+})
 </script>

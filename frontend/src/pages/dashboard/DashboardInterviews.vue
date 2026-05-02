@@ -5,14 +5,18 @@
         <p class="section-kicker">Recent Interviews</p>
         <h3 class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-ink">最近面试结果</h3>
       </div>
-      <RouterLink class="accent-link text-sm font-semibold" to="/interview">开始下一场</RouterLink>
+      <div class="flex gap-3">
+        <RouterLink class="accent-link text-sm font-semibold" to="/interview/history">全部历史</RouterLink>
+        <RouterLink class="accent-link text-sm font-semibold" to="/interview">开始下一场</RouterLink>
+      </div>
     </div>
 
     <div v-if="interviews.length" class="mt-6 space-y-3">
-      <div
+      <RouterLink
         v-for="interview in interviews"
         :key="interview.sessionId"
-        class="surface-card surface-card-hover p-4"
+        :to="`/interview/detail/${interview.sessionId}`"
+        class="surface-card surface-card-hover block p-4"
       >
         <div class="flex items-start justify-between gap-3">
           <div>
@@ -25,7 +29,7 @@
           </div>
         </div>
         <div class="mt-3 text-sm text-slate-500">{{ formatDate(interview.finishedAt) }}</div>
-      </div>
+      </RouterLink>
     </div>
 
     <div v-else class="empty-state-card mt-6">
