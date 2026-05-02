@@ -3,7 +3,7 @@
     <article v-for="metric in metrics" :key="metric.label" class="metric-card">
       <p class="metric-label">{{ metric.label }}</p>
       <p class="metric-value">{{ metric.value }}</p>
-      <p class="mt-2 text-sm leading-6 text-slate-500">{{ metric.desc }}</p>
+      <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{{ metric.desc }}</p>
     </article>
   </section>
 </template>

@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <!-- Back Link -->
     <div>
-      <button type="button" class="flex items-center gap-1 text-sm text-slate-500 transition hover:text-accent" @click="router.back()">
+      <button type="button" class="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 transition hover:text-accent" @click="router.back()">
         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
@@ -13,7 +13,7 @@
     <!-- Loading -->
     <section v-if="loading" class="paper-panel p-8 text-center">
       <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-      <p class="mt-4 text-sm text-slate-500">加载面试详情...</p>
+      <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">加载面试详情...</p>
     </section>
 
     <!-- Not Found -->
@@ -31,7 +31,7 @@
             <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
               {{ detail.direction }} 方向面试
             </h3>
-            <div class="mt-2 flex items-center gap-4 text-sm text-slate-500">
+            <div class="mt-2 flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
               <span>{{ detail.questionCount }} 题</span>
               <span v-if="detail.startTime">{{ formatTime(detail.startTime) }}</span>
               <span v-if="detail.endTime">~ {{ formatTime(detail.endTime) }}</span>
@@ -56,7 +56,7 @@
         class="paper-panel overflow-hidden"
       >
         <!-- Question Header -->
-        <div class="flex items-center justify-between border-b border-slate-200/60 px-6 py-4">
+        <div class="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 px-6 py-4">
           <div class="flex items-center gap-3">
             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-bold text-white">
               {{ index + 1 }}
@@ -73,8 +73,8 @@
 
         <!-- AI Comment -->
         <div class="surface-muted mx-6 mt-4 rounded-lg p-4">
-          <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">AI 点评</div>
-          <p class="mt-1 text-sm leading-6 text-slate-700">{{ record.comment || '暂无点评' }}</p>
+          <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">AI 点评</div>
+          <p class="mt-1 text-sm leading-6 text-slate-700 dark:text-slate-200">{{ record.comment || '暂无点评' }}</p>
         </div>
 
         <!-- Answer Comparison -->
@@ -83,9 +83,9 @@
           <div class="surface-card p-4">
             <div class="flex items-center gap-2">
               <div class="h-2 w-2 rounded-full bg-amber-400"></div>
-              <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">我的回答</span>
+              <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">我的回答</span>
             </div>
-            <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+            <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">
               {{ record.userAnswer || '未作答' }}
             </p>
           </div>
@@ -94,18 +94,18 @@
           <div class="surface-card p-4">
             <div class="flex items-center gap-2">
               <div class="h-2 w-2 rounded-full bg-green-400"></div>
-              <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">标准答案</span>
+              <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">标准答案</span>
             </div>
-            <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+            <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">
               {{ record.standardAnswer || '暂无标准答案' }}
             </p>
           </div>
         </div>
 
         <!-- Follow-up -->
-        <div v-if="record.followUp" class="border-t border-slate-200/60 px-6 py-4">
-          <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">追问</div>
-          <p class="mt-1 text-sm leading-6 text-slate-600">{{ record.followUp }}</p>
+        <div v-if="record.followUp" class="border-t border-slate-200/60 dark:border-slate-700/60 px-6 py-4">
+          <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">追问</div>
+          <p class="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ record.followUp }}</p>
         </div>
       </section>
 

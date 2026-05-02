@@ -7,11 +7,11 @@
       <div class="flex items-center justify-between">
         <div>
           <div class="text-sm font-semibold text-ink">计划完成率</div>
-          <div class="mt-1 text-sm text-slate-500">当前激活计划的任务推进情况</div>
+          <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">当前激活计划的任务推进情况</div>
         </div>
         <div class="text-4xl font-semibold tracking-[-0.03em] text-ink">{{ planCompletionRate }}%</div>
       </div>
-      <div class="mt-4 h-3 rounded-full bg-slate-200/80">
+      <div class="mt-4 h-3 rounded-full bg-slate-200/80 dark:bg-slate-700/80">
         <div class="h-3 rounded-full bg-accent transition-all duration-300" :style="{ width: `${planCompletionRate}%` }"></div>
       </div>
     </div>
@@ -20,7 +20,7 @@
       <div class="flex items-center justify-between">
         <div>
           <div class="text-sm font-semibold text-ink">计划健康分</div>
-          <div class="mt-1 text-sm text-slate-500">基于近 7 天完成率的综合评估</div>
+          <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">基于近 7 天完成率的综合评估</div>
         </div>
         <div class="flex items-center gap-2">
           <span
@@ -31,7 +31,7 @@
           </span>
         </div>
       </div>
-      <div class="mt-4 h-3 rounded-full bg-slate-200/80">
+      <div class="mt-4 h-3 rounded-full bg-slate-200/80 dark:bg-slate-700/80">
         <div
           class="h-3 rounded-full transition-all duration-300"
           :class="healthBarColor"
@@ -42,16 +42,16 @@
 
     <div v-if="weakPoints.length" class="mt-5">
       <div ref="radarChartRef" class="mx-auto" style="width: 100%; height: 280px;"></div>
-      <div class="surface-muted mt-3 divide-y divide-slate-200/70 overflow-hidden">
+      <div class="surface-muted mt-3 divide-y divide-slate-200/70 dark:divide-slate-700/70 overflow-hidden">
         <div v-for="point in weakPoints" :key="point.categoryName" class="px-4 py-4">
           <div class="flex items-center justify-between gap-3 text-sm">
             <div>
               <div class="font-semibold text-ink">{{ point.categoryName }}</div>
-              <div class="text-slate-500">错题 {{ point.wrongCount }} · 平均分 {{ formatScore(point.score) }}</div>
+              <div class="text-slate-500 dark:text-slate-400">错题 {{ point.wrongCount }} · 平均分 {{ formatScore(point.score) }}</div>
             </div>
             <div class="text-2xl font-semibold tracking-[-0.03em] text-accent">{{ point.wrongCount }}</div>
           </div>
-          <div class="mt-2 h-2 rounded-full bg-slate-200">
+          <div class="mt-2 h-2 rounded-full bg-slate-200 dark:bg-slate-700">
             <div
               class="h-2 rounded-full bg-accent/80"
               :style="{ width: `${Math.min(point.wrongCount * 20, 100)}%` }"
@@ -63,7 +63,7 @@
 
     <div v-else class="empty-state-card mt-5">
       <div class="font-semibold text-ink">还没有可计算的薄弱点</div>
-      <p class="mt-2 text-sm leading-6 text-slate-500">
+      <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
         先进入问答、面试或错题练习，系统才会根据真实学习记录生成重点复习方向。
       </p>
     </div>

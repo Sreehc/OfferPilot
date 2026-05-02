@@ -3,7 +3,7 @@
     <section class="paper-panel p-6">
       <p class="section-kicker">Admin Workspace</p>
       <h2 class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-ink">题库、文档和分类已经进入最小运营态</h2>
-      <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
+      <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300">
         当前后台不拆独立应用，先在同一个工作台里完成分类管理、题库 CRUD、内置知识导入、切分和重建索引。
       </p>
     </section>

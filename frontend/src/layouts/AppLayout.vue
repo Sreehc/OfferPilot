@@ -55,7 +55,7 @@
           @keydown.enter="handleSearchNavigate"
         >
           <template #prefix>
-            <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <svg class="h-4 w-4 text-slate-400 dark:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </template>
@@ -69,15 +69,15 @@
             @click="navigateTo(item.path)"
           >
             <span class="font-medium text-ink dark:text-slate-200">{{ item.label }}</span>
-            <span class="ml-auto text-xs text-slate-400">{{ item.path }}</span>
+            <span class="ml-auto text-xs text-slate-400 dark:text-slate-500">{{ item.path }}</span>
           </button>
-          <p v-if="searchQuery && !filteredSearchItems.length" class="py-4 text-center text-sm text-slate-400">
+          <p v-if="searchQuery && !filteredSearchItems.length" class="py-4 text-center text-sm text-slate-400 dark:text-slate-500">
             无匹配结果
           </p>
         </div>
       </div>
       <template #footer>
-        <div class="flex items-center justify-between px-1 text-xs text-slate-400">
+        <div class="flex items-center justify-between px-1 text-xs text-slate-400 dark:text-slate-500">
           <span>Esc 关闭</span>
           <span>Enter 跳转</span>
         </div>

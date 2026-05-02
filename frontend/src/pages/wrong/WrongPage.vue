@@ -8,7 +8,7 @@
           <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
             {{ total }} 道错题待复习
           </h3>
-          <p class="mt-2 text-sm leading-6 text-slate-500">
+          <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
             低分面试题自动沉淀到此处，标记掌握状态后可在计划中安排复习。
           </p>
         </div>
@@ -29,17 +29,17 @@
     <!-- Loading -->
     <section v-if="loading" class="grid gap-4 xl:grid-cols-3 md:grid-cols-2">
       <article v-for="n in 3" :key="n" class="metric-card">
-        <div class="h-4 w-24 animate-pulse rounded bg-slate-200"></div>
-        <div class="mt-4 h-3 w-full animate-pulse rounded bg-slate-100"></div>
-        <div class="mt-2 h-3 w-3/4 animate-pulse rounded bg-slate-100"></div>
+        <div class="h-4 w-24 animate-pulse rounded bg-slate-200 dark:bg-slate-700"></div>
+        <div class="mt-4 h-3 w-full animate-pulse rounded bg-slate-100 dark:bg-slate-800"></div>
+        <div class="mt-2 h-3 w-3/4 animate-pulse rounded bg-slate-100 dark:bg-slate-800"></div>
       </article>
     </section>
 
     <!-- Empty State -->
     <section v-else-if="!filteredItems.length" class="paper-panel p-8 text-center">
-      <div class="text-5xl font-semibold tracking-[-0.03em] text-slate-300">0</div>
+      <div class="text-5xl font-semibold tracking-[-0.03em] text-slate-300 dark:text-slate-600">0</div>
       <p class="mt-4 text-lg font-semibold text-ink">错题本为空</p>
-      <p class="mt-2 text-sm leading-6 text-slate-500">
+      <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
         完成一场模拟面试后，低分会自动沉淀到这里。也可以从 Dashboard 快捷进入面试。
       </p>
       <RouterLink to="/interview" class="hard-button-primary mt-6 inline-flex">
@@ -69,21 +69,21 @@
           </div>
 
           <!-- Error Reason (collapsed preview) -->
-          <p class="mt-3 text-sm leading-6 text-slate-600">
+          <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
             {{ item.errorReason || '暂无错误原因记录' }}
           </p>
 
           <!-- Expanded Detail -->
-          <div v-if="expandedId === item.id" class="mt-4 space-y-3 border-t border-slate-200/60 pt-4">
+          <div v-if="expandedId === item.id" class="mt-4 space-y-3 border-t border-slate-200/60 dark:border-slate-700/60 pt-4">
             <!-- User Answer -->
             <div v-if="item.standardAnswer">
-              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">标准答案</div>
-              <p class="mt-1 text-sm leading-6 text-slate-700">{{ item.standardAnswer }}</p>
+              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">标准答案</div>
+              <p class="mt-1 text-sm leading-6 text-slate-700 dark:text-slate-200">{{ item.standardAnswer }}</p>
             </div>
 
             <!-- Mastery Toggle -->
             <div>
-              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">掌握状态</div>
+              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">掌握状态</div>
               <div class="mt-2 flex flex-wrap gap-2">
                 <button
                   v-for="level in masteryLevels"
@@ -92,7 +92,7 @@
                   class="hard-chip cursor-pointer transition-all"
                   :class="item.masteryLevel === level.value
                     ? '!bg-accent !text-white'
-                    : '!bg-white/80 !text-slate-600 hover:!bg-slate-100'"
+                    : '!bg-white/80 dark:!bg-slate-700/80 !text-slate-600 dark:!text-slate-300 hover:!bg-slate-100 dark:hover:!bg-slate-600/80'"
                   @click.stop="handleMasteryChange(item.id, level.value)"
                 >
                   {{ level.label }}
@@ -111,7 +111,7 @@
               </RouterLink>
               <button
                 type="button"
-                class="text-xs text-slate-400 transition hover:text-red-500"
+                class="text-xs text-slate-400 dark:text-slate-500 transition hover:text-red-500"
                 @click.stop="handleDelete(item.id)"
               >
                 删除
@@ -120,7 +120,7 @@
           </div>
 
           <!-- Collapsed hint -->
-          <div v-else class="mt-3 text-xs tracking-[0.2em] text-slate-400">
+          <div v-else class="mt-3 text-xs tracking-[0.2em] text-slate-400 dark:text-slate-500">
             点击展开详情
           </div>
         </article>
@@ -248,7 +248,7 @@ const masteryLabel = (level: string) => {
 const masteryChipClass = (level: string) => {
   if (level === 'mastered') return '!bg-accent !text-white'
   if (level === 'reviewing') return '!bg-amber-100 !text-amber-700'
-  return '!bg-white/80 !text-slate-600'
+  return '!bg-white/80 dark:!bg-slate-700/80 !text-slate-600 dark:!text-slate-300'
 }
 
 onMounted(() => {

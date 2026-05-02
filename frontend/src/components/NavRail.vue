@@ -4,7 +4,7 @@
       <div>
         <div class="section-kicker">ByteCoach</div>
         <h1 class="mt-3 text-3xl font-semibold leading-none tracking-[-0.03em] text-ink">Interview Studio</h1>
-        <p class="mt-3 text-sm leading-6 text-slate-500">
+        <p class="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">
           聚焦 Java 后端面试准备的最小学习闭环。
         </p>
       </div>
@@ -16,12 +16,12 @@
           :to="item.path"
           class="group flex cursor-pointer items-center justify-between px-4 py-3 text-sm transition-all duration-150"
           style="border-radius: var(--radius-md);"
-          :class="isActive(item.path) ? 'bg-accent/10 text-ink shadow-[inset_0_0_0_1px_rgba(47,79,157,0.08)]' : 'text-slate-600 hover:bg-white/70 hover:text-ink active:translate-y-px'"
+          :class="isActive(item.path) ? 'bg-accent/10 text-ink shadow-[inset_0_0_0_1px_rgba(47,79,157,0.08)]' : 'text-slate-600 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-800/70 hover:text-ink active:translate-y-px'"
         >
           <div class="flex items-center gap-3">
             <span
               class="h-2.5 w-2.5 rounded-full transition-colors duration-150"
-              :class="isActive(item.path) ? 'bg-accent' : 'bg-slate-300 group-hover:bg-slate-400'"
+              :class="isActive(item.path) ? 'bg-accent' : 'bg-slate-300 dark:bg-slate-600 group-hover:bg-slate-400 dark:group-hover:bg-slate-500'"
             ></span>
             <span class="font-semibold">{{ item.label }}</span>
           </div>
@@ -32,7 +32,7 @@
 
     <div class="surface-muted px-4 py-5">
       <p class="text-xs font-semibold uppercase tracking-[0.28em] text-accent">MVP Freeze</p>
-      <p class="mt-3 text-sm leading-6 text-slate-600">
+      <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
         登录、问答、面试、错题、计划、Dashboard 六段主链路优先。
       </p>
     </div>

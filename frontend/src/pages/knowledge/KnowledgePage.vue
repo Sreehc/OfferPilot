@@ -5,19 +5,19 @@
       <div class="paper-panel p-6">
         <p class="section-kicker">Knowledge Library</p>
         <h3 class="mt-4 text-3xl font-semibold tracking-[-0.03em] text-ink">知识库管理</h3>
-        <p class="mt-4 text-sm leading-7 text-slate-600">
+        <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
           系统内置资料与你上传的学习材料统一管理，支持分类查看、关键字检索和向量语义检索。
         </p>
       </div>
       <div class="paper-panel p-6">
         <p class="section-kicker">Upload Document</p>
         <div
-          class="mt-4 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/50 p-6 text-center transition-colors hover:border-accent hover:bg-accent/5"
+          class="mt-4 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50/50 dark:bg-slate-800/50 p-6 text-center transition-colors hover:border-accent hover:bg-accent/5"
           @dragover.prevent
           @drop.prevent="handleDrop"
         >
-          <div class="text-sm text-slate-500">拖拽文件到此处，或点击选择</div>
-          <div class="text-xs text-slate-400">支持 .md / .txt / .pdf，单文件最大 20MB</div>
+          <div class="text-sm text-slate-500 dark:text-slate-400">拖拽文件到此处，或点击选择</div>
+          <div class="text-xs text-slate-400 dark:text-slate-500">支持 .md / .txt / .pdf，单文件最大 20MB</div>
           <el-upload
             :show-file-list="false"
             :before-upload="handleBeforeUpload"
@@ -34,17 +34,17 @@
 
     <!-- Tabs: System / My Docs -->
     <section class="paper-panel p-6">
-      <div class="flex items-center gap-4 border-b border-slate-200 pb-4">
+      <div class="flex items-center gap-4 border-b border-slate-200 dark:border-slate-700 pb-4">
         <button
           class="pb-1 text-sm font-semibold transition-colors"
-          :class="activeTab === 'system' ? 'border-b-2 border-accent text-accent' : 'text-slate-500 hover:text-slate-700'"
+          :class="activeTab === 'system' ? 'border-b-2 border-accent text-accent' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'"
           @click="switchTab('system')"
         >
           系统资料
         </button>
         <button
           class="pb-1 text-sm font-semibold transition-colors"
-          :class="activeTab === 'my' ? 'border-b-2 border-accent text-accent' : 'text-slate-500 hover:text-slate-700'"
+          :class="activeTab === 'my' ? 'border-b-2 border-accent text-accent' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'"
           @click="switchTab('my')"
         >
           我的文档
@@ -79,7 +79,7 @@
         <div class="font-semibold text-ink">
           {{ activeTab === 'my' ? '你还没有上传过文档' : '暂无系统资料' }}
         </div>
-        <p class="mt-2 text-sm leading-6 text-slate-500">
+        <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
           {{ activeTab === 'my' ? '上传 Markdown 或 TXT 文件，系统会自动切分并建立向量索引。' : '请联系管理员导入知识资料。' }}
         </p>
       </div>
@@ -91,7 +91,7 @@
             <div class="flex items-center gap-2">
               <span
                 class="hard-chip"
-                :class="doc.status === 'indexed' ? '!bg-accent !text-white' : '!bg-white/80 !text-slate-600'"
+                :class="doc.status === 'indexed' ? '!bg-accent !text-white' : '!bg-white/80 dark:!bg-slate-700/80 !text-slate-600 dark:!text-slate-300'"
               >
                 {{ doc.status }}
               </span>
@@ -108,9 +108,9 @@
               </el-popconfirm>
             </div>
           </div>
-          <p class="mt-2 text-sm text-slate-500">{{ doc.categoryName || '未分配分类' }}</p>
-          <p class="mt-3 text-sm leading-6 text-slate-600">{{ doc.summary || '暂无摘要' }}</p>
-          <div class="mt-4 flex items-center justify-between text-xs uppercase tracking-[0.22em] text-slate-400">
+          <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{ doc.categoryName || '未分配分类' }}</p>
+          <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ doc.summary || '暂无摘要' }}</p>
+          <div class="mt-4 flex items-center justify-between text-xs uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
             <span>chunks {{ doc.chunkCount ?? 0 }}</span>
             <span>{{ formatDate(doc.updateTime) }}</span>
           </div>
@@ -146,17 +146,17 @@
       <div v-if="searchResult?.references.length" class="mt-6 space-y-3">
         <article v-for="reference in searchResult.references" :key="reference.chunkId" class="surface-card p-4">
           <div class="flex items-center justify-between">
-            <div class="text-xs uppercase tracking-[0.24em] text-slate-500">{{ reference.docTitle }}</div>
+            <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">{{ reference.docTitle }}</div>
             <span v-if="reference.score != null" class="rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-medium text-accent">
               {{ Math.round(reference.score * 100) }}%
             </span>
           </div>
-          <p class="mt-3 text-sm leading-7 text-slate-700">{{ reference.snippet }}</p>
+          <p class="mt-3 text-sm leading-7 text-slate-700 dark:text-slate-200">{{ reference.snippet }}</p>
         </article>
       </div>
       <div v-else-if="searchResult" class="empty-state-card mt-6">
         <div class="font-semibold text-ink">没有找到相关结果</div>
-        <p class="mt-2 text-sm leading-6 text-slate-500">尝试换一个关键词，或先上传相关文档。</p>
+        <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">尝试换一个关键词，或先上传相关文档。</p>
       </div>
     </section>
   </div>

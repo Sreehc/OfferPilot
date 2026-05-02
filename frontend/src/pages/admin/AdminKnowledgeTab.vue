@@ -5,9 +5,9 @@
       <div class="mt-4 space-y-3">
         <div v-for="seed in seeds" :key="seed.seedKey" class="surface-card p-4">
           <div class="font-semibold text-ink">{{ seed.title }}</div>
-          <p class="mt-2 text-sm leading-6 text-slate-600">{{ seed.summary }}</p>
+          <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ seed.summary }}</p>
           <div class="mt-3 flex items-center justify-between">
-            <span class="text-xs uppercase tracking-[0.2em] text-slate-400">{{ seed.seedKey }}</span>
+            <span class="text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">{{ seed.seedKey }}</span>
             <el-button :loading="importing === seed.seedKey" type="primary" class="action-button !min-h-9 !px-3" @click="emit('import', seed.seedKey)">
               导入
             </el-button>
@@ -38,12 +38,12 @@
         <div class="flex items-start justify-between gap-4">
           <div>
             <div class="font-semibold text-ink">{{ doc.title }}</div>
-            <div class="mt-2 flex flex-wrap gap-2 text-xs uppercase tracking-[0.2em] text-slate-500">
+            <div class="mt-2 flex flex-wrap gap-2 text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
               <span>{{ doc.categoryName || '未分配分类' }}</span>
               <span>{{ doc.status }}</span>
               <span>chunks {{ doc.chunkCount ?? 0 }}</span>
             </div>
-            <p class="mt-3 text-sm leading-6 text-slate-600">{{ doc.summary || '暂无摘要' }}</p>
+            <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ doc.summary || '暂无摘要' }}</p>
           </div>
           <div class="flex shrink-0 gap-2">
             <el-button :loading="actionId === `rechunk-${doc.id}`" class="hard-button-secondary !min-h-9 !px-3" @click="emit('rechunk', doc.id)">

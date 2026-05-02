@@ -22,17 +22,17 @@
           <article class="metric-card">
             <p class="metric-label">Core Loop</p>
             <p class="metric-value">6</p>
-            <p class="mt-2 text-sm text-slate-500">登录、问答、面试、错题、计划、Dashboard</p>
+            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">登录、问答、面试、错题、计划、Dashboard</p>
           </article>
           <article class="metric-card">
             <p class="metric-label">Dashboard</p>
             <p class="metric-value">Live</p>
-            <p class="mt-2 text-sm text-slate-500">学习概览、面试结果、薄弱点与快捷入口统一呈现</p>
+            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">学习概览、面试结果、薄弱点与快捷入口统一呈现</p>
           </article>
           <article class="metric-card">
             <p class="metric-label">Auth</p>
             <p class="metric-value">JWT</p>
-            <p class="mt-2 text-sm text-slate-500">注册、登录、恢复登录态、退出登录形成完整闭环</p>
+            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">注册、登录、恢复登录态、退出登录形成完整闭环</p>
           </article>
         </div>
       </section>
@@ -52,7 +52,7 @@
             登录
           </el-button>
         </el-form>
-        <div class="mt-6 flex items-center justify-between text-sm text-slate-500">
+        <div class="mt-6 flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
           <span>登录后直接进入 Dashboard 总览</span>
           <RouterLink class="accent-link" to="/register">创建账号</RouterLink>
         </div>

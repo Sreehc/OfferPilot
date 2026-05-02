@@ -20,21 +20,21 @@
       >
         <div class="flex items-start justify-between gap-3">
           <div>
-            <div class="text-xs uppercase tracking-[0.28em] text-slate-500">{{ interview.direction }}</div>
+            <div class="text-xs uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">{{ interview.direction }}</div>
             <div class="mt-2 text-lg font-semibold text-ink">{{ interviewTitle(interview) }}</div>
           </div>
           <div class="text-right">
             <div class="text-3xl font-semibold tracking-[-0.03em] text-ink">{{ formatScore(interview.totalScore) }}</div>
-            <div class="mt-1 text-xs uppercase tracking-[0.22em] text-slate-500">{{ statusLabel(interview.status) }}</div>
+            <div class="mt-1 text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ statusLabel(interview.status) }}</div>
           </div>
         </div>
-        <div class="mt-3 text-sm text-slate-500">{{ formatDate(interview.finishedAt) }}</div>
+        <div class="mt-3 text-sm text-slate-500 dark:text-slate-400">{{ formatDate(interview.finishedAt) }}</div>
       </RouterLink>
     </div>
 
     <div v-else class="empty-state-card mt-6">
       <div class="font-semibold text-ink">还没有面试记录</div>
-      <p class="mt-2 text-sm leading-6 text-slate-500">
+      <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
         先完成一场 3-5 题的模拟面试，首页才会开始积累最近结果和平均分。
       </p>
     </div>

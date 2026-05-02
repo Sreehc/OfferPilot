@@ -8,14 +8,14 @@
           <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
             {{ currentPlan ? currentPlan.title : '生成学习计划' }}
           </h3>
-          <p class="mt-2 text-sm leading-6 text-slate-500">
+          <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
             {{ currentPlan ? currentPlan.goal : '根据错题薄弱点，AI 自动生成每日复习任务。' }}
           </p>
           <div v-if="currentPlan" class="mt-3 flex items-center gap-3">
-            <span class="hard-chip !bg-slate-100 !text-slate-600 text-xs">
+            <span class="hard-chip !bg-slate-100 dark:!bg-slate-700 !text-slate-600 dark:!text-slate-300 text-xs">
               v{{ currentPlan.version || 1 }}
             </span>
-            <span v-if="currentPlan.startDate" class="text-xs text-slate-400">
+            <span v-if="currentPlan.startDate" class="text-xs text-slate-400 dark:text-slate-500">
               {{ currentPlan.startDate }} ~ {{ currentPlan.endDate }}
             </span>
           </div>
@@ -44,7 +44,7 @@
       <h4 class="mt-4 text-lg font-semibold text-ink">设置计划参数</h4>
       <div class="mt-4 grid gap-4 sm:grid-cols-2">
         <div>
-          <label class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">复习方向</label>
+          <label class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">复习方向</label>
           <el-select v-model="form.direction" size="large" class="mt-2 w-full" placeholder="选择方向">
             <el-option label="Java 后端" value="Java 后端" />
             <el-option label="Spring 全家桶" value="Spring 全家桶" />
@@ -54,7 +54,7 @@
           </el-select>
         </div>
         <div>
-          <label class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">计划天数</label>
+          <label class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">计划天数</label>
           <el-input-number
             v-model="form.days"
             :min="1"
@@ -75,14 +75,14 @@
     <!-- Loading -->
     <section v-if="loading" class="paper-panel p-8 text-center">
       <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-      <p class="mt-4 text-sm text-slate-500">加载计划中...</p>
+      <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">加载计划中...</p>
     </section>
 
     <!-- Empty State -->
     <section v-else-if="!currentPlan && !showGenerate" class="paper-panel p-8 text-center">
-      <div class="text-5xl font-semibold tracking-[-0.03em] text-slate-300">0</div>
+      <div class="text-5xl font-semibold tracking-[-0.03em] text-slate-300 dark:text-slate-600">0</div>
       <p class="mt-4 text-lg font-semibold text-ink">暂无学习计划</p>
-      <p class="mt-2 text-sm leading-6 text-slate-500">
+      <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
         点击「生成计划」，AI 将根据你的错题薄弱点自动生成每日任务。
       </p>
       <el-button size="large" class="hard-button-primary mt-6" @click="showGenerate = true">
@@ -96,13 +96,13 @@
       <section class="paper-panel p-6">
         <div class="flex items-center justify-between">
           <div>
-            <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">进度</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">进度</span>
             <span class="ml-3 text-2xl font-semibold text-ink">{{ completedCount }}/{{ currentPlan.tasks.length }}</span>
           </div>
           <div class="flex items-center gap-3">
             <!-- Health Score Badge -->
             <div class="flex items-center gap-2">
-              <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">健康分</span>
+              <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">健康分</span>
               <span
                 class="inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white"
                 :class="healthColorClass"
@@ -110,12 +110,12 @@
                 {{ currentPlan.healthScore ?? '—' }}
               </span>
             </div>
-            <span class="hard-chip" :class="currentPlan.status === 'active' ? '!bg-accent !text-white' : '!bg-slate-200 !text-slate-600'">
+            <span class="hard-chip" :class="currentPlan.status === 'active' ? '!bg-accent !text-white' : '!bg-slate-200 dark:!bg-slate-700 !text-slate-600 dark:!text-slate-300'">
               {{ currentPlan.status === 'active' ? '进行中' : '已完成' }}
             </span>
           </div>
         </div>
-        <div class="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
+        <div class="mt-4 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
           <div
             class="h-full rounded-full bg-accent transition-all duration-500"
             :style="{ width: progressPercent + '%' }"
@@ -124,10 +124,10 @@
         <!-- Health Score Bar -->
         <div v-if="currentPlan.healthScore != null" class="mt-3">
           <div class="flex items-center justify-between mb-1">
-            <span class="text-xs text-slate-400">计划健康度</span>
+            <span class="text-xs text-slate-400 dark:text-slate-500">计划健康度</span>
             <span class="text-xs font-medium" :class="healthTextColor">{{ currentPlan.healthScore }}/100</span>
           </div>
-          <div class="h-1.5 overflow-hidden rounded-full bg-slate-100">
+          <div class="h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
             <div
               class="h-full rounded-full transition-all duration-500"
               :class="healthBarColor"
@@ -144,14 +144,14 @@
           <template v-for="(group, dateKey) in groupedTasks" :key="dateKey">
             <div class="mb-4">
               <div class="flex items-center gap-2">
-                <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ dateKey }}</span>
-                <span class="text-xs text-slate-400">({{ group.filter(t => t.status === 'done').length }}/{{ group.length }})</span>
+                <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{{ dateKey }}</span>
+                <span class="text-xs text-slate-400 dark:text-slate-500">({{ group.filter(t => t.status === 'done').length }}/{{ group.length }})</span>
               </div>
-              <div class="mt-2 divide-y divide-slate-200/60 overflow-hidden rounded-xl border border-slate-200/60">
+              <div class="mt-2 divide-y divide-slate-200/60 dark:divide-slate-700/60 overflow-hidden rounded-xl border border-slate-200/60 dark:border-slate-700/60">
                 <div
                   v-for="task in group"
                   :key="task.id"
-                  class="flex items-center gap-4 px-4 py-3 transition hover:bg-slate-50/50"
+                  class="flex items-center gap-4 px-4 py-3 transition hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
                 >
                   <!-- Checkbox -->
                   <button
@@ -159,7 +159,7 @@
                     class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-all"
                     :class="task.status === 'done'
                       ? 'border-accent bg-accent text-white'
-                      : 'border-slate-300 hover:border-accent'"
+                      : 'border-slate-300 dark:border-slate-600 hover:border-accent'"
                     @click="toggleTaskStatus(task)"
                   >
                     <svg v-if="task.status === 'done'" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
@@ -171,7 +171,7 @@
                   <div class="flex-1 min-w-0">
                     <span
                       class="text-sm font-medium"
-                      :class="task.status === 'done' ? 'text-slate-400 line-through' : 'text-ink'"
+                      :class="task.status === 'done' ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-ink'"
                     >
                       {{ task.content }}
                     </span>
@@ -197,31 +197,31 @@
       <section v-if="planHistory.length > 1" class="paper-panel p-6">
         <p class="section-kicker">Version History</p>
         <h4 class="mt-3 text-lg font-semibold text-ink">计划版本记录</h4>
-        <div class="mt-4 divide-y divide-slate-200/60 overflow-hidden rounded-xl border border-slate-200/60">
+        <div class="mt-4 divide-y divide-slate-200/60 dark:divide-slate-700/60 overflow-hidden rounded-xl border border-slate-200/60 dark:border-slate-700/60">
           <div
             v-for="version in planHistory"
             :key="version.id"
-            class="flex items-center gap-4 px-4 py-3 transition hover:bg-slate-50/50"
+            class="flex items-center gap-4 px-4 py-3 transition hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
             :class="version.id === currentPlan?.id ? 'bg-accent/5' : ''"
           >
             <span
               class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-              :class="version.id === currentPlan?.id ? 'bg-accent' : 'bg-slate-400'"
+              :class="version.id === currentPlan?.id ? 'bg-accent' : 'bg-slate-400 dark:bg-slate-600'"
             >
               v{{ version.version || 1 }}
             </span>
             <div class="flex-1 min-w-0">
               <span class="text-sm font-medium text-ink">{{ version.title }}</span>
-              <span class="ml-2 text-xs text-slate-400">{{ version.startDate }} ~ {{ version.endDate }}</span>
+              <span class="ml-2 text-xs text-slate-400 dark:text-slate-500">{{ version.startDate }} ~ {{ version.endDate }}</span>
             </div>
-            <span class="text-xs text-slate-400">
+            <span class="text-xs text-slate-400 dark:text-slate-500">
               {{ version.completedTasks || 0 }}/{{ version.totalTasks || 0 }} 完成
             </span>
             <span
               class="hard-chip text-xs"
               :class="version.status === 'active'
                 ? '!bg-accent !text-white'
-                : '!bg-slate-200 !text-slate-600'"
+                : '!bg-slate-200 dark:!bg-slate-700 !text-slate-600 dark:!text-slate-300'"
             >
               {{ version.status === 'active' ? '当前' : '已归档' }}
             </span>

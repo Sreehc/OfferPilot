@@ -8,7 +8,7 @@
     </div>
 
     <div v-else-if="!trendData.length" class="mt-4 flex h-[260px] items-center justify-center">
-      <p class="text-sm text-slate-400">暂无面试数据，完成面试后将显示趋势</p>
+      <p class="text-sm text-slate-400 dark:text-slate-500">暂无面试数据，完成面试后将显示趋势</p>
     </div>
 
     <div v-else ref="chartRef" class="mt-4 h-[260px] w-full"></div>

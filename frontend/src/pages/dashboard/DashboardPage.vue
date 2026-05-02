@@ -8,9 +8,9 @@
 
     <section v-if="loading" class="grid gap-4 xl:grid-cols-4 md:grid-cols-2">
       <article v-for="index in 4" :key="index" class="metric-card">
-        <div class="h-4 w-20 animate-pulse bg-slate-200" style="border-radius: var(--radius-sm);"></div>
-        <div class="mt-5 h-12 w-24 animate-pulse bg-slate-200" style="border-radius: var(--radius-md);"></div>
-        <div class="mt-3 h-4 w-full animate-pulse bg-slate-100" style="border-radius: var(--radius-sm);"></div>
+        <div class="h-4 w-20 animate-pulse bg-slate-200 dark:bg-slate-700" style="border-radius: var(--radius-sm);"></div>
+        <div class="mt-5 h-12 w-24 animate-pulse bg-slate-200 dark:bg-slate-700" style="border-radius: var(--radius-md);"></div>
+        <div class="mt-3 h-4 w-full animate-pulse bg-slate-100 dark:bg-slate-800" style="border-radius: var(--radius-sm);"></div>
       </article>
     </section>
 
@@ -35,9 +35,9 @@
               :to="action.to"
               class="surface-card surface-card-hover p-5"
             >
-              <div class="text-xs uppercase tracking-[0.28em] text-slate-500">{{ action.kicker }}</div>
+              <div class="text-xs uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">{{ action.kicker }}</div>
               <div class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">{{ action.label }}</div>
-              <p class="mt-2 text-sm leading-6 text-slate-500">{{ action.desc }}</p>
+              <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{{ action.desc }}</p>
             </RouterLink>
           </div>
         </article>
@@ -45,7 +45,7 @@
         <article class="paper-panel p-6">
           <p class="section-kicker">How To Move</p>
           <h3 class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-ink">建议的起步顺序</h3>
-          <div class="surface-muted mt-6 divide-y divide-slate-200/70 overflow-hidden">
+          <div class="surface-muted mt-6 divide-y divide-slate-200/70 dark:divide-slate-700/70 overflow-hidden">
             <div v-for="step in steps" :key="step.index" class="px-4 py-4">
               <div class="flex items-start gap-4">
                 <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-semibold text-white">
@@ -53,7 +53,7 @@
                 </div>
                 <div>
                   <div class="font-semibold text-ink">{{ step.title }}</div>
-                  <div class="mt-1 text-sm leading-6 text-slate-500">{{ step.desc }}</div>
+                  <div class="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">{{ step.desc }}</div>
                 </div>
               </div>
             </div>

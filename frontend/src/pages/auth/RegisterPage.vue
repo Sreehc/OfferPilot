@@ -3,7 +3,7 @@
     <section class="paper-panel w-full max-w-2xl p-8 md:p-10">
       <p class="section-kicker">Create Account</p>
       <h1 class="mt-4 text-4xl font-semibold tracking-[-0.03em] text-ink">创建账号后，直接进入你的学习首页</h1>
-      <p class="mt-4 max-w-xl text-sm leading-7 text-slate-600">
+      <p class="mt-4 max-w-xl text-sm leading-7 text-slate-600 dark:text-slate-300">
         注册只保留最小字段：`username`、`password`、`nickname`。成功后会自动签发 token，并直接进入 Dashboard。
       </p>
       <div class="rule-divider mt-6"></div>

@@ -45,15 +45,15 @@
         <div class="flex items-start justify-between gap-4">
           <div class="min-w-0">
             <div class="font-semibold text-ink">{{ item.title }}</div>
-            <div class="mt-2 flex flex-wrap gap-2 text-xs uppercase tracking-[0.2em] text-slate-500">
+            <div class="mt-2 flex flex-wrap gap-2 text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
               <span>{{ item.categoryName }}</span>
               <span>{{ item.difficulty }}</span>
             </div>
-            <p class="mt-3 text-sm leading-6 text-slate-600">{{ item.standardAnswer || '暂无标准答案' }}</p>
+            <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ item.standardAnswer || '暂无标准答案' }}</p>
           </div>
           <div class="flex shrink-0 gap-2">
             <button type="button" class="accent-link text-sm font-semibold" @click="emit('edit', item)">编辑</button>
-            <button type="button" class="text-sm text-slate-500 transition hover:text-red-500" @click="emit('remove', item.id)">删除</button>
+            <button type="button" class="text-sm text-slate-500 dark:text-slate-400 transition hover:text-red-500" @click="emit('remove', item.id)">删除</button>
           </div>
         </div>
       </article>

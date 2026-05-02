@@ -12,13 +12,13 @@
         <!-- Idle: Setup Form -->
         <div v-if="phase === 'idle'" class="mt-6 space-y-4">
           <div class="surface-card p-4">
-            <div class="text-xs uppercase tracking-[0.24em] text-slate-500">Direction</div>
+            <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Direction</div>
             <el-select v-model="direction" size="large" class="mt-2 w-full">
               <el-option v-for="d in directions" :key="d" :label="d" :value="d" />
             </el-select>
           </div>
           <div class="surface-card p-4">
-            <div class="text-xs uppercase tracking-[0.24em] text-slate-500">Question Count</div>
+            <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Question Count</div>
             <el-input-number v-model="questionCount" :min="3" :max="5" size="large" class="mt-2 w-full" />
           </div>
           <el-button
@@ -36,11 +36,11 @@
         <div v-else-if="phase !== 'idle'" class="mt-6 space-y-4">
           <!-- Progress Bar -->
           <div class="surface-card p-4">
-            <div class="flex items-center justify-between text-xs uppercase tracking-[0.22em] text-slate-500">
+            <div class="flex items-center justify-between text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
               <span>Progress</span>
               <span>{{ currentQuestion?.currentIndex ?? 0 }} / {{ currentQuestion?.questionCount ?? 0 }}</span>
             </div>
-            <div class="mt-3 h-2 rounded-full bg-slate-200/80">
+            <div class="mt-3 h-2 rounded-full bg-slate-200/80 dark:bg-slate-700/80">
               <div
                 class="h-2 rounded-full bg-accent transition-all duration-500"
                 :style="{ width: `${progressPercent}%` }"
@@ -50,7 +50,7 @@
 
           <!-- Current Question -->
           <div class="surface-card p-4">
-            <div class="text-xs uppercase tracking-[0.24em] text-slate-500">Current Question</div>
+            <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Current Question</div>
             <div class="mt-2 text-lg font-semibold text-ink leading-relaxed">
               {{ currentQuestion?.questionTitle ?? 'Loading...' }}
             </div>
@@ -58,7 +58,7 @@
 
           <!-- Direction Badge -->
           <div class="surface-card p-4">
-            <div class="text-xs uppercase tracking-[0.24em] text-slate-500">Direction</div>
+            <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Direction</div>
             <div class="mt-2 font-semibold">{{ direction }}</div>
           </div>
 
@@ -78,8 +78,8 @@
         <!-- Idle State -->
         <div v-if="phase === 'idle'" class="flex flex-1 items-center justify-center">
           <div class="text-center">
-            <div class="text-5xl font-semibold tracking-[-0.03em] text-slate-300">?</div>
-            <p class="mt-4 text-sm leading-6 text-slate-500">
+            <div class="text-5xl font-semibold tracking-[-0.03em] text-slate-300 dark:text-slate-600">?</div>
+            <p class="mt-4 text-sm leading-6 text-slate-500 dark:text-slate-400">
               选择面试方向并点击"开始面试"，系统会从题库中抽取题目并由 AI 进行评分。
             </p>
           </div>
@@ -90,7 +90,7 @@
           <div class="flex items-center justify-between">
             <p class="section-kicker">Your Answer</p>
             <div class="flex items-center gap-2 text-sm">
-              <span class="text-slate-500">倒计时</span>
+              <span class="text-slate-500 dark:text-slate-400">倒计时</span>
               <span class="font-semibold tabular-nums" :class="countdown <= 30 ? 'text-red-500' : 'text-accent'">{{ formatCountdown(countdown) }}</span>
             </div>
           </div>
@@ -113,7 +113,7 @@
             >
               提交答案
             </el-button>
-            <span class="self-center text-xs text-slate-400">Ctrl + Enter 快捷提交</span>
+            <span class="self-center text-xs text-slate-400 dark:text-slate-500">Ctrl + Enter 快捷提交</span>
           </div>
         </div>
 
@@ -121,7 +121,7 @@
         <div v-else-if="phase === 'scoring'" class="flex flex-1 items-center justify-center">
           <div class="text-center">
             <div class="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-accent border-t-transparent"></div>
-            <p class="mt-4 text-sm text-slate-500">AI 正在评分中，请稍候...</p>
+            <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">AI 正在评分中，请稍候...</p>
           </div>
         </div>
 
@@ -143,16 +143,16 @@
           <div class="grid gap-3 md:grid-cols-2">
             <div class="surface-card p-4">
               <div class="font-semibold text-ink">标准答案</div>
-              <p class="mt-2 text-sm leading-6 text-slate-600">{{ lastResult?.standardAnswer || '暂无' }}</p>
+              <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ lastResult?.standardAnswer || '暂无' }}</p>
             </div>
             <div class="surface-card p-4">
               <div class="font-semibold text-ink">追问</div>
-              <p class="mt-2 text-sm leading-6 text-slate-600">{{ lastResult?.followUp || '无' }}</p>
+              <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ lastResult?.followUp || '无' }}</p>
             </div>
           </div>
 
           <!-- Wrong Book Notice -->
-          <div v-if="lastResult?.addedToWrongBook" class="surface-muted p-4 text-sm text-slate-600">
+          <div v-if="lastResult?.addedToWrongBook" class="surface-muted p-4 text-sm text-slate-600 dark:text-slate-300">
             <span class="font-semibold text-ink">已自动加入错题本</span> — 该题得分低于 60 分，已沉淀到错题本供后续复习。
           </div>
 
@@ -203,9 +203,9 @@
             >
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0 flex-1">
-                  <div class="text-xs uppercase tracking-[0.22em] text-slate-500">Q{{ index + 1 }}</div>
+                  <div class="text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Q{{ index + 1 }}</div>
                   <div class="mt-1 font-semibold text-ink">{{ record.questionTitle }}</div>
-                  <p class="mt-2 text-sm leading-6 text-slate-600">{{ record.comment || '暂无点评' }}</p>
+                  <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ record.comment || '暂无点评' }}</p>
                 </div>
                 <div
                   class="shrink-0 text-3xl font-semibold tracking-[-0.03em]"

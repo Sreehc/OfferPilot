@@ -6,6 +6,7 @@
 :root {
   color-scheme: light;
   --bc-ink: #172033;
+  --bc-ink-secondary: #64748b;
   --bc-accent: #2f4f9d;
   --bc-accent-strong: #233d79;
   --bc-shell: #f5f7fb;
@@ -13,10 +14,17 @@
   --bc-surface-solid: #ffffff;
   --bc-surface-muted: #f0f4fa;
   --bc-surface-soft: #f7f9fc;
+  --bc-surface-card: rgba(255, 255, 255, 0.74);
+  --bc-surface-card-hover: rgba(255, 255, 255, 0.92);
+  --bc-surface-button: rgba(255, 255, 255, 0.78);
+  --bc-surface-button-hover: rgba(255, 255, 255, 0.96);
+  --bc-surface-input: rgba(255, 255, 255, 0.92);
   --bc-border: rgba(23, 32, 51, 0.07);
   --bc-border-strong: rgba(23, 32, 51, 0.12);
+  --bc-border-subtle: rgba(23, 32, 51, 0.04);
   --bc-shadow: 0 14px 36px rgba(31, 43, 72, 0.06);
   --bc-shadow-soft: 0 8px 22px rgba(31, 43, 72, 0.045);
+  --bc-shadow-hover: 0 16px 36px rgba(31, 43, 72, 0.08);
   --radius-none: 0;
   --radius-sm: 4px;
   --radius-md: 6px;
@@ -27,18 +35,26 @@
 
 .dark {
   color-scheme: dark;
-  --bc-ink: #e8ecf4;
+  --bc-ink: #e2e8f0;
+  --bc-ink-secondary: #94a3b8;
   --bc-accent: #6b8fd4;
   --bc-accent-strong: #8ba8e0;
   --bc-shell: #0f1219;
-  --bc-surface: rgba(22, 27, 38, 0.88);
+  --bc-surface: rgba(22, 27, 38, 0.92);
   --bc-surface-solid: #161b26;
   --bc-surface-muted: #1c2233;
   --bc-surface-soft: #121722;
+  --bc-surface-card: rgba(28, 34, 51, 0.8);
+  --bc-surface-card-hover: rgba(35, 42, 61, 0.9);
+  --bc-surface-button: rgba(35, 42, 61, 0.8);
+  --bc-surface-button-hover: rgba(45, 54, 78, 0.9);
+  --bc-surface-input: rgba(28, 34, 51, 0.9);
   --bc-border: rgba(200, 210, 225, 0.08);
   --bc-border-strong: rgba(200, 210, 225, 0.14);
+  --bc-border-subtle: rgba(200, 210, 225, 0.06);
   --bc-shadow: 0 14px 36px rgba(0, 0, 0, 0.3);
   --bc-shadow-soft: 0 8px 22px rgba(0, 0, 0, 0.2);
+  --bc-shadow-hover: 0 16px 36px rgba(0, 0, 0, 0.35);
 }
 
 html,
@@ -67,10 +83,10 @@ body {
 
 .dark body {
   background:
-    linear-gradient(rgba(99, 114, 139, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(99, 114, 139, 0.02) 1px, transparent 1px),
-    radial-gradient(circle at top left, rgba(47, 79, 157, 0.04), transparent 24%),
-    radial-gradient(circle at top right, rgba(123, 143, 184, 0.03), transparent 28%),
+    linear-gradient(rgba(99, 114, 139, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 114, 139, 0.015) 1px, transparent 1px),
+    radial-gradient(circle at top left, rgba(47, 79, 157, 0.03), transparent 24%),
+    radial-gradient(circle at top right, rgba(123, 143, 184, 0.02), transparent 28%),
     linear-gradient(180deg, #0f1219 0%, #121722 48%, #0f1219 100%);
   background-size:
     32px 32px,
@@ -94,13 +110,14 @@ a {
   box-sizing: border-box;
 }
 
+/* ── Panel & Surface ─────────────────────────── */
+
 .paper-panel {
-  @apply border bg-[color:var(--bc-surface)] backdrop-blur-[4px];
+  @apply border backdrop-blur-[4px];
+  background: var(--bc-surface);
   border-color: var(--bc-border);
   border-radius: var(--radius-md);
-  box-shadow:
-    var(--bc-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  box-shadow: var(--bc-shadow);
 }
 
 .dark .paper-panel {
@@ -113,17 +130,19 @@ a {
 }
 
 .page-title {
-  @apply text-4xl font-semibold leading-tight tracking-[-0.03em] text-ink md:text-5xl;
+  @apply text-4xl font-semibold leading-tight tracking-[-0.03em] md:text-5xl;
+  color: var(--bc-ink);
 }
 
 .page-subtitle {
-  @apply max-w-2xl text-sm leading-7 text-slate-600 md:text-base;
+  @apply max-w-2xl text-sm leading-7 md:text-base;
+  color: var(--bc-ink-secondary);
 }
 
 .metric-card {
   @apply p-5;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(23, 32, 51, 0.04);
+  background: var(--bc-surface-card);
+  border: 1px solid var(--bc-border-subtle);
   border-radius: var(--radius-md);
   box-shadow: var(--bc-shadow-soft);
   transition:
@@ -133,8 +152,8 @@ a {
 }
 
 .metric-card:hover {
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 16px 36px rgba(31, 43, 72, 0.08);
+  background: var(--bc-surface-card-hover);
+  box-shadow: var(--bc-shadow-hover);
 }
 
 .metric-card:active {
@@ -142,19 +161,23 @@ a {
 }
 
 .metric-value {
-  @apply mt-4 text-4xl font-semibold tracking-[-0.03em] text-ink;
+  @apply mt-4 text-4xl font-semibold tracking-[-0.03em];
+  color: var(--bc-ink);
 }
 
 .metric-label {
-  @apply text-sm text-slate-500;
+  @apply text-sm;
+  color: var(--bc-ink-secondary);
 }
 
 .empty-state-card {
   @apply p-5;
   background: var(--bc-surface-soft);
-  border: 1px solid rgba(23, 32, 51, 0.05);
+  border: 1px solid var(--bc-border-subtle);
   border-radius: var(--radius-md);
 }
+
+/* ── Buttons ─────────────────────────────────── */
 
 .hard-button {
   @apply inline-flex min-h-11 items-center justify-center px-4 py-2 text-sm font-semibold;
@@ -181,17 +204,26 @@ a {
 }
 
 .hard-button-secondary {
-  @apply hard-button text-[color:var(--bc-ink)];
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(23, 32, 51, 0.06);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  @apply hard-button;
+  color: var(--bc-ink);
+  background: var(--bc-surface-button);
+  border: 1px solid var(--bc-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .hard-button-secondary:hover {
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--bc-surface-button-hover);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
     0 10px 24px rgba(31, 43, 72, 0.06);
+}
+
+.dark .hard-button-secondary {
+  box-shadow: none;
+}
+
+.dark .hard-button-secondary:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .hard-chip {
@@ -201,13 +233,19 @@ a {
   border-radius: var(--radius-pill);
 }
 
-.rule-divider {
-  border-top: 1px solid rgba(23, 32, 51, 0.06);
+.dark .hard-chip {
+  background: rgba(107, 143, 212, 0.12);
 }
 
+.rule-divider {
+  border-top: 1px solid var(--bc-border);
+}
+
+/* ── Surface Cards ───────────────────────────── */
+
 .surface-card {
-  background: rgba(255, 255, 255, 0.74);
-  border: 1px solid rgba(23, 32, 51, 0.04);
+  background: var(--bc-surface-card);
+  border: 1px solid var(--bc-border-subtle);
   border-radius: var(--radius-md);
   box-shadow: var(--bc-shadow-soft);
 }
@@ -220,8 +258,8 @@ a {
 }
 
 .surface-card-hover:hover {
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 16px 36px rgba(31, 43, 72, 0.08);
+  background: var(--bc-surface-card-hover);
+  box-shadow: var(--bc-shadow-hover);
 }
 
 .surface-card-hover:active {
@@ -253,6 +291,8 @@ a {
   background: linear-gradient(180deg, #314f9e 0%, #294386 100%) !important;
 }
 
+/* ── Element Plus Overrides ──────────────────── */
+
 .el-button {
   border-radius: var(--radius-sm);
   min-height: 44px;
@@ -269,9 +309,9 @@ a {
 .el-select__wrapper,
 .el-textarea__inner {
   box-shadow:
-    inset 0 0 0 1px rgba(23, 32, 51, 0.08),
-    0 1px 0 rgba(23, 32, 51, 0.02) !important;
-  background: rgba(255, 255, 255, 0.92) !important;
+    inset 0 0 0 1px var(--bc-border-strong),
+    0 1px 0 var(--bc-border-subtle) !important;
+  background: var(--bc-surface-input) !important;
   transition:
     box-shadow 160ms var(--ease-hard),
     background-color 160ms var(--ease-hard),
@@ -282,8 +322,8 @@ a {
 .el-select__wrapper:hover,
 .el-textarea__inner:hover {
   box-shadow:
-    inset 0 0 0 1px rgba(23, 32, 51, 0.14),
-    0 2px 8px rgba(23, 32, 51, 0.03) !important;
+    inset 0 0 0 1px var(--bc-border-strong),
+    0 2px 8px rgba(31, 43, 72, 0.03) !important;
 }
 
 .el-input__wrapper.is-focus,
@@ -300,11 +340,59 @@ a {
 }
 
 .el-message {
-  border: 1px solid rgba(23, 32, 51, 0.06) !important;
-  box-shadow:
-    0 12px 30px rgba(31, 43, 72, 0.08),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  border: 1px solid var(--bc-border) !important;
+  box-shadow: var(--bc-shadow-soft);
 }
+
+/* Element Plus dark mode */
+.dark .el-input__wrapper,
+.dark .el-select__wrapper,
+.dark .el-textarea__inner {
+  box-shadow:
+    inset 0 0 0 1px rgba(200, 210, 225, 0.1),
+    0 1px 0 rgba(0, 0, 0, 0.1) !important;
+}
+
+.dark .el-input__inner,
+.dark .el-textarea__inner {
+  color: var(--bc-ink) !important;
+}
+
+.dark .el-input__inner::placeholder,
+.dark .el-textarea__inner::placeholder {
+  color: var(--bc-ink-secondary) !important;
+}
+
+.dark .el-select__wrapper .el-select__placeholder {
+  color: var(--bc-ink-secondary) !important;
+}
+
+.dark .el-select-dropdown {
+  background: var(--bc-surface-solid) !important;
+  border-color: var(--bc-border-strong) !important;
+}
+
+.dark .el-select-dropdown__item {
+  color: var(--bc-ink) !important;
+}
+
+.dark .el-select-dropdown__item:hover,
+.dark .el-select-dropdown__item.hover {
+  background: var(--bc-surface-muted) !important;
+}
+
+.dark .el-popper.is-light {
+  background: var(--bc-surface-solid) !important;
+  border-color: var(--bc-border-strong) !important;
+}
+
+.dark .el-pagination {
+  --el-pagination-bg-color: transparent;
+  --el-pagination-text-color: var(--bc-ink-secondary);
+  --el-pagination-button-bg-color: var(--bc-surface-card);
+}
+
+/* ── Focus & Selection ───────────────────────── */
 
 :focus-visible {
   outline: 2px solid rgba(47, 79, 157, 0.52);

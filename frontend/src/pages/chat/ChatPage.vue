@@ -19,11 +19,11 @@
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
               <div class="truncate font-semibold">{{ session.title }}</div>
-              <p class="mt-2 text-sm leading-6 text-slate-500">{{ session.mode === 'rag' ? '知识库问答' : '普通问答' }}</p>
+              <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{{ session.mode === 'rag' ? '知识库问答' : '普通问答' }}</p>
             </div>
             <button
               type="button"
-              class="text-xs text-slate-400 transition hover:text-slate-700"
+              class="text-xs text-slate-400 dark:text-slate-500 transition hover:text-slate-700 dark:hover:text-slate-300"
               @click.stop="removeSession(session.id)"
             >
               删除
@@ -34,7 +34,7 @@
 
       <div v-if="!sessions.length" class="empty-state-card mt-5">
         <div class="font-semibold text-ink">还没有会话</div>
-        <p class="mt-2 text-sm leading-6 text-slate-500">直接发起第一个问题，系统会自动创建会话标题并开始沉淀历史。</p>
+        <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">直接发起第一个问题，系统会自动创建会话标题并开始沉淀历史。</p>
       </div>
 
       <div v-if="sessionTotalPages > 1" class="mt-4 flex justify-center">
@@ -69,16 +69,16 @@
           style="border-radius: var(--radius-md);"
           :class="message.role === 'assistant' ? 'surface-card' : 'bg-accent text-white shadow-[0_14px_30px_rgba(47,79,157,0.14)]'"
         >
-          <div class="text-xs uppercase tracking-[0.24em]" :class="message.role === 'assistant' ? 'text-slate-500' : 'text-white/60'">
+          <div class="text-xs uppercase tracking-[0.24em]" :class="message.role === 'assistant' ? 'text-slate-500 dark:text-slate-400' : 'text-white/60'">
             {{ message.role }}
           </div>
           <div class="bc-markdown mt-3 text-sm leading-7" v-html="renderMarkdown(message.content)"></div>
 
-          <div v-if="message.references.length" class="surface-muted mt-4 space-y-2 px-3 py-3 text-xs text-slate-600">
-            <div class="mb-1 font-semibold text-slate-500">知识库引用</div>
-            <div v-for="reference in message.references" :key="reference.chunkId" class="space-y-1 rounded-md border border-slate-200 bg-white/60 px-3 py-2">
+          <div v-if="message.references.length" class="surface-muted mt-4 space-y-2 px-3 py-3 text-xs text-slate-600 dark:text-slate-300">
+            <div class="mb-1 font-semibold text-slate-500 dark:text-slate-400">知识库引用</div>
+            <div v-for="reference in message.references" :key="reference.chunkId" class="space-y-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-800/60 px-3 py-2">
               <div class="flex items-center justify-between">
-                <div class="font-semibold text-slate-700">{{ reference.docTitle }}</div>
+                <div class="font-semibold text-slate-700 dark:text-slate-200">{{ reference.docTitle }}</div>
                 <span v-if="reference.score != null" class="rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-medium text-accent">
                   {{ Math.round(reference.score * 100) }}%
                 </span>
@@ -90,15 +90,15 @@
 
         <div v-if="loadingMessages" class="space-y-3">
           <div v-for="n in 2" :key="n" class="surface-card animate-pulse p-4">
-            <div class="h-3 w-20 rounded bg-slate-200"></div>
-            <div class="mt-3 h-4 w-full rounded bg-slate-100"></div>
-            <div class="mt-2 h-4 w-4/5 rounded bg-slate-100"></div>
+            <div class="h-3 w-20 rounded bg-slate-200 dark:bg-slate-700"></div>
+            <div class="mt-3 h-4 w-full rounded bg-slate-100 dark:bg-slate-800"></div>
+            <div class="mt-2 h-4 w-4/5 rounded bg-slate-100 dark:bg-slate-800"></div>
           </div>
         </div>
 
         <div v-if="!messages.length && !loadingMessages" class="empty-state-card">
           <div class="font-semibold text-ink">新会话已就绪</div>
-          <p class="mt-2 text-sm leading-6 text-slate-500">可以先用知识库问答问一个具体主题，或者切到普通问答直接开问。</p>
+          <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">可以先用知识库问答问一个具体主题，或者切到普通问答直接开问。</p>
         </div>
       </div>
 
@@ -114,7 +114,7 @@
           <el-button :loading="sending" type="primary" size="large" class="action-button transition active:translate-y-px" @click="submitChat">
             发送
           </el-button>
-          <span class="text-center text-xs text-slate-400">Enter 发送</span>
+          <span class="text-center text-xs text-slate-400 dark:text-slate-500">Enter 发送</span>
         </div>
       </div>
     </section>

@@ -8,7 +8,7 @@
           <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
             面试历史记录
           </h3>
-          <p class="mt-2 text-sm leading-6 text-slate-500">
+          <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
             查看所有已完成的面试记录，点击可查看详情和复盘。
           </p>
         </div>
@@ -27,16 +27,16 @@
     <!-- Loading -->
     <section v-if="loading" class="space-y-3">
       <article v-for="n in 3" :key="n" class="paper-panel p-5">
-        <div class="h-4 w-32 animate-pulse rounded bg-slate-200"></div>
-        <div class="mt-3 h-3 w-full animate-pulse rounded bg-slate-100"></div>
+        <div class="h-4 w-32 animate-pulse rounded bg-slate-200 dark:bg-slate-700"></div>
+        <div class="mt-3 h-3 w-full animate-pulse rounded bg-slate-100 dark:bg-slate-800"></div>
       </article>
     </section>
 
     <!-- Empty State -->
     <section v-else-if="!items.length" class="paper-panel p-8 text-center">
-      <div class="text-5xl font-semibold tracking-[-0.03em] text-slate-300">0</div>
+      <div class="text-5xl font-semibold tracking-[-0.03em] text-slate-300 dark:text-slate-600">0</div>
       <p class="mt-4 text-lg font-semibold text-ink">暂无面试记录</p>
-      <p class="mt-2 text-sm leading-6 text-slate-500">
+      <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
         完成一场面试后，记录会自动出现在这里。
       </p>
       <RouterLink to="/interview" class="hard-button-primary mt-6 inline-flex">
@@ -56,7 +56,7 @@
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
               <span class="hard-chip !bg-blue-100 !text-blue-700 text-xs">{{ item.direction }}</span>
-              <span class="text-sm text-slate-400">{{ item.questionCount }} 题</span>
+              <span class="text-sm text-slate-400 dark:text-slate-500">{{ item.questionCount }} 题</span>
             </div>
             <div class="text-right">
               <span
@@ -67,7 +67,7 @@
               </span>
             </div>
           </div>
-          <div class="mt-2 flex items-center gap-4 text-xs text-slate-400">
+          <div class="mt-2 flex items-center gap-4 text-xs text-slate-400 dark:text-slate-500">
             <span v-if="item.startTime">{{ formatTime(item.startTime) }}</span>
             <span v-if="item.endTime">~ {{ formatTime(item.endTime) }}</span>
           </div>

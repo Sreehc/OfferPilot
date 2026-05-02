@@ -32,7 +32,7 @@
         </div>
         <div>
           <div class="text-sm font-semibold">{{ name }}</div>
-          <div class="text-xs uppercase tracking-[0.24em] text-slate-500">{{ role }}</div>
+          <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">{{ role }}</div>
         </div>
       </div>
 
