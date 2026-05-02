@@ -38,7 +38,7 @@ public class MybatisPlusConfig {
     }
 
     @Intercepts({
-            @Signature(type = StatementHandler.class, method = "query", args = {java.sql.ResultSet.class, org.apache.ibatis.session.RowBounds.class}),
+            @Signature(type = StatementHandler.class, method = "query", args = {java.sql.Statement.class, org.apache.ibatis.session.RowBounds.class}),
             @Signature(type = StatementHandler.class, method = "update", args = {java.sql.Statement.class}),
             @Signature(type = StatementHandler.class, method = "batch", args = {java.sql.Statement.class})
     })
