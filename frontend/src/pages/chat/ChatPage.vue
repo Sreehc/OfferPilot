@@ -75,9 +75,15 @@
           <div class="bc-markdown mt-3 text-sm leading-7" v-html="renderMarkdown(message.content)"></div>
 
           <div v-if="message.references.length" class="surface-muted mt-4 space-y-2 px-3 py-3 text-xs text-slate-600">
-            <div v-for="reference in message.references" :key="reference.chunkId" class="space-y-1">
-              <div class="font-semibold text-slate-700">{{ reference.docTitle }}</div>
-              <div>{{ reference.snippet }}</div>
+            <div class="mb-1 font-semibold text-slate-500">知识库引用</div>
+            <div v-for="reference in message.references" :key="reference.chunkId" class="space-y-1 rounded-md border border-slate-200 bg-white/60 px-3 py-2">
+              <div class="flex items-center justify-between">
+                <div class="font-semibold text-slate-700">{{ reference.docTitle }}</div>
+                <span v-if="reference.score != null" class="rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-medium text-accent">
+                  {{ Math.round(reference.score * 100) }}%
+                </span>
+              </div>
+              <div class="leading-relaxed">{{ reference.snippet }}</div>
             </div>
           </div>
         </article>

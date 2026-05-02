@@ -17,6 +17,7 @@ public class KnowledgeSearchVO {
         private Long chunkId;
         private String docTitle;
         private String snippet;
+        private Float score;
     }
 }
 

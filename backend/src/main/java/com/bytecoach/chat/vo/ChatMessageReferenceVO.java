@@ -10,5 +10,6 @@ public class ChatMessageReferenceVO {
     private String docTitle;
     private Long chunkId;
     private String snippet;
+    private Float score;
 }
 

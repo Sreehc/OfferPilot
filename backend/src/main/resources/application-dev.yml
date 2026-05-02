@@ -25,4 +25,13 @@ bytecoach:
       api-key: ${BYTECOACH_LLM_API_KEY:}
       model: ${BYTECOACH_LLM_MODEL:gpt-4.1-mini}
       timeout-seconds: ${BYTECOACH_LLM_TIMEOUT_SECONDS:30}
+    embedding:
+      enabled: ${BYTECOACH_EMBEDDING_ENABLED:false}
+      base-url: ${BYTECOACH_EMBEDDING_BASE_URL:${BYTECOACH_LLM_BASE_URL:https://api.openai.com/v1}}
+      api-key: ${BYTECOACH_EMBEDDING_API_KEY:${BYTECOACH_LLM_API_KEY:}}
+      model: ${BYTECOACH_EMBEDDING_MODEL:text-embedding-3-small}
+      dimensions: ${BYTECOACH_EMBEDDING_DIMENSIONS:1536}
+    vector:
+      index-name: bytecoach_chunks
+      similarity-threshold: ${BYTECOACH_VECTOR_THRESHOLD:0.3}
 

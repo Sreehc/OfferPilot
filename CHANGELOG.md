@@ -1,5 +1,40 @@
 # Changelog
 
+## Phase 2.1 — 向量检索引擎 (2026-05-03)
+
+### Redis Stack 向量检索
+
+- Docker Compose（dev + prod）切换为 `redis/redis-stack-server`，加载 RediSearch + ReJSON 模块
+- `pom.xml` 添加 Jedis 依赖用于 RediSearch 命令
+- `RedisVectorStoreService`：基于 RediSearch HNSW 的向量索引管理、存储、KNN 检索
+- 应用启动时自动创建向量索引（`bytecoach_chunks`）
+
+### Embedding 网关
+
+- `EmbeddingGateway` 接口 + `OpenAiEmbeddingGateway` 实现（OpenAI-compatible `/embeddings` API）
+- 支持单条和批量 Embedding，自动回退（embedding 未配置时降级为纯关键词检索）
+- `EmbeddingProperties` + `VectorProperties` 配置类
+
+### 混合检索
+
+- `KnowledgeRetrievalServiceImpl` 重构为向量语义检索 + 关键词混合检索
+- 向量结果优先，关键词结果填充，按 chunkId 去重合并
+- 可配置相似度阈值（`BYTECOACH_VECTOR_THRESHOLD`，默认 0.3）
+
+### 文档自动向量化
+
+- `KnowledgeServiceImpl.rebuildChunks()` 在创建 chunk 后自动调用 Embedding API 批量向量化
+- 向量化结果存入 Redis Stack + 更新 `knowledge_chunk.vector_id`
+- 向量化失败时降级：chunk 正常入库，仅无向量
+
+### 前端优化
+
+- `KnowledgeReferenceItem` / `ChatMessageReferenceVO` 增加 `score` 字段
+- Chat 页面引用区域显示相似度百分比标签
+- 引用卡片样式优化：独立边框、标题行 + 分数标签并排
+
+---
+
 ## Sprint 4 — 部署与收尾 (2026-05-03)
 
 ### Day 1: 生产部署方案

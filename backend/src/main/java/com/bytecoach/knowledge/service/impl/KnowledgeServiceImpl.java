@@ -3,6 +3,7 @@ package com.bytecoach.knowledge.service.impl;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.bytecoach.ai.service.EmbeddingGateway;
 import com.bytecoach.category.entity.Category;
 import com.bytecoach.category.service.CategoryService;
 import com.bytecoach.common.api.ResultCode;
@@ -17,6 +18,7 @@ import com.bytecoach.knowledge.mapper.KnowledgeChunkMapper;
 import com.bytecoach.knowledge.mapper.KnowledgeDocMapper;
 import com.bytecoach.knowledge.service.KnowledgeRetrievalService;
 import com.bytecoach.knowledge.service.KnowledgeService;
+import com.bytecoach.knowledge.service.VectorStoreService;
 import com.bytecoach.knowledge.vo.KnowledgeDocVO;
 import com.bytecoach.knowledge.vo.KnowledgeSearchVO;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -35,12 +37,14 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, KnowledgeDoc> implements KnowledgeService {
@@ -51,6 +55,8 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
     private final KnowledgeRetrievalService knowledgeRetrievalService;
     private final CategoryService categoryService;
     private final ObjectMapper objectMapper;
+    private final EmbeddingGateway embeddingGateway;
+    private final VectorStoreService vectorStoreService;
 
     @Override
     public PageResult<KnowledgeDocVO> listDocs(KnowledgeListQuery query) {
@@ -182,17 +188,45 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
 
     private void rebuildChunks(KnowledgeDoc doc, String fileName) {
         String markdown = loadSeedMarkdown(fileName);
-        List<String> chunks = splitMarkdown(markdown);
+        List<String> chunkTexts = splitMarkdown(markdown);
+
+        // Remove old chunks from DB and vector store
         knowledgeChunkMapper.delete(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<KnowledgeChunk>()
                 .eq(KnowledgeChunk::getDocId, doc.getId()));
-        for (int i = 0; i < chunks.size(); i++) {
+        vectorStoreService.removeByDocId(doc.getId());
+
+        // Insert new chunks into DB
+        List<KnowledgeChunk> insertedChunks = new ArrayList<>();
+        for (int i = 0; i < chunkTexts.size(); i++) {
             KnowledgeChunk chunk = new KnowledgeChunk();
             chunk.setDocId(doc.getId());
             chunk.setChunkIndex(i + 1);
-            chunk.setContent(chunks.get(i));
-            chunk.setTokenCount(estimateTokenCount(chunks.get(i)));
+            chunk.setContent(chunkTexts.get(i));
+            chunk.setTokenCount(estimateTokenCount(chunkTexts.get(i)));
             chunk.setVectorId(null);
             knowledgeChunkMapper.insert(chunk);
+            insertedChunks.add(chunk);
+        }
+
+        // Vectorize chunks in batch (if embedding is enabled)
+        vectorizeChunks(insertedChunks, chunkTexts);
+    }
+
+    private void vectorizeChunks(List<KnowledgeChunk> chunks, List<String> texts) {
+        try {
+            List<float[]> embeddings = embeddingGateway.embedBatch(texts);
+            for (int i = 0; i < chunks.size(); i++) {
+                float[] embedding = embeddings.get(i);
+                if (embedding.length > 0) {
+                    String key = vectorStoreService.store(chunks.get(i).getId(), chunks.get(i).getDocId(), texts.get(i), embedding);
+                    chunks.get(i).setVectorId(key);
+                    knowledgeChunkMapper.updateById(chunks.get(i));
+                }
+            }
+            log.info("Vectorized {} chunks for doc {}", chunks.size(), chunks.get(0).getDocId());
+        } catch (Exception e) {
+            log.warn("Vectorization failed for doc {}, chunks stored without vectors: {}",
+                    chunks.isEmpty() ? "?" : chunks.get(0).getDocId(), e.getMessage());
         }
     }
 

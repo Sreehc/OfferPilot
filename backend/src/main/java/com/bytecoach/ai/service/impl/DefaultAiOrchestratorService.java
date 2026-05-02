@@ -48,6 +48,7 @@ public class DefaultAiOrchestratorService implements AiOrchestratorService {
                         .docTitle(reference.getDocTitle())
                         .chunkId(reference.getChunkId())
                         .snippet(reference.getSnippet())
+                        .score(reference.getScore())
                         .build()).toList())
                 .build();
     }

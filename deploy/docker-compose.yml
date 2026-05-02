@@ -22,14 +22,14 @@ services:
       retries: 5
 
   redis:
-    image: redis:7-alpine
+    image: redis/redis-stack-server:latest
     container_name: bytecoach-redis
     restart: unless-stopped
     ports:
       - "${BYTECOACH_REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --loadmodule /opt/redis-stack/lib/redisearch.so --loadmodule /opt/redis-stack/lib/rejson.so
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s

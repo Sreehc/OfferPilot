@@ -91,6 +91,7 @@ export interface KnowledgeReferenceItem {
   chunkId: number
   docTitle: string
   snippet: string
+  score?: number
 }
 
 export interface KnowledgeSearchResult {
