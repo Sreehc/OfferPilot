@@ -71,8 +71,7 @@ public class RedisVectorStoreService implements VectorStoreService {
     private void createIndex(String indexName) {
         try {
             jedis.ftCreate(indexName,
-                    redis.clients.jedis.search.IndexOptions.defaultOptions()
-                            .setPrefixes("bytecoach:chunk:"),
+                    redis.clients.jedis.search.IndexOptions.defaultOptions(),
                     new redis.clients.jedis.search.Schema()
                             .addNumericField("chunkId")
                             .addNumericField("docId")
