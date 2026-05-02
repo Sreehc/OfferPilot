@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.DefaultJedisClientConfig;
+import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.exceptions.JedisDataException;
 import redis.clients.jedis.params.ScanParams;
@@ -40,7 +41,7 @@ public class RedisVectorStoreService implements VectorStoreService {
         if (password != null && !password.isEmpty()) {
             configBuilder.password(password);
         }
-        jedis = new JedisPooled(host, port, configBuilder.build());
+        jedis = new JedisPooled(new HostAndPort(host, port), configBuilder.build());
         log.info("Redis VectorStore initialized: host={}, port={}, db={}", host, port, database);
         ensureIndex();
     }
