@@ -11,6 +11,10 @@ spring:
       database: ${BYTECOACH_REDIS_DB:0}
       password: ${BYTECOACH_REDIS_PASSWORD:}
       timeout: 5s
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
 
 bytecoach:
   security:

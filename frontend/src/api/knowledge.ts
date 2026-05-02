@@ -34,3 +34,25 @@ export const rechunkKnowledgeDocApi = (docId: number) => {
 export const reindexKnowledgeDocApi = (docId: number) => {
   return request<KnowledgeDocItem>({ url: `/admin/knowledge/reindex/${docId}`, method: 'post' })
 }
+
+export const uploadKnowledgeDocApi = (file: File, categoryId?: number) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  if (categoryId != null) {
+    formData.append('categoryId', String(categoryId))
+  }
+  return request<KnowledgeDocItem>({
+    url: '/knowledge/upload',
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}
+
+export const fetchMyKnowledgeDocsApi = (params?: KnowledgeListQuery) => {
+  return request<PageResult<KnowledgeDocItem>>({ url: '/knowledge/my', method: 'get', params })
+}
+
+export const deleteKnowledgeDocApi = (docId: number) => {
+  return request<void>({ url: `/knowledge/${docId}`, method: 'delete' })
+}

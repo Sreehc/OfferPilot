@@ -11,6 +11,7 @@ import lombok.EqualsAndHashCode;
 public class KnowledgeDoc extends BaseEntity {
     private String title;
     private Long categoryId;
+    private Long userId;
     private String sourceType;
     private String fileUrl;
     private String summary;

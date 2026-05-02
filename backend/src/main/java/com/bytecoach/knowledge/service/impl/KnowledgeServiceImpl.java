@@ -1,5 +1,6 @@
 package com.bytecoach.knowledge.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -16,6 +17,7 @@ import com.bytecoach.knowledge.entity.KnowledgeChunk;
 import com.bytecoach.knowledge.entity.KnowledgeDoc;
 import com.bytecoach.knowledge.mapper.KnowledgeChunkMapper;
 import com.bytecoach.knowledge.mapper.KnowledgeDocMapper;
+import com.bytecoach.knowledge.service.DocumentParserService;
 import com.bytecoach.knowledge.service.KnowledgeRetrievalService;
 import com.bytecoach.knowledge.service.KnowledgeService;
 import com.bytecoach.knowledge.service.VectorStoreService;
@@ -38,11 +40,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
@@ -57,6 +62,11 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
     private final ObjectMapper objectMapper;
     private final EmbeddingGateway embeddingGateway;
     private final VectorStoreService vectorStoreService;
+    private final DocumentParserService documentParserService;
+
+    @Lazy
+    @org.springframework.beans.factory.annotation.Autowired
+    private KnowledgeServiceImpl self;
 
     @Override
     public PageResult<KnowledgeDocVO> listDocs(KnowledgeListQuery query) {
@@ -143,6 +153,99 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
         doc.setStatus("indexed");
         updateById(doc);
         return buildDocVOs(List.of(doc)).get(0);
+    }
+
+    @Override
+    public KnowledgeDocVO upload(Long userId, MultipartFile file, Long categoryId) {
+        String originalFilename = file.getOriginalFilename();
+        if (!StringUtils.hasText(originalFilename)) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "文件名不能为空");
+        }
+        if (!documentParserService.isSupported(originalFilename)) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(),
+                    "不支持的文件格式，仅支持: " + String.join(", ", documentParserService.supportedExtensions()));
+        }
+
+        // Parse document into chunks
+        List<String> chunks;
+        try {
+            chunks = documentParserService.parse(file.getInputStream(), originalFilename);
+        } catch (IOException e) {
+            throw new BusinessException(ResultCode.SERVER_ERROR.getCode(), "文件读取失败: " + e.getMessage());
+        }
+        if (chunks.isEmpty()) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "文档内容为空或无法解析");
+        }
+
+        // Create knowledge doc record
+        KnowledgeDoc doc = new KnowledgeDoc();
+        doc.setTitle(stripExtension(originalFilename));
+        doc.setCategoryId(categoryId);
+        doc.setUserId(userId);
+        doc.setSourceType("user_upload");
+        doc.setFileUrl("upload://user/" + userId + "/" + originalFilename);
+        doc.setSummary(chunks.get(0).length() > 200 ? chunks.get(0).substring(0, 200) + "..." : chunks.get(0));
+        doc.setStatus("indexed");
+        save(doc);
+
+        // Insert chunks into DB
+        List<KnowledgeChunk> insertedChunks = new ArrayList<>();
+        for (int i = 0; i < chunks.size(); i++) {
+            KnowledgeChunk chunk = new KnowledgeChunk();
+            chunk.setDocId(doc.getId());
+            chunk.setChunkIndex(i + 1);
+            chunk.setContent(chunks.get(i));
+            chunk.setTokenCount(estimateTokenCount(chunks.get(i)));
+            knowledgeChunkMapper.insert(chunk);
+            insertedChunks.add(chunk);
+        }
+
+        // Async vectorization
+        self.vectorizeChunksAsync(insertedChunks, chunks);
+
+        log.info("User {} uploaded document '{}', {} chunks", userId, originalFilename, chunks.size());
+        return buildDocVOs(List.of(doc)).get(0);
+    }
+
+    @Override
+    public PageResult<KnowledgeDocVO> listUserDocs(Long userId, KnowledgeListQuery query) {
+        Page<KnowledgeDoc> page = new Page<>(query.getPageNum(), query.getPageSize());
+        IPage<KnowledgeDoc> result = page(page, lambdaQuery()
+                .eq(KnowledgeDoc::getUserId, userId)
+                .eq(StringUtils.hasText(query.getStatus()), KnowledgeDoc::getStatus, query.getStatus())
+                .and(StringUtils.hasText(query.getKeyword()), wrapper -> wrapper
+                        .like(KnowledgeDoc::getTitle, query.getKeyword())
+                        .or()
+                        .like(KnowledgeDoc::getSummary, query.getKeyword()))
+                .orderByDesc(KnowledgeDoc::getUpdateTime));
+        List<KnowledgeDocVO> voList = buildDocVOs(result.getRecords());
+        return PageResult.<KnowledgeDocVO>builder()
+                .records(voList)
+                .total(result.getTotal())
+                .pageNum(query.getPageNum())
+                .pageSize(query.getPageSize())
+                .totalPages((int) result.getPages())
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public void deleteUserDoc(Long userId, Long docId) {
+        KnowledgeDoc doc = getRequiredDoc(docId);
+        if (!userId.equals(doc.getUserId())) {
+            throw new BusinessException(ResultCode.FORBIDDEN.getCode(), "只能删除自己上传的文档");
+        }
+        // Remove chunks from vector store and DB
+        vectorStoreService.removeByDocId(docId);
+        knowledgeChunkMapper.delete(new LambdaQueryWrapper<KnowledgeChunk>()
+                .eq(KnowledgeChunk::getDocId, docId));
+        removeById(docId);
+        log.info("User {} deleted document {}, title='{}'", userId, docId, doc.getTitle());
+    }
+
+    @Async
+    public void vectorizeChunksAsync(List<KnowledgeChunk> chunks, List<String> texts) {
+        vectorizeChunks(chunks, texts);
     }
 
     private KnowledgeDoc getRequiredDoc(Long docId) {
@@ -293,6 +396,11 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
 
     private String fileUrl(String fileName) {
         return "seed://knowledge/" + fileName;
+    }
+
+    private String stripExtension(String fileName) {
+        int dotIndex = fileName.lastIndexOf('.');
+        return dotIndex > 0 ? fileName.substring(0, dotIndex) : fileName;
     }
 
     private String fileNameFromUrl(String fileUrl) {

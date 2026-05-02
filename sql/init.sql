@@ -1,6 +1,12 @@
+-- ByteCoach Database Schema
+-- Run this file to create the database and tables.
+
 CREATE DATABASE IF NOT EXISTS bytecoach DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE bytecoach;
 
+-- ============================================================
+-- 用户表
+-- ============================================================
 CREATE TABLE IF NOT EXISTS user (
     id BIGINT PRIMARY KEY,
     username VARCHAR(64) NOT NULL UNIQUE,
@@ -17,6 +23,9 @@ CREATE TABLE IF NOT EXISTS user (
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+-- ============================================================
+-- 分类表
+-- ============================================================
 CREATE TABLE IF NOT EXISTS category (
     id BIGINT PRIMARY KEY,
     name VARCHAR(64) NOT NULL,
@@ -28,6 +37,9 @@ CREATE TABLE IF NOT EXISTS category (
     CONSTRAINT ck_category_type CHECK (type IN ('question', 'knowledge', 'interview'))
 );
 
+-- ============================================================
+-- 聊天会话表
+-- ============================================================
 CREATE TABLE IF NOT EXISTS chat_session (
     id BIGINT PRIMARY KEY,
     user_id BIGINT NOT NULL,
@@ -40,6 +52,9 @@ CREATE TABLE IF NOT EXISTS chat_session (
     CONSTRAINT ck_chat_session_mode CHECK (mode IN ('chat', 'rag'))
 );
 
+-- ============================================================
+-- 聊天消息表
+-- ============================================================
 CREATE TABLE IF NOT EXISTS chat_message (
     id BIGINT PRIMARY KEY,
     session_id BIGINT NOT NULL,
@@ -53,18 +68,26 @@ CREATE TABLE IF NOT EXISTS chat_message (
     KEY idx_chat_message_user_id (user_id)
 );
 
+-- ============================================================
+-- 知识文档表
+-- ============================================================
 CREATE TABLE IF NOT EXISTS knowledge_doc (
     id BIGINT PRIMARY KEY,
     title VARCHAR(128) NOT NULL,
     category_id BIGINT DEFAULT NULL,
-    source_type VARCHAR(32) NOT NULL,
+    user_id BIGINT DEFAULT NULL COMMENT '上传用户ID，NULL表示系统内置',
+    source_type VARCHAR(32) NOT NULL DEFAULT 'system' COMMENT 'system=系统内置, user_upload=用户上传',
     file_url VARCHAR(255) DEFAULT NULL,
     summary VARCHAR(500) DEFAULT NULL,
     status VARCHAR(32) NOT NULL DEFAULT 'draft',
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_knowledge_doc_user_id (user_id)
 );
 
+-- ============================================================
+-- 知识分片表
+-- ============================================================
 CREATE TABLE IF NOT EXISTS knowledge_chunk (
     id BIGINT PRIMARY KEY,
     doc_id BIGINT NOT NULL,
@@ -77,6 +100,9 @@ CREATE TABLE IF NOT EXISTS knowledge_chunk (
     KEY idx_knowledge_chunk_doc_id (doc_id)
 );
 
+-- ============================================================
+-- 题目表
+-- ============================================================
 CREATE TABLE IF NOT EXISTS question (
     id BIGINT PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
@@ -92,6 +118,9 @@ CREATE TABLE IF NOT EXISTS question (
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+-- ============================================================
+-- 面试会话表
+-- ============================================================
 CREATE TABLE IF NOT EXISTS interview_session (
     id BIGINT PRIMARY KEY,
     user_id BIGINT NOT NULL,
@@ -107,6 +136,9 @@ CREATE TABLE IF NOT EXISTS interview_session (
     KEY idx_interview_session_user_id (user_id)
 );
 
+-- ============================================================
+-- 面试记录表
+-- ============================================================
 CREATE TABLE IF NOT EXISTS interview_record (
     id BIGINT PRIMARY KEY,
     session_id BIGINT NOT NULL,
@@ -123,6 +155,9 @@ CREATE TABLE IF NOT EXISTS interview_record (
     KEY idx_interview_record_user_id (user_id)
 );
 
+-- ============================================================
+-- 错题表
+-- ============================================================
 CREATE TABLE IF NOT EXISTS wrong_question (
     id BIGINT PRIMARY KEY,
     user_id BIGINT NOT NULL,
@@ -141,6 +176,9 @@ CREATE TABLE IF NOT EXISTS wrong_question (
     CONSTRAINT ck_wrong_source_type CHECK (source_type IN ('interview', 'chat'))
 );
 
+-- ============================================================
+-- 学习计划表
+-- ============================================================
 CREATE TABLE IF NOT EXISTS study_plan (
     id BIGINT PRIMARY KEY,
     user_id BIGINT NOT NULL,
@@ -156,6 +194,9 @@ CREATE TABLE IF NOT EXISTS study_plan (
     KEY idx_study_plan_user_id (user_id)
 );
 
+-- ============================================================
+-- 学习计划任务表
+-- ============================================================
 CREATE TABLE IF NOT EXISTS study_plan_task (
     id BIGINT PRIMARY KEY,
     plan_id BIGINT NOT NULL,
@@ -170,62 +211,3 @@ CREATE TABLE IF NOT EXISTS study_plan_task (
     KEY idx_study_plan_task_plan_id (plan_id),
     KEY idx_study_plan_task_user_id (user_id)
 );
-
-INSERT IGNORE INTO user (id, username, password, nickname, role, status, source, create_time, update_time)
-VALUES
-    (1, 'demo', '$2a$10$0T3BFXGNjpcmWyfsFieXbudX82IlGMIC96SET0cfSUNFe40UPMjaC', 'ByteCoach', 'ADMIN', 1, 'seed', NOW(), NOW());
-
-INSERT IGNORE INTO category (id, name, type, sort_order, status, create_time, update_time)
-VALUES
-    (1, 'Spring', 'question', 1, 1, NOW(), NOW()),
-    (2, 'JVM', 'knowledge', 2, 1, NOW(), NOW()),
-    (3, 'MySQL', 'interview', 3, 1, NOW(), NOW()),
-    (4, 'JVM', 'question', 4, 1, NOW(), NOW()),
-    (5, 'MySQL', 'question', 5, 1, NOW(), NOW());
-
-INSERT IGNORE INTO question (
-    id, title, category_id, type, difficulty, frequency, tags, standard_answer, score_standard, source, create_time, update_time
-)
-VALUES
-    (
-        1001,
-        '解释 Spring AOP 的动态代理实现',
-        1,
-        'short_answer',
-        'medium',
-        8,
-        'Spring,AOP,代理',
-        'Spring AOP 常见实现方式是 JDK 动态代理和 CGLIB。接口代理优先使用 JDK 动态代理，目标类没有接口时通常使用 CGLIB。',
-        '至少提到 JDK 动态代理、CGLIB 以及两者适用边界。',
-        'seed',
-        NOW(),
-        NOW()
-    ),
-    (
-        1002,
-        'JVM CMS 和 G1 的主要差异是什么？',
-        4,
-        'short_answer',
-        'hard',
-        7,
-        'JVM,GC,CMS,G1',
-        'CMS 以最短停顿为目标但会产生内存碎片，G1 面向服务端大堆内存，按 Region 回收并兼顾吞吐与停顿。',
-        '至少说明目标、内存管理方式和典型问题。',
-        'seed',
-        NOW(),
-        NOW()
-    ),
-    (
-        1003,
-        'MySQL 为什么会出现索引失效？',
-        5,
-        'short_answer',
-        'medium',
-        6,
-        'MySQL,索引,执行计划',
-        '常见原因包括最左前缀被破坏、列上使用函数或表达式、隐式类型转换、范围查询后继续使用联合索引列等。',
-        '至少给出 3 个典型场景。',
-        'seed',
-        NOW(),
-        NOW()
-    );

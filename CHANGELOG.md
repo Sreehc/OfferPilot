@@ -1,5 +1,30 @@
 # Changelog
 
+## Phase 2.2 — 用户文档上传 (2026-05-03)
+
+### 用户文档上传
+
+- `knowledge_doc` 表增加 `user_id` 字段，区分系统内置与用户上传
+- `DocumentParserService` 接口 + 实现：支持 Markdown 和 TXT 文档解析，按标题/段落智能切分
+- `POST /api/knowledge/upload`：文件上传接口，自动切分 + 异步向量化
+- `GET /api/knowledge/my`：查询当前用户上传的文档列表
+- `DELETE /api/knowledge/{docId}`：删除用户文档（级联删除 chunk 和向量）
+- Spring `@EnableAsync` + `vectorizeChunksAsync()`：上传后异步向量化，不阻塞响应
+- 文件大小限制 5MB（`spring.servlet.multipart.max-file-size`）
+
+### 前端
+
+- KnowledgePage 重构：新增上传区域（拖拽 + 点击）、系统资料/我的文档 Tab 切换
+- 用户文档支持删除操作（Popconfirm 确认）
+- 搜索结果显示相似度百分比
+
+### 数据库
+
+- `sql/init.sql` 重构为纯 Schema 文件，移除所有 INSERT 数据
+- 新增 `sql/initdata.sql`：测试数据独立文件（用户、分类、面试题库）
+
+---
+
 ## Phase 2.1 — 向量检索引擎 (2026-05-03)
 
 ### Redis Stack 向量检索
