@@ -11,9 +11,26 @@
           <p class="mt-2 text-sm leading-6 text-slate-500">
             {{ currentPlan ? currentPlan.goal : '根据错题薄弱点，AI 自动生成每日复习任务。' }}
           </p>
+          <div v-if="currentPlan" class="mt-3 flex items-center gap-3">
+            <span class="hard-chip !bg-slate-100 !text-slate-600 text-xs">
+              v{{ currentPlan.version || 1 }}
+            </span>
+            <span v-if="currentPlan.startDate" class="text-xs text-slate-400">
+              {{ currentPlan.startDate }} ~ {{ currentPlan.endDate }}
+            </span>
+          </div>
         </div>
         <div class="flex gap-3">
           <el-button size="large" class="hard-button-secondary" @click="loadCurrentPlan">刷新</el-button>
+          <el-button
+            v-if="currentPlan"
+            size="large"
+            class="hard-button-secondary"
+            :loading="adjusting"
+            @click="handleAdjust"
+          >
+            {{ adjusting ? 'AI 调整中...' : 'AI 调整' }}
+          </el-button>
           <el-button size="large" class="hard-button-primary" @click="showGenerate = true">
             {{ currentPlan ? '重新生成' : '生成计划' }}
           </el-button>
@@ -75,22 +92,48 @@
 
     <!-- Plan Content -->
     <template v-if="currentPlan && !loading">
-      <!-- Progress Bar -->
+      <!-- Progress Bar + Health Score -->
       <section class="paper-panel p-6">
         <div class="flex items-center justify-between">
           <div>
             <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">进度</span>
             <span class="ml-3 text-2xl font-semibold text-ink">{{ completedCount }}/{{ currentPlan.tasks.length }}</span>
           </div>
-          <span class="hard-chip" :class="currentPlan.status === 'active' ? '!bg-accent !text-white' : '!bg-slate-200 !text-slate-600'">
-            {{ currentPlan.status === 'active' ? '进行中' : '已完成' }}
-          </span>
+          <div class="flex items-center gap-3">
+            <!-- Health Score Badge -->
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">健康分</span>
+              <span
+                class="inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white"
+                :class="healthColorClass"
+              >
+                {{ currentPlan.healthScore ?? '—' }}
+              </span>
+            </div>
+            <span class="hard-chip" :class="currentPlan.status === 'active' ? '!bg-accent !text-white' : '!bg-slate-200 !text-slate-600'">
+              {{ currentPlan.status === 'active' ? '进行中' : '已完成' }}
+            </span>
+          </div>
         </div>
         <div class="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
           <div
             class="h-full rounded-full bg-accent transition-all duration-500"
             :style="{ width: progressPercent + '%' }"
           ></div>
+        </div>
+        <!-- Health Score Bar -->
+        <div v-if="currentPlan.healthScore != null" class="mt-3">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs text-slate-400">计划健康度</span>
+            <span class="text-xs font-medium" :class="healthTextColor">{{ currentPlan.healthScore }}/100</span>
+          </div>
+          <div class="h-1.5 overflow-hidden rounded-full bg-slate-100">
+            <div
+              class="h-full rounded-full transition-all duration-500"
+              :class="healthBarColor"
+              :style="{ width: currentPlan.healthScore + '%' }"
+            ></div>
+          </div>
         </div>
       </section>
 
@@ -149,6 +192,42 @@
           </template>
         </div>
       </section>
+
+      <!-- Plan History -->
+      <section v-if="planHistory.length > 1" class="paper-panel p-6">
+        <p class="section-kicker">Version History</p>
+        <h4 class="mt-3 text-lg font-semibold text-ink">计划版本记录</h4>
+        <div class="mt-4 divide-y divide-slate-200/60 overflow-hidden rounded-xl border border-slate-200/60">
+          <div
+            v-for="version in planHistory"
+            :key="version.id"
+            class="flex items-center gap-4 px-4 py-3 transition hover:bg-slate-50/50"
+            :class="version.id === currentPlan?.id ? 'bg-accent/5' : ''"
+          >
+            <span
+              class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+              :class="version.id === currentPlan?.id ? 'bg-accent' : 'bg-slate-400'"
+            >
+              v{{ version.version || 1 }}
+            </span>
+            <div class="flex-1 min-w-0">
+              <span class="text-sm font-medium text-ink">{{ version.title }}</span>
+              <span class="ml-2 text-xs text-slate-400">{{ version.startDate }} ~ {{ version.endDate }}</span>
+            </div>
+            <span class="text-xs text-slate-400">
+              {{ version.completedTasks || 0 }}/{{ version.totalTasks || 0 }} 完成
+            </span>
+            <span
+              class="hard-chip text-xs"
+              :class="version.status === 'active'
+                ? '!bg-accent !text-white'
+                : '!bg-slate-200 !text-slate-600'"
+            >
+              {{ version.status === 'active' ? '当前' : '已归档' }}
+            </span>
+          </div>
+        </div>
+      </section>
     </template>
   </div>
 </template>
@@ -159,13 +238,17 @@ import { computed, onMounted, ref } from 'vue'
 import {
   fetchCurrentPlanApi,
   generatePlanApi,
-  updateTaskStatusApi
+  updateTaskStatusApi,
+  adjustPlanApi,
+  fetchPlanHistoryApi
 } from '@/api/plan'
 import type { StudyPlanItem, StudyPlanTaskItem } from '@/types/api'
 
 const currentPlan = ref<StudyPlanItem | null>(null)
+const planHistory = ref<StudyPlanItem[]>([])
 const loading = ref(true)
 const generating = ref(false)
+const adjusting = ref(false)
 const showGenerate = ref(false)
 
 const form = ref({
@@ -181,6 +264,27 @@ const completedCount = computed(() => {
 const progressPercent = computed(() => {
   if (!currentPlan.value || currentPlan.value.tasks.length === 0) return 0
   return Math.round((completedCount.value / currentPlan.value.tasks.length) * 100)
+})
+
+const healthColorClass = computed(() => {
+  const score = currentPlan.value?.healthScore ?? 100
+  if (score >= 70) return 'bg-green-500'
+  if (score >= 40) return 'bg-amber-500'
+  return 'bg-red-500'
+})
+
+const healthBarColor = computed(() => {
+  const score = currentPlan.value?.healthScore ?? 100
+  if (score >= 70) return 'bg-green-500'
+  if (score >= 40) return 'bg-amber-500'
+  return 'bg-red-500'
+})
+
+const healthTextColor = computed(() => {
+  const score = currentPlan.value?.healthScore ?? 100
+  if (score >= 70) return 'text-green-600'
+  if (score >= 40) return 'text-amber-600'
+  return 'text-red-600'
 })
 
 const groupedTasks = computed(() => {
@@ -199,10 +303,22 @@ const loadCurrentPlan = async () => {
   try {
     const response = await fetchCurrentPlanApi()
     currentPlan.value = response.data
+    if (currentPlan.value) {
+      void loadHistory()
+    }
   } catch {
     ElMessage.error('加载学习计划失败')
   } finally {
     loading.value = false
+  }
+}
+
+const loadHistory = async () => {
+  try {
+    const response = await fetchPlanHistoryApi()
+    planHistory.value = response.data || []
+  } catch {
+    // Silently fail — history is supplementary
   }
 }
 
@@ -216,10 +332,26 @@ const handleGenerate = async () => {
     currentPlan.value = response.data
     showGenerate.value = false
     ElMessage.success('学习计划已生成')
+    void loadHistory()
   } catch {
     ElMessage.error('计划生成失败，请稍后重试')
   } finally {
     generating.value = false
+  }
+}
+
+const handleAdjust = async () => {
+  if (!currentPlan.value) return
+  adjusting.value = true
+  try {
+    const response = await adjustPlanApi(currentPlan.value.id)
+    currentPlan.value = response.data
+    ElMessage.success(`计划已调整为 v${response.data.version || 2}`)
+    void loadHistory()
+  } catch {
+    ElMessage.error('计划调整失败，请稍后重试')
+  } finally {
+    adjusting.value = false
   }
 }
 

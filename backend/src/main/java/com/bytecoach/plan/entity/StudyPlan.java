@@ -16,6 +16,8 @@ public class StudyPlan extends BaseEntity {
     private String content;
     private Integer days;
     private String status;
+    private Integer version;
+    private Long parentPlanId;
     private LocalDate startDate;
     private LocalDate endDate;
 }

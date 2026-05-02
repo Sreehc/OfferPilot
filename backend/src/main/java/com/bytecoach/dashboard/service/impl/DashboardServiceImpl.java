@@ -1,5 +1,6 @@
 package com.bytecoach.dashboard.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.bytecoach.common.api.ResultCode;
 import com.bytecoach.common.exception.BusinessException;
 import com.bytecoach.dashboard.dto.DashboardOverviewVO;
@@ -7,6 +8,9 @@ import com.bytecoach.dashboard.dto.RecentInterviewVO;
 import com.bytecoach.dashboard.dto.WeakPointVO;
 import com.bytecoach.dashboard.mapper.DashboardMetricsMapper;
 import com.bytecoach.dashboard.service.DashboardService;
+import com.bytecoach.plan.entity.StudyPlan;
+import com.bytecoach.plan.mapper.StudyPlanMapper;
+import com.bytecoach.plan.service.PlanAdjustService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.List;
@@ -28,6 +32,8 @@ public class DashboardServiceImpl implements DashboardService {
     private final DashboardMetricsMapper dashboardMetricsMapper;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
+    private final PlanAdjustService planAdjustService;
+    private final StudyPlanMapper planMapper;
 
     @Override
     public DashboardOverviewVO overview() {
@@ -56,11 +62,22 @@ public class DashboardServiceImpl implements DashboardService {
         List<RecentInterviewVO> recentInterviews = defaultList(dashboardMetricsMapper.selectRecentInterviews(userId));
         List<WeakPointVO> weakPoints = defaultList(dashboardMetricsMapper.selectWeakPoints(userId));
 
+        // Calculate plan health score from active plan
+        int planHealthScore = 100;
+        StudyPlan activePlan = planMapper.selectOne(new LambdaQueryWrapper<StudyPlan>()
+                .eq(StudyPlan::getUserId, userId)
+                .eq(StudyPlan::getStatus, "active")
+                .last("LIMIT 1"));
+        if (activePlan != null) {
+            planHealthScore = planAdjustService.calculateHealthScore(activePlan.getId());
+        }
+
         DashboardOverviewVO result = DashboardOverviewVO.builder()
                 .learningCount(learningCount)
                 .averageScore(averageScore)
                 .wrongCount(wrongCount)
                 .planCompletionRate(planCompletionRate)
+                .planHealthScore(planHealthScore)
                 .recentInterviews(recentInterviews)
                 .weakPoints(weakPoints)
                 .firstVisit(learningCount == 0 && wrongCount == 0)

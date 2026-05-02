@@ -187,6 +187,8 @@ CREATE TABLE IF NOT EXISTS study_plan (
     content TEXT DEFAULT NULL,
     days INT NOT NULL,
     status VARCHAR(32) NOT NULL DEFAULT 'draft',
+    version INT NOT NULL DEFAULT 1 COMMENT '计划版本号',
+    parent_plan_id BIGINT DEFAULT NULL COMMENT '前一版本计划ID，用于追踪调整历史',
     start_date DATE DEFAULT NULL,
     end_date DATE DEFAULT NULL,
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

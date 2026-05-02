@@ -26,3 +26,15 @@ export const fetchPlanTasksApi = (planId: number) => {
 export const updateTaskStatusApi = (taskId: number, payload: TaskStatusPayload) => {
   return request<null>({ url: `/plan/task/${taskId}/status`, method: 'put', data: payload })
 }
+
+export const adjustPlanApi = (planId: number) => {
+  return request<StudyPlanItem>({ url: `/plan/${planId}/adjust`, method: 'post' })
+}
+
+export const fetchPlanHealthApi = (planId: number) => {
+  return request<number>({ url: `/plan/${planId}/health`, method: 'get' })
+}
+
+export const fetchPlanHistoryApi = () => {
+  return request<StudyPlanItem[]>({ url: '/plan/history', method: 'get' })
+}

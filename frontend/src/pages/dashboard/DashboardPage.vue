@@ -19,7 +19,7 @@
 
       <section class="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
         <DashboardInterviews :interviews="overview.recentInterviews" />
-        <DashboardWeakPoints :weak-points="overview.weakPoints" :plan-completion-rate="overview.planCompletionRate" />
+        <DashboardWeakPoints :weak-points="overview.weakPoints" :plan-completion-rate="overview.planCompletionRate" :plan-health-score="overview.planHealthScore ?? 100" />
       </section>
 
       <section class="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
@@ -82,6 +82,7 @@ const overview = ref<DashboardOverview>({
   averageScore: 0,
   wrongCount: 0,
   planCompletionRate: 0,
+  planHealthScore: 100,
   recentInterviews: [],
   weakPoints: [],
   firstVisit: true

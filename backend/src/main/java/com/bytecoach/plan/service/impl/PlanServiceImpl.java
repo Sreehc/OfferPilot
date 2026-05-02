@@ -95,6 +95,12 @@ public class PlanServiceImpl implements PlanService {
                 .title(plan.getTitle())
                 .goal(plan.getGoal())
                 .status(plan.getStatus())
+                .version(plan.getVersion())
+                .startDate(plan.getStartDate())
+                .endDate(plan.getEndDate())
+                .totalTasks(taskVOs.size())
+                .completedTasks(0)
+                .healthScore(100)
                 .tasks(taskVOs)
                 .build();
     }
@@ -115,13 +121,53 @@ public class PlanServiceImpl implements PlanService {
                 .eq(StudyPlanTask::getPlanId, plan.getId())
                 .orderByAsc(StudyPlanTask::getTaskDate, StudyPlanTask::getSortOrder));
 
+        long completedCount = taskEntities.stream().filter(t -> "done".equals(t.getStatus())).count();
+        int healthScore = calculateHealthScore(plan.getId());
+
         return StudyPlanVO.builder()
                 .id(plan.getId())
                 .title(plan.getTitle())
                 .goal(plan.getGoal())
                 .status(plan.getStatus())
+                .version(plan.getVersion())
+                .parentPlanId(plan.getParentPlanId())
+                .startDate(plan.getStartDate())
+                .endDate(plan.getEndDate())
+                .totalTasks(taskEntities.size())
+                .completedTasks((int) completedCount)
+                .healthScore(healthScore)
                 .tasks(taskEntities.stream().map(this::toTaskVO).toList())
                 .build();
+    }
+
+    @Override
+    public List<StudyPlanVO> history(Long userId) {
+        List<StudyPlan> plans = planMapper.selectList(new LambdaQueryWrapper<StudyPlan>()
+                .eq(StudyPlan::getUserId, userId)
+                .orderByDesc(StudyPlan::getVersion));
+
+        return plans.stream().map(plan -> {
+            List<StudyPlanTask> taskEntities = taskMapper.selectList(new LambdaQueryWrapper<StudyPlanTask>()
+                    .eq(StudyPlanTask::getPlanId, plan.getId())
+                    .orderByAsc(StudyPlanTask::getTaskDate, StudyPlanTask::getSortOrder));
+
+            long completedCount = taskEntities.stream().filter(t -> "done".equals(t.getStatus())).count();
+
+            return StudyPlanVO.builder()
+                    .id(plan.getId())
+                    .title(plan.getTitle())
+                    .goal(plan.getGoal())
+                    .status(plan.getStatus())
+                    .version(plan.getVersion())
+                    .parentPlanId(plan.getParentPlanId())
+                    .startDate(plan.getStartDate())
+                    .endDate(plan.getEndDate())
+                    .totalTasks(taskEntities.size())
+                    .completedTasks((int) completedCount)
+                    .healthScore(calculateHealthScore(plan.getId()))
+                    .tasks(taskEntities.stream().map(this::toTaskVO).toList())
+                    .build();
+        }).toList();
     }
 
     @Override
@@ -148,6 +194,56 @@ public class PlanServiceImpl implements PlanService {
     // ──────────────────────────────────────────────
     // Private helpers
     // ──────────────────────────────────────────────
+
+    /**
+     * Inline health score calculation (duplicated from PlanAdjustService to avoid circular dependency).
+     */
+    private int calculateHealthScore(Long planId) {
+        List<StudyPlanTask> tasks = taskMapper.selectList(new LambdaQueryWrapper<StudyPlanTask>()
+                .eq(StudyPlanTask::getPlanId, planId)
+                .orderByAsc(StudyPlanTask::getTaskDate));
+
+        if (tasks.isEmpty()) {
+            return 100;
+        }
+
+        Map<LocalDate, List<StudyPlanTask>> tasksByDate = tasks.stream()
+                .collect(Collectors.groupingBy(StudyPlanTask::getTaskDate));
+
+        int totalDays = tasksByDate.size();
+        int completedDays = 0;
+
+        for (var entry : tasksByDate.entrySet()) {
+            long done = entry.getValue().stream()
+                    .filter(t -> "done".equals(t.getStatus()))
+                    .count();
+            double dayRate = (double) done / entry.getValue().size();
+            if (dayRate >= 0.5) {
+                completedDays++;
+            }
+        }
+
+        int overallRate = totalDays > 0 ? (int) ((double) completedDays / totalDays * 100) : 100;
+        int consecutiveLow = 0;
+        LocalDate checkDate = LocalDate.now();
+        for (int i = 0; i < 7; i++) {
+            List<StudyPlanTask> dayTasks = tasksByDate.get(checkDate);
+            if (dayTasks == null || dayTasks.isEmpty()) {
+                checkDate = checkDate.minusDays(1);
+                continue;
+            }
+            long done = dayTasks.stream().filter(t -> "done".equals(t.getStatus())).count();
+            double rate = (double) done / dayTasks.size();
+            if (rate < 0.5) {
+                consecutiveLow++;
+            } else {
+                break;
+            }
+            checkDate = checkDate.minusDays(1);
+        }
+        int penalty = consecutiveLow * 10;
+        return Math.max(0, Math.min(100, overallRate - penalty));
+    }
 
     private String buildWeakPointsSummary(Long userId) {
         List<WrongQuestion> wrongs = wrongQuestionMapper.selectList(new LambdaQueryWrapper<WrongQuestion>()
@@ -274,7 +370,7 @@ public class PlanServiceImpl implements PlanService {
                 .build();
     }
 
-    private record PlanTask(int day, String type, String content) {}
+    record PlanTask(int day, String type, String content) {}
 
-    private record PlanContent(String title, String goal, List<PlanTask> tasks) {}
+    record PlanContent(String title, String goal, List<PlanTask> tasks) {}
 }

@@ -1,5 +1,39 @@
 # Changelog
 
+## Phase 2.3 — 动态学习计划 (2026-05-03)
+
+### 计划健康评估
+
+- `PlanAdjustService` 接口 + 实现：连续 3 天完成率低于 50% 自动触发计划调整
+- 计划健康分（0-100）：综合完成率 + 连续低完成天数惩罚
+- `PlanHealthCheckScheduler`：每日 23:00 自动检查所有活跃计划健康状态
+- `@EnableScheduling` 启用定时任务
+
+### 计划版本管理
+
+- `study_plan` 表增加 `version`（版本号）和 `parent_plan_id`（前版本 ID）字段
+- 计划调整时自动归档旧版本、创建新版本，保留完整版本链
+- `GET /api/plan/history`：获取用户所有计划版本列表
+
+### 计划调整 API
+
+- `POST /api/plan/{id}/adjust`：手动触发 AI 计划调整
+- `GET /api/plan/{id}/health`：获取计划健康评分
+- 调整后计划减少每日任务量（1-2 个/天），优先安排未完成任务
+
+### Dashboard 集成
+
+- `DashboardOverviewVO` 增加 `planHealthScore` 字段
+- Dashboard 薄弱点区域新增计划健康分展示（绿/黄/红三色标识）
+
+### 前端
+
+- PlanPage：版本号标签、日期范围、健康分圆圈 + 进度条、AI 调整按钮
+- PlanPage：版本历史列表（当前版本高亮、归档状态标识）
+- DashboardWeakPoints：计划健康分卡片（颜色随分数变化）
+
+---
+
 ## Phase 2.2 — 用户文档上传 (2026-05-03)
 
 ### 用户文档上传

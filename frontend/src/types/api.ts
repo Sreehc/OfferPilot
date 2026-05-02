@@ -44,6 +44,7 @@ export interface DashboardOverview {
   averageScore: number
   wrongCount: number
   planCompletionRate: number
+  planHealthScore: number
   recentInterviews: RecentInterviewItem[]
   weakPoints: WeakPointItem[]
   firstVisit: boolean
@@ -173,6 +174,13 @@ export interface StudyPlanItem {
   title: string
   goal: string
   status: string
+  version?: number
+  parentPlanId?: number
+  startDate?: string
+  endDate?: string
+  totalTasks?: number
+  completedTasks?: number
+  healthScore?: number
   tasks: StudyPlanTaskItem[]
 }
 

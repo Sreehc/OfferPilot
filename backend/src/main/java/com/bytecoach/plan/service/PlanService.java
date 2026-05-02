@@ -15,4 +15,9 @@ public interface PlanService {
     List<StudyPlanTaskVO> tasks(Long userId, Long planId);
 
     void updateTaskStatus(Long userId, Long taskId, PlanTaskStatusRequest request);
+
+    /**
+     * Get all plan versions for the user (newest first).
+     */
+    List<StudyPlanVO> history(Long userId);
 }

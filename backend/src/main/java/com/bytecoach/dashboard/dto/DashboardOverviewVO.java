@@ -12,6 +12,7 @@ public class DashboardOverviewVO {
     private BigDecimal averageScore;
     private Integer wrongCount;
     private Integer planCompletionRate;
+    private Integer planHealthScore;
     private List<RecentInterviewVO> recentInterviews;
     private List<WeakPointVO> weakPoints;
     private Boolean firstVisit;

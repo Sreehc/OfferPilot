@@ -5,6 +5,7 @@ import com.bytecoach.common.api.ResultCode;
 import com.bytecoach.common.exception.BusinessException;
 import com.bytecoach.plan.dto.GeneratePlanRequest;
 import com.bytecoach.plan.dto.PlanTaskStatusRequest;
+import com.bytecoach.plan.service.PlanAdjustService;
 import com.bytecoach.plan.service.PlanService;
 import com.bytecoach.plan.vo.StudyPlanTaskVO;
 import com.bytecoach.plan.vo.StudyPlanVO;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class PlanController {
 
     private final PlanService planService;
+    private final PlanAdjustService planAdjustService;
 
     @Operation(summary = "生成计划", description = "基于薄弱点 AI 生成 N 天学习计划")
     @PostMapping("/generate")
@@ -55,6 +57,24 @@ public class PlanController {
                                          @Valid @RequestBody PlanTaskStatusRequest request) {
         planService.updateTaskStatus(currentUserId(), taskId, request);
         return Result.success();
+    }
+
+    @Operation(summary = "调整计划", description = "基于完成率和薄弱点 AI 调整当前计划，生成新版本")
+    @PostMapping("/{id}/adjust")
+    public Result<StudyPlanVO> adjust(@Parameter(description = "计划 ID") @PathVariable Long id) {
+        return Result.success(planAdjustService.forceAdjust(currentUserId(), id));
+    }
+
+    @Operation(summary = "计划健康分", description = "获取计划健康评分（0-100）")
+    @GetMapping("/{id}/health")
+    public Result<Integer> healthScore(@Parameter(description = "计划 ID") @PathVariable Long id) {
+        return Result.success(planAdjustService.calculateHealthScore(id));
+    }
+
+    @Operation(summary = "计划历史", description = "获取当前用户的所有计划版本列表")
+    @GetMapping("/history")
+    public Result<List<StudyPlanVO>> history() {
+        return Result.success(planService.history(currentUserId()));
     }
 
     private Long currentUserId() {
