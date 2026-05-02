@@ -157,7 +157,7 @@ public class PlanAdjustServiceImpl implements PlanAdjustService {
         // Persist new tasks
         List<StudyPlanTaskVO> taskVOs = new ArrayList<>();
         for (int i = 0; i < planContent.tasks().size(); i++) {
-            PlanTask pt = planContent.tasks().get(i);
+            PlanServiceImpl.PlanTask pt = planContent.tasks().get(i);
             StudyPlanTask task = new StudyPlanTask();
             task.setPlanId(newPlan.getId());
             task.setUserId(userId);
