@@ -9,6 +9,7 @@ import org.apache.ibatis.executor.statement.StatementHandler;
 import org.apache.ibatis.plugin.Interceptor;
 import org.apache.ibatis.plugin.Intercepts;
 import org.apache.ibatis.plugin.Invocation;
+import org.apache.ibatis.plugin.Plugin;
 import org.apache.ibatis.plugin.Signature;
 import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.reflection.SystemMetaObject;
@@ -33,29 +34,39 @@ public class MybatisPlusConfig {
      */
     @Bean
     public Interceptor slowQueryInterceptor() {
-        return new Interceptor() {
-            @Override
-            public Object intercept(Invocation invocation) throws Throwable {
-                long start = System.currentTimeMillis();
-                try {
-                    return invocation.proceed();
-                } finally {
-                    long duration = System.currentTimeMillis() - start;
-                    if (duration > SLOW_QUERY_THRESHOLD_MS) {
-                        Object target = invocation.getTarget();
-                        if (target instanceof StatementHandler handler) {
-                            String sql = handler.getBoundSql().getSql();
-                            log.warn("SQL SLOW QUERY ({}ms): {}", duration, sql.replaceAll("\\s+", " ").trim());
-                        }
-                    }
+        return new SlowQueryInterceptor(SLOW_QUERY_THRESHOLD_MS);
+    }
+
+    @Intercepts({
+            @Signature(type = StatementHandler.class, method = "query", args = {java.sql.ResultSet.class, org.apache.ibatis.session.RowBounds.class}),
+            @Signature(type = StatementHandler.class, method = "update", args = {java.sql.Statement.class}),
+            @Signature(type = StatementHandler.class, method = "batch", args = {java.sql.Statement.class})
+    })
+    static class SlowQueryInterceptor implements Interceptor {
+        private final long thresholdMs;
+
+        SlowQueryInterceptor(long thresholdMs) {
+            this.thresholdMs = thresholdMs;
+        }
+
+        @Override
+        public Object intercept(Invocation invocation) throws Throwable {
+            long start = System.currentTimeMillis();
+            try {
+                return invocation.proceed();
+            } finally {
+                long duration = System.currentTimeMillis() - start;
+                if (duration > thresholdMs && invocation.getTarget() instanceof StatementHandler handler) {
+                    String sql = handler.getBoundSql().getSql();
+                    log.warn("SQL SLOW QUERY ({}ms): {}", duration, sql.replaceAll("\\s+", " ").trim());
                 }
             }
+        }
 
-            @Override
-            public Object plugin(Object target) {
-                return org.apache.ibatis.plugin.Plugin.wrap(target, this);
-            }
-        };
+        @Override
+        public Object plugin(Object target) {
+            return Plugin.wrap(target, this);
+        }
     }
 
     @Bean
