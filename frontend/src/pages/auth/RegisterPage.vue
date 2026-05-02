@@ -4,19 +4,19 @@
       <p class="section-kicker">Create Account</p>
       <h1 class="mt-4 text-4xl font-semibold tracking-[-0.03em] text-ink">创建账号后，直接进入你的学习首页</h1>
       <p class="mt-4 max-w-xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-        注册只保留最小字段：`username`、`password`、`nickname`。成功后会自动签发 token，并直接进入 Dashboard。
+        注册只需填写昵称、用户名和密码，成功后自动登录进入首页。
       </p>
       <div class="rule-divider mt-6"></div>
 
       <el-form ref="formRef" :model="form" :rules="rules" class="mt-8" label-position="top" @submit.prevent>
         <el-form-item label="昵称" prop="nickname">
-          <el-input v-model="form.nickname" placeholder="ByteCoach" size="large" />
+          <el-input v-model="form.nickname" placeholder="请输入昵称" size="large" />
         </el-form-item>
         <el-form-item label="用户名" prop="username">
-          <el-input v-model="form.username" placeholder="demo" size="large" />
+          <el-input v-model="form.username" placeholder="请输入用户名" size="large" />
         </el-form-item>
         <el-form-item label="密码" prop="password">
-          <el-input v-model="form.password" type="password" show-password placeholder="123456" size="large" />
+          <el-input v-model="form.password" type="password" show-password placeholder="请输入密码" size="large" />
         </el-form-item>
         <div class="flex flex-col gap-3 pt-4 md:flex-row">
           <el-button :loading="loading" type="primary" size="large" class="action-button transition active:translate-y-px md:min-w-40" @click="handleRegister">
@@ -42,9 +42,9 @@ const formRef = ref<FormInstance>()
 const loading = ref(false)
 
 const form = reactive({
-  nickname: 'ByteCoach',
-  username: 'demo',
-  password: '123456'
+  nickname: '',
+  username: '',
+  password: ''
 })
 
 const rules: FormRules<typeof form> = {

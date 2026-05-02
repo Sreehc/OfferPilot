@@ -9,7 +9,7 @@
     ></div>
     <div class="relative flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
       <div class="max-w-3xl">
-        <p class="section-kicker">First Session</p>
+        <p class="section-kicker">首次使用</p>
         <h3 class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-ink">从一个动作开始，不要让首页只是空白看板</h3>
         <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
           先发起一次问答或一场面试，系统才会逐步生成错题、薄弱点和计划完成率。这个阶段的首页重点是帮助你找到第一步。

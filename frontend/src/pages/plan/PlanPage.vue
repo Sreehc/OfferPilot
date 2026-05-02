@@ -4,7 +4,7 @@
     <section class="paper-panel p-6">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p class="section-kicker">Study Plan</p>
+          <p class="section-kicker">学习计划</p>
           <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
             {{ currentPlan ? currentPlan.title : '生成学习计划' }}
           </h3>
@@ -40,7 +40,7 @@
 
     <!-- Generate Form -->
     <section v-if="showGenerate" class="paper-panel p-6">
-      <p class="section-kicker">Plan Generator</p>
+      <p class="section-kicker">计划生成器</p>
       <h4 class="mt-4 text-lg font-semibold text-ink">设置计划参数</h4>
       <div class="mt-4 grid gap-4 sm:grid-cols-2">
         <div>
@@ -139,7 +139,7 @@
 
       <!-- Task Timeline -->
       <section class="paper-panel p-6">
-        <p class="section-kicker">Task Timeline</p>
+        <p class="section-kicker">任务时间线</p>
         <div class="mt-4 space-y-2">
           <template v-for="(group, dateKey) in groupedTasks" :key="dateKey">
             <div class="mb-4">
@@ -195,7 +195,7 @@
 
       <!-- Plan History -->
       <section v-if="planHistory.length > 1" class="paper-panel p-6">
-        <p class="section-kicker">Version History</p>
+        <p class="section-kicker">版本记录</p>
         <h4 class="mt-3 text-lg font-semibold text-ink">计划版本记录</h4>
         <div class="mt-4 divide-y divide-slate-200/60 dark:divide-slate-700/60 overflow-hidden rounded-xl border border-slate-200/60 dark:border-slate-700/60">
           <div

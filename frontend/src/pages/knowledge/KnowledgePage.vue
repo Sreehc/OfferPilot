@@ -3,14 +3,14 @@
     <!-- Header + Upload -->
     <section class="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
       <div class="paper-panel p-6">
-        <p class="section-kicker">Knowledge Library</p>
+        <p class="section-kicker">知识库</p>
         <h3 class="mt-4 text-3xl font-semibold tracking-[-0.03em] text-ink">知识库管理</h3>
         <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
           系统内置资料与你上传的学习材料统一管理，支持分类查看、关键字检索和向量语义检索。
         </p>
       </div>
       <div class="paper-panel p-6">
-        <p class="section-kicker">Upload Document</p>
+        <p class="section-kicker">上传文档</p>
         <div
           class="mt-4 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50/50 dark:bg-slate-800/50 p-6 text-center transition-colors hover:border-accent hover:bg-accent/5"
           @dragover.prevent
@@ -58,9 +58,9 @@
             <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
           </el-select>
           <el-select v-model="filters.status" clearable placeholder="文档状态" size="large">
-            <el-option label="draft" value="draft" />
-            <el-option label="parsed" value="parsed" />
-            <el-option label="indexed" value="indexed" />
+            <el-option label="草稿" value="draft" />
+            <el-option label="已解析" value="parsed" />
+            <el-option label="已索引" value="indexed" />
           </el-select>
           <el-input v-model="filters.keyword" clearable placeholder="标题 / 摘要关键字" size="large" />
         </div>
@@ -93,7 +93,7 @@
                 class="hard-chip"
                 :class="doc.status === 'indexed' ? '!bg-accent !text-white' : '!bg-white/80 dark:!bg-slate-700/80 !text-slate-600 dark:!text-slate-300'"
               >
-                {{ doc.status }}
+                {{ statusLabel(doc.status) }}
               </span>
               <el-popconfirm
                 v-if="activeTab === 'my'"
@@ -132,7 +132,7 @@
     <section class="paper-panel p-6">
       <div class="flex items-center justify-between">
         <div>
-          <p class="section-kicker">Search Console</p>
+          <p class="section-kicker">检索测试</p>
           <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">知识检索测试</h3>
         </div>
       </div>
@@ -198,8 +198,13 @@ const filters = reactive<{
 })
 
 const loadCategories = async () => {
-  const response = await fetchCategoriesApi({ type: 'knowledge' })
-  categories.value = response.data
+  try {
+    const response = await fetchCategoriesApi({ type: 'knowledge' })
+    categories.value = response.data
+  } catch {
+    console.warn('Failed to load categories')
+    categories.value = []
+  }
 }
 
 const loadDocs = async () => {
@@ -239,7 +244,7 @@ const handlePageChange = (page: number) => {
 const handleBeforeUpload = (file: File) => {
   const maxSize = 20 * 1024 * 1024
   if (file.size > maxSize) {
-    ElMessage.error('文件大小不能超过 5MB')
+    ElMessage.error('文件大小不能超过 20MB')
     return false
   }
   return true
@@ -303,6 +308,11 @@ const resetFilters = () => {
   filters.status = undefined
   currentPage.value = 1
   void loadDocs()
+}
+
+const statusLabel = (status: string) => {
+  const map: Record<string, string> = { draft: '草稿', parsed: '已解析', indexed: '已索引' }
+  return map[status] || status
 }
 
 const formatDate = (value?: string) => {

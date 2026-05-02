@@ -4,7 +4,7 @@
     <section class="paper-panel p-6">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p class="section-kicker">Interview History</p>
+          <p class="section-kicker">面试历史</p>
           <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
             面试历史记录
           </h3>

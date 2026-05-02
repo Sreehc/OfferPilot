@@ -1,6 +1,6 @@
 <template>
   <article class="paper-panel p-6">
-    <p class="section-kicker">Score Trend</p>
+    <p class="section-kicker">成绩趋势</p>
     <h3 class="mt-3 text-lg font-semibold text-ink">面试成绩趋势</h3>
 
     <div v-if="loading" class="mt-4 flex h-[260px] items-center justify-center">
@@ -58,7 +58,7 @@ const renderChart = () => {
       trigger: 'axis',
       formatter: (params: { dataIndex: number; value: number }[]) => {
         const p = params[0]
-        return `${tooltips[p.dataIndex]}<br/>Score: <strong>${p.value}</strong>`
+        return `${tooltips[p.dataIndex]}<br/>分数: <strong>${p.value}</strong>`
       }
     },
     grid: { left: 40, right: 20, top: 20, bottom: 30 },

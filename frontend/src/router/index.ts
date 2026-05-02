@@ -3,37 +3,37 @@ import { useAuthStore } from '@/stores/auth'
 
 const pageMeta = {
   dashboard: {
-    kicker: 'Learning Overview',
+    kicker: '学习概览',
     title: 'Your Java interview cockpit',
     subtitle: '把最近的学习行为、面试结果、错题和计划压缩成一块可操作的主看板。'
   },
   chat: {
-    kicker: 'Guided Q&A',
+    kicker: '智能问答',
     title: 'Ask with context, not just chat',
     subtitle: '普通问答和知识问答放在同一入口，方便后续把问题直接带回复习链路。'
   },
   knowledge: {
-    kicker: 'Knowledge Base',
+    kicker: '知识库',
     title: 'A built-in library for interview recall',
-    subtitle: '阶段 2 继续用内置资料库，先保证检索和引用体验稳定。'
+    subtitle: '内置资料库支持检索和引用，也可以上传自己的学习材料统一管理。'
   },
   interview: {
-    kicker: 'Mock Interview',
+    kicker: '模拟面试',
     title: 'Simulate the pressure before the real round',
     subtitle: '每场控制在 3-5 题，通过评分、点评和追问把问题沉淀到后续复习。'
   },
   wrong: {
-    kicker: 'Wrong Book',
+    kicker: '错题本',
     title: 'Turn weak answers into review assets',
     subtitle: '错题不只是归档，而是驱动下一步复习与计划生成的基础资产。'
   },
   plan: {
-    kicker: 'Study Plan',
+    kicker: '学习计划',
     title: 'Convert weak points into daily execution',
     subtitle: '计划模块把薄弱点和错题拆成可完成的节奏，而不是停留在泛泛建议。'
   },
   admin: {
-    kicker: 'Admin Entry',
+    kicker: '管理后台',
     title: 'Operate content without splitting the product',
     subtitle: '后台仍然嵌在同一个应用里，先服务题库、知识库和分类管理。'
   }
@@ -76,13 +76,13 @@ const router = createRouter({
           path: 'interview/history',
           name: 'interview-history',
           component: () => import('@/pages/interview/InterviewHistoryPage.vue'),
-          meta: { kicker: 'Interview History', title: '面试历史记录', subtitle: '查看所有已完成的面试记录。' }
+          meta: { kicker: '面试历史', title: '面试历史记录', subtitle: '查看所有已完成的面试记录。' }
         },
         {
           path: 'interview/detail/:id',
           name: 'interview-detail',
           component: () => import('@/pages/interview/InterviewDetailPage.vue'),
-          meta: { kicker: 'Interview Detail', title: '面试详情', subtitle: '查看面试复盘和答案对比。' }
+          meta: { kicker: '面试详情', title: '面试详情', subtitle: '查看面试复盘和答案对比。' }
         },
         {
           path: 'wrong',

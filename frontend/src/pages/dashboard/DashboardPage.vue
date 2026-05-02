@@ -26,7 +26,7 @@
 
       <section class="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
         <article class="paper-panel p-6">
-          <p class="section-kicker">Quick Actions</p>
+          <p class="section-kicker">快捷入口</p>
           <h3 class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-ink">把首页变成起点，而不是终点</h3>
           <div class="mt-6 grid gap-4 md:grid-cols-2">
             <RouterLink
@@ -43,7 +43,7 @@
         </article>
 
         <article class="paper-panel p-6">
-          <p class="section-kicker">How To Move</p>
+          <p class="section-kicker">建议步骤</p>
           <h3 class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-ink">建议的起步顺序</h3>
           <div class="surface-muted mt-6 divide-y divide-slate-200/70 dark:divide-slate-700/70 overflow-hidden">
             <div v-for="step in steps" :key="step.index" class="px-4 py-4">

@@ -27,7 +27,7 @@
       <section class="paper-panel p-6">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p class="section-kicker">Interview Detail</p>
+            <p class="section-kicker">面试详情</p>
             <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
               {{ detail.direction }} 方向面试
             </h3>
@@ -41,7 +41,7 @@
             class="p-6 text-white shadow-[0_16px_36px_rgba(47,79,157,0.18)]"
             style="border-radius: var(--radius-lg); background: linear-gradient(135deg, #365ab0 0%, #233d79 100%);"
           >
-            <div class="text-xs uppercase tracking-[0.24em] text-white/60">Total Score</div>
+            <div class="text-xs uppercase tracking-[0.24em] text-white/60">总分</div>
             <div class="mt-2 text-5xl font-semibold tracking-[-0.03em]">
               {{ formatScore(detail.totalScore) }}
             </div>

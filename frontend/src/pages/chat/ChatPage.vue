@@ -2,7 +2,7 @@
   <div class="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
     <section class="paper-panel p-5">
       <div class="flex items-center justify-between">
-        <p class="section-kicker">Sessions</p>
+        <p class="section-kicker">会话列表</p>
         <button type="button" class="hard-button-secondary !min-h-9 !px-3 !py-1 text-xs" @click="startNewSession">
           新会话
         </button>
@@ -52,7 +52,7 @@
     <section class="paper-panel flex min-h-[580px] flex-col p-5">
       <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <p class="section-kicker">Chat</p>
+          <p class="section-kicker">对话</p>
           <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">{{ currentTitle }}</h3>
         </div>
         <el-select v-model="mode" size="large" class="md:w-[180px]">
@@ -107,7 +107,7 @@
           v-model="prompt"
           type="textarea"
           :rows="4"
-          placeholder="输入你的问题。知识库问答会先检索 `knowledge_chunk`，普通问答直接发给 LLM。"
+          placeholder="输入你的问题。知识库问答会先检索相关资料再回答，普通问答直接由 AI 回答。"
           @keydown.enter.exact.prevent="submitChat"
         />
         <div class="flex flex-col gap-2">

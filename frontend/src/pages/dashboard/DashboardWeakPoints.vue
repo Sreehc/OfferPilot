@@ -1,6 +1,6 @@
 <template>
   <article class="paper-panel p-6">
-    <p class="section-kicker">Weak Points</p>
+    <p class="section-kicker">薄弱点</p>
     <h3 class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-ink">薄弱点与计划节奏</h3>
 
     <div class="surface-muted mt-6 p-5">

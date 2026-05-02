@@ -4,7 +4,7 @@
     <section class="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
       <!-- Left Panel -->
       <div class="paper-panel p-6">
-        <p class="section-kicker">Interview Setup</p>
+        <p class="section-kicker">面试设置</p>
         <h3 class="mt-4 text-3xl font-semibold tracking-[-0.03em] text-ink">
           {{ phase === 'idle' ? '每场 3-5 题，一轮追问' : `第 ${currentQuestion?.currentIndex ?? '?'} 题 / 共 ${currentQuestion?.questionCount ?? '?'} 题` }}
         </h3>
@@ -12,13 +12,13 @@
         <!-- Idle: Setup Form -->
         <div v-if="phase === 'idle'" class="mt-6 space-y-4">
           <div class="surface-card p-4">
-            <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Direction</div>
+            <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">面试方向</div>
             <el-select v-model="direction" size="large" class="mt-2 w-full">
               <el-option v-for="d in directions" :key="d" :label="d" :value="d" />
             </el-select>
           </div>
           <div class="surface-card p-4">
-            <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Question Count</div>
+            <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">题目数量</div>
             <el-input-number v-model="questionCount" :min="3" :max="5" size="large" class="mt-2 w-full" />
           </div>
           <el-button
@@ -37,7 +37,7 @@
           <!-- Progress Bar -->
           <div class="surface-card p-4">
             <div class="flex items-center justify-between text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-              <span>Progress</span>
+              <span>进度</span>
               <span>{{ currentQuestion?.currentIndex ?? 0 }} / {{ currentQuestion?.questionCount ?? 0 }}</span>
             </div>
             <div class="mt-3 h-2 rounded-full bg-slate-200/80 dark:bg-slate-700/80">
@@ -50,15 +50,15 @@
 
           <!-- Current Question -->
           <div class="surface-card p-4">
-            <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Current Question</div>
+            <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">当前题目</div>
             <div class="mt-2 text-lg font-semibold text-ink leading-relaxed">
-              {{ currentQuestion?.questionTitle ?? 'Loading...' }}
+              {{ currentQuestion?.questionTitle ?? '加载中...' }}
             </div>
           </div>
 
           <!-- Direction Badge -->
           <div class="surface-card p-4">
-            <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Direction</div>
+            <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">面试方向</div>
             <div class="mt-2 font-semibold">{{ direction }}</div>
           </div>
 
@@ -88,7 +88,7 @@
         <!-- Answering State -->
         <div v-else-if="phase === 'answering'" class="flex flex-1 flex-col">
           <div class="flex items-center justify-between">
-            <p class="section-kicker">Your Answer</p>
+            <p class="section-kicker">你的回答</p>
             <div class="flex items-center gap-2 text-sm">
               <span class="text-slate-500 dark:text-slate-400">倒计时</span>
               <span class="font-semibold tabular-nums" :class="countdown <= 30 ? 'text-red-500' : 'text-accent'">{{ formatCountdown(countdown) }}</span>
@@ -127,14 +127,14 @@
 
         <!-- Result State: Show score for current question -->
         <div v-else-if="phase === 'result'" class="space-y-4">
-          <p class="section-kicker">Scoring Response</p>
+          <p class="section-kicker">评分结果</p>
 
           <!-- Score Card -->
           <div
             class="p-6 text-white shadow-[0_16px_36px_rgba(47,79,157,0.18)]"
             style="border-radius: var(--radius-lg); background: linear-gradient(180deg, #365ab0 0%, #2f4f9d 100%);"
           >
-            <div class="text-xs uppercase tracking-[0.24em] text-white/60">AI Score</div>
+            <div class="text-xs uppercase tracking-[0.24em] text-white/60">AI 评分</div>
             <div class="mt-3 text-5xl font-semibold tracking-[-0.03em]">{{ animatedScore }}</div>
             <p class="mt-4 text-sm leading-7 text-white/80">{{ lastResult?.comment }}</p>
           </div>
@@ -181,13 +181,13 @@
 
         <!-- Finished State: Summary -->
         <div v-else-if="phase === 'finished'" class="space-y-4">
-          <p class="section-kicker">Interview Complete</p>
+          <p class="section-kicker">面试完成</p>
 
           <div
             class="p-6 text-white shadow-[0_16px_36px_rgba(47,79,157,0.18)]"
             style="border-radius: var(--radius-lg); background: linear-gradient(135deg, #365ab0 0%, #233d79 100%);"
           >
-            <div class="text-xs uppercase tracking-[0.24em] text-white/60">Total Score</div>
+            <div class="text-xs uppercase tracking-[0.24em] text-white/60">总分</div>
             <div class="mt-3 text-6xl font-semibold tracking-[-0.03em]">{{ detail?.totalScore ?? '-' }}</div>
             <p class="mt-4 text-sm text-white/80">
               共 {{ detail?.questionCount ?? 0 }} 题，方向：{{ detail?.direction }}

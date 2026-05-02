@@ -12,7 +12,7 @@
         ></div>
         <p class="section-kicker relative">ByteCoach</p>
         <h1 class="page-title relative mt-5 max-w-xl">
-          进入一个围绕 Java 面试准备设计的学习驾驶舱，而不是普通聊天页。
+          进入你的 Java 面试准备驾驶舱，问答、面试、错题、计划一站搞定。
         </h1>
         <p class="page-subtitle relative mt-5">
           登录之后，首页会把学习概览、最近面试、错题数量、薄弱点和计划完成率放进同一个工作台，帮助你决定下一步该做什么。
@@ -20,19 +20,19 @@
 
         <div class="relative mt-12 grid gap-4 md:grid-cols-3">
           <article class="metric-card">
-            <p class="metric-label">Core Loop</p>
-            <p class="metric-value">6</p>
-            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">登录、问答、面试、错题、计划、Dashboard</p>
+            <p class="metric-label">智能问答</p>
+            <p class="metric-value">AI</p>
+            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">支持普通问答和知识库问答两种模式</p>
           </article>
           <article class="metric-card">
-            <p class="metric-label">Dashboard</p>
-            <p class="metric-value">Live</p>
-            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">学习概览、面试结果、薄弱点与快捷入口统一呈现</p>
+            <p class="metric-label">模拟面试</p>
+            <p class="metric-value">3-5</p>
+            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">每场 3-5 题，AI 实时评分和追问</p>
           </article>
           <article class="metric-card">
-            <p class="metric-label">Auth</p>
-            <p class="metric-value">JWT</p>
-            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">注册、登录、恢复登录态、退出登录形成完整闭环</p>
+            <p class="metric-label">学习闭环</p>
+            <p class="metric-value">4</p>
+            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">问答、面试、错题、计划四段闭环</p>
           </article>
         </div>
       </section>
@@ -43,10 +43,10 @@
         <div class="rule-divider mt-6"></div>
         <el-form ref="formRef" :model="form" :rules="rules" class="mt-8" label-position="top" @submit.prevent>
           <el-form-item label="用户名" prop="username">
-            <el-input v-model="form.username" placeholder="demo" size="large" />
+            <el-input v-model="form.username" placeholder="请输入用户名" size="large" />
           </el-form-item>
           <el-form-item label="密码" prop="password">
-            <el-input v-model="form.password" type="password" show-password placeholder="123456" size="large" />
+            <el-input v-model="form.password" type="password" show-password placeholder="请输入密码" size="large" />
           </el-form-item>
           <el-button :loading="loading" type="primary" size="large" class="action-button mt-4 w-full transition active:translate-y-px" @click="handleLogin">
             登录
@@ -75,8 +75,8 @@ const formRef = ref<FormInstance>()
 const loading = ref(false)
 
 const form = reactive({
-  username: 'demo',
-  password: '123456'
+  username: '',
+  password: ''
 })
 
 const rules: FormRules<typeof form> = {

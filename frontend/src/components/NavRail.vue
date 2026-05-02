@@ -3,9 +3,9 @@
     <div class="space-y-8">
       <div>
         <div class="section-kicker">ByteCoach</div>
-        <h1 class="mt-3 text-3xl font-semibold leading-none tracking-[-0.03em] text-ink">Interview Studio</h1>
+        <h1 class="mt-3 text-3xl font-semibold leading-none tracking-[-0.03em] text-ink">Java 面试训练台</h1>
         <p class="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">
-          聚焦 Java 后端面试准备的最小学习闭环。
+          聚焦 Java 后端面试准备，问答、面试、错题、计划一站完成。
         </p>
       </div>
 
@@ -31,9 +31,9 @@
     </div>
 
     <div class="surface-muted px-4 py-5">
-      <p class="text-xs font-semibold uppercase tracking-[0.28em] text-accent">MVP Freeze</p>
+      <p class="text-xs font-semibold uppercase tracking-[0.28em] text-accent">ByteCoach</p>
       <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-        登录、问答、面试、错题、计划、Dashboard 六段主链路优先。
+        智能问答、模拟面试、错题复习、学习计划，四段闭环助你备战 Java 面试。
       </p>
     </div>
   </aside>
@@ -45,13 +45,13 @@ import { useRoute } from 'vue-router'
 const route = useRoute()
 
 const items = [
-  { path: '/dashboard', label: 'Dashboard', index: '01' },
-  { path: '/chat', label: 'Chat', index: '02' },
-  { path: '/knowledge', label: 'Knowledge', index: '03' },
-  { path: '/interview', label: 'Interview', index: '04' },
-  { path: '/wrong', label: 'Wrong Book', index: '05' },
-  { path: '/plan', label: 'Study Plan', index: '06' },
-  { path: '/admin', label: 'Admin', index: '07' }
+  { path: '/dashboard', label: '首页', index: '01' },
+  { path: '/chat', label: '问答', index: '02' },
+  { path: '/knowledge', label: '知识库', index: '03' },
+  { path: '/interview', label: '面试', index: '04' },
+  { path: '/wrong', label: '错题本', index: '05' },
+  { path: '/plan', label: '学习计划', index: '06' },
+  { path: '/admin', label: '管理后台', index: '07' }
 ]
 
 const isActive = (path: string) => route.path === path

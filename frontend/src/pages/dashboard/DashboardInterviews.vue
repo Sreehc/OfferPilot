@@ -2,7 +2,7 @@
   <article class="paper-panel p-6">
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
-        <p class="section-kicker">Recent Interviews</p>
+        <p class="section-kicker">最近面试</p>
         <h3 class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-ink">最近面试结果</h3>
       </div>
       <div class="flex gap-3">
@@ -66,6 +66,6 @@ const interviewTitle = (interview: RecentInterviewItem): string => {
 }
 
 const statusLabel = (status: string): string => {
-  return status === 'finished' ? 'finished' : status
+  return status === 'finished' ? '已完成' : status
 }
 </script>
