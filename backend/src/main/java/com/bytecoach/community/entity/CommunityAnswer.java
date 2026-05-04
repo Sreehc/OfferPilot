@@ -12,6 +12,7 @@ public class CommunityAnswer extends BaseEntity {
     private Long questionId;
     private Long userId;
     private String content;
+    private String status;
     private Integer isAccepted;
     private Integer upvoteCount;
 }

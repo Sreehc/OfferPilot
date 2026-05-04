@@ -40,11 +40,14 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
+const authStore = useAuthStore()
 
-const items = [
+const allItems = [
   { path: '/dashboard', label: '首页', index: '01' },
   { path: '/chat', label: '问答', index: '02' },
   { path: '/knowledge', label: '知识库', index: '03' },
@@ -53,8 +56,12 @@ const items = [
   { path: '/review', label: '复习', index: '06' },
   { path: '/community', label: '社区', index: '07' },
   { path: '/plan', label: '学习计划', index: '08' },
-  { path: '/admin', label: '管理后台', index: '09' }
+  { path: '/admin', label: '管理后台', index: '09', adminOnly: true }
 ]
+
+const items = computed(() =>
+  allItems.filter((item) => !item.adminOnly || authStore.user?.role === 'ADMIN')
+)
 
 const isActive = (path: string) => route.path === path
 </script>

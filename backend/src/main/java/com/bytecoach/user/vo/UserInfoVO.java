@@ -1,5 +1,6 @@
 package com.bytecoach.user.vo;
 
+import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Data;
 
@@ -11,5 +12,7 @@ public class UserInfoVO {
     private String nickname;
     private String avatar;
     private String role;
+    private Integer status;
+    private LocalDateTime createTime;
+    private LocalDateTime lastLoginTime;
 }
-

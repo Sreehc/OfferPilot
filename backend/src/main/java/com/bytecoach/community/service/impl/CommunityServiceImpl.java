@@ -48,7 +48,7 @@ public class CommunityServiceImpl implements CommunityService {
         question.setTitle(request.getTitle());
         question.setContent(request.getContent());
         question.setCategoryId(request.getCategoryId());
-        question.setStatus("open");
+        question.setStatus("pending");
         question.setUpvoteCount(0);
         question.setAnswerCount(0);
         questionMapper.insert(question);
@@ -93,16 +93,22 @@ public class CommunityServiceImpl implements CommunityService {
         CommunityQuestion question = questionMapper.selectById(id);
         if (question == null) throw new BusinessException(ResultCode.NOT_FOUND.getCode(), "问题不存在");
 
+        // Only show approved questions (or allow author to see their own)
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        if (!"approved".equals(question.getStatus()) && !question.getUserId().equals(currentUserId)) {
+            throw new BusinessException(ResultCode.NOT_FOUND.getCode(), "问题不存在");
+        }
+
         CommunityQuestionVO vo = toQuestionVO(question);
 
         List<CommunityAnswer> answers = answerMapper.selectList(
                 new LambdaQueryWrapper<CommunityAnswer>()
                         .eq(CommunityAnswer::getQuestionId, id)
+                        .eq(CommunityAnswer::getStatus, "approved")
                         .orderByDesc(CommunityAnswer::getIsAccepted)
                         .orderByDesc(CommunityAnswer::getUpvoteCount)
                         .orderByAsc(CommunityAnswer::getCreateTime));
 
-        Long currentUserId = SecurityUtils.getCurrentUserId();
         List<CommunityAnswerVO> answerVOs = answers.stream()
                 .map(a -> {
                     CommunityAnswerVO avo = toAnswerVO(a);
@@ -119,6 +125,7 @@ public class CommunityServiceImpl implements CommunityService {
     @Override
     public PageResult<CommunityQuestionVO> listQuestions(int page, int size, String sort, Long categoryId, String keyword) {
         LambdaQueryWrapper<CommunityQuestion> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(CommunityQuestion::getStatus, "approved");
         if (categoryId != null) {
             wrapper.eq(CommunityQuestion::getCategoryId, categoryId);
         }
@@ -169,6 +176,7 @@ public class CommunityServiceImpl implements CommunityService {
         answer.setQuestionId(request.getQuestionId());
         answer.setUserId(userId);
         answer.setContent(request.getContent());
+        answer.setStatus("pending");
         answer.setIsAccepted(0);
         answer.setUpvoteCount(0);
         answerMapper.insert(answer);

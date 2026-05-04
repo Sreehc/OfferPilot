@@ -123,7 +123,7 @@ const searchVisible = ref(false)
 const searchQuery = ref('')
 const searchInputRef = ref<ComponentPublicInstance | null>(null)
 
-const searchItems = [
+const allSearchItems = [
   { label: '首页看板', path: '/dashboard' },
   { label: '知识问答', path: '/chat' },
   { label: '知识库', path: '/knowledge' },
@@ -135,14 +135,18 @@ const searchItems = [
   { label: '排行榜', path: '/community/leaderboard' },
   { label: '学习计划', path: '/plan' },
   { label: '数据分析', path: '/analytics' },
-  { label: '后台管理', path: '/admin' },
+  { label: '后台管理', path: '/admin', adminOnly: true },
   { label: '账户设置', path: '/settings' }
 ]
 
+const searchItems = computed(() =>
+  allSearchItems.filter((item) => !item.adminOnly || authStore.user?.role === 'ADMIN')
+)
+
 const filteredSearchItems = computed(() => {
-  if (!searchQuery.value) return searchItems
+  if (!searchQuery.value) return searchItems.value
   const q = searchQuery.value.toLowerCase()
-  return searchItems.filter(
+  return searchItems.value.filter(
     (item) => item.label.toLowerCase().includes(q) || item.path.toLowerCase().includes(q)
   )
 })

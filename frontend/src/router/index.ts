@@ -151,7 +151,7 @@ const router = createRouter({
           path: 'admin',
           name: 'admin',
           component: () => import('@/pages/admin/AdminPage.vue'),
-          meta: pageMeta.admin
+          meta: { ...pageMeta.admin, requiresAdmin: true }
         },
         {
           path: 'settings',
@@ -199,6 +199,10 @@ router.beforeEach(async (to) => {
 
   if (to.meta.requiresAuth && !authStore.isLoggedIn) {
     return { path: '/login', query: { redirect: to.fullPath } }
+  }
+
+  if (to.meta.requiresAdmin && authStore.user?.role !== 'ADMIN') {
+    return '/dashboard'
   }
 
   if (to.meta.guestOnly && authStore.isLoggedIn) {
