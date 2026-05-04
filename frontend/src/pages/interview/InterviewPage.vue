@@ -325,6 +325,7 @@ import {
   submitAnswerApi,
   submitVoiceAnswerApi
 } from '@/api/interview'
+import { fetchRecommendInterviewApi } from '@/api/adaptive'
 import type { InterviewAnswerResult, InterviewCurrentQuestion, InterviewDetail, VoiceSubmitResult } from '@/types/api'
 import VoiceRecorder from '@/components/VoiceRecorder.vue'
 
@@ -580,6 +581,19 @@ onMounted(() => {
     voiceAvailable.value = res.data.available
   }).catch(() => {
     voiceAvailable.value = false
+  })
+
+  // Load recommended interview direction
+  void fetchRecommendInterviewApi().then(res => {
+    const rec = res.data
+    if (rec && rec.direction && directions.includes(rec.direction)) {
+      direction.value = rec.direction
+    }
+    if (rec && rec.questionCount) {
+      questionCount.value = rec.questionCount
+    }
+  }).catch(() => {
+    // Silently fail — use defaults
   })
 
   // Auto-start if reanswer query param is present (from wrong book)

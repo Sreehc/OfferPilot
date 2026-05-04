@@ -1,6 +1,8 @@
 package com.bytecoach.dashboard.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.bytecoach.adaptive.service.AdaptiveService;
+import com.bytecoach.adaptive.vo.AbilityProfileVO;
 import com.bytecoach.common.api.ResultCode;
 import com.bytecoach.common.exception.BusinessException;
 import com.bytecoach.dashboard.dto.DashboardOverviewVO;
@@ -34,6 +36,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final ObjectMapper objectMapper;
     private final PlanAdjustService planAdjustService;
     private final StudyPlanMapper planMapper;
+    private final AdaptiveService adaptiveService;
 
     @Override
     public DashboardOverviewVO overview() {
@@ -82,6 +85,18 @@ public class DashboardServiceImpl implements DashboardService {
                 .weakPoints(weakPoints)
                 .firstVisit(learningCount == 0 && wrongCount == 0)
                 .build();
+
+        // Populate adaptive learning fields
+        try {
+            AbilityProfileVO profile = adaptiveService.getAbilityProfile(userId);
+            result.setOverallAbility(profile.getOverallAbility());
+            result.setRecommendedDifficulty(profile.getRecommendedDifficulty());
+            result.setWeakCategories(profile.getWeakCategories());
+            result.setSuggestedFocus(profile.getSuggestedFocus());
+            result.setCategoryAbilities(profile.getCategoryAbilities());
+        } catch (Exception e) {
+            log.warn("Failed to load adaptive profile for dashboard: {}", e.getMessage());
+        }
 
         // Cache the result
         try {

@@ -48,6 +48,11 @@ export interface DashboardOverview {
   recentInterviews: RecentInterviewItem[]
   weakPoints: WeakPointItem[]
   firstVisit: boolean
+  overallAbility?: number
+  recommendedDifficulty?: string
+  weakCategories?: string[]
+  suggestedFocus?: string | null
+  categoryAbilities?: CategoryAbility[]
 }
 
 export interface CategoryItem {
@@ -290,4 +295,38 @@ export interface LeaderboardEntry {
   communityAnswers: number
   communityAccepted: number
   position: number
+}
+
+export interface CategoryAbility {
+  categoryId: number
+  categoryName: string
+  abilityScore: number
+  interviewCount: number
+  wrongCount: number
+  isWeak: boolean
+  recommendedDifficulty: string
+}
+
+export interface AbilityProfile {
+  overallAbility: number
+  recommendedDifficulty: string
+  categoryAbilities: CategoryAbility[]
+  weakCategories: string[]
+  suggestedFocus: string | null
+}
+
+export interface RecommendInterview {
+  direction: string
+  questionCount: number
+  reason: string
+  difficulty: string
+}
+
+export interface RecommendQuestion {
+  questionId: number
+  title: string
+  categoryId: number
+  categoryName?: string
+  difficulty: string
+  reason: string
 }

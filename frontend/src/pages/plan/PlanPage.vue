@@ -42,6 +42,24 @@
     <section v-if="showGenerate" class="paper-panel p-6">
       <p class="section-kicker">计划生成器</p>
       <h4 class="mt-4 text-lg font-semibold text-ink">设置计划参数</h4>
+
+      <!-- Weak Categories Hint -->
+      <div v-if="abilityProfile?.weakCategories && abilityProfile.weakCategories.length > 0" class="mt-4 surface-muted p-4">
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-red-600 dark:text-red-400 mb-2">检测到薄弱分类</p>
+        <div class="flex flex-wrap gap-2">
+          <span
+            v-for="cat in abilityProfile.weakCategories"
+            :key="cat"
+            class="px-2.5 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+          >
+            {{ cat }}
+          </span>
+        </div>
+        <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+          建议优先复习薄弱分类，系统已自动填充推荐方向。
+        </p>
+      </div>
+
       <div class="mt-4 grid gap-4 sm:grid-cols-2">
         <div>
           <label class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">复习方向</label>
@@ -242,7 +260,8 @@ import {
   adjustPlanApi,
   fetchPlanHistoryApi
 } from '@/api/plan'
-import type { StudyPlanItem, StudyPlanTaskItem } from '@/types/api'
+import { fetchAbilityProfileApi } from '@/api/adaptive'
+import type { StudyPlanItem, StudyPlanTaskItem, AbilityProfile } from '@/types/api'
 
 const currentPlan = ref<StudyPlanItem | null>(null)
 const planHistory = ref<StudyPlanItem[]>([])
@@ -250,6 +269,7 @@ const loading = ref(true)
 const generating = ref(false)
 const adjusting = ref(false)
 const showGenerate = ref(false)
+const abilityProfile = ref<AbilityProfile | null>(null)
 
 const form = ref({
   direction: 'Java 后端',
@@ -365,7 +385,21 @@ const toggleTaskStatus = async (task: StudyPlanTaskItem) => {
   }
 }
 
+const loadAbilityProfile = async () => {
+  try {
+    const response = await fetchAbilityProfileApi()
+    abilityProfile.value = response.data
+    // Auto-set direction based on suggested focus
+    if (response.data.suggestedFocus) {
+      form.value.direction = response.data.suggestedFocus
+    }
+  } catch {
+    // Silently fail — use defaults
+  }
+}
+
 onMounted(() => {
   void loadCurrentPlan()
+  void loadAbilityProfile()
 })
 </script>

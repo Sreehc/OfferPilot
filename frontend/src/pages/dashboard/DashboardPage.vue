@@ -50,6 +50,83 @@
         </article>
       </section>
 
+      <section class="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+        <!-- Today's Recommendation -->
+        <article class="paper-panel p-6">
+          <p class="section-kicker">今日推荐</p>
+          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
+            {{ recommendInterview ? `练习${recommendInterview.direction}` : '开始你的第一次面试' }}
+          </h3>
+          <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+            {{ recommendInterview?.reason || '完成面试后，系统会根据你的表现推荐练习方向。' }}
+          </p>
+          <div v-if="overview.overallAbility !== undefined" class="mt-4 flex items-center gap-4">
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-500">综合能力</span>
+              <span class="text-lg font-bold text-accent">{{ overview.overallAbility }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-500">推荐难度</span>
+              <span
+                class="px-2 py-0.5 text-xs font-medium rounded-full"
+                :class="difficultyClass(overview.recommendedDifficulty)"
+              >
+                {{ difficultyLabel(overview.recommendedDifficulty) }}
+              </span>
+            </div>
+          </div>
+          <div v-if="overview.weakCategories && overview.weakCategories.length > 0" class="mt-4">
+            <p class="text-xs text-slate-500 mb-2">薄弱分类</p>
+            <div class="flex flex-wrap gap-2">
+              <span
+                v-for="cat in overview.weakCategories"
+                :key="cat"
+                class="px-2.5 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+              >
+                {{ cat }}
+              </span>
+            </div>
+          </div>
+          <RouterLink
+            v-if="recommendInterview"
+            to="/interview"
+            class="hard-button-primary mt-4 inline-flex"
+          >
+            开始推荐面试
+          </RouterLink>
+        </article>
+
+        <!-- Ability Radar -->
+        <article class="paper-panel p-6">
+          <p class="section-kicker">能力雷达</p>
+          <h3 class="mt-3 text-lg font-semibold text-ink">各分类能力分布</h3>
+          <div class="mt-4">
+            <div v-if="overview.categoryAbilities && overview.categoryAbilities.length > 0" class="space-y-3">
+              <div
+                v-for="cat in overview.categoryAbilities.slice(0, 6)"
+                :key="cat.categoryId"
+                class="flex items-center gap-3"
+              >
+                <span class="w-20 text-xs text-slate-500 truncate">{{ cat.categoryName }}</span>
+                <div class="flex-1 h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div
+                    class="h-full rounded-full transition-all duration-500"
+                    :class="cat.isWeak ? 'bg-red-400' : 'bg-accent'"
+                    :style="{ width: `${Math.min(cat.abilityScore, 100)}%` }"
+                  ></div>
+                </div>
+                <span class="w-10 text-right text-xs font-medium" :class="cat.isWeak ? 'text-red-500' : 'text-slate-700 dark:text-slate-200'">
+                  {{ cat.abilityScore }}
+                </span>
+              </div>
+            </div>
+            <div v-else class="py-8 text-center text-sm text-slate-400">
+              完成面试后显示能力分布
+            </div>
+          </div>
+        </article>
+      </section>
+
       <section class="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
         <article class="paper-panel p-6">
           <p class="section-kicker">快捷入口</p>
@@ -102,7 +179,8 @@ import DashboardReviewHeatmap from './DashboardReviewHeatmap.vue'
 import { fetchDashboardOverviewApi } from '@/api/dashboard'
 import { fetchInterviewTrendApi } from '@/api/interview'
 import { fetchReviewStatsApi } from '@/api/review'
-import type { DashboardOverview, InterviewHistoryItem, ReviewStats } from '@/types/api'
+import { fetchRecommendInterviewApi } from '@/api/adaptive'
+import type { DashboardOverview, InterviewHistoryItem, ReviewStats, RecommendInterview } from '@/types/api'
 import { useAuthStore } from '@/stores/auth'
 import { storage } from '@/utils/storage'
 
@@ -112,6 +190,7 @@ const trendLoading = ref(true)
 const trendData = ref<InterviewHistoryItem[]>([])
 const reviewStats = ref<ReviewStats>({ totalReviews: 0, currentStreak: 0, todayPending: 0 })
 const guideDismissed = ref(false)
+const recommendInterview = ref<RecommendInterview | null>(null)
 const overview = ref<DashboardOverview>({
   learningCount: 0,
   averageScore: 0,
@@ -190,6 +269,29 @@ const loadReviewStats = async () => {
   }
 }
 
+const loadRecommendInterview = async () => {
+  try {
+    const response = await fetchRecommendInterviewApi()
+    recommendInterview.value = response.data
+  } catch {
+    // Silently fail — recommendations are supplementary
+  }
+}
+
+const difficultyLabel = (d?: string) => {
+  const map: Record<string, string> = { easy: '简单', medium: '中等', hard: '困难' }
+  return d ? map[d] || d : '-'
+}
+
+const difficultyClass = (d?: string) => {
+  const map: Record<string, string> = {
+    easy: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+    medium: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+    hard: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  }
+  return d ? map[d] || '' : ''
+}
+
 const formatScore = (score: number): string => {
   return Number.isInteger(score) ? String(score) : score.toFixed(2)
 }
@@ -198,5 +300,6 @@ onMounted(() => {
   void loadOverview()
   void loadTrend()
   void loadReviewStats()
+  void loadRecommendInterview()
 })
 </script>
