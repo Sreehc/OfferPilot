@@ -152,6 +152,12 @@ const router = createRouter({
           name: 'admin',
           component: () => import('@/pages/admin/AdminPage.vue'),
           meta: pageMeta.admin
+        },
+        {
+          path: 'settings/devices',
+          name: 'device-manage',
+          component: () => import('@/pages/settings/DeviceManagePage.vue'),
+          meta: { kicker: '账户安全', title: '已登录设备', subtitle: '查看和管理当前已登录的所有设备。' }
         }
       ]
     },

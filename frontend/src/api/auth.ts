@@ -1,9 +1,11 @@
 import { request } from '@/utils/http'
-import type { ApiResponse, LoginResponse, UserInfo } from '@/types/api'
+import type { LoginDeviceItem, LoginResponse, UserInfo } from '@/types/api'
 
 export interface LoginPayload {
   username: string
   password: string
+  deviceFingerprint?: string
+  deviceName?: string
 }
 
 export interface RegisterPayload extends LoginPayload {
@@ -35,4 +37,18 @@ export const uploadAvatarApi = (file: File) => {
     data: formData,
     headers: { 'Content-Type': 'multipart/form-data' }
   })
+}
+
+// ─── Device management ───
+
+export const fetchDevicesApi = () => {
+  return request<LoginDeviceItem[]>({ url: '/auth/devices', method: 'get' })
+}
+
+export const revokeDeviceApi = (deviceId: number) => {
+  return request<null>({ url: `/auth/devices/${deviceId}/revoke`, method: 'post' })
+}
+
+export const revokeAllDevicesApi = () => {
+  return request<null>({ url: '/auth/devices/revoke-all', method: 'post' })
 }

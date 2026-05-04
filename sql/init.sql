@@ -343,3 +343,21 @@ CREATE TABLE IF NOT EXISTS notification (
     INDEX idx_notification_user_read (user_id, is_read),
     INDEX idx_notification_user_time (user_id, create_time DESC)
 );
+
+-- ============================================================
+-- 登录设备表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS login_device (
+    id BIGINT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    device_fingerprint VARCHAR(128) NOT NULL COMMENT '浏览器/设备指纹',
+    device_name VARCHAR(128) DEFAULT NULL COMMENT '设备名称，如 Chrome on Windows',
+    ip VARCHAR(64) DEFAULT NULL,
+    city VARCHAR(64) DEFAULT NULL COMMENT 'IP 归属城市（可选解析）',
+    last_active_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    status TINYINT NOT NULL DEFAULT 1 COMMENT '1=活跃, 0=已撤销',
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_login_device_user (user_id),
+    KEY idx_login_device_fp (user_id, device_fingerprint)
+);

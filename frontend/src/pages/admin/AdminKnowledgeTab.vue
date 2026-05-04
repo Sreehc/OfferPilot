@@ -84,7 +84,7 @@ interface SeedItem {
   summary: string
 }
 
-const props = defineProps<{
+defineProps<{
   docs: KnowledgeDocItem[]
   categories: CategoryItem[]
   filter: KnowledgeFilter

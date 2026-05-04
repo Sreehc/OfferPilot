@@ -89,7 +89,7 @@ interface QuestionFilter {
   keyword: string
 }
 
-const props = defineProps<{
+defineProps<{
   questions: QuestionItem[]
   categories: CategoryItem[]
   form: QuestionForm

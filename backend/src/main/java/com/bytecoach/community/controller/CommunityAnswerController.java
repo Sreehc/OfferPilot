@@ -1,6 +1,6 @@
 package com.bytecoach.community.controller;
 
-import com.bytecoach.common.result.Result;
+import com.bytecoach.common.api.Result;
 import com.bytecoach.community.dto.CommunityAnswerUpsertRequest;
 import com.bytecoach.community.service.CommunityService;
 import jakarta.validation.Valid;

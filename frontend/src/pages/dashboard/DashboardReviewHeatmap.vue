@@ -73,10 +73,10 @@ const weeks = computed(() => {
   let currentWeek: HeatmapDay[] = []
 
   while (current <= today) {
-    const dateStr = current.toISOString().split('T')[0]
+    const dateStr = current.toISOString().slice(0, 10)
     currentWeek.push({
       date: dateStr,
-      count: props.heatmap?.[dateStr] || 0
+      count: props.heatmap?.[dateStr] ?? 0
     })
 
     if (currentWeek.length === 7) {

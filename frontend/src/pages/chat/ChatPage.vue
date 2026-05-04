@@ -166,7 +166,10 @@ const loadSessions = async (selectLatest = false) => {
   sessionTotal.value = response.data.total
   sessionTotalPages.value = response.data.totalPages
   if (selectLatest && sessions.value.length) {
-    await selectSession(sessions.value[0].id, sessions.value[0].mode)
+    const latest = sessions.value[0]
+    if (latest) {
+      await selectSession(latest.id, latest.mode)
+    }
   }
 }
 

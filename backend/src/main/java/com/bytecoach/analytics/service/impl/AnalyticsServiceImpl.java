@@ -60,7 +60,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         List<InterviewRecord> records = recordMapper.selectList(
                 new LambdaQueryWrapper<InterviewRecord>()
                         .eq(InterviewRecord::getUserId, userId)
-                        .isNotNull(InterviewRecord::getScore())
+                        .isNotNull(InterviewRecord::getScore)
                         .ge(InterviewRecord::getCreateTime, startDate.atStartOfDay()));
 
         if (records.isEmpty()) {
@@ -321,7 +321,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
             List<InterviewRecord> records = recordMapper.selectList(
                     new LambdaQueryWrapper<InterviewRecord>()
                             .in(InterviewRecord::getSessionId, sessionIds)
-                            .isNotNull(InterviewRecord::getScore()));
+                            .isNotNull(InterviewRecord::getScore));
 
             Map<Long, InterviewSession> sessionMap = recentSessions.stream()
                     .collect(Collectors.toMap(InterviewSession::getId, Function.identity(), (a, b) -> a));

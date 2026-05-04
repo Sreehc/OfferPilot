@@ -4,27 +4,41 @@ import { fetchCurrentUserApi, loginApi, logoutApi, registerApi } from '@/api/aut
 import type { LoginPayload, RegisterPayload } from '@/api/auth'
 import type { UserInfo } from '@/types/api'
 import { storage } from '@/utils/storage'
+import { getOrCreateDeviceFingerprint, getDeviceName, setStoredDeviceId } from '@/utils/device'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(storage.getToken())
   const user = ref<UserInfo | null>(storage.getUser())
   const isLoggedIn = computed(() => Boolean(token.value))
 
-  function persist(nextToken: string, nextUser: UserInfo) {
+  function persist(nextToken: string, nextUser: UserInfo, deviceId?: number) {
     token.value = nextToken
     user.value = nextUser
     storage.setToken(nextToken)
     storage.setUser(nextUser)
+    if (deviceId) {
+      setStoredDeviceId(String(deviceId))
+    }
   }
 
   async function login(payload: LoginPayload) {
-    const response = await loginApi(payload)
-    persist(response.data.token, response.data.userInfo)
+    const fp = getOrCreateDeviceFingerprint()
+    const response = await loginApi({
+      ...payload,
+      deviceFingerprint: fp,
+      deviceName: getDeviceName()
+    })
+    persist(response.data.token, response.data.userInfo, response.data.deviceId)
   }
 
   async function register(payload: RegisterPayload) {
-    const response = await registerApi(payload)
-    persist(response.data.token, response.data.userInfo)
+    const fp = getOrCreateDeviceFingerprint()
+    const response = await registerApi({
+      ...payload,
+      deviceFingerprint: fp,
+      deviceName: getDeviceName()
+    })
+    persist(response.data.token, response.data.userInfo, response.data.deviceId)
   }
 
   async function restoreProfile() {

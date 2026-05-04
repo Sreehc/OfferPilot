@@ -172,16 +172,16 @@ public class SpacedRepetitionServiceImpl implements SpacedRepetitionService {
         wrongQuestionMapper.updateById(wq);
 
         // Insert review log
-        ReviewLog log = new ReviewLog();
-        log.setUserId(userId);
-        log.setWrongQuestionId(wrongQuestionId);
-        log.setRating(rating);
-        log.setResponseTimeMs(request.getResponseTimeMs());
-        log.setEaseFactorBefore(efBefore);
-        log.setIntervalBefore(intervalBefore);
-        log.setEaseFactorAfter(efAfter);
-        log.setIntervalAfter(intervalAfter);
-        reviewLogMapper.insert(log);
+        ReviewLog reviewLog = new ReviewLog();
+        reviewLog.setUserId(userId);
+        reviewLog.setWrongQuestionId(wrongQuestionId);
+        reviewLog.setRating(rating);
+        reviewLog.setResponseTimeMs(request.getResponseTimeMs());
+        reviewLog.setEaseFactorBefore(efBefore);
+        reviewLog.setIntervalBefore(intervalBefore);
+        reviewLog.setEaseFactorAfter(efAfter);
+        reviewLog.setIntervalAfter(intervalAfter);
+        reviewLogMapper.insert(reviewLog);
 
         log.info("Review rated: userId={}, wqId={}, rating={}, EF {}->{}, interval {}->{} days, next={}",
                 userId, wrongQuestionId, rating, efBefore, efAfter, intervalBefore, intervalAfter, nextReviewDate);

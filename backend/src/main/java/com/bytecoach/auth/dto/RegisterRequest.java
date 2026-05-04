@@ -17,5 +17,11 @@ public class RegisterRequest {
     @NotBlank(message = "cannot be blank")
     @Size(max = 64, message = "length must be less than or equal to 64")
     private String nickname;
+
+    /** Browser/device fingerprint sent by the frontend */
+    private String deviceFingerprint;
+
+    /** Human-readable device name, e.g. "Chrome on Windows" */
+    private String deviceName;
 }
 

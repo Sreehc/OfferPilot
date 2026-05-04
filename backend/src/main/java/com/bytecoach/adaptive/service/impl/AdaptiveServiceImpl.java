@@ -143,8 +143,7 @@ public class AdaptiveServiceImpl implements AdaptiveService {
             if (recommendations.size() >= limit) break;
 
             LambdaQueryWrapper<Question> wrapper = new LambdaQueryWrapper<Question>()
-                    .eq(Question::getCategoryId, cat.getCategoryId())
-                    .eq(Question::getStatus, 1);
+                    .eq(Question::getCategoryId, cat.getCategoryId());
 
             if (!answeredQuestionIds.isEmpty()) {
                 wrapper.notIn(Question::getId, answeredQuestionIds);
@@ -173,8 +172,7 @@ public class AdaptiveServiceImpl implements AdaptiveService {
 
         // If still not enough, fill with any unanswered questions
         if (recommendations.size() < limit) {
-            LambdaQueryWrapper<Question> wrapper = new LambdaQueryWrapper<Question>()
-                    .eq(Question::getStatus, 1);
+            LambdaQueryWrapper<Question> wrapper = new LambdaQueryWrapper<>();
             if (!answeredQuestionIds.isEmpty()) {
                 wrapper.notIn(Question::getId, answeredQuestionIds);
             }
@@ -298,7 +296,7 @@ public class AdaptiveServiceImpl implements AdaptiveService {
             double ability = weightSum > 0 ? weightedSum / weightSum : 0;
 
             // Count wrong questions for this category
-            int wrongCount = wrongQuestionMapper.selectCount(
+            long wrongCount = wrongQuestionMapper.selectCount(
                     new LambdaQueryWrapper<com.bytecoach.wrong.entity.WrongQuestion>()
                             .eq(com.bytecoach.wrong.entity.WrongQuestion::getUserId, userId)
                             .inSql(com.bytecoach.wrong.entity.WrongQuestion::getQuestionId,
@@ -316,7 +314,7 @@ public class AdaptiveServiceImpl implements AdaptiveService {
                     .categoryName(categoryNameMap.getOrDefault(categoryId, "未知"))
                     .abilityScore(Math.round(ability * 100.0) / 100.0)
                     .interviewCount(scores.size())
-                    .wrongCount(wrongCount)
+                    .wrongCount((int) wrongCount)
                     .isWeak(isWeak)
                     .recommendedDifficulty(recDifficulty)
                     .build());

@@ -225,13 +225,15 @@ public class InterviewServiceImpl implements InterviewService {
                 .collect(Collectors.toMap(Question::getId, Function.identity(), (a, b) -> a));
 
         // Load voice records if this is a voice session
-        Map<Long, VoiceRecord> voiceRecordMap = Map.of();
+        Map<Long, VoiceRecord> voiceRecordMap;
         if ("voice".equals(session.getMode())) {
             List<VoiceRecord> voiceRecords = voiceRecordMapper.selectList(
                     new LambdaQueryWrapper<VoiceRecord>()
                             .eq(VoiceRecord::getSessionId, sessionId));
             voiceRecordMap = voiceRecords.stream()
                     .collect(Collectors.toMap(VoiceRecord::getRecordId, Function.identity(), (a, b) -> a));
+        } else {
+            voiceRecordMap = Map.of();
         }
 
         List<InterviewDetailVO.InterviewRecordVO> recordVOs = records.stream()

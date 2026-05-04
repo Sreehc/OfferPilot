@@ -23,14 +23,23 @@ public class JwtTokenUtil {
     private long jwtExpireSeconds;
 
     public String generateToken(Long userId, String username) {
+        return generateToken(userId, username, null, null);
+    }
+
+    public String generateToken(Long userId, String username, Long deviceId, String deviceFingerprint) {
         Instant now = Instant.now();
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .subject(username)
                 .claim("userId", userId)
                 .issuedAt(Date.from(now))
-                .expiration(Date.from(now.plusSeconds(jwtExpireSeconds)))
-                .signWith(getSigningKey())
-                .compact();
+                .expiration(Date.from(now.plusSeconds(jwtExpireSeconds)));
+        if (deviceId != null) {
+            builder.claim("deviceId", deviceId);
+        }
+        if (deviceFingerprint != null) {
+            builder.claim("dfp", deviceFingerprint);
+        }
+        return builder.signWith(getSigningKey()).compact();
     }
 
     public String resolveToken(String authHeader) {

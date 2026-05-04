@@ -108,6 +108,7 @@ import NotificationDropdown from '@/components/NotificationDropdown.vue'
 import OfflinePage from '@/components/OfflinePage.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useTheme } from '@/composables/useTheme'
+import type { ComponentPublicInstance } from 'vue'
 
 const authStore = useAuthStore()
 const route = useRoute()
@@ -120,7 +121,7 @@ const sidebarVisible = ref(true)
 // Global search (Cmd+K)
 const searchVisible = ref(false)
 const searchQuery = ref('')
-const searchInputRef = ref<InstanceType<HTMLInputElement> | null>(null)
+const searchInputRef = ref<ComponentPublicInstance | null>(null)
 
 const searchItems = [
   { label: '首页看板', path: '/dashboard' },
@@ -134,7 +135,8 @@ const searchItems = [
   { label: '排行榜', path: '/community/leaderboard' },
   { label: '学习计划', path: '/plan' },
   { label: '数据分析', path: '/analytics' },
-  { label: '后台管理', path: '/admin' }
+  { label: '后台管理', path: '/admin' },
+  { label: '已登录设备', path: '/settings/devices' }
 ]
 
 const filteredSearchItems = computed(() => {
@@ -153,7 +155,7 @@ const navigateTo = (path: string) => {
 
 const handleSearchNavigate = () => {
   if (filteredSearchItems.value.length > 0) {
-    navigateTo(filteredSearchItems.value[0].path)
+    navigateTo(filteredSearchItems.value[0]?.path ?? '/dashboard')
   }
 }
 

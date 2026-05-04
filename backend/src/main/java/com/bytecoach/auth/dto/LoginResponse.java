@@ -9,5 +9,6 @@ import lombok.Data;
 public class LoginResponse {
     private String token;
     private UserInfoVO userInfo;
+    private Long deviceId;
 }
 

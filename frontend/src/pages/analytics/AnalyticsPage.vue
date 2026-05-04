@@ -125,7 +125,7 @@
       <h3 class="mt-3 text-lg font-semibold text-ink">错题掌握分布</h3>
       <div class="mt-4 grid gap-4 sm:grid-cols-3">
         <div
-          v-for="(item, idx) in masteryItems"
+          v-for="item in masteryItems"
           :key="item.label"
           class="flex items-center gap-3 rounded-lg p-3"
           :class="item.bgClass"
@@ -186,6 +186,8 @@ const ratingColor = (key: number) => {
   }
   return map[key] || 'bg-slate-400'
 }
+
+const getChartPoint = <T extends { week: string }>(items: T[], dataIndex: number) => items[dataIndex] ?? null
 
 const hasMasteryData = computed(() => {
   const d = efficiencyData.value.masteryDistribution
@@ -330,7 +332,10 @@ const renderEFChart = () => {
     tooltip: {
       trigger: 'axis',
       formatter: (params: { dataIndex: number; value: number }[]) => {
-        const item = data[params[0].dataIndex]
+        const first = params[0]
+        if (!first) return ''
+        const item = getChartPoint(data, first.dataIndex)
+        if (!item) return ''
         return `${item.week}<br/>EF: <strong>${item.avgEF}</strong><br/>复习: ${item.reviewCount} 次`
       },
     },
@@ -379,7 +384,10 @@ const renderFRChart = () => {
     tooltip: {
       trigger: 'axis',
       formatter: (params: { dataIndex: number; value: number }[]) => {
-        const item = data[params[0].dataIndex]
+        const first = params[0]
+        if (!first) return ''
+        const item = getChartPoint(data, first.dataIndex)
+        if (!item) return ''
         return `${item.week}<br/>遗忘率: <strong>${(item.forgettingRate * 100).toFixed(1)}%</strong><br/>Again: ${item.againCount}/${item.totalRatings}`
       },
     },

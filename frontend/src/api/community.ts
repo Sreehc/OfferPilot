@@ -3,7 +3,6 @@ import type { PageResult } from '@/types/api'
 import type {
   CommunityQuestion,
   CommunityQuestionDetail,
-  CommunityAnswer,
   LeaderboardEntry,
 } from '@/types/api'
 

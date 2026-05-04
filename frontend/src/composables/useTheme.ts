@@ -1,4 +1,4 @@
-import { ref, watch, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 
 const THEME_KEY = 'bytecoach_theme'
 

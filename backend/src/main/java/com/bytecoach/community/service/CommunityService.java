@@ -1,6 +1,6 @@
 package com.bytecoach.community.service;
 
-import com.bytecoach.common.result.PageResult;
+import com.bytecoach.common.dto.PageResult;
 import com.bytecoach.community.dto.CommunityAnswerUpsertRequest;
 import com.bytecoach.community.dto.CommunityQuestionUpsertRequest;
 import com.bytecoach.community.dto.CommunityVoteRequest;

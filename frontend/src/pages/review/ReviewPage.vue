@@ -60,7 +60,7 @@
     </section>
 
     <!-- Flashcard Review -->
-    <section v-else-if="currentIndex < items.length" class="mx-auto max-w-2xl px-2 sm:px-0">
+    <section v-else-if="currentItem" class="mx-auto max-w-2xl px-2 sm:px-0">
       <!-- Progress -->
       <div class="mb-4 flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
         <span>{{ currentIndex + 1 }} / {{ items.length }}</span>
@@ -177,23 +177,29 @@ let touchStartY = 0
 let touchStartTime = 0
 
 const onTouchStart = (e: TouchEvent) => {
-  touchStartX = e.touches[0].clientX
-  touchStartY = e.touches[0].clientY
+  const touch = e.touches.item(0)
+  if (!touch) return
+  touchStartX = touch.clientX
+  touchStartY = touch.clientY
   touchStartTime = Date.now()
 }
 
 const onTouchMove = (e: TouchEvent) => {
   // Prevent default to avoid scrolling while swiping on the card
-  const dx = Math.abs(e.touches[0].clientX - touchStartX)
-  const dy = Math.abs(e.touches[0].clientY - touchStartY)
+  const touch = e.touches.item(0)
+  if (!touch) return
+  const dx = Math.abs(touch.clientX - touchStartX)
+  const dy = Math.abs(touch.clientY - touchStartY)
   if (dx > dy && dx > 10) {
     e.preventDefault()
   }
 }
 
 const onTouchEnd = (e: TouchEvent) => {
-  const touchEndX = e.changedTouches[0].clientX
-  const touchEndY = e.changedTouches[0].clientY
+  const touch = e.changedTouches.item(0)
+  if (!touch) return
+  const touchEndX = touch.clientX
+  const touchEndY = touch.clientY
   const dx = touchEndX - touchStartX
   const dy = touchEndY - touchStartY
   const dt = Date.now() - touchStartTime
@@ -214,7 +220,7 @@ const onTouchEnd = (e: TouchEvent) => {
 
 const todayCount = computed(() => items.value.length)
 const estimatedMinutes = computed(() => Math.max(1, Math.ceil(items.value.length * 0.5)))
-const currentItem = computed(() => items.value[currentIndex.value])
+const currentItem = computed(() => items.value[currentIndex.value] ?? null)
 
 const ratingButtons = [
   { rating: 1 as const, emoji: '🔄', label: '重来', interval: '1 天', class: 'bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30' },
@@ -254,6 +260,7 @@ const flipCard = () => {
 
 const handleRate = async (rating: 1 | 2 | 3 | 4) => {
   if (submitting.value) return
+  if (!currentItem.value) return
   submitting.value = true
 
   if (rating <= 2) againCount.value++

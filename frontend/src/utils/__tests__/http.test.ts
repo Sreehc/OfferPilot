@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 
 // Mock dependencies before importing the module
 vi.mock('axios', () => {
@@ -41,28 +41,6 @@ import axios from 'axios'
 import { storage } from '@/utils/storage'
 
 describe('http utility', () => {
-  let requestInterceptor: Function
-  let responseErrorInterceptor: Function
-
-  beforeEach(() => {
-    vi.clearAllMocks()
-
-    // Capture the interceptors registered during module load
-    const mockInstance = vi.mocked(axios.create()).mock.results?.[0]?.value ??
-      (axios.create as any)()
-
-    // Get the interceptor functions
-    const requestUse = mockInstance.interceptors.request.use
-    const responseUse = mockInstance.interceptors.response.use
-
-    if (requestUse.mock?.calls?.length) {
-      requestInterceptor = requestUse.mock.calls[0][0]
-    }
-    if (responseUse.mock?.calls?.length) {
-      responseErrorInterceptor = responseUse.mock.calls[0][1]
-    }
-  })
-
   it('axios.create is called with baseURL and timeout', () => {
     expect(axios.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -82,6 +60,7 @@ describe('http utility', () => {
   })
 
   it('interceptors handle token injection when available', () => {
+    vi.clearAllMocks()
     vi.mocked(storage.getToken).mockReturnValue('my-token')
 
     // The request interceptor should be callable
@@ -91,6 +70,7 @@ describe('http utility', () => {
   })
 
   it('interceptors handle missing token gracefully', () => {
+    vi.clearAllMocks()
     vi.mocked(storage.getToken).mockReturnValue(null)
 
     const mockInstance = (axios.create as any)()

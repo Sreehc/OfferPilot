@@ -181,7 +181,7 @@ const filteredItems = computed(() => {
   }
 
   if (filterReview.value) {
-    const today = new Date().toISOString().split('T')[0]
+    const today = new Date().toISOString().slice(0, 10)
     if (filterReview.value === 'due_today') {
       result = result.filter((item) => item.nextReviewDate && item.nextReviewDate <= today)
     } else if (filterReview.value === 'scheduled') {
@@ -285,7 +285,7 @@ const formatDate = (dateStr: string) => {
 
 const isDueToday = (dateStr: string) => {
   if (!dateStr) return false
-  const today = new Date().toISOString().split('T')[0]
+  const today = new Date().toISOString().slice(0, 10)
   return dateStr <= today
 }
 

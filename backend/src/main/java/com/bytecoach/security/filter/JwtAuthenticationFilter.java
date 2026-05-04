@@ -24,6 +24,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String BLACKLIST_PREFIX = "jwt:blacklist:";
+    private static final String DEVICE_TOKEN_PREFIX = "device:token:";
 
     private final JwtTokenUtil jwtTokenUtil;
     private final DbUserDetailsService userDetailsService;
@@ -43,6 +44,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     return;
                 }
                 Claims claims = jwtTokenUtil.parseClaims(token);
+
+                // Check if the device has been revoked
+                if (isDeviceRevoked(claims)) {
+                    log.debug("Revoked device used for {} {}", request.getMethod(), request.getRequestURI());
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
                 UserDetails userDetails = userDetailsService.loadUserByUsername(claims.getSubject());
                 UsernamePasswordAuthenticationToken authenticationToken =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
@@ -58,6 +67,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return Boolean.TRUE.equals(redisTemplate.hasKey(BLACKLIST_PREFIX + token));
         } catch (Exception e) {
             // Redis unavailable — degrade gracefully (allow the request)
+            return false;
+        }
+    }
+
+    private boolean isDeviceRevoked(Claims claims) {
+        try {
+            Object userIdObj = claims.get("userId");
+            Object dfpObj = claims.get("dfp");
+            if (userIdObj == null || dfpObj == null) {
+                return false;
+            }
+            String key = DEVICE_TOKEN_PREFIX + userIdObj + ":" + dfpObj;
+            return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+        } catch (Exception e) {
+            // Redis unavailable — degrade gracefully
             return false;
         }
     }

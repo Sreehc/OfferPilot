@@ -1,7 +1,7 @@
 package com.bytecoach.community.controller;
 
-import com.bytecoach.common.result.PageResult;
-import com.bytecoach.common.result.Result;
+import com.bytecoach.common.dto.PageResult;
+import com.bytecoach.common.api.Result;
 import com.bytecoach.community.dto.CommunityQuestionUpsertRequest;
 import com.bytecoach.community.service.CommunityService;
 import com.bytecoach.community.service.UserStatsService;

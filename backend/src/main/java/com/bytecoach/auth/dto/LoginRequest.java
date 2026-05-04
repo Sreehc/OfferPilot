@@ -10,5 +10,11 @@ public class LoginRequest {
 
     @NotBlank(message = "cannot be blank")
     private String password;
+
+    /** Browser/device fingerprint sent by the frontend */
+    private String deviceFingerprint;
+
+    /** Human-readable device name, e.g. "Chrome on Windows" */
+    private String deviceName;
 }
 

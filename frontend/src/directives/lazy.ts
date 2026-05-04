@@ -8,6 +8,7 @@ import type { Directive } from 'vue'
  */
 export const vLazy: Directive<HTMLImageElement, string> = {
   mounted(el, binding) {
+    const imageEl = el as HTMLImageElement & { _lazyObserver?: IntersectionObserver }
     const defaultSrc = el.src || ''
     el.dataset.src = binding.value
 
@@ -39,7 +40,7 @@ export const vLazy: Directive<HTMLImageElement, string> = {
     )
 
     observer.observe(el)
-    el._lazyObserver = observer
+    imageEl._lazyObserver = observer
   },
 
   updated(el, binding) {
@@ -49,6 +50,7 @@ export const vLazy: Directive<HTMLImageElement, string> = {
   },
 
   unmounted(el) {
-    el._lazyObserver?.disconnect()
+    const imageEl = el as HTMLImageElement & { _lazyObserver?: IntersectionObserver }
+    imageEl._lazyObserver?.disconnect()
   },
 }

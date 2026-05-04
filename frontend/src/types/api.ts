@@ -23,6 +23,7 @@ export interface UserInfo {
 export interface LoginResponse {
   token: string
   userInfo: UserInfo
+  deviceId?: number
 }
 
 export interface RecentInterviewItem {
@@ -410,4 +411,15 @@ export interface LearningInsights {
   lastWeekInterviewCount: number
   categoryChanges: CategoryChange[]
   bestStudyHours: HourDistribution[]
+}
+
+export interface LoginDeviceItem {
+  id: number
+  deviceFingerprint: string
+  deviceName?: string
+  ip?: string
+  city?: string
+  lastActiveTime: string
+  createTime: string
+  current: boolean
 }

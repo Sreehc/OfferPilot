@@ -54,7 +54,7 @@
         </div>
 
         <!-- In Progress: Current Question -->
-        <div v-else-if="phase !== 'idle'" class="mt-6 space-y-4">
+        <div v-else class="mt-6 space-y-4">
           <!-- Progress Bar -->
           <div class="surface-card p-4">
             <div class="flex items-center justify-between text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">

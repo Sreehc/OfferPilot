@@ -140,14 +140,14 @@ const drawWaveform = () => {
     // Draw waveform
     ctx.lineWidth = 2
     ctx.strokeStyle = '#2f4f9d'
-    ctx.beginPath()
+      ctx.beginPath()
 
-    const sliceWidth = rect.width / bufferLength
-    let x = 0
+      const sliceWidth = rect.width / bufferLength
+      let x = 0
 
-    for (let i = 0; i < bufferLength; i++) {
-      const v = dataArray[i] / 128.0
-      const y = (v * rect.height) / 2
+      for (let i = 0; i < bufferLength; i++) {
+      const v = (dataArray[i] ?? 0) / 128.0
+        const y = (v * rect.height) / 2
 
       if (i === 0) {
         ctx.moveTo(x, y)

@@ -58,6 +58,7 @@ const renderChart = () => {
       trigger: 'axis',
       formatter: (params: { dataIndex: number; value: number }[]) => {
         const p = params[0]
+        if (!p) return ''
         return `${tooltips[p.dataIndex]}<br/>分数: <strong>${p.value}</strong>`
       }
     },

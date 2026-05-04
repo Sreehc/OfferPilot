@@ -1,7 +1,7 @@
 import axios, { type AxiosRequestConfig } from 'axios'
 import { ElMessage } from 'element-plus'
-import router from '@/router'
 import { storage } from './storage'
+import { getStoredDeviceId } from './device'
 import type { ApiResponse } from '@/types/api'
 
 const http = axios.create({
@@ -13,6 +13,10 @@ http.interceptors.request.use((config) => {
   const token = storage.getToken()
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
+  }
+  const deviceId = getStoredDeviceId()
+  if (deviceId) {
+    config.headers['X-Device-Id'] = deviceId
   }
   return config
 })
