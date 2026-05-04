@@ -1,11 +1,19 @@
 <template>
   <div class="space-y-6">
     <section class="paper-panel p-6">
-      <p class="section-kicker">管理后台</p>
-      <h2 class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-ink">系统概览与运营管理</h2>
-      <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-        系统概览、用户管理、内容审核、题库管理、文档管理、登录日志，一站式运营工具。
-      </p>
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="section-kicker">管理后台</p>
+          <h2 class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-ink">系统概览与运营管理</h2>
+          <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+            系统概览、用户管理、内容审核、题库管理、文档管理、登录日志，一站式运营工具。
+          </p>
+        </div>
+        <div class="flex shrink-0 gap-2">
+          <el-button :loading="exportingQuestions" size="large" @click="handleExportQuestions">导出题库</el-button>
+          <el-button :loading="exportingUsers" size="large" @click="handleExportUsers">导出用户</el-button>
+        </div>
+      </div>
     </section>
 
     <section class="paper-panel p-6">
@@ -37,6 +45,7 @@
         <el-tab-pane label="题库管理" name="question">
           <AdminQuestionTab
             v-model:current-page="questionPage"
+            v-model:importing="questionImporting"
             :questions="questions"
             :categories="questionCategories"
             :form="questionForm"
@@ -96,6 +105,7 @@ import AdminCategoryTab from './AdminCategoryTab.vue'
 import AdminQuestionTab from './AdminQuestionTab.vue'
 import AdminKnowledgeTab from './AdminKnowledgeTab.vue'
 import AdminLoginLogTab from './AdminLoginLogTab.vue'
+import { exportQuestionsApi, exportUsersApi } from '@/api/admin'
 import { addCategoryApi, deleteCategoryApi, fetchCategoriesApi, updateCategoryApi } from '@/api/category'
 import { fetchKnowledgeDocsApi, importKnowledgeSeedApi, rechunkKnowledgeDocApi, reindexKnowledgeDocApi } from '@/api/knowledge'
 import { addQuestionApi, deleteQuestionApi, fetchQuestionsApi, updateQuestionApi } from '@/api/question'
@@ -109,7 +119,10 @@ const knowledgeDocs = ref<KnowledgeDocItem[]>([])
 const categorySaving = ref(false)
 const questionSaving = ref(false)
 const questionLoading = ref(false)
+const questionImporting = ref(false)
 const knowledgeLoading = ref(false)
+const exportingQuestions = ref(false)
+const exportingUsers = ref(false)
 const knowledgeImporting = ref<string | null>(null)
 const knowledgeActionId = ref<string | null>(null)
 

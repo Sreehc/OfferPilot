@@ -93,3 +93,27 @@ export const fetchAdminOverviewApi = () => {
 export const fetchAdminTrendApi = () => {
   return request<AdminTrendItem[]>({ url: '/admin/overview/trend', method: 'get' })
 }
+
+// ─── Data export ───
+
+export const exportQuestionsApi = () => {
+  return request<null>({ url: '/admin/export/questions', method: 'get', responseType: 'blob' as any })
+}
+
+export const exportUsersApi = () => {
+  return request<null>({ url: '/admin/export/users', method: 'get', responseType: 'blob' as any })
+}
+
+// ─── Data import ───
+
+export interface ImportResult {
+  successCount: number
+  failCount: number
+  errors: string[]
+}
+
+export const importQuestionsApi = (file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request<ImportResult>({ url: '/admin/import/questions', method: 'post', data: formData, headers: { 'Content-Type': 'multipart/form-data' } })
+}

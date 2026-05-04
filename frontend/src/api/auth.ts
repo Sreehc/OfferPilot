@@ -94,3 +94,9 @@ export const disableTwoFactorApi = (code: string) => {
 export const verifyTwoFactorApi = (tempToken: string, code: string) => {
   return request<LoginResponse>({ url: '/auth/2fa/verify', method: 'post', data: { tempToken, code } })
 }
+
+// ─── Personal data export ───
+
+export const exportMyDataApi = () => {
+  return request<null>({ url: '/export/my-data', method: 'get', responseType: 'blob' as any })
+}
