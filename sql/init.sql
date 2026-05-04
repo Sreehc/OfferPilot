@@ -1,5 +1,5 @@
 -- ByteCoach Database Schema
--- Run this file to create the database and tables.
+-- Run this file to create the database and all tables.
 
 CREATE DATABASE IF NOT EXISTS bytecoach DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE bytecoach;
@@ -131,6 +131,7 @@ CREATE TABLE IF NOT EXISTS interview_session (
     current_index INT NOT NULL DEFAULT 1,
     start_time DATETIME DEFAULT NULL,
     end_time DATETIME DEFAULT NULL,
+    mode VARCHAR(32) NOT NULL DEFAULT 'text' COMMENT 'Interview mode: text or voice',
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     KEY idx_interview_session_user_id (user_id)
@@ -156,7 +157,26 @@ CREATE TABLE IF NOT EXISTS interview_record (
 );
 
 -- ============================================================
--- 错题表
+-- 语音记录表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS voice_record (
+    id BIGINT PRIMARY KEY,
+    session_id BIGINT NOT NULL,
+    record_id BIGINT NOT NULL COMMENT 'Links to interview_record.id',
+    user_id BIGINT NOT NULL,
+    audio_url VARCHAR(512) DEFAULT NULL COMMENT 'Path to stored audio file',
+    transcript TEXT DEFAULT NULL COMMENT 'STT transcription result',
+    transcript_confidence DECIMAL(4,3) DEFAULT NULL COMMENT 'STT confidence score 0.000-1.000',
+    transcript_time_ms INT DEFAULT NULL COMMENT 'STT processing time in ms',
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_voice_record_session (session_id),
+    KEY idx_voice_record_record (record_id),
+    KEY idx_voice_record_user (user_id)
+);
+
+-- ============================================================
+-- 错题表（含 SM-2 间隔复习字段）
 -- ============================================================
 CREATE TABLE IF NOT EXISTS wrong_question (
     id BIGINT PRIMARY KEY,
@@ -169,11 +189,34 @@ CREATE TABLE IF NOT EXISTS wrong_question (
     mastery_level VARCHAR(32) NOT NULL DEFAULT 'not_started',
     review_count INT NOT NULL DEFAULT 0,
     last_review_time DATETIME DEFAULT NULL,
+    ease_factor DECIMAL(4,2) NOT NULL DEFAULT 2.50 COMMENT 'SM-2 easiness factor (1.30 min)',
+    interval_days INT NOT NULL DEFAULT 0 COMMENT 'Current review interval in days',
+    next_review_date DATE DEFAULT NULL COMMENT 'Next scheduled review date',
+    streak INT NOT NULL DEFAULT 0 COMMENT 'Consecutive successful reviews (rating >= 3)',
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     KEY idx_wrong_question_user_id (user_id),
+    KEY idx_wrong_next_review (user_id, next_review_date),
     UNIQUE KEY uk_user_question (user_id, question_id),
     CONSTRAINT ck_wrong_source_type CHECK (source_type IN ('interview', 'chat'))
+);
+
+-- ============================================================
+-- 复习记录表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS review_log (
+    id BIGINT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    wrong_question_id BIGINT NOT NULL,
+    rating INT NOT NULL COMMENT 'User rating 1-4 (1=Again, 2=Hard, 3=Good, 4=Easy)',
+    response_time_ms INT DEFAULT NULL COMMENT 'Time spent reviewing in ms',
+    ease_factor_before DECIMAL(4,2) NOT NULL COMMENT 'EF before this review',
+    interval_before INT NOT NULL COMMENT 'Interval before this review',
+    ease_factor_after DECIMAL(4,2) NOT NULL COMMENT 'EF after this review',
+    interval_after INT NOT NULL COMMENT 'Interval after this review',
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_review_log_user (user_id),
+    KEY idx_review_log_wq (wrong_question_id)
 );
 
 -- ============================================================
@@ -212,4 +255,91 @@ CREATE TABLE IF NOT EXISTS study_plan_task (
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     KEY idx_study_plan_task_plan_id (plan_id),
     KEY idx_study_plan_task_user_id (user_id)
+);
+
+-- ============================================================
+-- 社区问题表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS community_question (
+    id BIGINT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    category_id BIGINT DEFAULT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'published' COMMENT 'published / hidden / deleted',
+    upvote_count INT NOT NULL DEFAULT 0,
+    answer_count INT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_cq_user (user_id),
+    KEY idx_cq_category (category_id),
+    KEY idx_cq_status (status)
+);
+
+-- ============================================================
+-- 社区回答表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS community_answer (
+    id BIGINT PRIMARY KEY,
+    question_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    content TEXT NOT NULL,
+    is_accepted TINYINT NOT NULL DEFAULT 0,
+    upvote_count INT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_ca_question (question_id),
+    KEY idx_ca_user (user_id)
+);
+
+-- ============================================================
+-- 社区投票表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS community_vote (
+    id BIGINT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    target_type VARCHAR(32) NOT NULL COMMENT 'question / answer',
+    target_id BIGINT NOT NULL,
+    value TINYINT NOT NULL DEFAULT 1 COMMENT '1 = upvote',
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_vote (user_id, target_type, target_id),
+    KEY idx_cv_user (user_id)
+);
+
+-- ============================================================
+-- 用户统计表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS user_stats (
+    id BIGINT PRIMARY KEY,
+    user_id BIGINT NOT NULL UNIQUE,
+    total_score DECIMAL(10,2) NOT NULL DEFAULT 0,
+    interview_count INT NOT NULL DEFAULT 0,
+    avg_score DECIMAL(5,2) NOT NULL DEFAULT 0,
+    review_streak INT NOT NULL DEFAULT 0,
+    total_reviews INT NOT NULL DEFAULT 0,
+    community_score INT NOT NULL DEFAULT 0,
+    community_questions INT NOT NULL DEFAULT 0,
+    community_answers INT NOT NULL DEFAULT 0,
+    community_accepted INT NOT NULL DEFAULT 0,
+    rank_title VARCHAR(64) NOT NULL DEFAULT '见习生',
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_us_user (user_id)
+);
+
+-- ============================================================
+-- 通知表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS notification (
+    id BIGINT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    type VARCHAR(64) NOT NULL COMMENT 'review_remind / plan_remind / interview_feedback / community_accept / community_vote / rank_upgrade',
+    title VARCHAR(200) NOT NULL,
+    content TEXT,
+    link VARCHAR(500),
+    is_read TINYINT(1) NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_notification_user_read (user_id, is_read),
+    INDEX idx_notification_user_time (user_id, create_time DESC)
 );
