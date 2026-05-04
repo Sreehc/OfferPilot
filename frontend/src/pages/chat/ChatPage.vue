@@ -32,10 +32,14 @@
         </article>
       </div>
 
-      <div v-if="!sessions.length" class="empty-state-card mt-5">
-        <div class="font-semibold text-ink">还没有会话</div>
-        <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">直接发起第一个问题，系统会自动创建会话标题并开始沉淀历史。</p>
-      </div>
+      <EmptyState
+        v-if="!sessions.length"
+        icon="chat"
+        title="还没有会话"
+        description="直接发起第一个问题，系统会自动创建会话标题并开始沉淀历史。"
+        compact
+        class="mt-5"
+      />
 
       <div v-if="sessionTotalPages > 1" class="mt-4 flex justify-center">
         <el-pagination
@@ -105,10 +109,13 @@
           </div>
         </div>
 
-        <div v-if="!messages.length && !loadingMessages && !streaming" class="empty-state-card">
-          <div class="font-semibold text-ink">新会话已就绪</div>
-          <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">可以先用知识库问答问一个具体主题，或者切到普通问答直接开问。</p>
-        </div>
+        <EmptyState
+          v-if="!messages.length && !loadingMessages && !streaming"
+          icon="chat"
+          title="新会话已就绪"
+          description="可以先用知识库问答问一个具体主题，或者切到普通问答直接开问。"
+          compact
+        />
       </div>
 
       <div class="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_120px]">
@@ -136,6 +143,7 @@ import { ElMessage } from 'element-plus'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { computed, nextTick, onMounted, ref } from 'vue'
+import EmptyState from '@/components/EmptyState.vue'
 import { deleteChatSessionApi, fetchChatMessagesApi, fetchChatSessionsApi } from '@/api/chat'
 import type { ChatMessageItem, ChatSessionItem, KnowledgeReferenceItem } from '@/types/api'
 import { storage } from '@/utils/storage'

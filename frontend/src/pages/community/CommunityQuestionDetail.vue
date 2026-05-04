@@ -126,9 +126,13 @@
           </div>
 
           <!-- No Answers -->
-          <div v-if="question.answers.length === 0" class="py-8 text-center text-slate-400 text-sm">
-            暂无回答，快来第一个回答吧
-          </div>
+          <EmptyState
+            v-if="question.answers.length === 0"
+            icon="chat"
+            title="暂无回答"
+            description="快来第一个回答吧"
+            compact
+          />
         </div>
       </div>
 
@@ -158,6 +162,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import EmptyState from '@/components/EmptyState.vue'
 import {
   fetchCommunityQuestionDetailApi,
   submitCommunityAnswerApi,

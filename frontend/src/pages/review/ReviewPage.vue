@@ -35,28 +35,34 @@
     </section>
 
     <!-- Empty State: No reviews due -->
-    <section v-else-if="!items.length && !started" class="paper-panel p-8 text-center">
-      <div class="text-5xl">🎉</div>
-      <p class="mt-4 text-lg font-semibold text-ink">今日无待复习题目</p>
-      <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-        完成面试后错题会自动加入复习队列，也可以前往错题本查看所有题目。
-      </p>
-      <div class="mt-6 flex justify-center gap-3">
-        <RouterLink to="/wrong" class="hard-button-secondary">查看错题本</RouterLink>
-        <RouterLink to="/interview" class="hard-button-primary">开始面试</RouterLink>
-      </div>
+    <section v-else-if="!items.length && !started" class="paper-panel p-8">
+      <EmptyState
+        icon="review"
+        title="今日无待复习题目"
+        description="完成面试后错题会自动加入复习队列，也可以前往错题本查看所有题目。"
+      >
+        <template #action>
+          <div class="flex justify-center gap-3">
+            <RouterLink to="/wrong" class="hard-button-secondary">查看错题本</RouterLink>
+            <RouterLink to="/interview" class="hard-button-primary">开始面试</RouterLink>
+          </div>
+        </template>
+      </EmptyState>
     </section>
 
     <!-- Start Screen -->
-    <section v-else-if="!started" class="paper-panel p-8 text-center">
-      <div class="text-5xl">📖</div>
-      <p class="mt-4 text-lg font-semibold text-ink">{{ todayCount }} 道题等待复习</p>
-      <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-        预计 {{ estimatedMinutes }} 分钟完成。每道题翻转后回忆答案，再根据掌握程度评分。
-      </p>
-      <button type="button" class="hard-button-primary mt-6" @click="startReview">
-        开始复习
-      </button>
+    <section v-else-if="!started" class="paper-panel p-8">
+      <EmptyState
+        icon="review"
+        :title="`${todayCount} 道题等待复习`"
+        :description="`预计 ${estimatedMinutes} 分钟完成。每道题翻转后回忆答案，再根据掌握程度评分。`"
+      >
+        <template #action>
+          <button type="button" class="hard-button-primary" @click="startReview">
+            开始复习
+          </button>
+        </template>
+      </EmptyState>
     </section>
 
     <!-- Flashcard Review -->
@@ -141,16 +147,19 @@
     </section>
 
     <!-- Completion Summary -->
-    <section v-else class="paper-panel p-8 text-center">
-      <div class="text-5xl">✅</div>
-      <p class="mt-4 text-lg font-semibold text-ink">今日复习完成</p>
-      <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-        共复习 {{ items.length }} 道题，其中 {{ againCount }} 道需要再次复习。
-      </p>
-      <div class="mt-6 flex justify-center gap-3">
-        <RouterLink to="/wrong" class="hard-button-secondary">查看错题本</RouterLink>
-        <RouterLink to="/dashboard" class="hard-button-primary">返回首页</RouterLink>
-      </div>
+    <section v-else class="paper-panel p-8">
+      <EmptyState
+        icon="trophy"
+        title="今日复习完成"
+        :description="`共复习 ${items.length} 道题，其中 ${againCount} 道需要再次复习。`"
+      >
+        <template #action>
+          <div class="flex justify-center gap-3">
+            <RouterLink to="/wrong" class="hard-button-secondary">查看错题本</RouterLink>
+            <RouterLink to="/dashboard" class="hard-button-primary">返回首页</RouterLink>
+          </div>
+        </template>
+      </EmptyState>
     </section>
   </div>
 </template>
@@ -158,6 +167,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
+import EmptyState from '@/components/EmptyState.vue'
 import { fetchReviewStatsApi, fetchReviewTodayApi, submitReviewRateApi } from '@/api/review'
 import type { ReviewStats, ReviewTodayItem } from '@/types/api'
 

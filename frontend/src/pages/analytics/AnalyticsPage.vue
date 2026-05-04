@@ -30,7 +30,7 @@
         <div class="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
       </div>
       <div v-else-if="!trendData.overallTrend?.length" class="mt-4 flex h-[300px] items-center justify-center">
-        <p class="text-sm text-slate-400">暂无面试数据，完成面试后将显示趋势</p>
+        <EmptyState icon="chart" title="暂无面试数据" description="完成面试后将显示趋势" compact />
       </div>
       <div v-else class="mt-4">
         <!-- Category filter chips -->
@@ -72,7 +72,7 @@
           <div class="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
         </div>
         <div v-else-if="!efficiencyData.efTrend?.length" class="mt-4 flex h-[240px] items-center justify-center">
-          <p class="text-sm text-slate-400">暂无复习数据</p>
+          <EmptyState icon="review" title="暂无复习数据" description="完成复习后将显示数据" compact />
         </div>
         <div v-else>
           <div class="mt-3 flex items-center gap-4">
@@ -103,7 +103,7 @@
           <div class="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
         </div>
         <div v-else-if="!efficiencyData.forgettingRateTrend?.length" class="mt-4 flex h-[240px] items-center justify-center">
-          <p class="text-sm text-slate-400">暂无复习数据</p>
+          <EmptyState icon="review" title="暂无复习数据" description="完成复习后将显示数据" compact />
         </div>
         <div v-else>
           <!-- Rating distribution summary -->
@@ -144,6 +144,7 @@
 <script setup lang="ts">
 import * as echarts from 'echarts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import EmptyState from '@/components/EmptyState.vue'
 import { fetchAbilityTrendApi, fetchEfficiencyApi } from '@/api/analytics'
 import type { AbilityTrend, EfficiencyData } from '@/types/api'
 

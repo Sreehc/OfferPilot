@@ -1,17 +1,19 @@
 <template>
-  <div class="flex flex-col items-center justify-center py-12 px-4 text-center">
+  <div
+    class="flex flex-col items-center justify-center px-4 text-center"
+    :class="compact ? 'py-8' : 'py-12'"
+  >
     <!-- Icon -->
     <div
-      class="flex h-16 w-16 items-center justify-center rounded-full mb-4"
-      :class="iconBg"
+      class="flex items-center justify-center rounded-full mb-4"
+      :class="[iconBg, compact ? 'h-10 w-10' : 'h-16 w-16']"
     >
       <svg
-        class="h-8 w-8"
-        :class="iconColor"
-        fill="none"
+        class="fill-none"
+        :class="[iconColor, compact ? 'h-5 w-5' : 'h-8 w-8']"
         viewBox="0 0 24 24"
         stroke="currentColor"
-        :stroke-width="1.5"
+        stroke-width="1.5"
       >
         <path
           v-if="icon === 'search'"
@@ -43,6 +45,24 @@
           stroke-linejoin="round"
           d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"
         />
+        <path
+          v-else-if="icon === 'clipboard'"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+        />
+        <path
+          v-else-if="icon === 'trophy'"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M18.75 4.236c.982.143 1.954.317 2.916.52A6.003 6.003 0 0016.27 9.728M18.75 4.236V4.5c0 2.108-.966 3.99-2.48 5.228m0 0a6.003 6.003 0 01-5.54 0"
+        />
+        <path
+          v-else-if="icon === 'bell'"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"
+        />
         <!-- default: inbox -->
         <path
           v-else
@@ -54,15 +74,18 @@
     </div>
 
     <!-- Title -->
-    <h3 class="text-base font-semibold text-ink">{{ title }}</h3>
+    <h3 :class="compact ? 'text-sm' : 'text-base'" class="font-semibold text-ink">{{ title }}</h3>
 
     <!-- Description -->
-    <p class="mt-1.5 max-w-sm text-sm leading-6 text-slate-500 dark:text-slate-400">
+    <p
+      :class="compact ? 'mt-1 text-xs max-w-xs' : 'mt-1.5 text-sm max-w-sm'"
+      class="leading-6 text-slate-500 dark:text-slate-400"
+    >
       {{ description }}
     </p>
 
     <!-- Action slot -->
-    <div v-if="$slots.action" class="mt-5">
+    <div v-if="$slots.action" :class="compact ? 'mt-3' : 'mt-5'">
       <slot name="action" />
     </div>
   </div>
@@ -70,14 +93,16 @@
 
 <script setup lang="ts">
 withDefaults(defineProps<{
-  icon?: 'inbox' | 'search' | 'document' | 'chat' | 'review' | 'chart'
+  icon?: 'inbox' | 'search' | 'document' | 'chat' | 'review' | 'chart' | 'clipboard' | 'trophy' | 'bell'
   iconBg?: string
   iconColor?: string
   title: string
   description: string
+  compact?: boolean
 }>(), {
   icon: 'inbox',
   iconBg: 'bg-slate-100 dark:bg-slate-800',
   iconColor: 'text-slate-400 dark:text-slate-500',
+  compact: false,
 })
 </script>

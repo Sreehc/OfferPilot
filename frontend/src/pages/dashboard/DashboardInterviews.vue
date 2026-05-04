@@ -32,16 +32,19 @@
       </RouterLink>
     </div>
 
-    <div v-else class="empty-state-card mt-6">
-      <div class="font-semibold text-ink">还没有面试记录</div>
-      <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-        先完成一场 3-5 题的模拟面试，首页才会开始积累最近结果和平均分。
-      </p>
-    </div>
+    <EmptyState
+      v-else
+      icon="clipboard"
+      title="还没有面试记录"
+      description="先完成一场 3-5 题的模拟面试，首页才会开始积累最近结果和平均分。"
+      compact
+      class="mt-6"
+    />
   </article>
 </template>
 
 <script setup lang="ts">
+import EmptyState from '@/components/EmptyState.vue'
 import type { RecentInterviewItem } from '@/types/api'
 
 defineProps<{

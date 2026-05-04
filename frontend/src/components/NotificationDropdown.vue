@@ -43,9 +43,13 @@
             <div class="h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
           </div>
 
-          <div v-else-if="notifications.length === 0" class="py-8 text-center text-sm text-slate-400">
-            暂无通知
-          </div>
+          <EmptyState
+            v-else-if="notifications.length === 0"
+            icon="bell"
+            title="暂无通知"
+            description="新的通知会出现在这里"
+            compact
+          />
 
           <div v-else>
             <button
@@ -99,6 +103,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import EmptyState from '@/components/EmptyState.vue'
 import {
   fetchNotificationsApi,
   fetchUnreadCountApi,

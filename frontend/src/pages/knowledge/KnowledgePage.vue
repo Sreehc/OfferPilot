@@ -153,10 +153,14 @@
           <p class="mt-3 text-sm leading-7 text-slate-700 dark:text-slate-200">{{ reference.snippet }}</p>
         </article>
       </div>
-      <div v-else-if="searchResult" class="empty-state-card mt-6">
-        <div class="font-semibold text-ink">没有找到相关结果</div>
-        <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">尝试换一个关键词，或先上传相关文档。</p>
-      </div>
+      <EmptyState
+        v-else-if="searchResult"
+        icon="search"
+        title="没有找到相关结果"
+        description="尝试换一个关键词，或先上传相关文档。"
+        compact
+        class="mt-6"
+      />
     </section>
   </div>
 </template>

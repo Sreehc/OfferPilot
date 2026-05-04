@@ -71,9 +71,13 @@
           </tbody>
         </table>
 
-        <div v-if="leaderboard.length === 0" class="py-16 text-center text-slate-400 text-sm">
-          暂无排名数据
-        </div>
+        <EmptyState
+          v-if="leaderboard.length === 0"
+          icon="trophy"
+          title="暂无排名数据"
+          description="完成面试和社区互动后，排行榜将显示排名。"
+          compact
+        />
       </div>
     </div>
 
@@ -94,6 +98,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import EmptyState from '@/components/EmptyState.vue'
 import { fetchLeaderboardApi } from '@/api/community'
 import type { LeaderboardEntry } from '@/types/api'
 

@@ -61,17 +61,20 @@
       </div>
     </div>
 
-    <div v-else class="empty-state-card mt-5">
-      <div class="font-semibold text-ink">还没有可计算的薄弱点</div>
-      <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-        先进入问答、面试或错题练习，系统才会根据真实学习记录生成重点复习方向。
-      </p>
-    </div>
+    <EmptyState
+      v-else
+      icon="chart"
+      title="还没有可计算的薄弱点"
+      description="先进入问答、面试或错题练习，系统才会根据真实学习记录生成重点复习方向。"
+      compact
+      class="mt-5"
+    />
   </article>
 </template>
 
 <script setup lang="ts">
 import * as echarts from 'echarts'
+import EmptyState from '@/components/EmptyState.vue'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import type { WeakPointItem } from '@/types/api'
 
