@@ -11,16 +11,24 @@
     <section class="paper-panel p-6">
       <el-tabs v-model="activeTab">
         <el-tab-pane label="设备管理" name="devices">
-          <DeviceManagePage />
+          <div class="min-h-[400px]">
+            <DeviceManagePage />
+          </div>
         </el-tab-pane>
         <el-tab-pane label="登录历史" name="loginHistory">
-          <LoginHistoryTab />
+          <div class="min-h-[400px]">
+            <LoginHistoryTab />
+          </div>
         </el-tab-pane>
         <el-tab-pane label="两步验证" name="twoFactor">
-          <TwoFactorTab />
+          <div class="min-h-[400px]">
+            <TwoFactorTab />
+          </div>
         </el-tab-pane>
         <el-tab-pane label="数据导出" name="dataExport">
-          <DataExportTab />
+          <div class="min-h-[400px]">
+            <DataExportTab />
+          </div>
         </el-tab-pane>
       </el-tabs>
     </section>
