@@ -423,3 +423,15 @@ export interface LoginDeviceItem {
   createTime: string
   current: boolean
 }
+
+export interface LoginLogItem {
+  id: number
+  userId: number
+  username?: string
+  ip?: string
+  city?: string
+  device?: string
+  status: number
+  failReason?: string
+  createTime: string
+}

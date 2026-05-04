@@ -361,3 +361,19 @@ CREATE TABLE IF NOT EXISTS login_device (
     KEY idx_login_device_user (user_id),
     KEY idx_login_device_fp (user_id, device_fingerprint)
 );
+
+-- ============================================================
+-- 登录日志表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS login_log (
+    id BIGINT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    ip VARCHAR(64) DEFAULT NULL,
+    city VARCHAR(64) DEFAULT NULL COMMENT 'IP 归属城市',
+    device VARCHAR(128) DEFAULT NULL COMMENT '设备名称',
+    status TINYINT NOT NULL COMMENT '1=成功, 0=失败',
+    fail_reason VARCHAR(128) DEFAULT NULL COMMENT '失败原因',
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_login_log_user (user_id),
+    KEY idx_login_log_time (create_time)
+);

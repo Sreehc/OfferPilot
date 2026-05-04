@@ -10,6 +10,7 @@ import com.bytecoach.user.mapper.UserMapper;
 import com.bytecoach.user.service.UserService;
 import com.bytecoach.user.vo.UserInfoVO;
 import java.time.LocalDateTime;
+import java.util.List;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -43,6 +44,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setLastLoginTime(null);
         save(user);
         return user;
+    }
+
+    @Override
+    public List<Long> searchUserIds(String keyword) {
+        return lambdaQuery()
+                .like(User::getUsername, keyword)
+                .select(User::getId)
+                .list()
+                .stream()
+                .map(User::getId)
+                .toList();
     }
 
     @Override

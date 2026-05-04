@@ -1,11 +1,13 @@
 import { request } from '@/utils/http'
-import type { LoginDeviceItem, LoginResponse, UserInfo } from '@/types/api'
+import type { LoginDeviceItem, LoginLogItem, LoginResponse, PageResult, UserInfo } from '@/types/api'
 
 export interface LoginPayload {
   username: string
   password: string
   deviceFingerprint?: string
   deviceName?: string
+  captchaCode?: string
+  captchaKey?: string
 }
 
 export interface RegisterPayload extends LoginPayload {
@@ -51,4 +53,22 @@ export const revokeDeviceApi = (deviceId: number) => {
 
 export const revokeAllDevicesApi = () => {
   return request<null>({ url: '/auth/devices/revoke-all', method: 'post' })
+}
+
+// ─── Login logs ───
+
+export const fetchLoginLogsApi = (params: { pageNum?: number; pageSize?: number }) => {
+  return request<PageResult<LoginLogItem>>({ url: '/auth/login-logs', method: 'get', params })
+}
+
+// ─── Admin login logs ───
+
+export const fetchAdminLoginLogsApi = (params: { keyword?: string; pageNum?: number; pageSize?: number }) => {
+  return request<PageResult<LoginLogItem>>({ url: '/admin/login-logs', method: 'get', params })
+}
+
+// ─── Captcha ───
+
+export const fetchCaptchaApi = () => {
+  return request<{ key: string; image: string }>({ url: '/auth/captcha', method: 'get' })
 }

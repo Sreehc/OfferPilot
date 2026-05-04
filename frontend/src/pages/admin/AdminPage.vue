@@ -65,6 +65,10 @@
             @page-change="handleKnowledgePageChange"
           />
         </el-tab-pane>
+
+        <el-tab-pane label="登录日志" name="loginLogs">
+          <AdminLoginLogTab />
+        </el-tab-pane>
       </el-tabs>
     </section>
   </div>
@@ -76,6 +80,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import AdminCategoryTab from './AdminCategoryTab.vue'
 import AdminQuestionTab from './AdminQuestionTab.vue'
 import AdminKnowledgeTab from './AdminKnowledgeTab.vue'
+import AdminLoginLogTab from './AdminLoginLogTab.vue'
 import { addCategoryApi, deleteCategoryApi, fetchCategoriesApi, updateCategoryApi } from '@/api/category'
 import { fetchKnowledgeDocsApi, importKnowledgeSeedApi, rechunkKnowledgeDocApi, reindexKnowledgeDocApi } from '@/api/knowledge'
 import { addQuestionApi, deleteQuestionApi, fetchQuestionsApi, updateQuestionApi } from '@/api/question'

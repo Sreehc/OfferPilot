@@ -154,10 +154,10 @@ const router = createRouter({
           meta: pageMeta.admin
         },
         {
-          path: 'settings/devices',
-          name: 'device-manage',
-          component: () => import('@/pages/settings/DeviceManagePage.vue'),
-          meta: { kicker: '账户安全', title: '已登录设备', subtitle: '查看和管理当前已登录的所有设备。' }
+          path: 'settings',
+          name: 'settings',
+          component: () => import('@/pages/settings/SettingsPage.vue'),
+          meta: { kicker: '账户安全', title: '账户设置', subtitle: '管理已登录设备、查看登录历史，保障账户安全。' }
         }
       ]
     },

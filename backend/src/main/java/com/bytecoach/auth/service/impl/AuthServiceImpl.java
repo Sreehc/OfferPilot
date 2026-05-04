@@ -5,6 +5,9 @@ import com.bytecoach.auth.dto.LoginResponse;
 import com.bytecoach.auth.dto.RegisterRequest;
 import com.bytecoach.auth.service.AuthService;
 import com.bytecoach.auth.service.DeviceService;
+import com.bytecoach.auth.service.LoginLogService;
+import com.bytecoach.common.api.ResultCode;
+import com.bytecoach.common.exception.BusinessException;
 import com.bytecoach.security.model.LoginUser;
 import com.bytecoach.security.util.JwtTokenUtil;
 import com.bytecoach.user.entity.User;
@@ -21,6 +24,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -31,12 +35,14 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 public class AuthServiceImpl implements AuthService {
 
     private static final String BLACKLIST_PREFIX = "jwt:blacklist:";
+    private static final String CAPTCHA_PREFIX = "captcha:";
 
     private final UserService userService;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenUtil jwtTokenUtil;
     private final StringRedisTemplate redisTemplate;
     private final DeviceService deviceService;
+    private final LoginLogService loginLogService;
 
     @Override
     public LoginResponse register(RegisterRequest request) {
@@ -48,13 +54,45 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponse login(LoginRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
-        LoginUser loginUser = (LoginUser) authentication.getPrincipal();
-        User user = loginUser.getUser();
-        user.setLastLoginTime(LocalDateTime.now());
-        userService.updateById(user);
-        return buildLoginResponse(user, request.getDeviceFingerprint(), request.getDeviceName());
+        // Check account lock before attempting authentication
+        loginLogService.checkAccountLock(request.getUsername());
+
+        // Verify captcha if provided
+        if (request.getCaptchaKey() != null && !request.getCaptchaKey().isBlank()) {
+            verifyCaptcha(request.getCaptchaKey(), request.getCaptchaCode());
+        }
+
+        String ip = resolveClientIp();
+        String device = request.getDeviceName();
+
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+            LoginUser loginUser = (LoginUser) authentication.getPrincipal();
+            User user = loginUser.getUser();
+            user.setLastLoginTime(LocalDateTime.now());
+            userService.updateById(user);
+
+            // Record successful login
+            try {
+                loginLogService.recordLogin(user.getId(), ip, device, true, null);
+            } catch (Exception e) {
+                log.warn("Failed to record login log: {}", e.getMessage());
+            }
+
+            return buildLoginResponse(user, request.getDeviceFingerprint(), request.getDeviceName());
+        } catch (AuthenticationException e) {
+            // Record failed login
+            User user = userService.getByUsername(request.getUsername());
+            if (user != null) {
+                try {
+                    loginLogService.recordLogin(user.getId(), ip, device, false, e.getMessage());
+                } catch (Exception ex) {
+                    log.warn("Failed to record login log: {}", ex.getMessage());
+                }
+            }
+            throw e;
+        }
     }
 
     private LoginResponse buildLoginResponse(User user, String deviceFingerprint, String deviceName) {
@@ -102,6 +140,21 @@ public class AuthServiceImpl implements AuthService {
             return ip;
         } catch (Exception e) {
             return null;
+        }
+    }
+
+    private void verifyCaptcha(String key, String code) {
+        if (code == null || code.isBlank()) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "请输入验证码");
+        }
+        String redisKey = CAPTCHA_PREFIX + key;
+        String expected = redisTemplate.opsForValue().get(redisKey);
+        if (expected == null) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "验证码已过期，请重新获取");
+        }
+        redisTemplate.delete(redisKey);
+        if (!expected.equalsIgnoreCase(code)) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "验证码错误");
         }
     }
 

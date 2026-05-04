@@ -136,7 +136,7 @@ const searchItems = [
   { label: '学习计划', path: '/plan' },
   { label: '数据分析', path: '/analytics' },
   { label: '后台管理', path: '/admin' },
-  { label: '已登录设备', path: '/settings/devices' }
+  { label: '账户设置', path: '/settings' }
 ]
 
 const filteredSearchItems = computed(() => {

@@ -34,10 +34,10 @@
           <div class="text-sm font-semibold">{{ name }}</div>
           <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">{{ role }}</div>
           <RouterLink
-            to="/settings/devices"
+            to="/settings"
             class="mt-1 inline-block text-[11px] text-accent hover:underline"
           >
-            设备管理
+            账户设置
           </RouterLink>
         </div>
       </div>

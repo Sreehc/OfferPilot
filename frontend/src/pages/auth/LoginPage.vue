@@ -48,6 +48,34 @@
           <el-form-item label="密码" prop="password">
             <el-input v-model="form.password" type="password" show-password placeholder="请输入密码" size="large" />
           </el-form-item>
+
+          <!-- Captcha: shown after 3 consecutive failures -->
+          <el-form-item v-if="showCaptcha" label="验证码" prop="captchaCode">
+            <div class="flex items-center gap-3 w-full">
+              <el-input
+                v-model="form.captchaCode"
+                placeholder="请输入验证码"
+                size="large"
+                class="flex-1"
+                @keyup.enter="handleLogin"
+              />
+              <div
+                class="cursor-pointer shrink-0 rounded border border-slate-200 dark:border-slate-700 overflow-hidden"
+                @click="refreshCaptcha"
+              >
+                <img
+                  v-if="captchaImage"
+                  :src="captchaImage"
+                  alt="验证码"
+                  class="h-10 w-[120px] object-cover"
+                />
+                <div v-else class="flex h-10 w-[120px] items-center justify-center text-xs text-slate-400">
+                  加载中...
+                </div>
+              </div>
+            </div>
+          </el-form-item>
+
           <el-button :loading="loading" type="primary" size="large" class="action-button mt-4 w-full transition active:translate-y-px" @click="handleLogin">
             登录
           </el-button>
@@ -64,8 +92,9 @@
 <script setup lang="ts">
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { fetchCaptchaApi } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
@@ -73,10 +102,16 @@ const route = useRoute()
 const authStore = useAuthStore()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
+const failCount = ref(0)
+const captchaImage = ref('')
+const captchaKey = ref('')
+
+const showCaptcha = computed(() => failCount.value >= 3)
 
 const form = reactive({
   username: '',
-  password: ''
+  password: '',
+  captchaCode: ''
 })
 
 const rules: FormRules<typeof form> = {
@@ -84,16 +119,43 @@ const rules: FormRules<typeof form> = {
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
 }
 
+const refreshCaptcha = async () => {
+  try {
+    const response = await fetchCaptchaApi()
+    captchaKey.value = response.data.key
+    captchaImage.value = response.data.image
+  } catch {
+    // Silently fail - captcha is optional enhancement
+  }
+}
+
 const handleLogin = async () => {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
+
+  if (showCaptcha.value && !form.captchaCode.trim()) {
+    ElMessage.warning('请输入验证码')
+    return
+  }
+
   loading.value = true
   try {
-    await authStore.login(form)
+    const payload: Record<string, string> = {
+      username: form.username,
+      password: form.password
+    }
+    if (showCaptcha.value && captchaKey.value) {
+      payload.captchaKey = captchaKey.value
+      payload.captchaCode = form.captchaCode
+    }
+    await authStore.login(payload)
     ElMessage.success('登录成功')
     await router.push((route.query.redirect as string) || '/dashboard')
   } catch {
-    // Message is handled by the request interceptor.
+    failCount.value++
+    if (failCount.value >= 3) {
+      await refreshCaptcha()
+    }
   } finally {
     loading.value = false
   }

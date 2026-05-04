@@ -23,6 +23,7 @@ public class ByteCoachProperties {
     private RateLimit rateLimit = new RateLimit();
     private AiQuota aiQuota = new AiQuota();
     private Document document = new Document();
+    private LoginSecurity loginSecurity = new LoginSecurity();
 
     @Data
     public static class Review {
@@ -100,5 +101,15 @@ public class ByteCoachProperties {
         private int tikaMaxChars = 1_000_000;
         /** Target chunk size for document splitting. */
         private int maxChunkSize = 800;
+    }
+
+    @Data
+    public static class LoginSecurity {
+        /** Max consecutive login failures before account lock. */
+        private int failLimit = 5;
+        /** Time window in minutes for counting consecutive failures. */
+        private int failWindowMinutes = 5;
+        /** Account lock duration in minutes. */
+        private int lockMinutes = 30;
     }
 }

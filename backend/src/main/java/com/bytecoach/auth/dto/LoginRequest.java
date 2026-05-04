@@ -16,5 +16,10 @@ public class LoginRequest {
 
     /** Human-readable device name, e.g. "Chrome on Windows" */
     private String deviceName;
-}
 
+    /** Captcha key (required after consecutive failures) */
+    private String captchaKey;
+
+    /** Captcha code entered by user */
+    private String captchaCode;
+}
