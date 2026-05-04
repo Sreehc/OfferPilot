@@ -8,13 +8,13 @@
       </div>
       <div class="flex gap-2 sm:gap-3">
         <button
-          class="hard-button-primary px-4 sm:px-5 py-2 sm:py-2.5 text-sm"
+          class="hard-button-primary text-sm"
           @click="$router.push('/community/submit')"
         >
           发起提问
         </button>
         <button
-          class="px-4 sm:px-5 py-2 sm:py-2.5 text-sm font-semibold rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+          class="hard-button-secondary text-sm"
           @click="$router.push('/community/leaderboard')"
         >
           排行榜

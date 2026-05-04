@@ -3,7 +3,7 @@
     <section class="paper-panel p-5">
       <div class="flex items-center justify-between">
         <p class="section-kicker">会话列表</p>
-        <button type="button" class="hard-button-secondary !min-h-9 !px-3 !py-1 text-xs" @click="startNewSession">
+        <button type="button" class="hard-button-secondary !min-h-10 !px-3 !py-1.5 text-xs" @click="startNewSession">
           新会话
         </button>
       </div>

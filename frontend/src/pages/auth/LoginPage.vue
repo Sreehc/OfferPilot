@@ -59,19 +59,22 @@
                 class="flex-1"
                 @keyup.enter="handleLogin"
               />
-              <div
-                class="cursor-pointer shrink-0 rounded border border-slate-200 dark:border-slate-700 overflow-hidden"
-                @click="refreshCaptcha"
-              >
-                <img
-                  v-if="captchaImage"
-                  :src="captchaImage"
-                  alt="验证码"
-                  class="h-10 w-[120px] object-cover"
-                />
-                <div v-else class="flex h-10 w-[120px] items-center justify-center text-xs text-slate-400">
-                  加载中...
+              <div class="shrink-0 text-center">
+                <div
+                  class="cursor-pointer rounded border border-slate-200 dark:border-slate-700 overflow-hidden"
+                  @click="refreshCaptcha"
+                >
+                  <img
+                    v-if="captchaImage"
+                    :src="captchaImage"
+                    alt="验证码"
+                    class="h-12 w-[140px] object-cover"
+                  />
+                  <div v-else class="flex h-12 w-[140px] items-center justify-center text-xs text-slate-400">
+                    加载中...
+                  </div>
                 </div>
+                <p class="mt-1 text-[10px] text-slate-400">点击刷新</p>
               </div>
             </div>
           </el-form-item>
