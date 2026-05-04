@@ -1,7 +1,7 @@
 <template>
   <div class="flex min-h-screen items-center justify-center px-4 py-8">
-    <div class="grid w-full max-w-6xl gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-      <section class="paper-panel relative overflow-hidden p-8 md:p-12">
+    <div class="w-full max-w-6xl lg:grid lg:gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+      <section class="paper-panel relative overflow-hidden p-8 md:p-12 hidden lg:block">
         <div
           class="absolute -left-8 top-10 h-36 w-44 -rotate-6 bg-[rgba(47,79,157,0.08)] blur-2xl"
           style="border-radius: var(--radius-lg);"
@@ -37,7 +37,7 @@
         </div>
       </section>
 
-      <section class="paper-panel p-8 md:p-10">
+      <section class="paper-panel p-8 md:p-10 max-w-lg mx-auto lg:max-w-none">
         <p class="section-kicker">Sign In</p>
         <h2 class="mt-4 text-3xl font-semibold tracking-[-0.03em] text-ink">进入 ByteCoach</h2>
         <div class="rule-divider mt-6"></div>

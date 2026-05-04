@@ -21,7 +21,7 @@
       <DashboardMetrics :metrics="metrics" />
 
       <!-- Action Bar: 3 prominent action cards -->
-      <section class="grid gap-4 md:grid-cols-3">
+      <section class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <!-- Review action -->
         <RouterLink to="/review" class="paper-panel p-5 group cursor-pointer transition hover:shadow-md">
           <div class="flex items-start justify-between gap-3">

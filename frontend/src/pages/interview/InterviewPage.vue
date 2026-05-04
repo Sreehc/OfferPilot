@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4">
     <!-- Setup / Active Interview Header -->
-    <section class="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
+    <section class="grid gap-4" :class="phase === 'idle' ? 'lg:grid-cols-[0.95fr_1.05fr]' : 'lg:grid-cols-[0.4fr_1fr]'">
       <!-- Left Panel -->
       <div class="paper-panel p-4 sm:p-6">
         <p class="section-kicker">面试设置</p>

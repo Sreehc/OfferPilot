@@ -1,5 +1,5 @@
 <template>
-  <div class="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
+  <div class="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
     <section class="paper-panel p-5">
       <div class="flex items-center justify-between">
         <p class="section-kicker">会话列表</p>
