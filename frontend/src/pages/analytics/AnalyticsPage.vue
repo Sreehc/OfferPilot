@@ -26,10 +26,10 @@
     <article class="paper-panel p-4 sm:p-6">
       <p class="section-kicker">能力趋势</p>
       <h3 class="mt-3 text-lg font-semibold text-ink">面试得分变化</h3>
-      <div v-if="trendLoading" class="mt-4 flex h-[300px] items-center justify-center">
+      <div v-if="trendLoading" class="mt-4 flex h-[360px] items-center justify-center">
         <div class="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
       </div>
-      <div v-else-if="!trendData.overallTrend?.length" class="mt-4 flex h-[300px] items-center justify-center">
+      <div v-else-if="!trendData.overallTrend?.length" class="mt-4 flex h-[360px] items-center justify-center">
         <EmptyState icon="chart" title="暂无面试数据" description="完成面试后将显示趋势" compact />
       </div>
       <div v-else class="mt-4">
@@ -58,7 +58,7 @@
             {{ cat.categoryName }}
           </button>
         </div>
-        <div ref="trendChartRef" class="h-[300px] w-full"></div>
+        <div ref="trendChartRef" class="h-[360px] w-full"></div>
       </div>
     </article>
 
@@ -68,10 +68,11 @@
       <article class="paper-panel p-4 sm:p-6">
         <p class="section-kicker">复习效率</p>
         <h3 class="mt-3 text-lg font-semibold text-ink">记忆强度变化</h3>
-        <div v-if="efficiencyLoading" class="mt-4 flex h-[240px] items-center justify-center">
+        <p class="mt-1 text-xs text-slate-400">EF（Easiness Factor）越高表示记忆越牢固，2.5 为初始值，最低 1.3</p>
+        <div v-if="efficiencyLoading" class="mt-4 flex h-[280px] items-center justify-center">
           <div class="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
         </div>
-        <div v-else-if="!efficiencyData.efTrend?.length" class="mt-4 flex h-[240px] items-center justify-center">
+        <div v-else-if="!efficiencyData.efTrend?.length" class="mt-4 flex h-[280px] items-center justify-center">
           <EmptyState icon="review" title="暂无复习数据" description="完成复习后将显示数据" compact />
         </div>
         <div v-else>
@@ -91,7 +92,7 @@
               </p>
             </div>
           </div>
-          <div ref="efChartRef" class="mt-4 h-[200px] w-full"></div>
+          <div ref="efChartRef" class="mt-4 h-[260px] w-full"></div>
         </div>
       </article>
 
@@ -99,10 +100,11 @@
       <article class="paper-panel p-4 sm:p-6">
         <p class="section-kicker">遗忘分析</p>
         <h3 class="mt-3 text-lg font-semibold text-ink">遗忘率趋势</h3>
-        <div v-if="efficiencyLoading" class="mt-4 flex h-[240px] items-center justify-center">
+        <p class="mt-1 text-xs text-slate-400">遗忘率 = 评分"重来"的次数 / 总复习次数，越低越好</p>
+        <div v-if="efficiencyLoading" class="mt-4 flex h-[280px] items-center justify-center">
           <div class="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
         </div>
-        <div v-else-if="!efficiencyData.forgettingRateTrend?.length" class="mt-4 flex h-[240px] items-center justify-center">
+        <div v-else-if="!efficiencyData.forgettingRateTrend?.length" class="mt-4 flex h-[280px] items-center justify-center">
           <EmptyState icon="review" title="暂无复习数据" description="完成复习后将显示数据" compact />
         </div>
         <div v-else>
@@ -114,7 +116,7 @@
               <span class="text-xs font-medium text-ink">{{ efficiencyData.ratingDistribution?.[key] ?? 0 }}</span>
             </div>
           </div>
-          <div ref="frChartRef" class="mt-4 h-[200px] w-full"></div>
+          <div ref="frChartRef" class="mt-4 h-[260px] w-full"></div>
         </div>
       </article>
     </section>
