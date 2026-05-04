@@ -39,6 +39,13 @@
       <div class="flex gap-3">
         <el-button :loading="loading" type="primary" class="action-button" @click="emit('load')">刷新题库</el-button>
         <el-button class="hard-button-secondary" @click="emit('filterReset')">重置筛选</el-button>
+        <el-upload
+          :show-file-list="false"
+          :before-upload="handleImport"
+          accept=".xlsx,.xls"
+        >
+          <el-button :loading="importing" type="success" plain>批量导入</el-button>
+        </el-upload>
       </div>
 
       <article v-for="item in questions" :key="item.id" class="surface-card p-4">
@@ -72,7 +79,9 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import type { CategoryItem, QuestionItem } from '@/types/api'
+import { importQuestionsApi } from '@/api/admin'
 
 interface QuestionForm {
   id?: number
@@ -113,4 +122,26 @@ const emit = defineEmits<{
   load: []
   pageChange: [page: number]
 }>()
+
+const importing = defineModel<boolean>('importing', { default: false })
+
+const handleImport = async (file: File) => {
+  importing.value = true
+  try {
+    const res = await importQuestionsApi(file)
+    const { successCount, failCount, errors } = res.data
+    if (failCount > 0) {
+      ElMessage.warning(`导入完成：成功 ${successCount} 条，失败 ${failCount} 条`)
+      console.warn('Import errors:', errors)
+    } else {
+      ElMessage.success(`导入成功：共 ${successCount} 条`)
+    }
+    emit('load')
+  } catch {
+    ElMessage.error('导入失败')
+  } finally {
+    importing.value = false
+  }
+  return false // prevent el-upload default behavior
+}
 </script>
