@@ -1,0 +1,10 @@
+package com.bytecoach.community.service;
+
+import com.bytecoach.community.entity.UserStats;
+
+public interface UserStatsService {
+    void refreshAllRanks();
+    void refreshUserStats(Long userId);
+    UserStats getUserStats(Long userId);
+    String calculateRankTitle(int communityScore);
+}

@@ -32,6 +32,11 @@ const pageMeta = {
     title: 'Review on the right day, not every day',
     subtitle: '基于遗忘曲线自动调度复习时机，让每一次复习都恰好在快要忘记的时候。'
   },
+  community: {
+    kicker: '学习社区',
+    title: 'Learn together, grow together',
+    subtitle: '提问、讨论、互助，通过社区贡献积累积分和等级。'
+  },
   plan: {
     kicker: '学习计划',
     title: 'Convert weak points into daily execution',
@@ -100,6 +105,30 @@ const router = createRouter({
           name: 'review',
           component: () => import('@/pages/review/ReviewPage.vue'),
           meta: pageMeta.review
+        },
+        {
+          path: 'community',
+          name: 'community',
+          component: () => import('@/pages/community/CommunityPage.vue'),
+          meta: pageMeta.community
+        },
+        {
+          path: 'community/submit',
+          name: 'community-submit',
+          component: () => import('@/pages/community/CommunitySubmitPage.vue'),
+          meta: { kicker: '发起提问', title: '发起提问', subtitle: '分享你的问题，获得社区帮助。' }
+        },
+        {
+          path: 'community/question/:id',
+          name: 'community-question-detail',
+          component: () => import('@/pages/community/CommunityQuestionDetail.vue'),
+          meta: { kicker: '问题详情', title: '问题详情', subtitle: '查看问题和回答。' }
+        },
+        {
+          path: 'community/leaderboard',
+          name: 'community-leaderboard',
+          component: () => import('@/pages/community/LeaderboardPage.vue'),
+          meta: { kicker: '排行榜', title: '社区排行榜', subtitle: '查看社区贡献排名。' }
         },
         {
           path: 'plan',

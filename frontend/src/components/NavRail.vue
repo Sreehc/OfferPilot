@@ -51,8 +51,9 @@ const items = [
   { path: '/interview', label: '面试', index: '04' },
   { path: '/wrong', label: '错题本', index: '05' },
   { path: '/review', label: '复习', index: '06' },
-  { path: '/plan', label: '学习计划', index: '07' },
-  { path: '/admin', label: '管理后台', index: '08' }
+  { path: '/community', label: '社区', index: '07' },
+  { path: '/plan', label: '学习计划', index: '08' },
+  { path: '/admin', label: '管理后台', index: '09' }
 ]
 
 const isActive = (path: string) => route.path === path

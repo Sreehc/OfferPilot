@@ -246,3 +246,48 @@ export interface StudyPlanTaskItem {
   content: string
   status: 'todo' | 'done'
 }
+
+export interface CommunityQuestion {
+  id: number
+  userId: number
+  authorName?: string
+  authorRank?: string
+  title: string
+  content: string
+  categoryId?: number
+  categoryName?: string
+  status: string
+  upvoteCount: number
+  answerCount: number
+  accepted?: boolean
+  hasVoted?: boolean
+  createdAt?: string
+}
+
+export interface CommunityAnswer {
+  id: number
+  questionId: number
+  userId: number
+  authorName?: string
+  authorRank?: string
+  content: string
+  isAccepted: boolean
+  upvoteCount: number
+  hasVoted?: boolean
+  createdAt?: string
+}
+
+export interface CommunityQuestionDetail extends CommunityQuestion {
+  answers: CommunityAnswer[]
+}
+
+export interface LeaderboardEntry {
+  userId: number
+  username?: string
+  rankTitle: string
+  communityScore: number
+  communityQuestions: number
+  communityAnswers: number
+  communityAccepted: number
+  position: number
+}
