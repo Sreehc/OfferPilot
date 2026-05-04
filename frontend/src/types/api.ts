@@ -330,3 +330,13 @@ export interface RecommendQuestion {
   difficulty: string
   reason: string
 }
+
+export interface NotificationItem {
+  id: number
+  type: string
+  title: string
+  content: string
+  link?: string
+  isRead: boolean
+  createTime: string
+}

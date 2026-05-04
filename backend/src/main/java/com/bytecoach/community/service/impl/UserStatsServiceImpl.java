@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.bytecoach.community.entity.UserStats;
 import com.bytecoach.community.mapper.UserStatsMapper;
 import com.bytecoach.community.service.UserStatsService;
+import com.bytecoach.notification.service.NotificationService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserStatsServiceImpl implements UserStatsService {
 
     private final UserStatsMapper userStatsMapper;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -25,9 +27,19 @@ public class UserStatsServiceImpl implements UserStatsService {
         for (UserStats stats : all) {
             String newRank = calculateRankTitle(stats.getCommunityScore() != null ? stats.getCommunityScore() : 0);
             if (!newRank.equals(stats.getRankTitle())) {
+                String oldRank = stats.getRankTitle();
                 stats.setRankTitle(newRank);
                 userStatsMapper.updateById(stats);
                 updated++;
+
+                // Notify user about rank upgrade
+                try {
+                    notificationService.send(stats.getUserId(), "rank",
+                            "等级提升",
+                            "恭喜！你的社区等级从「" + oldRank + "」提升为「" + newRank + "」，继续加油！",
+                            "/community/leaderboard");
+                } catch (Exception ignored) {
+                }
             }
         }
         log.info("Rank refresh completed: {} users updated out of {}", updated, all.size());
@@ -41,8 +53,17 @@ public class UserStatsServiceImpl implements UserStatsService {
 
         String newRank = calculateRankTitle(stats.getCommunityScore() != null ? stats.getCommunityScore() : 0);
         if (!newRank.equals(stats.getRankTitle())) {
+            String oldRank = stats.getRankTitle();
             stats.setRankTitle(newRank);
             userStatsMapper.updateById(stats);
+
+            try {
+                notificationService.send(userId, "rank",
+                        "等级提升",
+                        "恭喜！你的社区等级从「" + oldRank + "」提升为「" + newRank + "」，继续加油！",
+                        "/community/leaderboard");
+            } catch (Exception ignored) {
+            }
         }
     }
 

@@ -10,6 +10,7 @@ import com.bytecoach.common.dto.PageResult;
 import com.bytecoach.common.exception.BusinessException;
 import com.bytecoach.dashboard.service.DashboardService;
 import com.bytecoach.interview.dto.InterviewAnswerRequest;
+import com.bytecoach.notification.service.NotificationService;
 import com.bytecoach.interview.dto.InterviewStartRequest;
 import com.bytecoach.interview.entity.InterviewRecord;
 import com.bytecoach.interview.entity.InterviewSession;
@@ -57,6 +58,7 @@ public class InterviewServiceImpl implements InterviewService {
     private final CategoryService categoryService;
     private final AiOrchestratorService aiOrchestratorService;
     private final DashboardService dashboardService;
+    private final NotificationService notificationService;
 
     @Lazy
     @Autowired
@@ -417,5 +419,16 @@ public class InterviewServiceImpl implements InterviewService {
         sessionMapper.updateById(session);
 
         log.info("Interview session {} finished with avg score {}", session.getId(), avgScore);
+
+        // Send interview completion notification
+        try {
+            String title = "面试完成通知";
+            String content = String.format("你在「%s」方向的面试已完成，平均得分 %s 分。快来看看详细结果吧！",
+                    session.getDirection(), avgScore.toPlainString());
+            notificationService.send(session.getUserId(), "interview", title, content,
+                    "/interview/detail/" + session.getId());
+        } catch (Exception e) {
+            log.warn("Failed to send interview completion notification: {}", e.getMessage());
+        }
     }
 }

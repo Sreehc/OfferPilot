@@ -20,6 +20,7 @@ import com.bytecoach.community.service.CommunityService;
 import com.bytecoach.community.vo.CommunityAnswerVO;
 import com.bytecoach.community.vo.CommunityQuestionVO;
 import com.bytecoach.community.vo.LeaderboardEntryVO;
+import com.bytecoach.notification.service.NotificationService;
 import com.bytecoach.security.util.SecurityUtils;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -35,6 +36,7 @@ public class CommunityServiceImpl implements CommunityService {
     private final CommunityAnswerMapper answerMapper;
     private final CommunityVoteMapper voteMapper;
     private final UserStatsMapper userStatsMapper;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -218,6 +220,16 @@ public class CommunityServiceImpl implements CommunityService {
         userStatsMapper.update(null, new LambdaUpdateWrapper<UserStats>()
                 .eq(UserStats::getUserId, answer.getUserId())
                 .setSql("community_accepted = community_accepted + 1, community_score = community_score + 50"));
+
+        // Notify answer author that their answer was accepted
+        try {
+            notificationService.send(answer.getUserId(), "community",
+                    "回答被采纳",
+                    "你在问题「" + question.getTitle() + "」下的回答已被采纳，获得 50 社区积分！",
+                    "/community/question/" + questionId);
+        } catch (Exception e) {
+            // swallow — notification is non-critical
+        }
     }
 
     @Override
@@ -257,6 +269,17 @@ public class CommunityServiceImpl implements CommunityService {
                 userStatsMapper.update(null, new LambdaUpdateWrapper<UserStats>()
                         .eq(UserStats::getUserId, q.getUserId())
                         .setSql("community_score = community_score + 2"));
+
+                // Notify question author (skip self-votes)
+                if (!q.getUserId().equals(userId)) {
+                    try {
+                        notificationService.send(q.getUserId(), "community",
+                                "收到点赞",
+                                "你的问题「" + q.getTitle() + "」收到了一个赞！",
+                                "/community/question/" + q.getId());
+                    } catch (Exception ignored) {
+                    }
+                }
             }
         } else {
             answerMapper.update(null, new LambdaUpdateWrapper<CommunityAnswer>()
@@ -269,6 +292,19 @@ public class CommunityServiceImpl implements CommunityService {
                 userStatsMapper.update(null, new LambdaUpdateWrapper<UserStats>()
                         .eq(UserStats::getUserId, a.getUserId())
                         .setSql("community_score = community_score + 2"));
+
+                // Notify answer author (skip self-votes)
+                if (!a.getUserId().equals(userId)) {
+                    try {
+                        CommunityQuestion q = questionMapper.selectById(a.getQuestionId());
+                        String qTitle = q != null ? q.getTitle() : "未知问题";
+                        notificationService.send(a.getUserId(), "community",
+                                "收到点赞",
+                                "你在问题「" + qTitle + "」下的回答收到了一个赞！",
+                                "/community/question/" + a.getQuestionId());
+                    } catch (Exception ignored) {
+                    }
+                }
             }
         }
     }

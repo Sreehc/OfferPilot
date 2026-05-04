@@ -15,6 +15,7 @@
           @logout="handleLogout"
         >
           <template #actions>
+            <NotificationDropdown />
             <button
               type="button"
               class="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-slate-200 dark:hover:bg-slate-700"
@@ -96,6 +97,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AppShellHeader from '@/components/AppShellHeader.vue'
 import NavRail from '@/components/NavRail.vue'
 import MobileNavBar from '@/components/MobileNavBar.vue'
+import NotificationDropdown from '@/components/NotificationDropdown.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useTheme } from '@/composables/useTheme'
 
