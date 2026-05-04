@@ -3,7 +3,7 @@ package com.bytecoach.community.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.bytecoach.common.exception.BizException;
+import com.bytecoach.common.exception.BusinessException;
 import com.bytecoach.common.result.PageResult;
 import com.bytecoach.community.dto.CommunityAnswerUpsertRequest;
 import com.bytecoach.community.dto.CommunityQuestionUpsertRequest;
@@ -65,8 +65,8 @@ public class CommunityServiceImpl implements CommunityService {
     public void updateQuestion(CommunityQuestionUpsertRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
         CommunityQuestion question = questionMapper.selectById(request.getId());
-        if (question == null) throw new BizException("问题不存在");
-        if (!question.getUserId().equals(userId)) throw new BizException("只能编辑自己的问题");
+        if (question == null) throw new BusinessException("问题不存在");
+        if (!question.getUserId().equals(userId)) throw new BusinessException("只能编辑自己的问题");
 
         question.setTitle(request.getTitle());
         question.setContent(request.getContent());
@@ -79,8 +79,8 @@ public class CommunityServiceImpl implements CommunityService {
     public void deleteQuestion(Long id) {
         Long userId = SecurityUtils.getCurrentUserId();
         CommunityQuestion question = questionMapper.selectById(id);
-        if (question == null) throw new BizException("问题不存在");
-        if (!question.getUserId().equals(userId)) throw new BizException("只能删除自己的问题");
+        if (question == null) throw new BusinessException("问题不存在");
+        if (!question.getUserId().equals(userId)) throw new BusinessException("只能删除自己的问题");
 
         questionMapper.deleteById(id);
         answerMapper.delete(new LambdaQueryWrapper<CommunityAnswer>()
@@ -90,7 +90,7 @@ public class CommunityServiceImpl implements CommunityService {
     @Override
     public CommunityQuestionVO getQuestionDetail(Long id) {
         CommunityQuestion question = questionMapper.selectById(id);
-        if (question == null) throw new BizException("问题不存在");
+        if (question == null) throw new BusinessException("问题不存在");
 
         CommunityQuestionVO vo = toQuestionVO(question);
 
@@ -156,7 +156,7 @@ public class CommunityServiceImpl implements CommunityService {
         Long userId = SecurityUtils.getCurrentUserId();
 
         CommunityQuestion question = questionMapper.selectById(request.getQuestionId());
-        if (question == null) throw new BizException("问题不存在");
+        if (question == null) throw new BusinessException("问题不存在");
 
         CommunityAnswer answer = new CommunityAnswer();
         answer.setQuestionId(request.getQuestionId());
@@ -183,8 +183,8 @@ public class CommunityServiceImpl implements CommunityService {
     public void deleteAnswer(Long id) {
         Long userId = SecurityUtils.getCurrentUserId();
         CommunityAnswer answer = answerMapper.selectById(id);
-        if (answer == null) throw new BizException("回答不存在");
-        if (!answer.getUserId().equals(userId)) throw new BizException("只能删除自己的回答");
+        if (answer == null) throw new BusinessException("回答不存在");
+        if (!answer.getUserId().equals(userId)) throw new BusinessException("只能删除自己的回答");
 
         answerMapper.deleteById(id);
         questionMapper.update(null, new LambdaUpdateWrapper<CommunityQuestion>()
@@ -197,12 +197,12 @@ public class CommunityServiceImpl implements CommunityService {
     public void acceptAnswer(Long questionId, Long answerId) {
         Long userId = SecurityUtils.getCurrentUserId();
         CommunityQuestion question = questionMapper.selectById(questionId);
-        if (question == null) throw new BizException("问题不存在");
-        if (!question.getUserId().equals(userId)) throw new BizException("只能采纳自己问题下的回答");
+        if (question == null) throw new BusinessException("问题不存在");
+        if (!question.getUserId().equals(userId)) throw new BusinessException("只能采纳自己问题下的回答");
 
         CommunityAnswer answer = answerMapper.selectById(answerId);
         if (answer == null || !answer.getQuestionId().equals(questionId)) {
-            throw new BizException("回答不存在或不属于该问题");
+            throw new BusinessException("回答不存在或不属于该问题");
         }
 
         answerMapper.update(null, new LambdaUpdateWrapper<CommunityAnswer>()
@@ -239,7 +239,7 @@ public class CommunityServiceImpl implements CommunityService {
         String targetType = request.getTargetType();
 
         if (!"question".equals(targetType) && !"answer".equals(targetType)) {
-            throw new BizException("目标类型无效");
+            throw new BusinessException("目标类型无效");
         }
 
         Long existing = voteMapper.selectCount(new LambdaQueryWrapper<CommunityVote>()
@@ -248,7 +248,7 @@ public class CommunityServiceImpl implements CommunityService {
                 .eq(CommunityVote::getTargetId, request.getTargetId()));
 
         if (existing > 0) {
-            throw new BizException("已经点过赞了");
+            throw new BusinessException("已经点过赞了");
         }
 
         CommunityVote vote = new CommunityVote();
