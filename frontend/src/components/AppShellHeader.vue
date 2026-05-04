@@ -45,7 +45,7 @@
       <!-- Mobile: icon-only logout button -->
       <button
         type="button"
-        class="flex sm:hidden items-center justify-center h-10 w-10 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
+        class="flex sm:hidden items-center justify-center h-10 w-10 rounded-full text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
         title="退出登录"
         @click="$emit('logout')"
       >

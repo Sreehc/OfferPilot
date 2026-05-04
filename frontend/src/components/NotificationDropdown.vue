@@ -3,7 +3,7 @@
     <!-- Bell trigger -->
     <button
       type="button"
-      class="relative flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-slate-200 dark:hover:bg-slate-700"
+      class="relative flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-slate-200 dark:hover:bg-slate-700"
       title="通知"
       @click="toggleDropdown"
     >
