@@ -232,12 +232,19 @@ const todayCount = computed(() => items.value.length)
 const estimatedMinutes = computed(() => Math.max(1, Math.ceil(items.value.length * 0.5)))
 const currentItem = computed(() => items.value[currentIndex.value] ?? null)
 
-const ratingButtons = [
-  { rating: 1 as const, emoji: '🔄', label: '重来', interval: '1 天', class: 'bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30' },
-  { rating: 2 as const, emoji: '😓', label: '困难', interval: '1 天', class: 'bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/30' },
-  { rating: 3 as const, emoji: '👍', label: '良好', interval: '按算法', class: 'bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/30' },
-  { rating: 4 as const, emoji: '🌟', label: '轻松', interval: '按算法', class: 'bg-green-50 text-green-600 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/30' }
-]
+const ratingButtons = computed(() => {
+  const item = currentItem.value
+  const ef = item?.easeFactor ?? 2.5
+  const interval = item?.intervalDays ?? 1
+  const goodDays = Math.max(1, Math.round(interval * ef))
+  const easyDays = Math.max(1, Math.round(interval * ef * 1.3))
+  return [
+    { rating: 1 as const, emoji: '🔄', label: '重来', interval: '1 天', class: 'bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30' },
+    { rating: 2 as const, emoji: '😓', label: '困难', interval: '1 天', class: 'bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/30' },
+    { rating: 3 as const, emoji: '👍', label: '良好', interval: `${goodDays} 天`, class: 'bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/30' },
+    { rating: 4 as const, emoji: '🌟', label: '轻松', interval: `${easyDays} 天`, class: 'bg-green-50 text-green-600 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/30' }
+  ]
+})
 
 const loadData = async () => {
   loading.value = true
