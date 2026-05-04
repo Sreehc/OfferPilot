@@ -75,13 +75,12 @@
 
     <!-- Doc List -->
     <section>
-      <div v-if="docs.length === 0 && !loadingDocs" class="empty-state-card">
-        <div class="font-semibold text-ink">
-          {{ activeTab === 'my' ? '你还没有上传过文档' : '暂无系统资料' }}
-        </div>
-        <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-          {{ activeTab === 'my' ? '上传 Markdown 或 TXT 文件，系统会自动切分并建立向量索引。' : '请联系管理员导入知识资料。' }}
-        </p>
+      <div v-if="docs.length === 0 && !loadingDocs" class="paper-panel p-6">
+        <EmptyState
+          icon="document"
+          :title="activeTab === 'my' ? '你还没有上传过文档' : '暂无系统资料'"
+          :description="activeTab === 'my' ? '上传 Markdown 或 TXT 文件，系统会自动切分并建立向量索引。' : '请联系管理员导入知识资料。'"
+        />
       </div>
 
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -165,6 +164,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
+import EmptyState from '@/components/EmptyState.vue'
 import { fetchCategoriesApi } from '@/api/category'
 import {
   fetchKnowledgeDocsApi,

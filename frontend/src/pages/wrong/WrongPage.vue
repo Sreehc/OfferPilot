@@ -44,15 +44,18 @@
     </section>
 
     <!-- Empty State -->
-    <section v-else-if="!filteredItems.length" class="paper-panel p-8 text-center">
-      <div class="text-5xl font-semibold tracking-[-0.03em] text-slate-300 dark:text-slate-600">0</div>
-      <p class="mt-4 text-lg font-semibold text-ink">错题本为空</p>
-      <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-        完成一场模拟面试后，低分会自动沉淀到这里。也可以从 Dashboard 快捷进入面试。
-      </p>
-      <RouterLink to="/interview" class="hard-button-primary mt-6 inline-flex">
-        开始面试
-      </RouterLink>
+    <section v-else-if="!filteredItems.length" class="paper-panel p-6">
+      <EmptyState
+        icon="review"
+        title="错题本为空"
+        description="完成一场模拟面试后，低分会自动沉淀到这里。也可以从 Dashboard 快捷进入面试。"
+      >
+        <template #action>
+          <RouterLink to="/interview" class="hard-button-primary inline-flex">
+            开始面试
+          </RouterLink>
+        </template>
+      </EmptyState>
     </section>
 
     <!-- Wrong Items Grid -->
@@ -153,6 +156,7 @@
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
+import EmptyState from '@/components/EmptyState.vue'
 import { deleteWrongApi, exportWrongMarkdownApi, fetchWrongListApi } from '@/api/wrong'
 import { fetchReviewTodayApi } from '@/api/review'
 import type { WrongQuestionItem } from '@/types/api'

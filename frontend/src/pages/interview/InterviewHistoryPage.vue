@@ -33,15 +33,18 @@
     </section>
 
     <!-- Empty State -->
-    <section v-else-if="!items.length" class="paper-panel p-8 text-center">
-      <div class="text-5xl font-semibold tracking-[-0.03em] text-slate-300 dark:text-slate-600">0</div>
-      <p class="mt-4 text-lg font-semibold text-ink">暂无面试记录</p>
-      <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-        完成一场面试后，记录会自动出现在这里。
-      </p>
-      <RouterLink to="/interview" class="hard-button-primary mt-6 inline-flex">
-        开始面试
-      </RouterLink>
+    <section v-else-if="!items.length" class="paper-panel p-6">
+      <EmptyState
+        icon="chart"
+        title="暂无面试记录"
+        description="完成一场面试后，记录会自动出现在这里。"
+      >
+        <template #action>
+          <RouterLink to="/interview" class="hard-button-primary inline-flex">
+            开始面试
+          </RouterLink>
+        </template>
+      </EmptyState>
     </section>
 
     <!-- History List -->
@@ -91,6 +94,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { onMounted, ref, watch } from 'vue'
+import EmptyState from '@/components/EmptyState.vue'
 import { useRouter } from 'vue-router'
 import { fetchInterviewHistoryApi } from '@/api/interview'
 import type { InterviewHistoryItem } from '@/types/api'

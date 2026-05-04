@@ -97,15 +97,18 @@
     </section>
 
     <!-- Empty State -->
-    <section v-else-if="!currentPlan && !showGenerate" class="paper-panel p-8 text-center">
-      <div class="text-5xl font-semibold tracking-[-0.03em] text-slate-300 dark:text-slate-600">0</div>
-      <p class="mt-4 text-lg font-semibold text-ink">暂无学习计划</p>
-      <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-        点击「生成计划」，AI 将根据你的错题薄弱点自动生成每日任务。
-      </p>
-      <el-button size="large" class="hard-button-primary mt-6" @click="showGenerate = true">
-        生成计划
-      </el-button>
+    <section v-else-if="!currentPlan && !showGenerate" class="paper-panel p-6">
+      <EmptyState
+        icon="document"
+        title="暂无学习计划"
+        description="点击「生成计划」，AI 将根据你的错题薄弱点自动生成每日任务。"
+      >
+        <template #action>
+          <el-button size="large" class="hard-button-primary" @click="showGenerate = true">
+            生成计划
+          </el-button>
+        </template>
+      </EmptyState>
     </section>
 
     <!-- Plan Content -->
@@ -253,6 +256,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
+import EmptyState from '@/components/EmptyState.vue'
 import {
   fetchCurrentPlanApi,
   generatePlanApi,

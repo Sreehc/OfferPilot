@@ -91,9 +91,18 @@
       </div>
 
       <!-- Empty State -->
-      <div v-if="!loading && questions.length === 0" class="paper-panel px-8 py-16 text-center">
-        <p class="text-lg text-slate-400">暂无问题</p>
-        <p class="mt-2 text-sm text-slate-400">成为第一个提问的人吧</p>
+      <div v-if="!loading && questions.length === 0" class="paper-panel p-6">
+        <EmptyState
+          icon="chat"
+          title="暂无问题"
+          description="成为第一个提问的人吧，分享你的面试经验和技术问题。"
+        >
+          <template #action>
+            <RouterLink to="/community/submit" class="hard-button-primary inline-flex">
+              发起提问
+            </RouterLink>
+          </template>
+        </EmptyState>
       </div>
     </div>
 
@@ -115,6 +124,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { fetchCommunityQuestionsApi } from '@/api/community'
+import EmptyState from '@/components/EmptyState.vue'
 import type { CommunityQuestion } from '@/types/api'
 
 const questions = ref<CommunityQuestion[]>([])

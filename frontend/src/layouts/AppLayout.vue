@@ -33,13 +33,20 @@
         </AppShellHeader>
 
         <section class="overflow-hidden p-1 md:p-2">
-          <RouterView />
+          <RouterView v-slot="{ Component, route: viewRoute }">
+            <Transition name="page-slide" mode="out-in">
+              <component :is="Component" :key="viewRoute.path" />
+            </Transition>
+          </RouterView>
         </section>
       </main>
     </div>
 
     <!-- Mobile bottom tab bar -->
     <MobileNavBar />
+
+    <!-- Offline overlay -->
+    <OfflinePage />
 
     <!-- Global Search Modal (Cmd+K) -->
     <el-dialog
@@ -83,8 +90,8 @@
       </div>
       <template #footer>
         <div class="flex items-center justify-between px-1 text-xs text-slate-400 dark:text-slate-500">
-          <span>Esc 关闭</span>
-          <span>Enter 跳转</span>
+          <span><kbd class="rounded border border-slate-300 px-1 py-0.5 text-[10px] dark:border-slate-600">/</kbd> 或 <kbd class="rounded border border-slate-300 px-1 py-0.5 text-[10px] dark:border-slate-600">⌘K</kbd> 搜索</span>
+          <span><kbd class="rounded border border-slate-300 px-1 py-0.5 text-[10px] dark:border-slate-600">Esc</kbd> 关闭 · <kbd class="rounded border border-slate-300 px-1 py-0.5 text-[10px] dark:border-slate-600">Enter</kbd> 跳转</span>
         </div>
       </template>
     </el-dialog>
@@ -98,6 +105,7 @@ import AppShellHeader from '@/components/AppShellHeader.vue'
 import NavRail from '@/components/NavRail.vue'
 import MobileNavBar from '@/components/MobileNavBar.vue'
 import NotificationDropdown from '@/components/NotificationDropdown.vue'
+import OfflinePage from '@/components/OfflinePage.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useTheme } from '@/composables/useTheme'
 
@@ -121,7 +129,11 @@ const searchItems = [
   { label: '模拟面试', path: '/interview' },
   { label: '面试历史', path: '/interview/history' },
   { label: '错题本', path: '/wrong' },
+  { label: '间隔复习', path: '/review' },
+  { label: '学习社区', path: '/community' },
+  { label: '排行榜', path: '/community/leaderboard' },
   { label: '学习计划', path: '/plan' },
+  { label: '数据分析', path: '/analytics' },
   { label: '后台管理', path: '/admin' }
 ]
 
@@ -148,16 +160,27 @@ const handleSearchNavigate = () => {
 // Keyboard shortcuts
 const handleKeydown = (e: KeyboardEvent) => {
   const isMod = e.metaKey || e.ctrlKey
-  if (isMod && e.key === 'k') {
+  const isInput = (e.target as HTMLElement)?.tagName === 'INPUT'
+    || (e.target as HTMLElement)?.tagName === 'TEXTAREA'
+    || (e.target as HTMLElement)?.contentEditable === 'true'
+
+  // Cmd/Ctrl+K or / to open search (when not in input)
+  if ((isMod && e.key === 'k') || (e.key === '/' && !isInput && !searchVisible.value)) {
     e.preventDefault()
-    searchVisible.value = !searchVisible.value
-    if (searchVisible.value) {
-      nextTick(() => {
-        const input = searchInputRef.value?.$el?.querySelector('input') as HTMLInputElement | null
-        input?.focus()
-      })
-    }
+    searchVisible.value = true
+    nextTick(() => {
+      const input = searchInputRef.value?.$el?.querySelector('input') as HTMLInputElement | null
+      input?.focus()
+    })
   }
+
+  // Esc to close search
+  if (e.key === 'Escape' && searchVisible.value) {
+    e.preventDefault()
+    searchVisible.value = false
+  }
+
+  // Cmd/Ctrl+B to toggle sidebar
   if (isMod && e.key === 'b') {
     e.preventDefault()
     sidebarVisible.value = !sidebarVisible.value
