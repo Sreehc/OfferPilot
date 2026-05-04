@@ -9,38 +9,19 @@
     <div class="flex flex-col gap-3 self-start sm:flex-row sm:items-center">
       <slot name="actions" />
 
-      <div class="surface-card hidden sm:flex items-center gap-3 px-3 py-2">
-        <div
-          class="group relative flex size-10 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-accent text-sm font-semibold text-white"
-          @click="triggerAvatarUpload"
-        >
-          <img v-if="avatarUrl" :src="avatarUrl" alt="avatar" class="h-full w-full object-cover" />
-          <span v-else>{{ initials }}</span>
-          <div class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100">
-            <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </div>
-          <input
-            ref="fileInputRef"
-            type="file"
-            accept="image/*"
-            class="hidden"
-            @change="handleAvatarChange"
-          />
+      <RouterLink
+        to="/settings"
+        class="hidden sm:flex group relative h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-accent text-sm font-semibold text-white"
+      >
+        <img v-if="avatarUrl" :src="avatarUrl" alt="avatar" class="h-full w-full object-cover" />
+        <span v-else>{{ initials }}</span>
+        <div class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100">
+          <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
         </div>
-        <div>
-          <div class="text-sm font-semibold">{{ name }}</div>
-          <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">{{ role }}</div>
-          <RouterLink
-            to="/settings"
-            class="mt-1 inline-block text-[11px] text-accent hover:underline"
-          >
-            账户设置
-          </RouterLink>
-        </div>
-      </div>
+      </RouterLink>
 
       <!-- Mobile: icon-only logout button -->
       <button
@@ -69,9 +50,6 @@
 </template>
 
 <script setup lang="ts">
-import { ElMessage } from 'element-plus'
-import { ref } from 'vue'
-import { uploadAvatarApi } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
@@ -89,37 +67,5 @@ defineProps<{
   initials: string
 }>()
 
-const fileInputRef = ref<HTMLInputElement | null>(null)
-const avatarUrl = ref<string | null>(authStore.user?.avatar || null)
-
-const triggerAvatarUpload = () => {
-  fileInputRef.value?.click()
-}
-
-const handleAvatarChange = async (e: Event) => {
-  const input = e.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file) return
-
-  if (file.size > 2 * 1024 * 1024) {
-    ElMessage.warning('图片大小不能超过 2MB')
-    return
-  }
-
-  try {
-    const response = await uploadAvatarApi(file)
-    avatarUrl.value = response.data
-    // Update auth store user info
-    if (authStore.user) {
-      authStore.user.avatar = response.data
-      authStore.persistUser()
-    }
-    ElMessage.success('头像已更新')
-  } catch {
-    ElMessage.error('头像上传失败')
-  }
-
-  // Reset input
-  input.value = ''
-}
+const avatarUrl = authStore.user?.avatar || null
 </script>
