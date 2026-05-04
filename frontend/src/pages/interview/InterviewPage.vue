@@ -279,19 +279,45 @@
             <div
               v-for="(record, index) in detail.records"
               :key="record.questionId"
-              class="surface-card p-4"
+              class="surface-card p-4 cursor-pointer transition hover:shadow-md"
+              @click="toggleQuestion(record.questionId)"
             >
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0 flex-1">
                   <div class="text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Q{{ index + 1 }}</div>
                   <div class="mt-1 font-semibold text-ink">{{ record.questionTitle }}</div>
-                  <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ record.comment || '暂无点评' }}</p>
+                  <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300 line-clamp-2">{{ record.comment || '暂无点评' }}</p>
                 </div>
-                <div
-                  class="shrink-0 text-3xl font-semibold tracking-[-0.03em]"
-                  :class="record.score >= 60 ? 'text-accent' : 'text-red-500'"
-                >
-                  {{ record.score ?? '-' }}
+                <div class="flex items-center gap-2 shrink-0">
+                  <div
+                    class="text-3xl font-semibold tracking-[-0.03em]"
+                    :class="record.score >= 60 ? 'text-accent' : 'text-red-500'"
+                  >
+                    {{ record.score ?? '-' }}
+                  </div>
+                  <svg
+                    class="h-4 w-4 text-slate-400 transition-transform"
+                    :class="expandedQuestions.has(record.questionId) ? 'rotate-180' : ''"
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Expanded detail -->
+              <div v-if="expandedQuestions.has(record.questionId)" class="mt-4 space-y-3 border-t border-slate-200/60 dark:border-slate-700/60 pt-4">
+                <div v-if="record.userAnswer">
+                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">我的回答</div>
+                  <p class="mt-1 text-sm leading-6 text-slate-700 dark:text-slate-200 whitespace-pre-wrap">{{ record.userAnswer }}</p>
+                </div>
+                <div v-if="record.standardAnswer">
+                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">标准答案</div>
+                  <p class="mt-1 text-sm leading-6 text-slate-700 dark:text-slate-200 whitespace-pre-wrap">{{ record.standardAnswer }}</p>
+                </div>
+                <div v-if="record.followUp">
+                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">追问</div>
+                  <p class="mt-1 text-sm leading-6 text-slate-700 dark:text-slate-200">{{ record.followUp }}</p>
                 </div>
               </div>
             </div>
@@ -351,6 +377,15 @@ const currentQuestion = ref<InterviewCurrentQuestion | null>(null)
 const lastResult = ref<InterviewAnswerResult | null>(null)
 const lastVoiceResult = ref<VoiceSubmitResult | null>(null)
 const detail = ref<InterviewDetail | null>(null)
+const expandedQuestions = ref<Set<number>>(new Set())
+
+const toggleQuestion = (questionId: number) => {
+  if (expandedQuestions.value.has(questionId)) {
+    expandedQuestions.value.delete(questionId)
+  } else {
+    expandedQuestions.value.add(questionId)
+  }
+}
 
 // Countdown timer (5 minutes per question)
 const COUNTDOWN_SECONDS = 300
