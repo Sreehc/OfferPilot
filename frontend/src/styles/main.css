@@ -413,3 +413,41 @@ a {
     scroll-behavior: auto !important;
   }
 }
+
+/* ── Mobile Responsive ──────────────────────── */
+
+/* Prevent zoom on input focus on iOS */
+@media (max-width: 767px) {
+  .el-input__inner,
+  .el-textarea__inner,
+  .el-select__wrapper {
+    font-size: 16px !important;
+  }
+}
+
+/* Page title responsive sizing */
+@media (max-width: 640px) {
+  .page-title {
+    @apply text-2xl;
+  }
+  .page-subtitle {
+    @apply text-sm;
+  }
+}
+
+/* Mobile bottom safe area */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Touch-optimized tap targets on mobile */
+@media (max-width: 767px) {
+  .el-button {
+    min-height: 44px;
+  }
+  .el-select {
+    min-height: 44px;
+  }
+}

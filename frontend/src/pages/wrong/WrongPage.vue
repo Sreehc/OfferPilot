@@ -1,27 +1,27 @@
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <section class="paper-panel p-6">
+    <section class="paper-panel p-4 sm:p-6">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p class="section-kicker">错题本</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
+          <h3 class="mt-3 text-xl sm:text-2xl font-semibold tracking-[-0.03em] text-ink">
             {{ total }} 道错题
           </h3>
           <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
             低分面试题自动沉淀到此处，掌握状态由间隔复习算法自动计算。
           </p>
         </div>
-        <div class="flex flex-wrap gap-3">
+        <div class="flex flex-wrap gap-2 sm:gap-3">
           <RouterLink to="/review" class="hard-button-primary" :class="{ 'animate-pulse': todayDue > 0 }">
             开始复习{{ todayDue > 0 ? ` (${todayDue})` : '' }}
           </RouterLink>
-          <el-select v-model="filterReview" clearable placeholder="复习状态" size="large" class="w-[160px]">
+          <el-select v-model="filterReview" clearable placeholder="复习状态" size="large" class="w-[130px] sm:w-[160px]">
             <el-option label="今日待复习" value="due_today" />
             <el-option label="已排期" value="scheduled" />
             <el-option label="已掌握" value="mastered" />
           </el-select>
-          <el-select v-model="filterMastery" clearable placeholder="掌握状态" size="large" class="w-[160px]">
+          <el-select v-model="filterMastery" clearable placeholder="掌握状态" size="large" class="w-[130px] sm:w-[160px]">
             <el-option label="未开始" value="not_started" />
             <el-option label="复习中" value="reviewing" />
             <el-option label="已掌握" value="mastered" />
@@ -35,7 +35,7 @@
     </section>
 
     <!-- Loading -->
-    <section v-if="loading" class="grid gap-4 xl:grid-cols-3 md:grid-cols-2">
+    <section v-if="loading" class="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
       <article v-for="n in 3" :key="n" class="metric-card">
         <div class="h-4 w-24 animate-pulse rounded bg-slate-200 dark:bg-slate-700"></div>
         <div class="mt-4 h-3 w-full animate-pulse rounded bg-slate-100 dark:bg-slate-800"></div>

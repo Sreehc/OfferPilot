@@ -2,17 +2,17 @@
   <div class="space-y-6">
     <!-- Header + Upload -->
     <section class="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-      <div class="paper-panel p-6">
+      <div class="paper-panel p-4 sm:p-6">
         <p class="section-kicker">知识库</p>
-        <h3 class="mt-4 text-3xl font-semibold tracking-[-0.03em] text-ink">知识库管理</h3>
+        <h3 class="mt-4 text-xl sm:text-3xl font-semibold tracking-[-0.03em] text-ink">知识库管理</h3>
         <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
           系统内置资料与你上传的学习材料统一管理，支持分类查看、关键字检索和向量语义检索。
         </p>
       </div>
-      <div class="paper-panel p-6">
+      <div class="paper-panel p-4 sm:p-6">
         <p class="section-kicker">上传文档</p>
         <div
-          class="mt-4 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50/50 dark:bg-slate-800/50 p-6 text-center transition-colors hover:border-accent hover:bg-accent/5"
+          class="mt-4 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50/50 dark:bg-slate-800/50 p-4 sm:p-6 text-center transition-colors hover:border-accent hover:bg-accent/5"
           @dragover.prevent
           @drop.prevent="handleDrop"
         >
@@ -33,7 +33,7 @@
     </section>
 
     <!-- Tabs: System / My Docs -->
-    <section class="paper-panel p-6">
+    <section class="paper-panel p-4 sm:p-6">
       <div class="flex items-center gap-4 border-b border-slate-200 dark:border-slate-700 pb-4">
         <button
           class="pb-1 text-sm font-semibold transition-colors"
@@ -52,8 +52,8 @@
       </div>
 
       <!-- Filters -->
-      <div class="mt-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div class="grid gap-3 md:grid-cols-3">
+      <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div class="grid gap-3 grid-cols-1 sm:grid-cols-3">
           <el-select v-model="filters.categoryId" clearable placeholder="知识分类" size="large">
             <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
           </el-select>
@@ -129,11 +129,11 @@
     </section>
 
     <!-- Search Console -->
-    <section class="paper-panel p-6">
+    <section class="paper-panel p-4 sm:p-6">
       <div class="flex items-center justify-between">
         <div>
           <p class="section-kicker">检索测试</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">知识检索测试</h3>
+          <h3 class="mt-3 text-xl sm:text-2xl font-semibold tracking-[-0.03em] text-ink">知识检索测试</h3>
         </div>
       </div>
       <div class="mt-4 flex flex-col gap-3 lg:flex-row">

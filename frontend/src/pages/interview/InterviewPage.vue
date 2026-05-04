@@ -1,9 +1,9 @@
 <template>
   <div class="space-y-4">
     <!-- Setup / Active Interview Header -->
-    <section class="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+    <section class="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
       <!-- Left Panel -->
-      <div class="paper-panel p-6">
+      <div class="paper-panel p-4 sm:p-6">
         <p class="section-kicker">面试设置</p>
         <h3 class="mt-4 text-3xl font-semibold tracking-[-0.03em] text-ink">
           {{ phase === 'idle' ? '每场 3-5 题，一轮追问' : `第 ${currentQuestion?.currentIndex ?? '?'} 题 / 共 ${currentQuestion?.questionCount ?? '?'} 题` }}
@@ -95,7 +95,7 @@
       </div>
 
       <!-- Right Panel -->
-      <div class="paper-panel flex flex-col p-6">
+      <div class="paper-panel flex flex-col p-4 sm:p-6">
         <!-- Idle State -->
         <div v-if="phase === 'idle'" class="flex flex-1 items-center justify-center">
           <div class="text-center">

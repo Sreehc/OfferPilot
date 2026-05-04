@@ -60,7 +60,7 @@
     </section>
 
     <!-- Flashcard Review -->
-    <section v-else-if="currentIndex < items.length" class="mx-auto max-w-2xl">
+    <section v-else-if="currentIndex < items.length" class="mx-auto max-w-2xl px-2 sm:px-0">
       <!-- Progress -->
       <div class="mb-4 flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
         <span>{{ currentIndex + 1 }} / {{ items.length }}</span>
@@ -75,19 +75,28 @@
         ></div>
       </div>
 
+      <!-- Swipe hint on mobile -->
+      <p class="mb-3 text-center text-xs text-slate-400 dark:text-slate-500 sm:hidden">
+        左滑重来 · 右滑良好 · 点击翻转
+      </p>
+
       <!-- Flashcard -->
       <div
+        ref="flashcardRef"
         class="flashcard-wrapper cursor-pointer"
         :class="{ flipped: showAnswer }"
         @click="flipCard"
+        @touchstart="onTouchStart"
+        @touchmove.passive="onTouchMove"
+        @touchend="onTouchEnd"
       >
         <div class="flashcard">
           <!-- Front: Question -->
-          <div class="flashcard-front paper-panel p-8">
+          <div class="flashcard-front paper-panel p-5 sm:p-8">
             <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
               题目
             </div>
-            <h3 class="mt-4 text-xl font-semibold leading-relaxed text-ink">
+            <h3 class="mt-4 text-lg sm:text-xl font-semibold leading-relaxed text-ink">
               {{ currentItem.title }}
             </h3>
             <p class="mt-6 text-sm text-slate-400 dark:text-slate-500">
@@ -96,7 +105,7 @@
           </div>
 
           <!-- Back: Answer -->
-          <div class="flashcard-back paper-panel p-8">
+          <div class="flashcard-back paper-panel p-5 sm:p-8">
             <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
               标准答案
             </div>
@@ -114,7 +123,7 @@
       </div>
 
       <!-- Rating Buttons -->
-      <div v-if="showAnswer" class="mt-6 grid grid-cols-4 gap-3">
+      <div v-if="showAnswer" class="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
         <button
           v-for="btn in ratingButtons"
           :key="btn.rating"
@@ -160,6 +169,48 @@ const currentIndex = ref(0)
 const showAnswer = ref(false)
 const submitting = ref(false)
 const againCount = ref(0)
+const flashcardRef = ref<HTMLElement | null>(null)
+
+// Touch swipe state
+let touchStartX = 0
+let touchStartY = 0
+let touchStartTime = 0
+
+const onTouchStart = (e: TouchEvent) => {
+  touchStartX = e.touches[0].clientX
+  touchStartY = e.touches[0].clientY
+  touchStartTime = Date.now()
+}
+
+const onTouchMove = (e: TouchEvent) => {
+  // Prevent default to avoid scrolling while swiping on the card
+  const dx = Math.abs(e.touches[0].clientX - touchStartX)
+  const dy = Math.abs(e.touches[0].clientY - touchStartY)
+  if (dx > dy && dx > 10) {
+    e.preventDefault()
+  }
+}
+
+const onTouchEnd = (e: TouchEvent) => {
+  const touchEndX = e.changedTouches[0].clientX
+  const touchEndY = e.changedTouches[0].clientY
+  const dx = touchEndX - touchStartX
+  const dy = touchEndY - touchStartY
+  const dt = Date.now() - touchStartTime
+
+  // Must be a horizontal swipe (not vertical scroll)
+  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50 && dt < 500) {
+    if (showAnswer.value) {
+      if (dx < 0) {
+        // Swipe left: rate "Again" (hard)
+        void handleRate(1)
+      } else {
+        // Swipe right: rate "Good"
+        void handleRate(3)
+      }
+    }
+  }
+}
 
 const todayCount = computed(() => items.value.length)
 const estimatedMinutes = computed(() => Math.max(1, Math.ceil(items.value.length * 0.5)))
@@ -233,9 +284,15 @@ onMounted(() => {
 .flashcard {
   position: relative;
   width: 100%;
-  min-height: 280px;
+  min-height: 240px;
   transition: transform 0.5s;
   transform-style: preserve-3d;
+}
+
+@media (min-width: 640px) {
+  .flashcard {
+    min-height: 280px;
+  }
 }
 
 .flashcard-wrapper.flipped .flashcard {

@@ -6,7 +6,7 @@
       @dismiss="dismissGuide"
     />
 
-    <section v-if="loading" class="grid gap-4 xl:grid-cols-4 md:grid-cols-2">
+    <section v-if="loading" class="grid gap-4 grid-cols-2 xl:grid-cols-4">
       <article v-for="index in 4" :key="index" class="metric-card">
         <div class="h-4 w-20 animate-pulse bg-slate-200 dark:bg-slate-700" style="border-radius: var(--radius-sm);"></div>
         <div class="mt-5 h-12 w-24 animate-pulse bg-slate-200 dark:bg-slate-700" style="border-radius: var(--radius-md);"></div>
@@ -17,14 +17,14 @@
     <template v-else>
       <DashboardMetrics :metrics="metrics" />
 
-      <section class="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+      <section class="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
         <DashboardInterviews :interviews="overview.recentInterviews" />
         <DashboardWeakPoints :weak-points="overview.weakPoints" :plan-completion-rate="overview.planCompletionRate" :plan-health-score="overview.planHealthScore ?? 100" />
       </section>
 
       <DashboardInterviewTrend :trend-data="trendData" :loading="trendLoading" />
 
-      <section class="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+      <section class="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
         <DashboardReviewHeatmap
           :heatmap="reviewStats.heatmap"
           :streak="reviewStats.currentStreak"
@@ -32,7 +32,7 @@
         />
 
         <!-- Quick Review Entry -->
-        <article class="paper-panel p-6">
+        <article class="paper-panel p-4 sm:p-6">
           <p class="section-kicker">复习引擎</p>
           <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
             {{ reviewStats.todayPending > 0 ? `${reviewStats.todayPending} 道题待复习` : '今日已复习完毕' }}
@@ -50,11 +50,11 @@
         </article>
       </section>
 
-      <section class="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+      <section class="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
         <!-- Today's Recommendation -->
-        <article class="paper-panel p-6">
+        <article class="paper-panel p-4 sm:p-6">
           <p class="section-kicker">今日推荐</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
+          <h3 class="mt-3 text-xl sm:text-2xl font-semibold tracking-[-0.03em] text-ink">
             {{ recommendInterview ? `练习${recommendInterview.direction}` : '开始你的第一次面试' }}
           </h3>
           <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
@@ -97,7 +97,7 @@
         </article>
 
         <!-- Ability Radar -->
-        <article class="paper-panel p-6">
+        <article class="paper-panel p-4 sm:p-6">
           <p class="section-kicker">能力雷达</p>
           <h3 class="mt-3 text-lg font-semibold text-ink">各分类能力分布</h3>
           <div class="mt-4">
@@ -127,11 +127,11 @@
         </article>
       </section>
 
-      <section class="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
-        <article class="paper-panel p-6">
+      <section class="grid gap-4 lg:grid-cols-[1fr_0.9fr]">
+        <article class="paper-panel p-4 sm:p-6">
           <p class="section-kicker">快捷入口</p>
-          <h3 class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-ink">把首页变成起点，而不是终点</h3>
-          <div class="mt-6 grid gap-4 md:grid-cols-2">
+          <h3 class="mt-3 text-xl sm:text-3xl font-semibold tracking-[-0.03em] text-ink">把首页变成起点，而不是终点</h3>
+          <div class="mt-6 grid gap-4 grid-cols-2 md:grid-cols-2">
             <RouterLink
               v-for="action in quickActions"
               :key="action.to"
@@ -145,9 +145,9 @@
           </div>
         </article>
 
-        <article class="paper-panel p-6">
+        <article class="paper-panel p-4 sm:p-6">
           <p class="section-kicker">建议步骤</p>
-          <h3 class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-ink">建议的起步顺序</h3>
+          <h3 class="mt-3 text-xl sm:text-3xl font-semibold tracking-[-0.03em] text-ink">建议的起步顺序</h3>
           <div class="surface-muted mt-6 divide-y divide-slate-200/70 dark:divide-slate-700/70 overflow-hidden">
             <div v-for="step in steps" :key="step.index" class="px-4 py-4">
               <div class="flex items-start gap-4">

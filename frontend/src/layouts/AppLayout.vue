@@ -1,7 +1,8 @@
 <template>
-  <div class="min-h-screen px-4 py-4 md:px-6 md:py-6">
+  <div class="min-h-screen px-4 py-4 pb-20 md:pb-4 md:px-6 md:py-6">
     <div class="mx-auto grid max-w-[1480px] gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
-      <NavRail v-show="sidebarVisible" class="min-h-[280px]" />
+      <!-- Desktop sidebar: hidden below lg -->
+      <NavRail v-show="sidebarVisible" class="hidden lg:block min-h-[280px]" />
 
       <main class="space-y-4">
         <AppShellHeader
@@ -35,6 +36,9 @@
         </section>
       </main>
     </div>
+
+    <!-- Mobile bottom tab bar -->
+    <MobileNavBar />
 
     <!-- Global Search Modal (Cmd+K) -->
     <el-dialog
@@ -91,6 +95,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShellHeader from '@/components/AppShellHeader.vue'
 import NavRail from '@/components/NavRail.vue'
+import MobileNavBar from '@/components/MobileNavBar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useTheme } from '@/composables/useTheme'
 

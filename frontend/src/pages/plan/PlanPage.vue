@@ -1,11 +1,11 @@
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <section class="paper-panel p-6">
+    <section class="paper-panel p-4 sm:p-6">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p class="section-kicker">学习计划</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
+          <h3 class="mt-3 text-xl sm:text-2xl font-semibold tracking-[-0.03em] text-ink">
             {{ currentPlan ? currentPlan.title : '生成学习计划' }}
           </h3>
           <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">

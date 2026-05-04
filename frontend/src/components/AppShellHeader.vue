@@ -1,15 +1,15 @@
 <template>
   <header class="paper-panel flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
-    <div>
+    <div class="min-w-0">
       <p class="section-kicker">{{ kicker }}</p>
-      <h2 class="page-title mt-3">{{ title }}</h2>
-      <p class="page-subtitle mt-3">{{ subtitle }}</p>
+      <h2 class="page-title mt-3 text-xl sm:text-2xl lg:text-3xl">{{ title }}</h2>
+      <p class="page-subtitle mt-3 hidden sm:block">{{ subtitle }}</p>
     </div>
 
     <div class="flex flex-col gap-3 self-start sm:flex-row sm:items-center">
       <slot name="actions" />
 
-      <div class="surface-card flex items-center gap-3 px-3 py-2">
+      <div class="surface-card hidden sm:flex items-center gap-3 px-3 py-2">
         <div
           class="group relative flex size-10 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-accent text-sm font-semibold text-white"
           @click="triggerAvatarUpload"
@@ -38,7 +38,7 @@
 
       <button
         type="button"
-        class="hard-button-secondary"
+        class="hard-button-secondary hidden sm:inline-flex"
         @click="$emit('logout')"
       >
         退出登录

@@ -1,20 +1,20 @@
 <template>
   <div class="max-w-6xl mx-auto space-y-6">
     <!-- Header -->
-    <div class="paper-panel px-8 py-6 flex items-center justify-between">
+    <div class="paper-panel px-4 sm:px-8 py-4 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
       <div>
         <p class="section-kicker">学习社区</p>
-        <h2 class="mt-2 text-2xl font-semibold text-ink">提问、讨论、共同成长</h2>
+        <h2 class="mt-2 text-xl sm:text-2xl font-semibold text-ink">提问、讨论、共同成长</h2>
       </div>
-      <div class="flex gap-3">
+      <div class="flex gap-2 sm:gap-3">
         <button
-          class="hard-button-primary px-5 py-2.5 text-sm"
+          class="hard-button-primary px-4 sm:px-5 py-2 sm:py-2.5 text-sm"
           @click="$router.push('/community/submit')"
         >
           发起提问
         </button>
         <button
-          class="px-5 py-2.5 text-sm font-semibold rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+          class="px-4 sm:px-5 py-2 sm:py-2.5 text-sm font-semibold rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
           @click="$router.push('/community/leaderboard')"
         >
           排行榜
@@ -23,7 +23,7 @@
     </div>
 
     <!-- Filters -->
-    <div class="paper-panel px-8 py-4 flex items-center gap-4">
+    <div class="paper-panel px-4 sm:px-8 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
       <div class="flex gap-2">
         <button
           v-for="s in sorts"
@@ -51,10 +51,10 @@
       <div
         v-for="q in questions"
         :key="q.id"
-        class="surface-card px-8 py-6 cursor-pointer hover:shadow-md transition-shadow"
+        class="surface-card px-4 sm:px-8 py-4 sm:py-6 cursor-pointer hover:shadow-md transition-shadow"
         @click="$router.push(`/community/question/${q.id}`)"
       >
-        <div class="flex items-start gap-4">
+        <div class="flex items-start gap-3 sm:gap-4">
           <!-- Vote Count -->
           <div class="flex flex-col items-center gap-1 min-w-[48px]">
             <div class="text-lg font-bold" :class="q.upvoteCount > 0 ? 'text-accent' : 'text-slate-400'">
