@@ -61,6 +61,11 @@ public class WrongServiceImpl implements WrongService {
                                 .masteryLevel(wrong.getMasteryLevel())
                                 .standardAnswer(wrong.getStandardAnswer())
                                 .errorReason(wrong.getErrorReason())
+                                .easeFactor(wrong.getEaseFactor())
+                                .intervalDays(wrong.getIntervalDays())
+                                .nextReviewDate(wrong.getNextReviewDate())
+                                .streak(wrong.getStreak())
+                                .reviewCount(wrong.getReviewCount())
                                 .build();
                     })
                     .toList();
@@ -103,6 +108,11 @@ public class WrongServiceImpl implements WrongService {
                             .masteryLevel(w.getMasteryLevel())
                             .standardAnswer(q != null ? q.getStandardAnswer() : null)
                             .errorReason(w.getErrorReason())
+                            .easeFactor(w.getEaseFactor())
+                            .intervalDays(w.getIntervalDays())
+                            .nextReviewDate(w.getNextReviewDate())
+                            .streak(w.getStreak())
+                            .reviewCount(w.getReviewCount())
                             .build();
                 })
                 .toList();
@@ -119,6 +129,11 @@ public class WrongServiceImpl implements WrongService {
                 .masteryLevel(wrong.getMasteryLevel())
                 .standardAnswer(wrong.getStandardAnswer())
                 .errorReason(wrong.getErrorReason())
+                .easeFactor(wrong.getEaseFactor())
+                .intervalDays(wrong.getIntervalDays())
+                .nextReviewDate(wrong.getNextReviewDate())
+                .streak(wrong.getStreak())
+                .reviewCount(wrong.getReviewCount())
                 .build();
     }
 

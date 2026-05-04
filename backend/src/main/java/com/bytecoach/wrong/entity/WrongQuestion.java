@@ -2,6 +2,8 @@ package com.bytecoach.wrong.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.bytecoach.common.entity.BaseEntity;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -19,4 +21,16 @@ public class WrongQuestion extends BaseEntity {
     private String masteryLevel;
     private Integer reviewCount;
     private LocalDateTime lastReviewTime;
+
+    /** SM-2 easiness factor (min 1.30). */
+    private BigDecimal easeFactor;
+
+    /** Current review interval in days. */
+    private Integer intervalDays;
+
+    /** Next scheduled review date. */
+    private LocalDate nextReviewDate;
+
+    /** Consecutive successful reviews (rating >= 3). */
+    private Integer streak;
 }

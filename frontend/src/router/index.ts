@@ -27,6 +27,11 @@ const pageMeta = {
     title: 'Turn weak answers into review assets',
     subtitle: '错题不只是归档，而是驱动下一步复习与计划生成的基础资产。'
   },
+  review: {
+    kicker: '间隔复习',
+    title: 'Review on the right day, not every day',
+    subtitle: '基于遗忘曲线自动调度复习时机，让每一次复习都恰好在快要忘记的时候。'
+  },
   plan: {
     kicker: '学习计划',
     title: 'Convert weak points into daily execution',
@@ -89,6 +94,12 @@ const router = createRouter({
           name: 'wrong',
           component: () => import('@/pages/wrong/WrongPage.vue'),
           meta: pageMeta.wrong
+        },
+        {
+          path: 'review',
+          name: 'review',
+          component: () => import('@/pages/review/ReviewPage.vue'),
+          meta: pageMeta.review
         },
         {
           path: 'plan',

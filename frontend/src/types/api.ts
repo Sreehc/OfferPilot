@@ -179,6 +179,33 @@ export interface WrongQuestionItem {
   masteryLevel: 'not_started' | 'reviewing' | 'mastered'
   standardAnswer?: string
   errorReason?: string
+  easeFactor?: number
+  intervalDays?: number
+  nextReviewDate?: string
+  streak?: number
+  reviewCount?: number
+}
+
+export interface ReviewTodayItem {
+  wrongQuestionId: number
+  questionId: number
+  title: string
+  standardAnswer?: string
+  errorReason?: string
+  easeFactor?: number
+  intervalDays?: number
+  streak?: number
+  nextReviewDate?: string
+  overdueDays: number
+  masteryLevel: string
+}
+
+export interface ReviewStats {
+  totalReviews: number
+  currentStreak: number
+  todayPending: number
+  todayCompleted?: number
+  heatmap?: Record<string, number>
 }
 
 export interface StudyPlanItem {

@@ -24,6 +24,32 @@
 
       <DashboardInterviewTrend :trend-data="trendData" :loading="trendLoading" />
 
+      <section class="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+        <DashboardReviewHeatmap
+          :heatmap="reviewStats.heatmap"
+          :streak="reviewStats.currentStreak"
+          :today-pending="reviewStats.todayPending"
+        />
+
+        <!-- Quick Review Entry -->
+        <article class="paper-panel p-6">
+          <p class="section-kicker">复习引擎</p>
+          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
+            {{ reviewStats.todayPending > 0 ? `${reviewStats.todayPending} 道题待复习` : '今日已复习完毕' }}
+          </h3>
+          <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+            基于遗忘曲线自动调度，累计已完成 {{ reviewStats.totalReviews }} 次复习。
+          </p>
+          <RouterLink
+            to="/review"
+            class="hard-button-primary mt-4 inline-flex"
+            :class="{ 'animate-pulse': reviewStats.todayPending > 0 }"
+          >
+            {{ reviewStats.todayPending > 0 ? '开始复习' : '查看复习' }}
+          </RouterLink>
+        </article>
+      </section>
+
       <section class="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
         <article class="paper-panel p-6">
           <p class="section-kicker">快捷入口</p>
@@ -72,9 +98,11 @@ import DashboardMetrics from './DashboardMetrics.vue'
 import DashboardInterviews from './DashboardInterviews.vue'
 import DashboardWeakPoints from './DashboardWeakPoints.vue'
 import DashboardInterviewTrend from './DashboardInterviewTrend.vue'
+import DashboardReviewHeatmap from './DashboardReviewHeatmap.vue'
 import { fetchDashboardOverviewApi } from '@/api/dashboard'
 import { fetchInterviewTrendApi } from '@/api/interview'
-import type { DashboardOverview, InterviewHistoryItem } from '@/types/api'
+import { fetchReviewStatsApi } from '@/api/review'
+import type { DashboardOverview, InterviewHistoryItem, ReviewStats } from '@/types/api'
 import { useAuthStore } from '@/stores/auth'
 import { storage } from '@/utils/storage'
 
@@ -82,6 +110,7 @@ const authStore = useAuthStore()
 const loading = ref(true)
 const trendLoading = ref(true)
 const trendData = ref<InterviewHistoryItem[]>([])
+const reviewStats = ref<ReviewStats>({ totalReviews: 0, currentStreak: 0, todayPending: 0 })
 const guideDismissed = ref(false)
 const overview = ref<DashboardOverview>({
   learningCount: 0,
@@ -152,6 +181,15 @@ const loadTrend = async () => {
   }
 }
 
+const loadReviewStats = async () => {
+  try {
+    const response = await fetchReviewStatsApi()
+    reviewStats.value = response.data
+  } catch {
+    // Silently fail — review stats are supplementary
+  }
+}
+
 const formatScore = (score: number): string => {
   return Number.isInteger(score) ? String(score) : score.toFixed(2)
 }
@@ -159,5 +197,6 @@ const formatScore = (score: number): string => {
 onMounted(() => {
   void loadOverview()
   void loadTrend()
+  void loadReviewStats()
 })
 </script>
