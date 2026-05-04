@@ -71,7 +71,7 @@
           :key="message.id"
           class="p-4"
           style="border-radius: var(--radius-md);"
-          :class="message.role === 'assistant' ? 'surface-card' : 'bg-slate-100 dark:bg-slate-800 text-ink'"
+          :class="message.role === 'assistant' ? 'surface-card border-l-2 border-l-accent' : 'bg-slate-100 dark:bg-slate-800 text-ink'"
         >
           <div class="text-xs uppercase tracking-[0.24em]" :class="message.role === 'assistant' ? 'text-slate-500 dark:text-slate-400' : 'text-slate-400 dark:text-slate-500'">
             {{ message.role === 'assistant' ? 'AI 助手' : '你' }}
@@ -93,7 +93,7 @@
         </article>
 
         <!-- Streaming message -->
-        <article v-if="streaming" class="surface-card p-4" style="border-radius: var(--radius-md);">
+        <article v-if="streaming" class="surface-card border-l-2 border-l-accent p-4" style="border-radius: var(--radius-md);">
           <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">AI 助手</div>
           <div class="bc-markdown mt-3 text-sm leading-7">
             <span v-html="renderMarkdown(streamingContent)"></span>
