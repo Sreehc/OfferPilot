@@ -172,10 +172,16 @@
         v-else-if="searchResult"
         icon="search"
         title="没有找到相关结果"
-        description="尝试换一个关键词，或先上传相关文档。"
+        description="尝试换一个关键词，或浏览全部资料。"
         compact
         class="mt-6"
-      />
+      >
+        <template #action>
+          <button type="button" class="hard-button-secondary text-sm" @click="clearSearch">
+            浏览全部资料
+          </button>
+        </template>
+      </EmptyState>
     </section>
   </div>
 </template>
@@ -201,6 +207,10 @@ const loadingDocs = ref(false)
 const searching = ref(false)
 const uploading = ref(false)
 const searchQuery = ref('')
+const clearSearch = () => {
+  searchQuery.value = ''
+  searchResult.value = null
+}
 const activeTab = ref<'system' | 'my'>('system')
 const currentPage = ref(1)
 const pageSize = ref(20)

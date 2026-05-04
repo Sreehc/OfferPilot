@@ -119,7 +119,14 @@
       </div>
 
       <div class="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_120px]">
-        <el-input
+        <div>
+          <div class="mb-1.5 flex items-center gap-2">
+            <span class="hard-chip !text-[10px] !px-2 !py-0.5">{{ mode === 'rag' ? '知识库问答' : '普通问答' }}</span>
+            <button type="button" class="text-[10px] text-accent hover:underline" @click="mode = mode === 'rag' ? 'chat' : 'rag'">
+              切换
+            </button>
+          </div>
+          <el-input
           v-model="prompt"
           type="textarea"
           :rows="4"

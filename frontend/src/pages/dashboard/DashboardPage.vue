@@ -117,7 +117,10 @@
               </div>
               <div>
                 <span class="text-lg font-semibold text-ink">学习分析</span>
-                <span class="ml-2 text-sm text-slate-400">最近面试、薄弱点、能力分布、学习洞察</span>
+                <span class="ml-2 text-sm text-slate-400">
+                  {{ overview.recentInterviews?.length ? `最近 ${overview.recentInterviews.length} 场面试` : '暂无面试' }}
+                  · {{ overview.weakPoints?.length || 0 }} 个薄弱点
+                </span>
               </div>
             </div>
           </template>
@@ -257,7 +260,9 @@
               </div>
               <div>
                 <span class="text-lg font-semibold text-ink">数据趋势</span>
-                <span class="ml-2 text-sm text-slate-400">面试成绩趋势、复习热力图</span>
+                <span class="ml-2 text-sm text-slate-400">
+                  {{ trendData.length }} 次面试记录 · 连续 {{ reviewStats.currentStreak }} 天复习
+                </span>
               </div>
             </div>
           </template>

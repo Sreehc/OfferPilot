@@ -95,19 +95,16 @@
             </div>
           </div>
 
-          <el-popconfirm
+          <el-button
             v-if="!device.current"
-            title="确认撤销此设备？该设备将需要重新登录。"
-            confirm-button-text="撤销"
-            cancel-button-text="取消"
-            @confirm="handleRevoke(device.id)"
+            size="small"
+            type="danger"
+            plain
+            :loading="revokingId === device.id"
+            @click="confirmRevoke(device.id)"
           >
-            <template #reference>
-              <el-button size="small" type="danger" plain :loading="revokingId === device.id">
-                撤销
-              </el-button>
-            </template>
-          </el-popconfirm>
+            撤销
+          </el-button>
         </div>
 
         <div class="mt-4 flex items-center justify-between text-xs uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
@@ -120,7 +117,7 @@
 </template>
 
 <script setup lang="ts">
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, ref } from 'vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchDevicesApi, revokeDeviceApi, revokeAllDevicesApi } from '@/api/auth'
@@ -140,6 +137,19 @@ const loadDevices = async () => {
     ElMessage.error('设备列表加载失败')
   } finally {
     loading.value = false
+  }
+}
+
+const confirmRevoke = async (deviceId: number) => {
+  try {
+    await ElMessageBox.confirm('确认撤销此设备？该设备将需要重新登录。', '撤销设备', {
+      confirmButtonText: '撤销',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    await handleRevoke(deviceId)
+  } catch {
+    // User cancelled
   }
 }
 
