@@ -37,7 +37,7 @@ public class NotificationScheduler {
     private final UserStatsMapper userStatsMapper;
     private final NotificationService notificationService;
 
-    @Scheduled(cron = "0 0 8 * * ?")
+    @Scheduled(cron = "${bytecoach.notification.cron-daily-reminder:0 0 8 * * ?}")
     public void dailyReminder() {
         log.info("Starting daily notification reminder job");
 

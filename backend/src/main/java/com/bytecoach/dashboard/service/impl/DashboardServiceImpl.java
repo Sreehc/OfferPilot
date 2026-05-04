@@ -6,6 +6,7 @@ import com.bytecoach.adaptive.vo.AbilityProfileVO;
 import com.bytecoach.analytics.service.AnalyticsService;
 import com.bytecoach.analytics.vo.LearningInsightsVO;
 import com.bytecoach.common.api.ResultCode;
+import com.bytecoach.common.config.ByteCoachProperties;
 import com.bytecoach.common.exception.BusinessException;
 import com.bytecoach.dashboard.dto.DashboardOverviewVO;
 import com.bytecoach.dashboard.dto.RecentInterviewVO;
@@ -31,7 +32,6 @@ import com.bytecoach.security.util.SecurityUtils;
 public class DashboardServiceImpl implements DashboardService {
 
     private static final String CACHE_PREFIX = "dashboard:overview:";
-    private static final long CACHE_TTL_MINUTES = 5;
 
     private final DashboardMetricsMapper dashboardMetricsMapper;
     private final StringRedisTemplate redisTemplate;
@@ -40,6 +40,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final StudyPlanMapper planMapper;
     private final AdaptiveService adaptiveService;
     private final AnalyticsService analyticsService;
+    private final ByteCoachProperties props;
 
     @Override
     public DashboardOverviewVO overview() {
@@ -116,7 +117,7 @@ public class DashboardServiceImpl implements DashboardService {
         // Cache the result
         try {
             String json = objectMapper.writeValueAsString(result);
-            redisTemplate.opsForValue().set(cacheKey, json, CACHE_TTL_MINUTES, TimeUnit.MINUTES);
+            redisTemplate.opsForValue().set(cacheKey, json, props.getDashboard().getCacheTtlMinutes(), TimeUnit.MINUTES);
         } catch (Exception e) {
             log.warn("Failed to write dashboard cache: {}", e.getMessage());
         }

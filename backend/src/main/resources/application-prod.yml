@@ -38,6 +38,35 @@ bytecoach:
     vector:
       index-name: bytecoach_chunks
       similarity-threshold: ${BYTECOACH_VECTOR_THRESHOLD:0.3}
+  review:
+    init-fixed-rate-ms: ${BYTECOACH_REVIEW_INIT_RATE_MS:600000}
+    init-batch-limit: ${BYTECOACH_REVIEW_INIT_BATCH:500}
+    cache-ttl-hours: ${BYTECOACH_REVIEW_CACHE_TTL:24}
+    daily-limit: ${BYTECOACH_REVIEW_DAILY_LIMIT:30}
+    cron-daily-cache: ${BYTECOACH_REVIEW_CRON:0 5 0 * * ?}
+  notification:
+    cron-daily-reminder: ${BYTECOACH_NOTIFICATION_CRON:0 0 8 * * ?}
+  community:
+    cron-rank-refresh: ${BYTECOACH_RANK_CRON:0 5 0 * * ?}
+  adaptive:
+    cache-ttl-hours: ${BYTECOACH_ADAPTIVE_CACHE_TTL:24}
+    weak-threshold: ${BYTECOACH_ADAPTIVE_WEAK_THRESHOLD:50.0}
+    cron-refresh: ${BYTECOACH_ADAPTIVE_CRON:0 10 0 * * ?}
+  plan:
+    cron-health-check: ${BYTECOACH_PLAN_HEALTH_CRON:0 0 23 * * ?}
+    low-completion-threshold: ${BYTECOACH_PLAN_LOW_THRESHOLD:0.5}
+  interview:
+    wrong-threshold: ${BYTECOACH_WRONG_THRESHOLD:60}
+  dashboard:
+    cache-ttl-minutes: ${BYTECOACH_DASHBOARD_CACHE_TTL:5}
+  rate-limit:
+    max-requests: ${BYTECOACH_RATE_LIMIT:60}
+    window-seconds: ${BYTECOACH_RATE_WINDOW:60}
+  ai-quota:
+    daily-limit: ${BYTECOACH_AI_QUOTA:100}
+  document:
+    tika-max-chars: ${BYTECOACH_TIKA_MAX_CHARS:1000000}
+    max-chunk-size: ${BYTECOACH_CHUNK_SIZE:800}
 
 mybatis-plus:
   configuration:

@@ -2,6 +2,7 @@ package com.bytecoach.common.interceptor;
 
 import com.bytecoach.common.api.Result;
 import com.bytecoach.common.api.ResultCode;
+import com.bytecoach.common.config.ByteCoachProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -23,9 +24,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
 
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
-
-    private static final int MAX_REQUESTS = 60;
-    private static final int WINDOW_SECONDS = 60;
+    private final ByteCoachProperties props;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -34,10 +33,10 @@ public class RateLimitInterceptor implements HandlerInterceptor {
 
         Long count = redisTemplate.opsForValue().increment(key);
         if (count != null && count == 1) {
-            redisTemplate.expire(key, java.time.Duration.ofSeconds(WINDOW_SECONDS));
+            redisTemplate.expire(key, java.time.Duration.ofSeconds(props.getRateLimit().getWindowSeconds()));
         }
 
-        if (count != null && count > MAX_REQUESTS) {
+        if (count != null && count > props.getRateLimit().getMaxRequests()) {
             log.warn("Rate limit exceeded for IP: {}", ip);
             sendError(response, ResultCode.TOO_MANY_REQUESTS.getCode(), "请求过于频繁，请稍后再试");
             return false;

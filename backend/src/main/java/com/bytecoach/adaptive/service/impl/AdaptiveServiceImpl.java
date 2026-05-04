@@ -14,6 +14,7 @@ import com.bytecoach.interview.mapper.InterviewRecordMapper;
 import com.bytecoach.interview.mapper.InterviewSessionMapper;
 import com.bytecoach.question.entity.Question;
 import com.bytecoach.question.mapper.QuestionMapper;
+import com.bytecoach.common.config.ByteCoachProperties;
 import com.bytecoach.wrong.mapper.WrongQuestionMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
@@ -38,10 +39,6 @@ import org.springframework.stereotype.Service;
 public class AdaptiveServiceImpl implements AdaptiveService {
 
     private static final String CACHE_PREFIX = "adaptive:profile:";
-    private static final long CACHE_TTL_HOURS = 24;
-
-    private static final double WEAK_THRESHOLD = 50.0;
-    private static final double ZPD_OFFSET = 0.5;
 
     private final InterviewSessionMapper sessionMapper;
     private final InterviewRecordMapper recordMapper;
@@ -50,6 +47,7 @@ public class AdaptiveServiceImpl implements AdaptiveService {
     private final CategoryService categoryService;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
+    private final ByteCoachProperties props;
 
     @Override
     public AbilityProfileVO getAbilityProfile(Long userId) {
@@ -69,7 +67,7 @@ public class AdaptiveServiceImpl implements AdaptiveService {
         // Cache the result
         try {
             String json = objectMapper.writeValueAsString(profile);
-            redisTemplate.opsForValue().set(cacheKey, json, CACHE_TTL_HOURS, TimeUnit.HOURS);
+            redisTemplate.opsForValue().set(cacheKey, json, props.getAdaptive().getCacheTtlHours(), TimeUnit.HOURS);
         } catch (Exception e) {
             log.warn("Failed to write adaptive cache: {}", e.getMessage());
         }
@@ -306,7 +304,7 @@ public class AdaptiveServiceImpl implements AdaptiveService {
                             .inSql(com.bytecoach.wrong.entity.WrongQuestion::getQuestionId,
                                     "SELECT id FROM question WHERE category_id = " + categoryId));
 
-            boolean isWeak = ability < WEAK_THRESHOLD;
+            boolean isWeak = ability < props.getAdaptive().getWeakThreshold();
             if (isWeak) {
                 weakCategories.add(categoryNameMap.getOrDefault(categoryId, "未知"));
             }

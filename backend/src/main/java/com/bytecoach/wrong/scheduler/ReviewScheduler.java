@@ -1,6 +1,7 @@
 package com.bytecoach.wrong.scheduler;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.bytecoach.common.config.ByteCoachProperties;
 import com.bytecoach.wrong.entity.WrongQuestion;
 import com.bytecoach.wrong.mapper.WrongQuestionMapper;
 import java.math.BigDecimal;
@@ -27,17 +28,18 @@ public class ReviewScheduler {
 
     private final WrongQuestionMapper wrongQuestionMapper;
     private final StringRedisTemplate redisTemplate;
+    private final ByteCoachProperties props;
 
     /**
      * Every 10 minutes: find wrong questions that have no next_review_date
      * (newly inserted from interviews/chats) and initialize SM-2 fields.
      */
-    @Scheduled(fixedRate = 600_000) // 10 minutes
+    @Scheduled(fixedRateString = "${bytecoach.review.init-fixed-rate-ms:600000}")
     public void initializeNewWrongQuestions() {
         List<WrongQuestion> uninitialized = wrongQuestionMapper.selectList(
                 new LambdaQueryWrapper<WrongQuestion>()
                         .isNull(WrongQuestion::getNextReviewDate)
-                        .last("LIMIT 500"));
+                        .last("LIMIT " + props.getReview().getInitBatchLimit()));
 
         if (uninitialized.isEmpty()) {
             return;
@@ -60,7 +62,7 @@ public class ReviewScheduler {
      * Every day at 00:05: cache each user's today review count in Redis.
      * This avoids expensive COUNT queries on the dashboard.
      */
-    @Scheduled(cron = "0 5 0 * * ?")
+    @Scheduled(cron = "${bytecoach.review.cron-daily-cache:0 5 0 * * ?}")
     public void cacheDailyReviewCounts() {
         log.info("Caching daily review counts...");
         LocalDate today = LocalDate.now();
@@ -81,7 +83,7 @@ public class ReviewScheduler {
             String key = REVIEW_COUNT_PREFIX + userId;
             redisTemplate.opsForValue().set(key, String.valueOf(count));
             // TTL until end of day
-            redisTemplate.expire(key, java.time.Duration.ofHours(24));
+            redisTemplate.expire(key, java.time.Duration.ofHours(props.getReview().getCacheTtlHours()));
         }
 
         log.info("Cached review counts for {} users", dueItems.size());

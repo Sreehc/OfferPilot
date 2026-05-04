@@ -26,7 +26,7 @@ public class PlanHealthCheckScheduler {
      * Run every day at 23:00 to check plan health.
      * Plans with 3+ consecutive days below 50% completion will be auto-adjusted.
      */
-    @Scheduled(cron = "0 0 23 * * ?")
+    @Scheduled(cron = "${bytecoach.plan.cron-health-check:0 0 23 * * ?}")
     public void dailyHealthCheck() {
         log.info("Starting daily plan health check...");
 

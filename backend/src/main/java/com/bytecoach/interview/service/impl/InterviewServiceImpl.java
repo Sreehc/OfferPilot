@@ -6,6 +6,7 @@ import com.bytecoach.ai.service.AiOrchestratorService;
 import com.bytecoach.category.entity.Category;
 import com.bytecoach.category.service.CategoryService;
 import com.bytecoach.common.api.ResultCode;
+import com.bytecoach.common.config.ByteCoachProperties;
 import com.bytecoach.common.dto.PageResult;
 import com.bytecoach.common.exception.BusinessException;
 import com.bytecoach.dashboard.service.DashboardService;
@@ -48,8 +49,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class InterviewServiceImpl implements InterviewService {
 
-    private static final BigDecimal WRONG_THRESHOLD = new BigDecimal("60");
-
     private final InterviewSessionMapper sessionMapper;
     private final InterviewRecordMapper recordMapper;
     private final VoiceRecordMapper voiceRecordMapper;
@@ -59,6 +58,7 @@ public class InterviewServiceImpl implements InterviewService {
     private final AiOrchestratorService aiOrchestratorService;
     private final DashboardService dashboardService;
     private final NotificationService notificationService;
+    private final ByteCoachProperties props;
 
     @Lazy
     @Autowired
@@ -185,7 +185,8 @@ public class InterviewServiceImpl implements InterviewService {
         recordMapper.updateById(currentRecord);
 
         boolean addedToWrong = false;
-        if (aiResult.getScore() != null && aiResult.getScore().compareTo(WRONG_THRESHOLD) < 0) {
+        BigDecimal wrongThreshold = BigDecimal.valueOf(props.getInterview().getWrongThreshold());
+        if (aiResult.getScore() != null && aiResult.getScore().compareTo(wrongThreshold) < 0) {
             addedToWrong = true;
             currentRecord.setIsWrong(1);
             recordMapper.updateById(currentRecord);

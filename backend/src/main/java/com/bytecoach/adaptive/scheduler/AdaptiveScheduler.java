@@ -18,7 +18,7 @@ public class AdaptiveScheduler {
     private final AdaptiveService adaptiveService;
     private final InterviewSessionMapper sessionMapper;
 
-    @Scheduled(cron = "0 10 0 * * ?")
+    @Scheduled(cron = "${bytecoach.adaptive.cron-refresh:0 10 0 * * ?}")
     public void refreshAllProfiles() {
         log.info("Starting daily adaptive profile refresh...");
         try {

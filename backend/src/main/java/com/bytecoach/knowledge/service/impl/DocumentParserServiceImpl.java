@@ -11,6 +11,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import com.bytecoach.common.config.ByteCoachProperties;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
@@ -21,12 +23,13 @@ import org.springframework.util.StringUtils;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class DocumentParserServiceImpl implements DocumentParserService {
 
     private static final Set<String> SUPPORTED_EXTENSIONS = Set.of("md", "markdown", "txt", "text", "pdf");
-    private static final int MAX_CHUNK_SIZE = 800;
     private static final int MIN_CHUNK_SIZE = 50;
-    private static final int TIKA_MAX_CHARS = 1_000_000; // 1MB text limit for Tika extraction
+
+    private final ByteCoachProperties props;
 
     @Override
     public List<String> parse(InputStream inputStream, String fileName) {
@@ -66,7 +69,7 @@ public class DocumentParserServiceImpl implements DocumentParserService {
      */
     private String extractPdfText(InputStream inputStream) {
         try {
-            BodyContentHandler handler = new BodyContentHandler(TIKA_MAX_CHARS);
+            BodyContentHandler handler = new BodyContentHandler(props.getDocument().getTikaMaxChars());
             Metadata metadata = new Metadata();
             AutoDetectParser parser = new AutoDetectParser();
             parser.parse(inputStream, handler, metadata, new ParseContext());
@@ -99,7 +102,7 @@ public class DocumentParserServiceImpl implements DocumentParserService {
                 current.append(line).append("\n");
             } else {
                 current.append(line).append("\n");
-                if (current.length() >= MAX_CHUNK_SIZE && line.isBlank()) {
+                if (current.length() >= props.getDocument().getMaxChunkSize() && line.isBlank()) {
                     chunks.add(current.toString().trim());
                     current = new StringBuilder();
                     if (StringUtils.hasText(currentHeading)) {
@@ -130,7 +133,7 @@ public class DocumentParserServiceImpl implements DocumentParserService {
         StringBuilder current = new StringBuilder();
 
         for (String para : paragraphs) {
-            if (current.length() + para.length() > MAX_CHUNK_SIZE && current.length() >= MIN_CHUNK_SIZE) {
+            if (current.length() + para.length() > props.getDocument().getMaxChunkSize() && current.length() >= MIN_CHUNK_SIZE) {
                 chunks.add(current.toString().trim());
                 current = new StringBuilder();
             }

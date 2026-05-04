@@ -5,6 +5,7 @@ import com.bytecoach.ai.dto.AiChatRequest;
 import com.bytecoach.ai.dto.AiChatResponse;
 import com.bytecoach.ai.service.LlmGateway;
 import com.bytecoach.common.api.ResultCode;
+import com.bytecoach.common.config.ByteCoachProperties;
 import com.bytecoach.common.exception.BusinessException;
 import com.bytecoach.plan.entity.StudyPlan;
 import com.bytecoach.plan.entity.StudyPlanTask;
@@ -39,7 +40,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class PlanAdjustServiceImpl implements PlanAdjustService {
 
     private static final int CONSECUTIVE_LOW_DAYS = 3;
-    private static final double LOW_COMPLETION_THRESHOLD = 0.5;
 
     private final StudyPlanMapper planMapper;
     private final StudyPlanTaskMapper taskMapper;
@@ -48,6 +48,7 @@ public class PlanAdjustServiceImpl implements PlanAdjustService {
     private final LlmGateway llmGateway;
     private final ObjectMapper objectMapper;
     private final PlanService planService;
+    private final ByteCoachProperties props;
 
     @Override
     public StudyPlanVO checkAndAdjust(Long userId) {
@@ -217,7 +218,7 @@ public class PlanAdjustServiceImpl implements PlanAdjustService {
                     .count();
             double rate = (double) done / dayTasks.size();
 
-            if (rate < LOW_COMPLETION_THRESHOLD) {
+            if (rate < props.getPlan().getLowCompletionThreshold()) {
                 consecutiveLow++;
             } else {
                 break;
@@ -244,7 +245,7 @@ public class PlanAdjustServiceImpl implements PlanAdjustService {
                     .count();
             double rate = (double) done / dayTasks.size();
 
-            if (rate < LOW_COMPLETION_THRESHOLD) {
+            if (rate < props.getPlan().getLowCompletionThreshold()) {
                 count++;
             } else {
                 break;

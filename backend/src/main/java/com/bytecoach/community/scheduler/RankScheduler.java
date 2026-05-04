@@ -13,7 +13,7 @@ public class RankScheduler {
 
     private final UserStatsService userStatsService;
 
-    @Scheduled(cron = "0 5 0 * * ?")
+    @Scheduled(cron = "${bytecoach.community.cron-rank-refresh:0 5 0 * * ?}")
     public void refreshRanks() {
         log.info("Starting daily rank refresh...");
         try {
