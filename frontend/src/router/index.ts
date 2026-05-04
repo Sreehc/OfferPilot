@@ -42,6 +42,11 @@ const pageMeta = {
     title: 'Convert weak points into daily execution',
     subtitle: '计划模块把薄弱点和错题拆成可完成的节奏，而不是停留在泛泛建议。'
   },
+  analytics: {
+    kicker: '数据分析',
+    title: 'Discover patterns in your learning',
+    subtitle: '从趋势、效率、时段等维度深入分析你的学习模式。'
+  },
   admin: {
     kicker: '管理后台',
     title: 'Operate content without splitting the product',
@@ -135,6 +140,12 @@ const router = createRouter({
           name: 'plan',
           component: () => import('@/pages/plan/PlanPage.vue'),
           meta: pageMeta.plan
+        },
+        {
+          path: 'analytics',
+          name: 'analytics',
+          component: () => import('@/pages/analytics/AnalyticsPage.vue'),
+          meta: pageMeta.analytics
         },
         {
           path: 'admin',

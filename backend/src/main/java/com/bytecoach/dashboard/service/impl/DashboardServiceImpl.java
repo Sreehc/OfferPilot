@@ -3,6 +3,8 @@ package com.bytecoach.dashboard.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.bytecoach.adaptive.service.AdaptiveService;
 import com.bytecoach.adaptive.vo.AbilityProfileVO;
+import com.bytecoach.analytics.service.AnalyticsService;
+import com.bytecoach.analytics.vo.LearningInsightsVO;
 import com.bytecoach.common.api.ResultCode;
 import com.bytecoach.common.exception.BusinessException;
 import com.bytecoach.dashboard.dto.DashboardOverviewVO;
@@ -37,6 +39,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final PlanAdjustService planAdjustService;
     private final StudyPlanMapper planMapper;
     private final AdaptiveService adaptiveService;
+    private final AnalyticsService analyticsService;
 
     @Override
     public DashboardOverviewVO overview() {
@@ -96,6 +99,18 @@ public class DashboardServiceImpl implements DashboardService {
             result.setCategoryAbilities(profile.getCategoryAbilities());
         } catch (Exception e) {
             log.warn("Failed to load adaptive profile for dashboard: {}", e.getMessage());
+        }
+
+        // Populate analytics insights
+        try {
+            LearningInsightsVO insights = analyticsService.getLearningInsights(userId);
+            result.setThisWeekAvgScore(insights.getThisWeekAvgScore());
+            result.setLastWeekAvgScore(insights.getLastWeekAvgScore());
+            result.setThisWeekInterviewCount(insights.getThisWeekInterviewCount());
+            result.setCategoryChanges(insights.getCategoryChanges());
+            result.setBestStudyHours(insights.getBestStudyHours());
+        } catch (Exception e) {
+            log.warn("Failed to load analytics insights for dashboard: {}", e.getMessage());
         }
 
         // Cache the result

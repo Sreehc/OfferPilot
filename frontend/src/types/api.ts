@@ -53,6 +53,13 @@ export interface DashboardOverview {
   weakCategories?: string[]
   suggestedFocus?: string | null
   categoryAbilities?: CategoryAbility[]
+
+  // Analytics insights
+  thisWeekAvgScore?: number
+  lastWeekAvgScore?: number
+  thisWeekInterviewCount?: number
+  categoryChanges?: CategoryChange[]
+  bestStudyHours?: HourDistribution[]
 }
 
 export interface CategoryItem {
@@ -339,4 +346,68 @@ export interface NotificationItem {
   link?: string
   isRead: boolean
   createTime: string
+}
+
+export interface WeeklyPoint {
+  week: string
+  score: number
+  count: number
+}
+
+export interface CategoryTrend {
+  categoryId: number
+  categoryName: string
+  points: WeeklyPoint[]
+}
+
+export interface AbilityTrend {
+  weeks: string[]
+  overallTrend: WeeklyPoint[]
+  categoryTrends: CategoryTrend[]
+}
+
+export interface WeeklyEF {
+  week: string
+  avgEF: number
+  reviewCount: number
+}
+
+export interface WeeklyForgettingRate {
+  week: string
+  forgettingRate: number
+  totalRatings: number
+  againCount: number
+}
+
+export interface EfficiencyData {
+  avgEaseFactor: number
+  efTrend: WeeklyEF[]
+  ratingDistribution: Record<number, number>
+  forgettingRateTrend: WeeklyForgettingRate[]
+  masteryDistribution: Record<string, number>
+  totalReviews: number
+  currentStreak: number
+}
+
+export interface CategoryChange {
+  categoryId: number
+  categoryName: string
+  thisWeekScore: number
+  lastWeekScore: number
+  change: number
+}
+
+export interface HourDistribution {
+  timeSlot: string
+  sessionCount: number
+  avgScore: number
+}
+
+export interface LearningInsights {
+  thisWeekAvgScore: number
+  lastWeekAvgScore: number
+  thisWeekInterviewCount: number
+  lastWeekInterviewCount: number
+  categoryChanges: CategoryChange[]
+  bestStudyHours: HourDistribution[]
 }
