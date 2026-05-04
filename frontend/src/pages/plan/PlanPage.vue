@@ -115,10 +115,23 @@
     <template v-if="currentPlan && !loading">
       <!-- Progress Bar + Health Score -->
       <section class="paper-panel p-6">
-        <div class="flex items-center justify-between">
-          <div>
-            <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">进度</span>
-            <span class="ml-3 text-2xl font-semibold text-ink">{{ completedCount }}/{{ currentPlan.tasks.length }}</span>
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex items-center gap-4">
+            <!-- Ring chart -->
+            <svg class="h-16 w-16 shrink-0 -rotate-90" viewBox="0 0 36 36">
+              <circle cx="18" cy="18" r="15.5" fill="none" class="stroke-slate-200 dark:stroke-slate-700" stroke-width="3" />
+              <circle
+                cx="18" cy="18" r="15.5" fill="none"
+                class="stroke-accent transition-all duration-700"
+                stroke-width="3"
+                stroke-linecap="round"
+                :stroke-dasharray="`${progressPercent * 0.974} 97.4`"
+              />
+            </svg>
+            <div>
+              <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">进度</span>
+              <div class="mt-1 text-2xl font-semibold text-ink">{{ completedCount }}/{{ currentPlan.tasks.length }}</div>
+            </div>
           </div>
           <div class="flex items-center gap-3">
             <!-- Health Score Badge -->
