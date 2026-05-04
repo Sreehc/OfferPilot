@@ -15,6 +15,7 @@
       </el-button>
     </div>
 
+    <div class="mobile-cards">
     <el-table
       v-loading="loading"
       :data="logs"
@@ -56,6 +57,22 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <!-- Mobile card view -->
+    <div class="mobile-card-list">
+      <div v-for="row in logs" :key="row.id" class="mobile-card-item">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-sm font-semibold text-ink">{{ row.username || '-' }}</span>
+          <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">{{ row.status === 1 ? '成功' : '失败' }}</el-tag>
+        </div>
+        <div class="mobile-card-field"><span class="mobile-card-label">时间</span><span class="mobile-card-value">{{ formatTime(row.createTime) }}</span></div>
+        <div class="mobile-card-field"><span class="mobile-card-label">IP</span><span class="mobile-card-value">{{ row.ip || '-' }}</span></div>
+        <div class="mobile-card-field"><span class="mobile-card-label">城市</span><span class="mobile-card-value">{{ row.city || '-' }}</span></div>
+        <div class="mobile-card-field"><span class="mobile-card-label">设备</span><span class="mobile-card-value">{{ row.device || '-' }}</span></div>
+        <div v-if="row.failReason" class="mobile-card-field"><span class="mobile-card-label">原因</span><span class="mobile-card-value text-red-500">{{ row.failReason }}</span></div>
+      </div>
+    </div>
+    </div>
 
     <div v-if="totalPages > 1" class="flex justify-center pt-2">
       <el-pagination

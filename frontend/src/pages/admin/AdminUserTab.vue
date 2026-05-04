@@ -10,6 +10,7 @@
       <el-button :loading="loading" type="primary" size="large" class="action-button" @click="handleSearch">搜索</el-button>
     </div>
 
+    <div class="mobile-cards">
     <el-table v-loading="loading" :data="users" stripe class="w-full" :header-cell-style="{ background: 'var(--el-bg-color-page)' }">
       <el-table-column label="用户" min-width="180">
         <template #default="{ row }">
@@ -47,6 +48,27 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <!-- Mobile card view -->
+    <div class="mobile-card-list">
+      <div v-for="row in users" :key="row.id" class="mobile-card-item">
+        <div class="flex items-center gap-2 mb-2">
+          <el-avatar :size="24" :src="row.avatar">{{ (row.nickname || row.username || '?')[0] }}</el-avatar>
+          <span class="text-sm font-semibold text-ink">{{ row.nickname || row.username }}</span>
+          <el-tag :type="row.role === 'ADMIN' ? 'warning' : 'info'" size="small">{{ row.role === 'ADMIN' ? '管理员' : '用户' }}</el-tag>
+          <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">{{ row.status === 1 ? '正常' : '封禁' }}</el-tag>
+        </div>
+        <div class="mobile-card-field"><span class="mobile-card-label">注册</span><span class="mobile-card-value">{{ formatTime(row.createTime) }}</span></div>
+        <div class="mobile-card-field"><span class="mobile-card-label">最后登录</span><span class="mobile-card-value">{{ formatTime(row.lastLoginTime) }}</span></div>
+        <div class="flex gap-2 mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
+          <el-button size="small" @click="handleEdit(row)">编辑</el-button>
+          <el-button v-if="row.status === 1" size="small" type="danger" plain @click="handleBan(row)">封禁</el-button>
+          <el-button v-else size="small" type="success" plain @click="handleUnban(row)">解封</el-button>
+          <el-button size="small" type="primary" plain @click="handleDetail(row)">详情</el-button>
+        </div>
+      </div>
+    </div>
+    </div>
 
     <div v-if="totalPages > 1" class="flex justify-center pt-2">
       <el-pagination :current-page="pageNum" :page-size="pageSize" :total="total" layout="prev, pager, next" @current-change="handlePageChange" />

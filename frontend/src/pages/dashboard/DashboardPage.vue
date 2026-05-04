@@ -218,8 +218,8 @@
               </article>
             </section>
 
-            <!-- Best study hours -->
-            <article class="paper-panel p-4 sm:p-6">
+            <!-- Best study hours (hidden on mobile) -->
+            <article class="paper-panel p-4 sm:p-6 hidden md:block">
               <p class="section-kicker">最佳学习时段</p>
               <h3 class="mt-3 text-lg font-semibold text-ink">你的高效时间段</h3>
               <div v-if="overview.bestStudyHours && overview.bestStudyHours.length > 0" class="mt-4 flex flex-wrap gap-4">
