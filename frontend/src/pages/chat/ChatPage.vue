@@ -67,14 +67,14 @@
           :key="message.id"
           class="p-4"
           style="border-radius: var(--radius-md);"
-          :class="message.role === 'assistant' ? 'surface-card' : 'bg-accent text-white shadow-[0_14px_30px_rgba(47,79,157,0.14)]'"
+          :class="message.role === 'assistant' ? 'surface-card' : 'bg-slate-100 dark:bg-slate-800 text-ink'"
         >
-          <div class="text-xs uppercase tracking-[0.24em]" :class="message.role === 'assistant' ? 'text-slate-500 dark:text-slate-400' : 'text-white/60'">
-            {{ message.role }}
+          <div class="text-xs uppercase tracking-[0.24em]" :class="message.role === 'assistant' ? 'text-slate-500 dark:text-slate-400' : 'text-slate-400 dark:text-slate-500'">
+            {{ message.role === 'assistant' ? 'AI 助手' : '你' }}
           </div>
           <div class="bc-markdown mt-3 text-sm leading-7" v-html="renderMarkdown(message.content)"></div>
 
-          <div v-if="message.references.length" class="surface-muted mt-4 space-y-2 px-3 py-3 text-xs text-slate-600 dark:text-slate-300">
+          <div v-if="message.references && message.references.length" class="surface-muted mt-4 space-y-2 px-3 py-3 text-xs text-slate-600 dark:text-slate-300">
             <div class="mb-1 font-semibold text-slate-500 dark:text-slate-400">知识库引用</div>
             <div v-for="reference in message.references" :key="reference.chunkId" class="space-y-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-800/60 px-3 py-2">
               <div class="flex items-center justify-between">
@@ -88,6 +88,15 @@
           </div>
         </article>
 
+        <!-- Streaming message -->
+        <article v-if="streaming" class="surface-card p-4" style="border-radius: var(--radius-md);">
+          <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">AI 助手</div>
+          <div class="bc-markdown mt-3 text-sm leading-7">
+            <span v-html="renderMarkdown(streamingContent)"></span>
+            <span class="streaming-cursor"></span>
+          </div>
+        </article>
+
         <div v-if="loadingMessages" class="space-y-3">
           <div v-for="n in 2" :key="n" class="surface-card animate-pulse p-4">
             <div class="h-3 w-20 rounded bg-slate-200 dark:bg-slate-700"></div>
@@ -96,7 +105,7 @@
           </div>
         </div>
 
-        <div v-if="!messages.length && !loadingMessages" class="empty-state-card">
+        <div v-if="!messages.length && !loadingMessages && !streaming" class="empty-state-card">
           <div class="font-semibold text-ink">新会话已就绪</div>
           <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">可以先用知识库问答问一个具体主题，或者切到普通问答直接开问。</p>
         </div>
@@ -108,11 +117,12 @@
           type="textarea"
           :rows="4"
           placeholder="输入你的问题。知识库问答会先检索相关资料再回答，普通问答直接由 AI 回答。"
+          :disabled="streaming"
           @keydown.enter.exact.prevent="submitChat"
         />
         <div class="flex flex-col gap-2">
-          <el-button :loading="sending" type="primary" size="large" class="action-button transition active:translate-y-px" @click="submitChat">
-            发送
+          <el-button :loading="sending" :disabled="streaming" type="primary" size="large" class="action-button transition active:translate-y-px" @click="submitChat">
+            {{ streaming ? '回答中...' : '发送' }}
           </el-button>
           <span class="text-center text-xs text-slate-400 dark:text-slate-500">Enter 发送</span>
         </div>
@@ -126,8 +136,10 @@ import { ElMessage } from 'element-plus'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { computed, nextTick, onMounted, ref } from 'vue'
-import { deleteChatSessionApi, fetchChatMessagesApi, fetchChatSessionsApi, sendChatApi } from '@/api/chat'
-import type { ChatMessageItem, ChatSessionItem } from '@/types/api'
+import { deleteChatSessionApi, fetchChatMessagesApi, fetchChatSessionsApi } from '@/api/chat'
+import type { ChatMessageItem, ChatSessionItem, KnowledgeReferenceItem } from '@/types/api'
+import { storage } from '@/utils/storage'
+import { getStoredDeviceId } from '@/utils/device'
 
 const sessions = ref<ChatSessionItem[]>([])
 const messages = ref<ChatMessageItem[]>([])
@@ -136,7 +148,11 @@ const mode = ref<'chat' | 'rag'>('rag')
 const prompt = ref('')
 const loadingMessages = ref(false)
 const sending = ref(false)
+const streaming = ref(false)
+const streamingContent = ref('')
 const messageContainer = ref<HTMLElement | null>(null)
+
+let abortController: AbortController | null = null
 
 const scrollToBottom = () => {
   nextTick(() => {
@@ -219,26 +235,135 @@ const removeSession = async (sessionId: number) => {
 }
 
 const submitChat = async () => {
-  if (!prompt.value.trim()) {
-    ElMessage.warning('请输入问题')
-    return
-  }
+  if (!prompt.value.trim() || streaming.value) return
   sending.value = true
+
+  const userMessage = prompt.value.trim()
+  prompt.value = ''
+
+  // Add user message to local display immediately
+  const userMsg: ChatMessageItem = {
+    id: Date.now(),
+    role: 'user',
+    messageType: 'text',
+    content: userMessage,
+    createTime: new Date().toISOString(),
+    references: []
+  }
+  messages.value.push(userMsg)
+  scrollToBottom()
+
+  // Start streaming
+  streaming.value = true
+  streamingContent.value = ''
+  abortController = new AbortController()
+
   try {
-    const response = await sendChatApi({
-      sessionId: activeSessionId.value ?? undefined,
-      mode: mode.value,
-      message: prompt.value.trim()
+    const baseURL = import.meta.env.VITE_API_BASE_URL || '/api'
+    const token = storage.getToken()
+    const deviceId = getStoredDeviceId()
+
+    const response = await fetch(`${baseURL}/chat/stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(deviceId ? { 'X-Device-Id': deviceId } : {})
+      },
+      body: JSON.stringify({
+        sessionId: activeSessionId.value,
+        mode: mode.value,
+        message: userMessage
+      }),
+      signal: abortController.signal
     })
-    activeSessionId.value = response.data.sessionId
-    prompt.value = ''
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
+    }
+
+    const reader = response.body?.getReader()
+    if (!reader) throw new Error('No reader')
+
+    const decoder = new TextDecoder()
+    let buffer = ''
+    let finalSessionId: number | null = null
+    let finalReferences: KnowledgeReferenceItem[] = []
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
+
+      for (const line of lines) {
+        if (line.startsWith('event:')) {
+          // Event name line — handled below with data
+          continue
+        }
+        if (line.startsWith('data:')) {
+          const data = line.slice(5).trim()
+          if (!data) continue
+
+          // Determine event type from preceding event: line
+          // SSE format: event: xxx\ndata: yyy\n\n
+          // We need to parse both lines together
+          try {
+            const parsed = JSON.parse(data)
+            // Check if this is a token event (has "content") or done event (has "sessionId")
+            if ('content' in parsed) {
+              streamingContent.value += parsed.content
+              scrollToBottom()
+            } else if ('sessionId' in parsed) {
+              finalSessionId = parsed.sessionId
+              finalReferences = parsed.references || []
+            } else if ('message' in parsed) {
+              throw new Error(parsed.message)
+            }
+          } catch (e) {
+            if (e instanceof SyntaxError) {
+              // Not JSON, skip
+            } else {
+              throw e
+            }
+          }
+        }
+      }
+    }
+
+    // Finalize: add assistant message
+    if (streamingContent.value) {
+      const assistantMsg: ChatMessageItem = {
+        id: Date.now() + 1,
+        role: 'assistant',
+        messageType: finalReferences.length ? 'reference' : 'text',
+        content: streamingContent.value,
+        createTime: new Date().toISOString(),
+        references: finalReferences
+      }
+      messages.value.push(assistantMsg)
+
+      if (finalSessionId) {
+        activeSessionId.value = finalSessionId
+      }
+    }
+
     await loadSessions()
-    await loadMessages(response.data.sessionId)
-    scrollToBottom()
-  } catch {
-    ElMessage.error('问答发送失败')
+  } catch (e: any) {
+    if (e.name === 'AbortError') {
+      // User cancelled
+    } else {
+      ElMessage.error('问答发送失败')
+      console.error('SSE error:', e)
+    }
   } finally {
+    streaming.value = false
+    streamingContent.value = ''
     sending.value = false
+    abortController = null
+    scrollToBottom()
   }
 }
 
@@ -276,5 +401,20 @@ onMounted(async () => {
 .bc-markdown :deep(ul),
 .bc-markdown :deep(ol) {
   padding-left: 1.25rem;
+}
+
+.streaming-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: var(--accent);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: cursor-blink 1s step-end infinite;
+}
+
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 </style>

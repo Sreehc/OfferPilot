@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -51,6 +52,46 @@ public class DefaultAiOrchestratorService implements AiOrchestratorService {
                         .score(reference.getScore())
                         .build()).toList())
                 .build();
+    }
+
+    @Override
+    public List<ChatMessageReferenceVO> streamChat(ChatSendRequest request, Consumer<String> onToken) {
+        List<KnowledgeSearchVO.Reference> references = "rag".equalsIgnoreCase(request.getMode())
+                ? knowledgeRetrievalService.searchReferences(request.getMessage(), 5)
+                : List.of();
+        String systemPrompt = references.isEmpty()
+                ? promptTemplateService.chatPrompt()
+                : promptTemplateService.knowledgeChatPrompt() + "\n" + promptTemplateService.referenceConstraintPrompt();
+
+        try {
+            AiChatResponse response = llmGateway.streamCompletion(
+                    AiChatRequest.builder()
+                            .systemPrompt(systemPrompt)
+                            .userPrompt(request.getMessage())
+                            .references(references.stream()
+                                    .map(r -> r.getDocTitle() + ": " + r.getSnippet())
+                                    .toList())
+                            .build(),
+                    onToken);
+
+            // If streaming returned empty content, send fallback as tokens
+            if (response.getContent().isBlank()) {
+                String fallback = fallbackAnswer(request, references);
+                onToken.accept(fallback);
+            }
+        } catch (Exception e) {
+            log.warn("Streaming chat failed: {}", e.getMessage());
+            String fallback = fallbackAnswer(request, references);
+            onToken.accept(fallback);
+        }
+
+        return references.stream().map(reference -> ChatMessageReferenceVO.builder()
+                .docId(reference.getDocId())
+                .docTitle(reference.getDocTitle())
+                .chunkId(reference.getChunkId())
+                .snippet(reference.getSnippet())
+                .score(reference.getScore())
+                .build()).toList();
     }
 
     @Override

@@ -20,6 +20,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -50,6 +52,32 @@ public class ChatServiceImpl implements ChatService {
         self.persistAssistantMessage(session, userId, result);
         result.setSessionId(session.getId());
         result.setSessionTitle(session.getTitle());
+        return result;
+    }
+
+    @Override
+    public ChatSendVO streamChat(Long userId, ChatSendRequest request, Consumer<String> onToken) {
+        // Phase 1: persist user message
+        ChatSession session = self.persistUserMessage(userId, request);
+
+        // Phase 2: stream LLM response, accumulating full answer
+        StringBuilder fullAnswer = new StringBuilder();
+        Consumer<String> wrappedToken = token -> {
+            fullAnswer.append(token);
+            onToken.accept(token);
+        };
+
+        List<ChatMessageReferenceVO> references = aiOrchestratorService.streamChat(request, wrappedToken);
+
+        // Phase 3: persist the complete assistant message
+        ChatSendVO result = ChatSendVO.builder()
+                .sessionId(session.getId())
+                .sessionTitle(session.getTitle())
+                .answer(fullAnswer.toString())
+                .references(references)
+                .build();
+        self.persistAssistantMessage(session, userId, result);
+
         return result;
     }
 
