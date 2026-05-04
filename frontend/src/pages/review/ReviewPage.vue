@@ -302,6 +302,7 @@ onMounted(() => {
   position: relative;
   width: 100%;
   min-height: 240px;
+  max-height: 70vh;
   transition: transform 0.5s;
   transform-style: preserve-3d;
 }
@@ -324,6 +325,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  overflow-y: auto;
 }
 
 .flashcard-back {
