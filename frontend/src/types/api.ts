@@ -24,6 +24,22 @@ export interface LoginResponse {
   token: string
   userInfo: UserInfo
   deviceId?: number
+  requires2fa?: boolean
+  tempToken?: string
+}
+
+export interface TwoFactorStatus {
+  enabled: boolean
+  recoveryCodesRemaining?: number
+}
+
+export interface TwoFactorSetup {
+  otpauthUri: string
+  secret: string
+}
+
+export interface TwoFactorEnable {
+  recoveryCodes: string[]
 }
 
 export interface RecentInterviewItem {

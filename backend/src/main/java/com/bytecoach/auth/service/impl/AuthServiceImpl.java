@@ -6,6 +6,7 @@ import com.bytecoach.auth.dto.RegisterRequest;
 import com.bytecoach.auth.service.AuthService;
 import com.bytecoach.auth.service.DeviceService;
 import com.bytecoach.auth.service.LoginLogService;
+import com.bytecoach.auth.service.TwoFactorService;
 import com.bytecoach.common.api.ResultCode;
 import com.bytecoach.common.exception.BusinessException;
 import com.bytecoach.security.model.LoginUser;
@@ -43,6 +44,7 @@ public class AuthServiceImpl implements AuthService {
     private final StringRedisTemplate redisTemplate;
     private final DeviceService deviceService;
     private final LoginLogService loginLogService;
+    private final TwoFactorService twoFactorService;
 
     @Override
     public LoginResponse register(RegisterRequest request) {
@@ -78,6 +80,17 @@ public class AuthServiceImpl implements AuthService {
                 loginLogService.recordLogin(user.getId(), ip, device, true, null);
             } catch (Exception e) {
                 log.warn("Failed to record login log: {}", e.getMessage());
+            }
+
+            // Check if 2FA is enabled
+            if (Boolean.TRUE.equals(user.getTotpEnabled())) {
+                String tempToken = twoFactorService.createTempToken(
+                        user.getId(), user.getUsername(),
+                        request.getDeviceFingerprint(), request.getDeviceName());
+                return LoginResponse.builder()
+                        .requires2fa(true)
+                        .tempToken(tempToken)
+                        .build();
             }
 
             return buildLoginResponse(user, request.getDeviceFingerprint(), request.getDeviceName());

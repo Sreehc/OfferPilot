@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { fetchCurrentUserApi, loginApi, logoutApi, registerApi } from '@/api/auth'
 import type { LoginPayload, RegisterPayload } from '@/api/auth'
-import type { UserInfo } from '@/types/api'
+import type { LoginResponse, UserInfo } from '@/types/api'
 import { storage } from '@/utils/storage'
 import { getOrCreateDeviceFingerprint, getDeviceName, setStoredDeviceId } from '@/utils/device'
 
@@ -21,14 +21,30 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function login(payload: LoginPayload) {
+  /** Persist from a LoginResponse object (used after 2FA verify) */
+  function persistFromResponse(data: LoginResponse) {
+    if (data.token && data.userInfo) {
+      persist(data.token, data.userInfo, data.deviceId)
+    }
+  }
+
+  async function login(payload: LoginPayload): Promise<LoginResponse> {
     const fp = getOrCreateDeviceFingerprint()
     const response = await loginApi({
       ...payload,
       deviceFingerprint: fp,
       deviceName: getDeviceName()
     })
-    persist(response.data.token, response.data.userInfo, response.data.deviceId)
+    const data = response.data
+
+    // If 2FA is required, return the response without persisting
+    if (data.requires2fa) {
+      return data
+    }
+
+    // Normal login: persist token and user
+    persist(data.token, data.userInfo, data.deviceId)
+    return data
   }
 
   async function register(payload: RegisterPayload) {
@@ -83,6 +99,7 @@ export const useAuthStore = defineStore('auth', () => {
     restoreProfile,
     logout,
     clear,
-    persistUser
+    persistUser,
+    persistFromResponse
   }
 })

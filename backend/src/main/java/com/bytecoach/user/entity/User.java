@@ -19,5 +19,7 @@ public class User extends BaseEntity {
     private String source;
     private String remark;
     private java.time.LocalDateTime lastLoginTime;
+    private String totpSecret;
+    private Boolean totpEnabled;
+    private String recoveryCodes;
 }
-

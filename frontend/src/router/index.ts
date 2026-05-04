@@ -174,6 +174,12 @@ const router = createRouter({
       meta: { guestOnly: true }
     },
     {
+      path: '/verify-2fa',
+      name: 'verify-2fa',
+      component: () => import('@/pages/auth/TwoFactorVerifyPage.vue'),
+      meta: { guestOnly: true }
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('@/pages/NotFoundPage.vue')

@@ -1,5 +1,5 @@
 import { request } from '@/utils/http'
-import type { LoginDeviceItem, LoginLogItem, LoginResponse, PageResult, UserInfo } from '@/types/api'
+import type { LoginDeviceItem, LoginLogItem, LoginResponse, PageResult, TwoFactorEnable, TwoFactorSetup, TwoFactorStatus, UserInfo } from '@/types/api'
 
 export interface LoginPayload {
   username: string
@@ -71,4 +71,26 @@ export const fetchAdminLoginLogsApi = (params: { keyword?: string; pageNum?: num
 
 export const fetchCaptchaApi = () => {
   return request<{ key: string; image: string }>({ url: '/auth/captcha', method: 'get' })
+}
+
+// ─── Two-Factor Auth ───
+
+export const fetchTwoFactorStatusApi = () => {
+  return request<TwoFactorStatus>({ url: '/auth/2fa/status', method: 'get' })
+}
+
+export const setupTwoFactorApi = () => {
+  return request<TwoFactorSetup>({ url: '/auth/2fa/setup', method: 'post' })
+}
+
+export const enableTwoFactorApi = (code: string) => {
+  return request<TwoFactorEnable>({ url: '/auth/2fa/enable', method: 'post', data: { code } })
+}
+
+export const disableTwoFactorApi = (code: string) => {
+  return request<null>({ url: '/auth/2fa/disable', method: 'post', data: { code } })
+}
+
+export const verifyTwoFactorApi = (tempToken: string, code: string) => {
+  return request<LoginResponse>({ url: '/auth/2fa/verify', method: 'post', data: { tempToken, code } })
 }

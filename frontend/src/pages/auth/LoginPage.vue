@@ -148,7 +148,20 @@ const handleLogin = async () => {
       payload.captchaKey = captchaKey.value
       payload.captchaCode = form.captchaCode
     }
-    await authStore.login(payload)
+    const data = await authStore.login(payload)
+
+    // Check if 2FA is required
+    if (data.requires2fa && data.tempToken) {
+      await router.push({
+        path: '/verify-2fa',
+        query: {
+          tempToken: data.tempToken,
+          redirect: route.query.redirect as string || '/dashboard'
+        }
+      })
+      return
+    }
+
     ElMessage.success('登录成功')
     await router.push((route.query.redirect as string) || '/dashboard')
   } catch {

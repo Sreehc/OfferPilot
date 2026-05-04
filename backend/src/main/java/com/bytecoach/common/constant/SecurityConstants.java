@@ -13,6 +13,7 @@ public final class SecurityConstants {
             "/api/auth/login",
             "/api/auth/ping",
             "/api/auth/captcha",
+            "/api/auth/2fa/verify",
             "/actuator/health",
             "/doc.html",
             "/swagger-ui.html",
