@@ -11,6 +11,7 @@ public class InterviewHistoryVO {
     private Long sessionId;
     private String direction;
     private String status;
+    private String mode;
     private BigDecimal totalScore;
     private Integer questionCount;
     private LocalDateTime startTime;

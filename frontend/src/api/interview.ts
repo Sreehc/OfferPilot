@@ -1,5 +1,5 @@
 import { request } from '@/utils/http'
-import type { InterviewAnswerResult, InterviewCurrentQuestion, InterviewDetail, InterviewHistoryItem } from '@/types/api'
+import type { InterviewAnswerResult, InterviewCurrentQuestion, InterviewDetail, InterviewHistoryItem, VoiceSubmitResult } from '@/types/api'
 import type { PageResult } from '@/types/api'
 
 export interface InterviewStartPayload {
@@ -12,6 +12,12 @@ export interface InterviewAnswerPayload {
   sessionId: number
   questionId: number
   answer: string
+}
+
+export interface VoiceStartPayload {
+  direction: string
+  questionCount?: number
+  reanswerQuestionId?: number
 }
 
 export const startInterviewApi = (payload: InterviewStartPayload) => {
@@ -38,4 +44,27 @@ export const fetchInterviewHistoryApi = (direction?: string, pageNum = 1, pageSi
 
 export const fetchInterviewTrendApi = (limit = 20) => {
   return request<InterviewHistoryItem[]>({ url: '/interview/trend', method: 'get', params: { limit } })
+}
+
+// ── Voice Interview APIs ──────────────────────────
+
+export const fetchVoiceStatusApi = () => {
+  return request<{ available: boolean }>({ url: '/interview/voice/status', method: 'get' })
+}
+
+export const startVoiceInterviewApi = (payload: VoiceStartPayload) => {
+  return request<InterviewCurrentQuestion>({ url: '/interview/voice/start', method: 'post', data: payload })
+}
+
+export const submitVoiceAnswerApi = (sessionId: number, questionId: number, audioBlob: Blob) => {
+  const formData = new FormData()
+  formData.append('sessionId', String(sessionId))
+  formData.append('questionId', String(questionId))
+  formData.append('audio', audioBlob, 'recording.webm')
+  return request<VoiceSubmitResult>({
+    url: '/interview/voice/submit',
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
 }

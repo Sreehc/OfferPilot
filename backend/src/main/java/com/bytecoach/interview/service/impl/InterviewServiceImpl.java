@@ -15,7 +15,9 @@ import com.bytecoach.interview.entity.InterviewRecord;
 import com.bytecoach.interview.entity.InterviewSession;
 import com.bytecoach.interview.mapper.InterviewRecordMapper;
 import com.bytecoach.interview.mapper.InterviewSessionMapper;
+import com.bytecoach.interview.mapper.VoiceRecordMapper;
 import com.bytecoach.interview.service.InterviewService;
+import com.bytecoach.interview.entity.VoiceRecord;
 import com.bytecoach.interview.vo.InterviewAnswerVO;
 import com.bytecoach.interview.vo.InterviewCurrentQuestionVO;
 import com.bytecoach.interview.vo.InterviewDetailVO;
@@ -49,6 +51,7 @@ public class InterviewServiceImpl implements InterviewService {
 
     private final InterviewSessionMapper sessionMapper;
     private final InterviewRecordMapper recordMapper;
+    private final VoiceRecordMapper voiceRecordMapper;
     private final QuestionMapper questionMapper;
     private final WrongQuestionMapper wrongQuestionMapper;
     private final CategoryService categoryService;
@@ -218,9 +221,20 @@ public class InterviewServiceImpl implements InterviewService {
                 .stream()
                 .collect(Collectors.toMap(Question::getId, Function.identity(), (a, b) -> a));
 
+        // Load voice records if this is a voice session
+        Map<Long, VoiceRecord> voiceRecordMap = Map.of();
+        if ("voice".equals(session.getMode())) {
+            List<VoiceRecord> voiceRecords = voiceRecordMapper.selectList(
+                    new LambdaQueryWrapper<VoiceRecord>()
+                            .eq(VoiceRecord::getSessionId, sessionId));
+            voiceRecordMap = voiceRecords.stream()
+                    .collect(Collectors.toMap(VoiceRecord::getRecordId, Function.identity(), (a, b) -> a));
+        }
+
         List<InterviewDetailVO.InterviewRecordVO> recordVOs = records.stream()
                 .map(record -> {
                     Question q = questionMap.get(record.getQuestionId());
+                    VoiceRecord vr = voiceRecordMap.get(record.getId());
                     return InterviewDetailVO.InterviewRecordVO.builder()
                             .questionId(record.getQuestionId())
                             .questionTitle(q != null ? q.getTitle() : "Unknown")
@@ -229,6 +243,8 @@ public class InterviewServiceImpl implements InterviewService {
                             .comment(record.getComment())
                             .standardAnswer(q != null ? q.getStandardAnswer() : null)
                             .followUp(record.getFollowUp())
+                            .voiceTranscript(vr != null ? vr.getTranscript() : null)
+                            .voiceConfidence(vr != null ? vr.getTranscriptConfidence() : null)
                             .build();
                 })
                 .toList();
@@ -237,6 +253,7 @@ public class InterviewServiceImpl implements InterviewService {
                 .sessionId(sessionId)
                 .direction(session.getDirection())
                 .status(session.getStatus())
+                .mode(session.getMode())
                 .totalScore(session.getTotalScore())
                 .questionCount(session.getQuestionCount())
                 .startTime(session.getStartTime())
@@ -260,6 +277,7 @@ public class InterviewServiceImpl implements InterviewService {
                         .sessionId(s.getId())
                         .direction(s.getDirection())
                         .status(s.getStatus())
+                        .mode(s.getMode())
                         .totalScore(s.getTotalScore())
                         .questionCount(s.getQuestionCount())
                         .startTime(s.getStartTime())
@@ -290,6 +308,7 @@ public class InterviewServiceImpl implements InterviewService {
                         .sessionId(s.getId())
                         .direction(s.getDirection())
                         .status(s.getStatus())
+                        .mode(s.getMode())
                         .totalScore(s.getTotalScore())
                         .questionCount(s.getQuestionCount())
                         .startTime(s.getStartTime())

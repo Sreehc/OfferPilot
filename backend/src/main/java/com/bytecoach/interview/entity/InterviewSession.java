@@ -19,4 +19,7 @@ public class InterviewSession extends BaseEntity {
     private Integer currentIndex;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
+
+    /** Interview mode: 'text' (default) or 'voice'. */
+    private String mode;
 }

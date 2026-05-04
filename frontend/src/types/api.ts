@@ -149,12 +149,15 @@ export interface InterviewRecordItem {
   comment: string
   standardAnswer: string
   followUp: string
+  voiceTranscript?: string
+  voiceConfidence?: number
 }
 
 export interface InterviewDetail {
   sessionId: number
   direction: string
   status: string
+  mode?: string
   totalScore: number
   questionCount: number
   startTime?: string
@@ -162,10 +165,23 @@ export interface InterviewDetail {
   records: InterviewRecordItem[]
 }
 
+export interface VoiceSubmitResult {
+  transcript: string
+  transcriptConfidence?: number
+  transcriptTimeMs?: number
+  score: number
+  comment: string
+  standardAnswer: string
+  followUp: string
+  addedToWrongBook: boolean
+  hasNextQuestion: boolean
+}
+
 export interface InterviewHistoryItem {
   sessionId: number
   direction: string
   status: string
+  mode?: string
   totalScore: number
   questionCount: number
   startTime?: string

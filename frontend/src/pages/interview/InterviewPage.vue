@@ -21,14 +21,35 @@
             <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">题目数量</div>
             <el-input-number v-model="questionCount" :min="3" :max="5" size="large" class="mt-2 w-full" />
           </div>
+          <div v-if="voiceAvailable" class="surface-card p-4">
+            <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">作答模式</div>
+            <div class="mt-3 flex gap-3">
+              <button
+                type="button"
+                class="flex-1 rounded-xl p-3 text-sm font-medium transition-all"
+                :class="interviewMode === 'text' ? 'bg-accent text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'"
+                @click="interviewMode = 'text'"
+              >
+                打字作答
+              </button>
+              <button
+                type="button"
+                class="flex-1 rounded-xl p-3 text-sm font-medium transition-all"
+                :class="interviewMode === 'voice' ? 'bg-accent text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'"
+                @click="interviewMode = 'voice'"
+              >
+                语音作答
+              </button>
+            </div>
+          </div>
           <el-button
             :loading="starting"
             type="primary"
             size="large"
             class="action-button w-full"
-            @click="handleStart"
+            @click="handleStart()"
           >
-            开始面试
+            {{ interviewMode === 'voice' && voiceAvailable ? '开始语音面试' : '开始面试' }}
           </el-button>
         </div>
 
@@ -88,33 +109,60 @@
         <!-- Answering State -->
         <div v-else-if="phase === 'answering'" class="flex flex-1 flex-col">
           <div class="flex items-center justify-between">
-            <p class="section-kicker">你的回答</p>
+            <p class="section-kicker">{{ interviewMode === 'voice' && voiceAvailable ? '语音作答' : '你的回答' }}</p>
             <div class="flex items-center gap-2 text-sm">
               <span class="text-slate-500 dark:text-slate-400">倒计时</span>
               <span class="font-semibold tabular-nums" :class="countdown <= 30 ? 'text-red-500' : 'text-accent'">{{ formatCountdown(countdown) }}</span>
             </div>
           </div>
-          <el-input
-            v-model="answerText"
-            type="textarea"
-            :rows="10"
-            placeholder="请在此输入你的回答。尽量覆盖关键点，结构化表达会获得更高分数。"
-            class="mt-4 flex-1"
-            size="large"
-            @keydown.ctrl.enter.prevent="handleSubmitAnswer"
-          />
-          <div class="mt-4 flex gap-3">
-            <el-button
-              :loading="submitting"
-              type="primary"
+
+          <!-- Text Mode -->
+          <template v-if="interviewMode !== 'voice' || !voiceAvailable">
+            <el-input
+              v-model="answerText"
+              type="textarea"
+              :rows="10"
+              placeholder="请在此输入你的回答。尽量覆盖关键点，结构化表达会获得更高分数。"
+              class="mt-4 flex-1"
               size="large"
-              class="action-button flex-1"
-              @click="handleSubmitAnswer"
-            >
-              提交答案
-            </el-button>
-            <span class="self-center text-xs text-slate-400 dark:text-slate-500">Ctrl + Enter 快捷提交</span>
-          </div>
+              @keydown.ctrl.enter.prevent="handleSubmitAnswer"
+            />
+            <div class="mt-4 flex gap-3">
+              <el-button
+                :loading="submitting"
+                type="primary"
+                size="large"
+                class="action-button flex-1"
+                @click="handleSubmitAnswer"
+              >
+                提交答案
+              </el-button>
+              <span class="self-center text-xs text-slate-400 dark:text-slate-500">Ctrl + Enter 快捷提交</span>
+            </div>
+          </template>
+
+          <!-- Voice Mode -->
+          <template v-else>
+            <div class="mt-4 flex-1">
+              <VoiceRecorder
+                :disabled="voiceSubmitting"
+                @recorded="handleVoiceRecorded"
+                @cleared="handleVoiceCleared"
+              />
+            </div>
+            <div class="mt-4 flex gap-3">
+              <el-button
+                :loading="voiceSubmitting"
+                :disabled="!voiceAudioBlob"
+                type="primary"
+                size="large"
+                class="action-button flex-1"
+                @click="handleVoiceSubmit"
+              >
+                提交语音答案
+              </el-button>
+            </div>
+          </template>
         </div>
 
         <!-- Loading AI Score -->
@@ -129,6 +177,17 @@
         <div v-else-if="phase === 'result'" class="space-y-4">
           <p class="section-kicker">评分结果</p>
 
+          <!-- Voice Transcript (if voice mode) -->
+          <div v-if="voiceTranscript" class="surface-card p-4">
+            <div class="flex items-center justify-between">
+              <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">语音转录</div>
+              <div v-if="lastVoiceResult?.transcriptConfidence" class="text-xs text-slate-400">
+                置信度 {{ Math.round(lastVoiceResult.transcriptConfidence * 100) }}%
+              </div>
+            </div>
+            <p class="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">{{ voiceTranscript }}</p>
+          </div>
+
           <!-- Score Card -->
           <div
             class="p-6 text-white shadow-[0_16px_36px_rgba(47,79,157,0.18)]"
@@ -142,11 +201,31 @@
           <!-- Standard Answer & Follow-up -->
           <div class="grid gap-3 md:grid-cols-2">
             <div class="surface-card p-4">
-              <div class="font-semibold text-ink">标准答案</div>
+              <div class="flex items-center justify-between">
+                <div class="font-semibold text-ink">标准答案</div>
+                <button
+                  v-if="lastResult?.standardAnswer"
+                  type="button"
+                  class="text-xs text-accent hover:underline"
+                  @click="speakText(lastResult!.standardAnswer!)"
+                >
+                  朗读
+                </button>
+              </div>
               <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ lastResult?.standardAnswer || '暂无' }}</p>
             </div>
             <div class="surface-card p-4">
-              <div class="font-semibold text-ink">追问</div>
+              <div class="flex items-center justify-between">
+                <div class="font-semibold text-ink">追问</div>
+                <button
+                  v-if="lastResult?.followUp"
+                  type="button"
+                  class="text-xs text-accent hover:underline"
+                  @click="speakText(lastResult!.followUp!)"
+                >
+                  朗读
+                </button>
+              </div>
               <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ lastResult?.followUp || '无' }}</p>
             </div>
           </div>
@@ -191,6 +270,7 @@
             <div class="mt-3 text-6xl font-semibold tracking-[-0.03em]">{{ detail?.totalScore ?? '-' }}</div>
             <p class="mt-4 text-sm text-white/80">
               共 {{ detail?.questionCount ?? 0 }} 题，方向：{{ detail?.direction }}
+              <span v-if="detail?.mode === 'voice'" class="ml-2 inline-flex items-center rounded-full bg-white/20 px-2 py-0.5 text-xs">语音面试</span>
             </p>
           </div>
 
@@ -238,11 +318,15 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   currentQuestionApi,
+  fetchVoiceStatusApi,
   interviewDetailApi,
   startInterviewApi,
-  submitAnswerApi
+  startVoiceInterviewApi,
+  submitAnswerApi,
+  submitVoiceAnswerApi
 } from '@/api/interview'
-import type { InterviewAnswerResult, InterviewCurrentQuestion, InterviewDetail } from '@/types/api'
+import type { InterviewAnswerResult, InterviewCurrentQuestion, InterviewDetail, VoiceSubmitResult } from '@/types/api'
+import VoiceRecorder from '@/components/VoiceRecorder.vue'
 
 const route = useRoute()
 
@@ -253,12 +337,18 @@ const directions = ['Spring', 'JVM', 'MySQL', 'Redis', '并发', '微服务']
 const phase = ref<Phase>('idle')
 const direction = ref('Spring')
 const questionCount = ref(3)
+const interviewMode = ref<'text' | 'voice'>('text')
+const voiceAvailable = ref(false)
 const starting = ref(false)
 const submitting = ref(false)
 const answerText = ref('')
+const voiceAudioBlob = ref<Blob | null>(null)
+const voiceTranscript = ref('')
+const voiceSubmitting = ref(false)
 
 const currentQuestion = ref<InterviewCurrentQuestion | null>(null)
 const lastResult = ref<InterviewAnswerResult | null>(null)
+const lastVoiceResult = ref<VoiceSubmitResult | null>(null)
 const detail = ref<InterviewDetail | null>(null)
 
 // Countdown timer (5 minutes per question)
@@ -331,18 +421,27 @@ const progressPercent = computed(() => {
 const handleStart = async (reanswerQuestionId?: number) => {
   starting.value = true
   try {
-    const response = await startInterviewApi({
+    const isVoice = interviewMode.value === 'voice' && voiceAvailable.value
+    const payload = {
       direction: direction.value,
       questionCount: reanswerQuestionId ? 1 : questionCount.value,
       ...(reanswerQuestionId ? { reanswerQuestionId } : {})
-    })
+    }
+
+    const response = isVoice
+      ? await startVoiceInterviewApi(payload)
+      : await startInterviewApi(payload)
+
     currentQuestion.value = response.data
     answerText.value = ''
+    voiceAudioBlob.value = null
+    voiceTranscript.value = ''
     lastResult.value = null
+    lastVoiceResult.value = null
     detail.value = null
     phase.value = 'answering'
     startCountdown()
-    ElMessage.success('面试已开始，请回答第一题')
+    ElMessage.success(isVoice ? '语音面试已开始，请点击录音按钮作答' : '面试已开始，请回答第一题')
   } catch {
     ElMessage.error('启动面试失败，请确认题库中有对应方向的题目')
   } finally {
@@ -376,6 +475,54 @@ const handleSubmitAnswer = async () => {
   }
 }
 
+const handleVoiceSubmit = async () => {
+  if (!voiceAudioBlob.value || !currentQuestion.value) return
+
+  phase.value = 'scoring'
+  stopCountdown()
+  voiceSubmitting.value = true
+  try {
+    const response = await submitVoiceAnswerApi(
+      currentQuestion.value.sessionId,
+      currentQuestion.value.questionId,
+      voiceAudioBlob.value
+    )
+    lastVoiceResult.value = response.data
+    voiceTranscript.value = response.data.transcript
+    // Also populate lastResult for the result display
+    lastResult.value = {
+      score: response.data.score,
+      comment: response.data.comment,
+      standardAnswer: response.data.standardAnswer,
+      followUp: response.data.followUp,
+      addedToWrongBook: response.data.addedToWrongBook,
+      hasNextQuestion: response.data.hasNextQuestion
+    }
+    phase.value = 'result'
+  } catch {
+    ElMessage.error('语音提交失败，请重试')
+    phase.value = 'answering'
+  } finally {
+    voiceSubmitting.value = false
+  }
+}
+
+const handleVoiceRecorded = (blob: Blob) => {
+  voiceAudioBlob.value = blob
+}
+
+const handleVoiceCleared = () => {
+  voiceAudioBlob.value = null
+}
+
+const speakText = (text: string) => {
+  if (!text || !('speechSynthesis' in window)) return
+  const utterance = new SpeechSynthesisUtterance(text)
+  utterance.lang = 'zh-CN'
+  utterance.rate = 1.0
+  window.speechSynthesis.speak(utterance)
+}
+
 const handleNextQuestion = async () => {
   if (!currentQuestion.value) return
 
@@ -383,7 +530,10 @@ const handleNextQuestion = async () => {
     const response = await currentQuestionApi(currentQuestion.value.sessionId)
     currentQuestion.value = response.data
     answerText.value = ''
+    voiceAudioBlob.value = null
+    voiceTranscript.value = ''
     lastResult.value = null
+    lastVoiceResult.value = null
     phase.value = 'answering'
     startCountdown()
   } catch {
@@ -417,11 +567,21 @@ const handleNewInterview = () => {
   phase.value = 'idle'
   currentQuestion.value = null
   lastResult.value = null
+  lastVoiceResult.value = null
   detail.value = null
   answerText.value = ''
+  voiceAudioBlob.value = null
+  voiceTranscript.value = ''
 }
 
 onMounted(() => {
+  // Check voice availability
+  void fetchVoiceStatusApi().then(res => {
+    voiceAvailable.value = res.data.available
+  }).catch(() => {
+    voiceAvailable.value = false
+  })
+
   // Auto-start if reanswer query param is present (from wrong book)
   const reanswerId = route.query.reanswer
   if (reanswerId) {

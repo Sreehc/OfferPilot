@@ -30,6 +30,7 @@
             <p class="section-kicker">面试详情</p>
             <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
               {{ detail.direction }} 方向面试
+              <span v-if="detail.mode === 'voice'" class="ml-2 inline-flex items-center rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-semibold text-accent">语音</span>
             </h3>
             <div class="mt-2 flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
               <span>{{ detail.questionCount }} 题</span>
@@ -77,13 +78,27 @@
           <p class="mt-1 text-sm leading-6 text-slate-700 dark:text-slate-200">{{ record.comment || '暂无点评' }}</p>
         </div>
 
+        <!-- Voice Transcript (if voice mode) -->
+        <div v-if="record.voiceTranscript" class="mx-6 mt-4 surface-card p-4">
+          <div class="flex items-center gap-2">
+            <div class="h-2 w-2 rounded-full bg-purple-400"></div>
+            <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">语音转录</span>
+            <span v-if="record.voiceConfidence" class="ml-auto text-xs text-slate-400">
+              置信度 {{ Math.round(record.voiceConfidence * 100) }}%
+            </span>
+          </div>
+          <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">
+            {{ record.voiceTranscript }}
+          </p>
+        </div>
+
         <!-- Answer Comparison -->
         <div class="mt-4 grid gap-4 px-6 pb-5 md:grid-cols-2">
           <!-- User Answer -->
           <div class="surface-card p-4">
             <div class="flex items-center gap-2">
               <div class="h-2 w-2 rounded-full bg-amber-400"></div>
-              <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">我的回答</span>
+              <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{{ record.voiceTranscript ? '转录文本' : '我的回答' }}</span>
             </div>
             <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">
               {{ record.userAnswer || '未作答' }}

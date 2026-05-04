@@ -12,6 +12,7 @@ public class InterviewDetailVO {
     private Long sessionId;
     private String direction;
     private String status;
+    private String mode;
     private BigDecimal totalScore;
     private Integer questionCount;
     private LocalDateTime startTime;
@@ -28,6 +29,10 @@ public class InterviewDetailVO {
         private String comment;
         private String standardAnswer;
         private String followUp;
+
+        /** Voice-specific: STT transcript (may differ from userAnswer if edited). */
+        private String voiceTranscript;
+        private BigDecimal voiceConfidence;
     }
 }
 
