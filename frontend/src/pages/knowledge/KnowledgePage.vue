@@ -85,9 +85,20 @@
 
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <article v-for="doc in docs" :key="doc.id" class="metric-card">
-          <div class="flex items-center justify-between gap-3">
-            <h4 class="font-semibold">{{ doc.title }}</h4>
-            <div class="flex items-center gap-2">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+              <!-- Document type icon -->
+              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800">
+                <svg v-if="docType(doc.fileUrl) === 'pdf'" class="h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                </svg>
+                <svg v-else class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                </svg>
+              </div>
+              <h4 class="font-semibold truncate">{{ doc.title }}</h4>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
               <span
                 class="hard-chip"
                 :class="doc.status === 'indexed' ? '!bg-accent !text-white' : '!bg-white/80 dark:!bg-slate-700/80 !text-slate-600 dark:!text-slate-300'"
@@ -107,11 +118,15 @@
               </el-popconfirm>
             </div>
           </div>
-          <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{ doc.categoryName || '未分配分类' }}</p>
-          <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ doc.summary || '暂无摘要' }}</p>
-          <div class="mt-4 flex items-center justify-between text-xs uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
-            <span>chunks {{ doc.chunkCount ?? 0 }}</span>
-            <span>{{ formatDate(doc.updateTime) }}</span>
+          <div class="mt-2 flex items-center gap-2">
+            <span class="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-medium text-slate-500 dark:text-slate-400">
+              {{ doc.categoryName || '未分类' }}
+            </span>
+            <span class="text-[10px] text-slate-400">{{ formatDate(doc.updateTime) }}</span>
+          </div>
+          <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300 line-clamp-2">{{ doc.summary || '暂无摘要' }}</p>
+          <div class="mt-3 flex items-center text-xs text-slate-400 dark:text-slate-500">
+            <span>{{ doc.chunkCount ?? 0 }} 个分片</span>
           </div>
         </article>
       </div>
@@ -317,6 +332,11 @@ const resetFilters = () => {
 const statusLabel = (status: string) => {
   const map: Record<string, string> = { draft: '草稿', parsed: '已解析', indexed: '已索引' }
   return map[status] || status
+}
+
+const docType = (fileUrl?: string): 'pdf' | 'text' => {
+  if (!fileUrl) return 'text'
+  return fileUrl.toLowerCase().endsWith('.pdf') ? 'pdf' : 'text'
 }
 
 const formatDate = (value?: string) => {
