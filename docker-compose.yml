@@ -1,0 +1,122 @@
+services:
+
+  # ───────── MySQL ─────────
+  mysql:
+    image: mysql:8.0
+    container_name: bytecoach-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${BYTECOACH_DB_NAME:-bytecoach}
+      MYSQL_USER: ${BYTECOACH_DB_USERNAME:-bytecoach}
+      MYSQL_PASSWORD: ${BYTECOACH_DB_PASSWORD:?Set BYTECOACH_DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bytecoach
+
+  # ───────── Redis ─────────
+  redis:
+    image: redis/redis-stack-server:latest
+    container_name: bytecoach-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    command: >
+      redis-server
+      --appendonly yes
+      --requirepass ${BYTECOACH_REDIS_PASSWORD:-}
+      --loadmodule /opt/redis-stack/lib/redisearch.so
+      --loadmodule /opt/redis-stack/lib/rejson.so
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${BYTECOACH_REDIS_PASSWORD:-}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bytecoach
+
+  # ───────── Backend ─────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bytecoach-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      # Database
+      BYTECOACH_DB_HOST: mysql
+      BYTECOACH_DB_PORT: 3306
+      BYTECOACH_DB_NAME: ${BYTECOACH_DB_NAME:-bytecoach}
+      BYTECOACH_DB_USERNAME: ${BYTECOACH_DB_USERNAME:-bytecoach}
+      BYTECOACH_DB_PASSWORD: ${BYTECOACH_DB_PASSWORD:?Set BYTECOACH_DB_PASSWORD}
+      # Redis
+      BYTECOACH_REDIS_HOST: redis
+      BYTECOACH_REDIS_PORT: 6379
+      BYTECOACH_REDIS_PASSWORD: ${BYTECOACH_REDIS_PASSWORD:-}
+      # Security
+      BYTECOACH_JWT_SECRET: ${BYTECOACH_JWT_SECRET:?Set BYTECOACH_JWT_SECRET}
+      BYTECOACH_JWT_EXPIRE_SECONDS: ${BYTECOACH_JWT_EXPIRE_SECONDS:-86400}
+      BYTECOACH_CORS_ORIGINS: ${BYTECOACH_CORS_ORIGINS:-http://localhost}
+      # LLM
+      BYTECOACH_LLM_ENABLED: ${BYTECOACH_LLM_ENABLED:-true}
+      BYTECOACH_LLM_BASE_URL: ${BYTECOACH_LLM_BASE_URL:-https://api.openai.com/v1}
+      BYTECOACH_LLM_API_KEY: ${BYTECOACH_LLM_API_KEY:-}
+      BYTECOACH_LLM_MODEL: ${BYTECOACH_LLM_MODEL:-gpt-4.1-mini}
+      BYTECOACH_LLM_TIMEOUT_SECONDS: ${BYTECOACH_LLM_TIMEOUT_SECONDS:-30}
+      # Embedding
+      BYTECOACH_EMBEDDING_ENABLED: ${BYTECOACH_EMBEDDING_ENABLED:-false}
+      BYTECOACH_EMBEDDING_BASE_URL: ${BYTECOACH_EMBEDDING_BASE_URL:-${BYTECOACH_LLM_BASE_URL:-https://api.openai.com/v1}}
+      BYTECOACH_EMBEDDING_API_KEY: ${BYTECOACH_EMBEDDING_API_KEY:-${BYTECOACH_LLM_API_KEY:-}}
+      BYTECOACH_EMBEDDING_MODEL: ${BYTECOACH_EMBEDDING_MODEL:-text-embedding-3-small}
+      BYTECOACH_EMBEDDING_DIMENSIONS: ${BYTECOACH_EMBEDDING_DIMENSIONS:-1536}
+      BYTECOACH_VECTOR_THRESHOLD: ${BYTECOACH_VECTOR_THRESHOLD:-0.3}
+      # Business
+      BYTECOACH_WRONG_THRESHOLD: ${BYTECOACH_WRONG_THRESHOLD:-60}
+      BYTECOACH_AI_QUOTA: ${BYTECOACH_AI_QUOTA:-100}
+      BYTECOACH_RATE_LIMIT: ${BYTECOACH_RATE_LIMIT:-60}
+      BYTECOACH_RATE_WINDOW: ${BYTECOACH_RATE_WINDOW:-60}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - bytecoach
+
+  # ───────── Frontend ─────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: bytecoach-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${BYTECOACH_HTTP_PORT:-80}:80"
+    networks:
+      - bytecoach
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  bytecoach:
+    driver: bridge
