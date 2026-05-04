@@ -1,7 +1,7 @@
 <template>
   <div class="flex min-h-screen items-center justify-center px-4 py-8">
     <section class="paper-panel w-full max-w-2xl p-8 md:p-10">
-      <p class="section-kicker">Create Account</p>
+      <p class="section-kicker">注册</p>
       <h1 class="mt-4 text-4xl font-semibold tracking-[-0.03em] text-ink">创建账号后，直接进入你的学习首页</h1>
       <p class="mt-4 max-w-xl text-sm leading-7 text-slate-600 dark:text-slate-300">
         注册只需填写昵称、用户名和密码，成功后自动登录进入首页。

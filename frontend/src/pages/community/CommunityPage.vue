@@ -4,7 +4,7 @@
     <div class="paper-panel px-4 sm:px-8 py-4 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
       <div>
         <p class="section-kicker">学习社区</p>
-        <h2 class="mt-2 text-xl sm:text-2xl font-semibold text-ink">提问、讨论、共同成长</h2>
+        <h2 class="mt-2 text-xl sm:text-2xl font-semibold text-ink">分享面试经验，解答技术问题</h2>
       </div>
       <div class="flex gap-2 sm:gap-3">
         <button

@@ -55,7 +55,7 @@
       <EmptyState
         icon="review"
         :title="`${todayCount} 道题等待复习`"
-        :description="`预计 ${estimatedMinutes} 分钟完成。每道题翻转后回忆答案，再根据掌握程度评分。`"
+        :description="`共 ${todayCount} 道题。翻转卡片回忆答案，再根据掌握程度评分。`"
       >
         <template #action>
           <button type="button" class="hard-button-primary" @click="startReview">

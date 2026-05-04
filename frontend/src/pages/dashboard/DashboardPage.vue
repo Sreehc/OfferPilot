@@ -326,10 +326,10 @@ const weekComparisonClass = computed(() => {
 })
 
 const metrics = computed(() => [
-  { label: '学习总次数', value: String(overview.value.learningCount), desc: '问答与面试行为共同构成学习节奏。' },
-  { label: '平均面试分', value: formatScore(overview.value.averageScore), desc: '面试作答记录聚合，无记录时为 0。' },
-  { label: '错题数量', value: String(overview.value.wrongCount), desc: '低分题自动沉淀到错题本。' },
-  { label: '计划完成率', value: `${overview.value.planCompletionRate}%`, desc: '当前计划已完成任务占比。' }
+  { label: '学习总次数', value: String(overview.value.learningCount), desc: '问答 + 面试总次数' },
+  { label: '平均面试分', value: formatScore(overview.value.averageScore), desc: '所有面试平均得分' },
+  { label: '错题数量', value: String(overview.value.wrongCount), desc: '低于 60 分自动收录' },
+  { label: '计划完成率', value: `${overview.value.planCompletionRate}%`, desc: '当前计划任务完成比' }
 ])
 
 const quickActions = [

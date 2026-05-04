@@ -112,8 +112,8 @@
         <EmptyState
           v-if="!messages.length && !loadingMessages && !streaming"
           icon="chat"
-          title="新会话已就绪"
-          description="可以先用知识库问答问一个具体主题，或者切到普通问答直接开问。"
+          title="开始你的第一个问题"
+          description="试试问一个 Java 面试题，或者切到知识库问答检索学习资料。"
           compact
         />
       </div>

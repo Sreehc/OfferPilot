@@ -38,7 +38,7 @@
       </section>
 
       <section class="paper-panel p-8 md:p-10 max-w-lg mx-auto lg:max-w-none">
-        <p class="section-kicker">Sign In</p>
+        <p class="section-kicker">登录</p>
         <h2 class="mt-4 text-3xl font-semibold tracking-[-0.03em] text-ink">进入 ByteCoach</h2>
         <div class="rule-divider mt-6"></div>
         <el-form ref="formRef" :model="form" :rules="rules" class="mt-8" label-position="top" @submit.prevent>
@@ -84,7 +84,7 @@
           </el-button>
         </el-form>
         <div class="mt-6 flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
-          <span>登录后直接进入 Dashboard 总览</span>
+          <span>登录后直接进入学习首页</span>
           <RouterLink class="accent-link" to="/register">创建账号</RouterLink>
         </div>
       </section>
