@@ -1,15 +1,18 @@
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <section class="paper-panel p-4 sm:p-6">
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p class="section-kicker">错题本</p>
-          <h3 class="mt-3 text-xl sm:text-2xl font-semibold tracking-[-0.03em] text-ink">
-            {{ total }} 道错题
+    <section class="cockpit-panel p-4 sm:p-6">
+      <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div class="max-w-3xl">
+          <div class="flex items-center gap-3">
+            <span class="state-pulse" aria-hidden="true"></span>
+            <p class="section-kicker">Repair Vault</p>
+          </div>
+          <h3 class="mt-4 font-display text-4xl font-semibold leading-none tracking-[-0.04em] text-ink sm:text-5xl">
+            {{ total }} 个知识断点
           </h3>
           <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-            低分面试题自动沉淀到此处，掌握状态由间隔复习算法自动计算。
+            低分面试题自动沉淀到修复库。优先处理逾期、未开始和复习中的题目，再回到面试舱验证。
           </p>
         </div>
         <div class="flex flex-wrap gap-2 sm:gap-3">
@@ -34,6 +37,21 @@
       </div>
     </section>
 
+    <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <article
+        v-for="signal in repairSignals"
+        :key="signal.label"
+        class="data-slab p-4"
+      >
+        <div class="flex items-center justify-between gap-3">
+          <p class="metric-label">{{ signal.label }}</p>
+          <span class="h-2.5 w-2.5 rounded-full" :class="signal.dotClass"></span>
+        </div>
+        <p class="metric-value !mt-3 !text-3xl">{{ signal.value }}</p>
+        <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">{{ signal.desc }}</p>
+      </article>
+    </section>
+
     <!-- Loading -->
     <section v-if="loading" class="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
       <article v-for="n in 3" :key="n" class="metric-card">
@@ -44,7 +62,7 @@
     </section>
 
     <!-- Empty State -->
-    <section v-else-if="!filteredItems.length" class="paper-panel p-6">
+    <section v-else-if="!prioritizedItems.length" class="cockpit-panel p-6">
       <EmptyState
         icon="review"
         title="错题本为空"
@@ -62,10 +80,10 @@
     <section v-else>
       <div class="grid gap-4 xl:grid-cols-3 md:grid-cols-2">
         <article
-          v-for="item in filteredItems"
+          v-for="item in prioritizedItems"
           :key="item.id"
-          class="metric-card cursor-pointer"
-          :class="expandedId === item.id ? 'ring-2 ring-accent/20' : ''"
+          class="repair-card cursor-pointer p-4"
+          :class="[repairCardClass(item), expandedId === item.id ? 'is-expanded' : '']"
           @click="toggleExpand(item.id)"
         >
           <!-- Header -->
@@ -80,14 +98,14 @@
           </div>
 
           <!-- Review Info -->
-          <div class="mt-3 flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
+          <div class="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
             <span v-if="item.nextReviewDate">
-              复习日期: <span :class="isDueToday(item.nextReviewDate) ? 'text-amber-500 font-semibold' : ''">
+              下次复习: <span :class="isDueToday(item.nextReviewDate) ? 'text-coral font-semibold' : ''">
                 {{ formatDate(item.nextReviewDate) }}
               </span>
             </span>
             <span v-if="item.reviewCount">已复习 {{ item.reviewCount }} 次</span>
-            <span v-if="item.streak && item.streak > 0" class="text-green-500">连续 {{ item.streak }}</span>
+            <span v-if="item.streak && item.streak > 0" class="text-lime">连续 {{ item.streak }}</span>
           </div>
 
           <!-- Error Reason (collapsed preview) -->
@@ -96,35 +114,54 @@
           </p>
 
           <!-- Expanded Detail -->
-          <div v-if="expandedId === item.id" class="mt-4 space-y-3 border-t border-slate-200/60 dark:border-slate-700/60 pt-4">
-            <!-- Standard Answer -->
-            <div v-if="item.standardAnswer">
-              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">标准答案</div>
-              <p class="mt-1 text-sm leading-6 text-slate-700 dark:text-slate-200">{{ item.standardAnswer }}</p>
-            </div>
-
-            <!-- SM-2 Info -->
-            <div v-if="item.easeFactor">
-              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">复习参数</div>
-              <div class="mt-2 flex flex-wrap gap-3 text-xs">
-                <span class="hard-chip">EF: {{ item.easeFactor?.toFixed(2) }}</span>
-                <span class="hard-chip">间隔: {{ item.intervalDays }} 天</span>
-                <span v-if="item.streak" class="hard-chip">连续: {{ item.streak }}</span>
+          <div v-if="expandedId === item.id" class="mt-4 space-y-4 border-t border-[var(--bc-line)] pt-4">
+            <div class="grid gap-3 sm:grid-cols-3">
+              <div class="rounded-2xl border border-[var(--bc-line)] bg-white/35 p-3 dark:bg-white/5">
+                <div class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">状态</div>
+                <p class="mt-2 text-sm font-semibold text-ink">{{ masteryLabel(item.masteryLevel) }}</p>
+              </div>
+              <div class="rounded-2xl border border-[var(--bc-line)] bg-white/35 p-3 dark:bg-white/5">
+                <div class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">间隔</div>
+                <p class="mt-2 text-sm font-semibold text-ink">{{ item.intervalDays ?? 1 }} 天</p>
+              </div>
+              <div class="rounded-2xl border border-[var(--bc-line)] bg-white/35 p-3 dark:bg-white/5">
+                <div class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">EF</div>
+                <p class="mt-2 text-sm font-semibold text-ink">{{ item.easeFactor?.toFixed(2) ?? '2.50' }}</p>
               </div>
             </div>
 
+            <!-- Standard Answer -->
+            <div v-if="item.standardAnswer">
+              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">答案修复参考</div>
+              <p class="mt-2 text-sm leading-7 text-slate-700 dark:text-slate-200">{{ item.standardAnswer }}</p>
+            </div>
+
             <!-- Actions -->
-            <div class="flex gap-2 pt-1">
+            <div class="flex flex-wrap gap-2 pt-1">
               <RouterLink
                 :to="`/interview?reanswer=${item.questionId}`"
-                class="hard-button-secondary !min-h-9 !px-3 !py-1 text-xs"
+                class="hard-button-primary !min-h-10 !px-3 !py-1 text-xs"
                 @click.stop
               >
                 重新作答
               </RouterLink>
+              <RouterLink
+                to="/review"
+                class="hard-button-secondary !min-h-10 !px-3 !py-1 text-xs"
+                @click.stop
+              >
+                进入复习
+              </RouterLink>
               <button
                 type="button"
-                class="text-xs text-slate-400 dark:text-slate-500 transition hover:text-red-500"
+                class="hard-button-secondary !min-h-10 !px-3 !py-1 text-xs"
+                @click.stop="toggleExpand(item.id)"
+              >
+                收起答案
+              </button>
+              <button
+                type="button"
+                class="min-h-10 px-3 py-1 text-xs text-slate-400 transition hover:text-coral dark:text-slate-500"
                 @click.stop="handleDelete(item.id)"
               >
                 删除
@@ -134,7 +171,7 @@
 
           <!-- Collapsed hint -->
           <div v-else class="mt-3 text-xs tracking-[0.2em] text-slate-400 dark:text-slate-500">
-            点击展开详情
+            点击展开修复动作
           </div>
         </article>
       </div>
@@ -193,6 +230,47 @@ const filteredItems = computed(() => {
 
   return result
 })
+
+const todayIso = () => new Date().toISOString().slice(0, 10)
+
+const isDue = (item: WrongQuestionItem) => Boolean(item.nextReviewDate && item.nextReviewDate <= todayIso())
+
+const repairPriority = (item: WrongQuestionItem) => {
+  if (isDue(item)) return 0
+  if (item.masteryLevel === 'not_started') return 1
+  if (item.masteryLevel === 'reviewing') return 2
+  return 3
+}
+
+const prioritizedItems = computed(() =>
+  [...filteredItems.value].sort((a, b) => {
+    const priorityDiff = repairPriority(a) - repairPriority(b)
+    if (priorityDiff !== 0) return priorityDiff
+    return (b.reviewCount ?? 0) - (a.reviewCount ?? 0)
+  })
+)
+
+const masteredCount = computed(() => items.value.filter((item) => item.masteryLevel === 'mastered').length)
+const masteryRate = computed(() => {
+  if (!items.value.length) return 0
+  return Math.round((masteredCount.value / items.value.length) * 100)
+})
+
+const longestOverdue = computed(() => {
+  const today = new Date(todayIso()).getTime()
+  return items.value.reduce((max, item) => {
+    if (!item.nextReviewDate || item.nextReviewDate > todayIso()) return max
+    const days = Math.max(0, Math.floor((today - new Date(item.nextReviewDate).getTime()) / 86400000))
+    return Math.max(max, days)
+  }, 0)
+})
+
+const repairSignals = computed(() => [
+  { label: '待修复', value: String(total.value), desc: '当前错题库总量', dotClass: 'bg-accent' },
+  { label: '今日到期', value: String(todayDue.value), desc: '建议优先进入复习', dotClass: todayDue.value > 0 ? 'bg-coral' : 'bg-lime' },
+  { label: '掌握率', value: `${masteryRate.value}%`, desc: `${masteredCount.value} 道已掌握`, dotClass: masteryRate.value >= 70 ? 'bg-lime' : 'bg-amber' },
+  { label: '最长逾期', value: `${longestOverdue.value} 天`, desc: '越久越应先处理', dotClass: longestOverdue.value > 0 ? 'bg-coral' : 'bg-cyan' }
+])
 
 const loadData = async () => {
   loading.value = true
@@ -275,6 +353,13 @@ const masteryChipClass = (level: string) => {
   return '!bg-white/80 dark:!bg-slate-700/80 !text-slate-600 dark:!text-slate-300'
 }
 
+const repairCardClass = (item: WrongQuestionItem) => {
+  if (isDue(item)) return 'repair-card-due'
+  if (item.masteryLevel === 'not_started') return 'repair-card-new'
+  if (item.masteryLevel === 'reviewing') return 'repair-card-active'
+  return 'repair-card-mastered'
+}
+
 const formatDate = (dateStr: string) => {
   if (!dateStr) return ''
   const d = new Date(dateStr)
@@ -285,11 +370,61 @@ const formatDate = (dateStr: string) => {
 
 const isDueToday = (dateStr: string) => {
   if (!dateStr) return false
-  const today = new Date().toISOString().slice(0, 10)
-  return dateStr <= today
+  return dateStr <= todayIso()
 }
 
 onMounted(() => {
   void loadData()
 })
 </script>
+
+<style scoped>
+.repair-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--bc-line);
+  border-left-width: 3px;
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.08), transparent 34%),
+    var(--bc-surface-card);
+  box-shadow: var(--bc-shadow-soft);
+  transition:
+    border-color var(--motion-base) var(--ease-hard),
+    box-shadow var(--motion-base) var(--ease-hard),
+    transform var(--motion-base) var(--ease-hard);
+}
+
+.repair-card:hover,
+.repair-card.is-expanded {
+  box-shadow: var(--bc-shadow-hover);
+  transform: translateY(-2px);
+}
+
+.repair-card-due {
+  border-left-color: var(--bc-coral);
+}
+
+.repair-card-new {
+  border-left-color: var(--bc-amber);
+}
+
+.repair-card-active {
+  border-left-color: var(--bc-cyan);
+}
+
+.repair-card-mastered {
+  border-left-color: var(--bc-lime);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .repair-card {
+    transition-duration: 0.01ms;
+  }
+
+  .repair-card:hover,
+  .repair-card.is-expanded {
+    transform: none;
+  }
+}
+</style>
