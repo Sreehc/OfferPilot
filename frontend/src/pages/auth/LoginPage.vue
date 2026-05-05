@@ -2,7 +2,7 @@
   <div class="flex min-h-screen items-center justify-center px-4 py-8">
     <div class="w-full max-w-5xl lg:grid lg:gap-8 lg:grid-cols-[1fr_1fr]">
       <!-- Left: Feature intro -->
-      <section class="paper-panel relative overflow-hidden p-8 md:p-12 hidden lg:flex lg:flex-col lg:justify-center">
+      <section class="paper-panel relative overflow-hidden p-8 md:p-12 hidden lg:flex items-center">
         <div
           class="absolute -left-12 top-0 h-48 w-48 -rotate-6 bg-[rgba(47,79,157,0.06)] blur-3xl"
           style="border-radius: var(--radius-lg);"
@@ -12,34 +12,37 @@
           style="border-radius: var(--radius-lg);"
         ></div>
 
-        <h1 class="relative text-3xl font-bold tracking-[-0.03em] text-ink leading-tight">
-          Java 面试准备，<br>一站搞定。
-        </h1>
-        <p class="relative mt-4 text-base leading-7 text-slate-500 dark:text-slate-400">
-          AI 驱动的问答、模拟面试、错题复习、学习计划四段闭环。
-        </p>
+        <div class="relative w-full">
+          <h1 class="text-3xl font-bold tracking-[-0.03em] text-ink leading-tight">
+            Java 面试准备，<br>一站搞定。
+          </h1>
+          <p class="mt-4 text-base leading-7 text-slate-500 dark:text-slate-400">
+            AI 驱动的问答、模拟面试、错题复习、学习计划四段闭环。
+          </p>
 
-        <div class="relative mt-10 space-y-4">
-          <div v-for="feature in features" :key="feature.title" class="flex items-start gap-3">
-            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
-              <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" :d="feature.icon" />
-              </svg>
-            </div>
-            <div>
-              <div class="text-sm font-semibold text-ink">{{ feature.title }}</div>
-              <div class="mt-0.5 text-xs text-slate-400">{{ feature.desc }}</div>
+          <div class="mt-10 space-y-4">
+            <div v-for="feature in features" :key="feature.title" class="flex items-start gap-3">
+              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
+                <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" :d="feature.icon" />
+                </svg>
+              </div>
+              <div>
+                <div class="text-sm font-semibold text-ink">{{ feature.title }}</div>
+                <div class="mt-0.5 text-xs text-slate-400">{{ feature.desc }}</div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       <!-- Right: Login form -->
-      <section class="paper-panel p-8 md:p-10 max-w-md mx-auto lg:max-w-none lg:flex lg:flex-col lg:justify-center">
-        <h2 class="text-2xl font-semibold tracking-[-0.03em] text-ink">登录 ByteCoach</h2>
-        <p class="mt-2 text-sm text-slate-400">输入你的账号密码开始学习</p>
+      <section class="paper-panel p-8 md:p-10 max-w-md mx-auto lg:max-w-none lg:flex lg:items-center">
+        <div class="w-full">
+          <h2 class="text-2xl font-semibold tracking-[-0.03em] text-ink">登录 ByteCoach</h2>
+          <p class="mt-2 text-sm text-slate-400">输入你的账号密码开始学习</p>
 
-        <el-form ref="formRef" :model="form" :rules="rules" class="mt-8 space-y-1" label-position="top" @submit.prevent>
+          <el-form ref="formRef" :model="form" :rules="rules" class="mt-6 space-y-1" label-position="top" @submit.prevent>
           <el-form-item label="用户名" prop="username">
             <el-input v-model="form.username" placeholder="请输入用户名" size="large" />
           </el-form-item>
@@ -82,9 +85,10 @@
           </el-button>
         </el-form>
 
-        <div class="mt-6 text-center text-sm text-slate-400">
-          还没有账号？
-          <RouterLink class="font-semibold text-accent hover:underline" to="/register">立即注册</RouterLink>
+          <div class="mt-6 text-center text-sm text-slate-400">
+            还没有账号？
+            <RouterLink class="font-semibold text-accent hover:underline" to="/register">立即注册</RouterLink>
+          </div>
         </div>
       </section>
     </div>
