@@ -1,5 +1,5 @@
 <template>
-  <aside class="paper-panel flex h-full flex-col justify-between p-6">
+  <aside class="flex h-full flex-col justify-between p-6 bg-white/50 dark:bg-slate-900/50">
     <div class="space-y-8">
       <div>
         <div class="section-kicker">ByteCoach</div>

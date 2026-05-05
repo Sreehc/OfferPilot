@@ -1,10 +1,10 @@
 <template>
-  <div class="min-h-screen px-4 py-4 pb-20 md:pb-4 md:px-6 md:py-6">
-    <div class="mx-auto grid max-w-[1480px] gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
+  <div class="min-h-screen px-3 py-3 pb-20 md:pb-4 md:px-5 md:py-5">
+    <div class="mx-auto overflow-hidden rounded-lg border border-slate-200/60 dark:border-slate-700/40 max-w-[1480px] lg:grid lg:grid-cols-[280px_minmax(0,1fr)]">
       <!-- Desktop sidebar: hidden below lg -->
-      <NavRail v-show="sidebarVisible" class="hidden lg:block min-h-[280px]" />
+      <NavRail v-show="sidebarVisible" class="hidden lg:block min-h-[280px] border-r border-slate-200/60 dark:border-slate-700/40" />
 
-      <main class="space-y-4">
+      <main class="space-y-4 p-4 md:p-6">
         <AppShellHeader
           :kicker="headerMeta.kicker"
           :title="headerMeta.title"
