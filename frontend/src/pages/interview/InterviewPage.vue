@@ -1,41 +1,44 @@
 <template>
-  <div class="space-y-4">
-    <!-- Setup / Active Interview Header -->
-    <section class="grid gap-4" :class="phase === 'idle' ? 'lg:grid-cols-[0.95fr_1.05fr]' : 'lg:grid-cols-[0.4fr_1fr]'">
-      <!-- Left Panel -->
-      <div class="paper-panel p-4 sm:p-6">
-        <p class="section-kicker">面试设置</p>
-        <h3 class="mt-4 text-3xl font-semibold tracking-[-0.03em] text-ink">
-          {{ phase === 'idle' ? '每场 3-5 题，一轮追问' : `第 ${currentQuestion?.currentIndex ?? '?'} 题 / 共 ${currentQuestion?.questionCount ?? '?'} 题` }}
+  <div class="space-y-4 interview-cockpit">
+    <section class="grid gap-4" :class="phase === 'idle' ? 'lg:grid-cols-[0.92fr_1.08fr]' : 'lg:grid-cols-[360px_minmax(0,1fr)]'">
+      <aside class="cockpit-panel p-4 sm:p-6">
+        <div class="flex items-center gap-3">
+          <span class="state-pulse" aria-hidden="true"></span>
+          <p class="section-kicker">Interview Chamber</p>
+        </div>
+        <h3 class="mt-5 font-display text-4xl font-semibold leading-[0.9] tracking-[-0.04em] text-ink">
+          {{ phase === 'idle' ? '启动一场高压模拟' : `Q${currentQuestion?.currentIndex ?? '?'} / ${currentQuestion?.questionCount ?? '?'}` }}
         </h3>
+        <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
+          {{ phase === 'idle' ? '选择方向、题量和作答模式，进入专注面试舱。每题计时、即时评分、低分自动进入错题修复队列。' : '保持结构化表达：定义、机制、场景、风险和权衡。' }}
+        </p>
 
-        <!-- Idle: Setup Form -->
         <div v-if="phase === 'idle'" class="mt-6 space-y-4">
-          <div class="surface-card p-4">
-            <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">面试方向</div>
+          <div class="data-slab p-4">
+            <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">方向</div>
             <el-select v-model="direction" size="large" class="mt-2 w-full">
               <el-option v-for="d in directions" :key="d" :label="d" :value="d" />
             </el-select>
           </div>
-          <div class="surface-card p-4">
-            <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">题目数量</div>
+          <div class="data-slab p-4">
+            <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">题量</div>
             <el-input-number v-model="questionCount" :min="3" :max="5" size="large" class="mt-2 w-full" />
           </div>
-          <div v-if="voiceAvailable" class="surface-card p-4">
+          <div v-if="voiceAvailable" class="data-slab p-4">
             <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">作答模式</div>
-            <div class="mt-3 flex gap-3">
+            <div class="mt-3 grid grid-cols-2 gap-3">
               <button
                 type="button"
-                class="flex-1 rounded-xl p-3 text-sm font-medium transition-all"
-                :class="interviewMode === 'text' ? 'bg-accent text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'"
+                class="min-h-11 rounded-2xl border px-3 py-2 text-sm font-semibold transition-all"
+                :class="interviewMode === 'text' ? 'border-[var(--bc-line-hot)] bg-accent/10 text-ink' : 'border-[var(--bc-line)] text-slate-600 hover:bg-white/40 dark:text-slate-300 dark:hover:bg-white/5'"
                 @click="interviewMode = 'text'"
               >
                 打字作答
               </button>
               <button
                 type="button"
-                class="flex-1 rounded-xl p-3 text-sm font-medium transition-all"
-                :class="interviewMode === 'voice' ? 'bg-accent text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'"
+                class="min-h-11 rounded-2xl border px-3 py-2 text-sm font-semibold transition-all"
+                :class="interviewMode === 'voice' ? 'border-[var(--bc-line-hot)] bg-accent/10 text-ink' : 'border-[var(--bc-line)] text-slate-600 hover:bg-white/40 dark:text-slate-300 dark:hover:bg-white/5'"
                 @click="interviewMode = 'voice'"
               >
                 语音作答
@@ -49,38 +52,40 @@
             class="action-button w-full"
             @click="handleStart()"
           >
-            {{ interviewMode === 'voice' && voiceAvailable ? '开始语音面试' : '开始面试' }}
+            {{ interviewMode === 'voice' && voiceAvailable ? '开始语音面试' : '启动面试舱' }}
           </el-button>
         </div>
 
-        <!-- In Progress: Current Question -->
         <div v-else class="mt-6 space-y-4">
-          <!-- Progress Bar -->
-          <div class="surface-card p-4">
+          <div class="data-slab p-4">
             <div class="flex items-center justify-between text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
               <span>进度</span>
               <span>{{ currentQuestion?.currentIndex ?? 0 }} / {{ currentQuestion?.questionCount ?? 0 }}</span>
             </div>
-            <div class="mt-3 h-2 rounded-full bg-slate-200/80 dark:bg-slate-700/80">
+            <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-200/80 dark:bg-white/10">
               <div
-                class="h-2 rounded-full bg-accent transition-all duration-500"
+                class="h-full rounded-full bg-accent transition-all duration-500"
                 :style="{ width: `${progressPercent}%` }"
               ></div>
             </div>
           </div>
 
-          <!-- Current Question -->
-          <div class="surface-card p-4">
+          <div class="data-slab p-4">
             <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">当前题目</div>
-            <div class="mt-2 text-lg font-semibold text-ink leading-relaxed">
+            <div class="mt-3 text-lg font-semibold leading-relaxed text-ink">
               {{ currentQuestion?.questionTitle ?? '加载中...' }}
             </div>
           </div>
 
-          <!-- Direction Badge -->
-          <div class="surface-card p-4">
-            <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">面试方向</div>
-            <div class="mt-2 font-semibold">{{ direction }}</div>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="data-slab p-4">
+              <div class="text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">方向</div>
+              <div class="mt-2 font-semibold text-ink">{{ direction }}</div>
+            </div>
+            <div class="data-slab p-4">
+              <div class="text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">模式</div>
+              <div class="mt-2 font-semibold text-ink">{{ interviewMode === 'voice' && voiceAvailable ? '语音' : '文字' }}</div>
+            </div>
           </div>
 
           <el-button
@@ -92,42 +97,54 @@
             查看面试详情
           </el-button>
         </div>
-      </div>
+      </aside>
 
-      <!-- Right Panel -->
-      <div class="paper-panel flex flex-col p-4 sm:p-6">
-        <!-- Idle State -->
+      <section class="cockpit-panel flex min-h-[560px] flex-col p-4 sm:p-6">
         <div v-if="phase === 'idle'" class="flex flex-1 items-center justify-center">
-          <div class="text-center">
-            <div class="text-5xl font-semibold tracking-[-0.03em] text-slate-300 dark:text-slate-600">?</div>
-            <p class="mt-4 text-sm leading-6 text-slate-500 dark:text-slate-400">
-              选择面试方向并点击"开始面试"，系统会从题库中抽取题目并由 AI 进行评分。
+          <div class="max-w-xl text-center">
+            <div class="interview-orbit mx-auto flex h-52 w-52 items-center justify-center rounded-full">
+              <div class="font-mono text-5xl font-semibold text-ink">3-5</div>
+            </div>
+            <p class="section-kicker mt-8">Ready Check</p>
+            <h4 class="mt-3 font-display text-4xl font-semibold leading-none text-ink">一轮追问，一次真实压测</h4>
+            <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
+              系统会抽取题目并在答题后给出评分、点评、标准答案和追问。建议先用文字模式完成一轮，再开启语音模式训练表达流畅度。
             </p>
           </div>
         </div>
 
-        <!-- Answering State -->
         <div v-else-if="phase === 'answering'" class="flex flex-1 flex-col">
-          <div class="flex items-center justify-between">
-            <p class="section-kicker">{{ interviewMode === 'voice' && voiceAvailable ? '语音作答' : '你的回答' }}</p>
-            <div class="flex items-center gap-2 text-sm">
-              <span class="text-slate-500 dark:text-slate-400">倒计时</span>
-              <span class="font-semibold tabular-nums" :class="countdown <= 30 ? 'text-red-500' : 'text-accent'">{{ formatCountdown(countdown) }}</span>
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p class="section-kicker">{{ interviewMode === 'voice' && voiceAvailable ? 'Voice Answer' : 'Answer Console' }}</p>
+              <h4 class="mt-2 text-xl font-semibold text-ink">在倒计时内给出结构化回答</h4>
+            </div>
+            <div class="rounded-2xl border px-4 py-3" :class="countdownUrgent ? 'border-coral/40 bg-coral/10' : 'border-[var(--bc-line)] bg-white/35 dark:bg-white/5'">
+              <div class="flex items-center gap-3">
+                <span class="text-xs text-slate-500 dark:text-slate-400">倒计时</span>
+                <span class="font-mono text-2xl font-semibold" :class="countdownUrgent ? 'text-coral' : 'text-accent'">{{ formatCountdown(countdown) }}</span>
+              </div>
+              <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200/70 dark:bg-white/10">
+                <div
+                  class="h-full rounded-full transition-all duration-500"
+                  :class="countdownUrgent ? 'bg-coral' : 'bg-accent'"
+                  :style="{ width: `${countdownPercent}%` }"
+                ></div>
+              </div>
             </div>
           </div>
 
-          <!-- Text Mode -->
           <template v-if="interviewMode !== 'voice' || !voiceAvailable">
             <el-input
               v-model="answerText"
               type="textarea"
-              :rows="10"
-              placeholder="请在此输入你的回答。尽量覆盖关键点，结构化表达会获得更高分数。"
-              class="mt-4 flex-1"
+              :rows="12"
+              placeholder="建议按：结论 → 核心机制 → 场景权衡 → 风险补充 组织答案。"
+              class="interview-answer-input mt-5 flex-1"
               size="large"
               @keydown.ctrl.enter.prevent="handleSubmitAnswer"
             />
-            <div class="mt-4 flex gap-3">
+            <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
               <el-button
                 :loading="submitting"
                 type="primary"
@@ -135,15 +152,14 @@
                 class="action-button flex-1"
                 @click="handleSubmitAnswer"
               >
-                提交答案
+                提交答案并评分
               </el-button>
-              <span class="self-center text-xs text-slate-400 dark:text-slate-500">Ctrl + Enter 快捷提交</span>
+              <span class="text-xs text-slate-400 dark:text-slate-500">Ctrl + Enter 快捷提交</span>
             </div>
           </template>
 
-          <!-- Voice Mode -->
           <template v-else>
-            <div class="mt-4 flex-1">
+            <div class="mt-5 flex-1">
               <VoiceRecorder
                 :disabled="voiceSubmitting"
                 @recorded="handleVoiceRecorded"
@@ -165,42 +181,38 @@
           </template>
         </div>
 
-        <!-- Loading AI Score -->
         <div v-else-if="phase === 'scoring'" class="flex flex-1 items-center justify-center">
-          <div class="text-center">
-            <div class="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-accent border-t-transparent"></div>
-            <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">AI 正在评分中，请稍候...</p>
+          <div class="w-full max-w-md text-center">
+            <div class="scoring-scan mx-auto flex h-40 w-40 items-center justify-center rounded-full">
+              <div class="h-12 w-12 animate-spin rounded-full border-4 border-accent border-t-transparent"></div>
+            </div>
+            <p class="section-kicker mt-8">Scoring</p>
+            <h4 class="mt-3 font-display text-4xl font-semibold leading-none text-ink">AI 正在拆解答案</h4>
+            <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">准确性、完整性、结构化和深度会被纳入本题评分。</p>
           </div>
         </div>
 
-        <!-- Result State: Show score for current question -->
         <div v-else-if="phase === 'result'" class="space-y-4">
-          <p class="section-kicker">评分结果</p>
+          <p class="section-kicker">Score Debrief</p>
 
-          <!-- Voice Transcript (if voice mode) -->
-          <div v-if="voiceTranscript" class="surface-card p-4">
+          <div v-if="voiceTranscript" class="data-slab p-4">
             <div class="flex items-center justify-between">
               <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">语音转录</div>
-              <div v-if="lastVoiceResult?.transcriptConfidence" class="text-xs text-slate-400">
-                置信度 {{ Math.round(lastVoiceResult.transcriptConfidence * 100) }}%
+              <div v-if="lastVoiceResult?.transcriptConfidence" class="font-mono text-xs text-slate-400">
+                {{ Math.round(lastVoiceResult.transcriptConfidence * 100) }}%
               </div>
             </div>
             <p class="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">{{ voiceTranscript }}</p>
           </div>
 
-          <!-- Score Card -->
-          <div
-            class="p-6 text-white shadow-[0_16px_36px_rgba(47,79,157,0.18)]"
-            style="border-radius: var(--radius-lg); background: linear-gradient(180deg, #365ab0 0%, #2f4f9d 100%);"
-          >
-            <div class="text-xs uppercase tracking-[0.24em] text-white/60">AI 评分</div>
-            <div class="mt-3 text-5xl font-semibold tracking-[-0.03em]">{{ animatedScore }}</div>
-            <p class="mt-4 text-sm leading-7 text-white/80">{{ lastResult?.comment }}</p>
+          <div class="score-card p-6" :class="(lastResult?.score ?? 0) >= 60 ? 'score-card-pass' : 'score-card-risk'">
+            <div class="text-xs uppercase tracking-[0.24em] text-white/65">AI 评分</div>
+            <div class="mt-3 font-mono text-6xl font-semibold tracking-[-0.04em] text-white">{{ animatedScore }}</div>
+            <p class="mt-4 text-sm leading-7 text-white/82">{{ lastResult?.comment }}</p>
           </div>
 
-          <!-- Standard Answer & Follow-up -->
           <div class="grid gap-3 md:grid-cols-2">
-            <div class="surface-card p-4">
+            <div class="data-slab p-4">
               <div class="flex items-center justify-between">
                 <div class="font-semibold text-ink">标准答案</div>
                 <button
@@ -214,7 +226,7 @@
               </div>
               <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ lastResult?.standardAnswer || '暂无' }}</p>
             </div>
-            <div class="surface-card p-4">
+            <div class="data-slab p-4">
               <div class="flex items-center justify-between">
                 <div class="font-semibold text-ink">追问</div>
                 <button
@@ -230,12 +242,10 @@
             </div>
           </div>
 
-          <!-- Wrong Book Notice -->
-          <div v-if="lastResult?.addedToWrongBook" class="surface-muted p-4 text-sm text-slate-600 dark:text-slate-300">
-            <span class="font-semibold text-ink">已自动加入错题本</span> — 该题得分低于 60 分，已沉淀到错题本供后续复习。
+          <div v-if="lastResult?.addedToWrongBook" class="rounded-2xl border border-coral/30 bg-coral/10 p-4 text-sm text-slate-600 dark:text-slate-300">
+            <span class="font-semibold text-ink">已进入错题修复队列</span>：该题得分低于 60 分，后续会进入间隔复习。
           </div>
 
-          <!-- Next / Finish -->
           <div class="flex gap-3">
             <el-button
               v-if="lastResult?.hasNextQuestion"
@@ -258,28 +268,23 @@
           </div>
         </div>
 
-        <!-- Finished State: Summary -->
         <div v-else-if="phase === 'finished'" class="space-y-4">
-          <p class="section-kicker">面试完成</p>
+          <p class="section-kicker">Interview Complete</p>
 
-          <div
-            class="p-6 text-white shadow-[0_16px_36px_rgba(47,79,157,0.18)]"
-            style="border-radius: var(--radius-lg); background: linear-gradient(135deg, #365ab0 0%, #233d79 100%);"
-          >
-            <div class="text-xs uppercase tracking-[0.24em] text-white/60">总分</div>
-            <div class="mt-3 text-6xl font-semibold tracking-[-0.03em]">{{ detail?.totalScore ?? '-' }}</div>
-            <p class="mt-4 text-sm text-white/80">
+          <div class="score-card score-card-pass p-6">
+            <div class="text-xs uppercase tracking-[0.24em] text-white/65">总分</div>
+            <div class="mt-3 font-mono text-7xl font-semibold tracking-[-0.05em] text-white">{{ detail?.totalScore ?? '-' }}</div>
+            <p class="mt-4 text-sm text-white/82">
               共 {{ detail?.questionCount ?? 0 }} 题，方向：{{ detail?.direction }}
               <span v-if="detail?.mode === 'voice'" class="ml-2 inline-flex items-center rounded-full bg-white/20 px-2 py-0.5 text-xs">语音面试</span>
             </p>
           </div>
 
-          <!-- Per-question Results -->
           <div v-if="detail?.records?.length" class="space-y-3">
             <div
               v-for="(record, index) in detail.records"
               :key="record.questionId"
-              class="surface-card p-4 cursor-pointer transition hover:shadow-md"
+              class="data-slab cursor-pointer p-4 transition hover:shadow-md"
               @click="toggleQuestion(record.questionId)"
             >
               <div class="flex items-start justify-between gap-3">
@@ -288,10 +293,10 @@
                   <div class="mt-1 font-semibold text-ink">{{ record.questionTitle }}</div>
                   <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300 line-clamp-2">{{ record.comment || '暂无点评' }}</p>
                 </div>
-                <div class="flex items-center gap-2 shrink-0">
+                <div class="flex shrink-0 items-center gap-2">
                   <div
-                    class="text-3xl font-semibold tracking-[-0.03em]"
-                    :class="record.score >= 60 ? 'text-accent' : 'text-red-500'"
+                    class="font-mono text-3xl font-semibold tracking-[-0.03em]"
+                    :class="record.score >= 60 ? 'text-accent' : 'text-coral'"
                   >
                     {{ record.score ?? '-' }}
                   </div>
@@ -305,15 +310,14 @@
                 </div>
               </div>
 
-              <!-- Expanded detail -->
-              <div v-if="expandedQuestions.has(record.questionId)" class="mt-4 space-y-3 border-t border-slate-200/60 dark:border-slate-700/60 pt-4">
+              <div v-if="expandedQuestions.has(record.questionId)" class="mt-4 space-y-3 border-t border-[var(--bc-line)] pt-4">
                 <div v-if="record.userAnswer">
                   <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">我的回答</div>
-                  <p class="mt-1 text-sm leading-6 text-slate-700 dark:text-slate-200 whitespace-pre-wrap">{{ record.userAnswer }}</p>
+                  <p class="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">{{ record.userAnswer }}</p>
                 </div>
                 <div v-if="record.standardAnswer">
                   <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">标准答案</div>
-                  <p class="mt-1 text-sm leading-6 text-slate-700 dark:text-slate-200 whitespace-pre-wrap">{{ record.standardAnswer }}</p>
+                  <p class="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">{{ record.standardAnswer }}</p>
                 </div>
                 <div v-if="record.followUp">
                   <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">追问</div>
@@ -323,7 +327,6 @@
             </div>
           </div>
 
-          <!-- Actions -->
           <div class="flex gap-3">
             <RouterLink to="/wrong" class="hard-button-secondary flex-1 text-center">
               查看错题本
@@ -333,7 +336,7 @@
             </el-button>
           </div>
         </div>
-      </div>
+      </section>
     </section>
   </div>
 </template>
@@ -453,6 +456,9 @@ const progressPercent = computed(() => {
   const { currentIndex, questionCount: total } = currentQuestion.value
   return Math.round(((currentIndex - 1) / total) * 100)
 })
+
+const countdownPercent = computed(() => Math.max(0, Math.round((countdown.value / COUNTDOWN_SECONDS) * 100)))
+const countdownUrgent = computed(() => countdown.value <= 30)
 
 const handleStart = async (reanswerQuestionId?: number) => {
   starting.value = true
@@ -639,3 +645,76 @@ onMounted(() => {
   }
 })
 </script>
+
+<style scoped>
+.interview-cockpit :deep(.el-textarea__inner) {
+  min-height: 320px !important;
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.interview-orbit,
+.scoring-scan {
+  position: relative;
+  border: 1px solid var(--bc-line-hot);
+  background:
+    radial-gradient(circle, rgba(var(--bc-accent-rgb), 0.18), transparent 58%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.08), transparent);
+  box-shadow:
+    0 0 0 12px rgba(var(--bc-accent-rgb), 0.04),
+    0 0 60px rgba(var(--bc-accent-rgb), 0.18);
+}
+
+.interview-orbit::before,
+.scoring-scan::before {
+  content: '';
+  position: absolute;
+  inset: 20px;
+  border: 1px dashed rgba(var(--bc-accent-rgb), 0.34);
+  border-radius: inherit;
+}
+
+.interview-orbit::after,
+.scoring-scan::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: conic-gradient(from 120deg, transparent, rgba(var(--bc-accent-rgb), 0.45), transparent 34%);
+  opacity: 0.5;
+  mask: radial-gradient(circle, transparent 63%, black 64%);
+  animation: orbit-spin 8s linear infinite;
+}
+
+.score-card {
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 26px 56px rgba(0, 0, 0, 0.22);
+}
+
+.score-card-pass {
+  background:
+    radial-gradient(circle at 88% 14%, rgba(85, 214, 190, 0.34), transparent 32%),
+    linear-gradient(135deg, #123b48 0%, #10243a 55%, #07111f 100%);
+}
+
+.score-card-risk {
+  background:
+    radial-gradient(circle at 88% 14%, rgba(255, 107, 107, 0.34), transparent 32%),
+    linear-gradient(135deg, #4a1d23 0%, #10243a 60%, #07111f 100%);
+}
+
+@keyframes orbit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .interview-orbit::after,
+  .scoring-scan::after {
+    animation: none;
+  }
+}
+</style>
