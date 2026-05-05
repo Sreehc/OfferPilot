@@ -1,11 +1,14 @@
 <template>
-  <div class="space-y-6">
+  <div class="review-room space-y-6">
     <!-- Header -->
-    <section class="paper-panel p-6">
+    <section class="cockpit-panel p-6">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p class="section-kicker">间隔复习</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
+          <div class="flex items-center gap-3">
+            <span class="state-pulse" aria-hidden="true"></span>
+            <p class="section-kicker">Memory Replay</p>
+          </div>
+          <h3 class="mt-4 font-display text-4xl font-semibold leading-none tracking-[-0.04em] text-ink">
             {{ loading ? '加载中...' : `${todayCount} 道题待复习` }}
           </h3>
           <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
@@ -29,13 +32,13 @@
     </section>
 
     <!-- Loading -->
-    <section v-if="loading" class="paper-panel p-8 text-center">
+    <section v-if="loading" class="cockpit-panel p-8 text-center">
       <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
       <p class="mt-4 text-sm text-slate-500">加载复习题目...</p>
     </section>
 
     <!-- Empty State: No reviews due -->
-    <section v-else-if="!items.length && !started" class="paper-panel p-8">
+    <section v-else-if="!items.length && !started" class="cockpit-panel p-8">
       <EmptyState
         icon="review"
         title="今日无待复习题目"
@@ -51,32 +54,36 @@
     </section>
 
     <!-- Start Screen -->
-    <section v-else-if="!started" class="paper-panel p-8">
-      <EmptyState
-        icon="review"
-        :title="`${todayCount} 道题等待复习`"
-        :description="`共 ${todayCount} 道题。翻转卡片回忆答案，再根据掌握程度评分。`"
-      >
-        <template #action>
+    <section v-else-if="!started" class="cockpit-panel overflow-hidden p-8">
+      <div class="mx-auto max-w-2xl text-center">
+        <div class="review-orbit mx-auto flex h-44 w-44 items-center justify-center rounded-full">
+          <span class="font-mono text-5xl font-semibold text-ink">{{ todayCount }}</span>
+        </div>
+        <p class="section-kicker mt-8">Due Cards</p>
+        <h3 class="mt-3 font-display text-4xl font-semibold leading-none text-ink">{{ todayCount }} 道题等待回放</h3>
+        <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
+          先回忆，再翻卡。根据真实掌握程度评分，系统会计算下一次复习日期。
+        </p>
+        <div class="mt-6">
           <button type="button" class="hard-button-primary" @click="startReview">
-            开始复习
+            进入记忆回放室
           </button>
-        </template>
-      </EmptyState>
+        </div>
+      </div>
     </section>
 
     <!-- Flashcard Review -->
-    <section v-else-if="currentItem" class="mx-auto max-w-2xl px-2 sm:px-0">
+    <section v-else-if="currentItem" class="mx-auto max-w-3xl px-2 sm:px-0">
       <!-- Progress -->
       <div class="mb-4 flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
-        <span>{{ currentIndex + 1 }} / {{ items.length }}</span>
-        <span v-if="currentItem.overdueDays > 0" class="text-amber-500">
+        <span class="font-mono">{{ currentIndex + 1 }} / {{ items.length }}</span>
+        <span v-if="currentItem.overdueDays > 0" class="rounded-full border border-coral/30 bg-coral/10 px-3 py-1 text-coral">
           逾期 {{ currentItem.overdueDays }} 天
         </span>
       </div>
-      <div class="mb-6 h-1 w-full rounded-full bg-slate-200 dark:bg-slate-700">
+      <div class="mb-6 h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
         <div
-          class="h-1 rounded-full bg-accent transition-all duration-300"
+          class="h-full rounded-full bg-accent transition-all duration-300"
           :style="{ width: `${((currentIndex + 1) / items.length) * 100}%` }"
         ></div>
       </div>
@@ -98,22 +105,25 @@
       >
         <div class="flashcard">
           <!-- Front: Question -->
-          <div class="flashcard-front paper-panel p-5 sm:p-8">
-            <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-              题目
+          <div class="flashcard-front memory-card p-5 sm:p-8">
+            <div class="flex items-center justify-between gap-4">
+              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                Recall Prompt
+              </div>
+              <span class="hard-chip">{{ currentItem.masteryLevel }}</span>
             </div>
-            <h3 class="mt-4 text-lg sm:text-xl font-semibold leading-relaxed text-ink">
+            <h3 class="mt-8 text-xl font-semibold leading-relaxed text-ink sm:text-2xl">
               {{ currentItem.title }}
             </h3>
-            <p class="mt-6 text-sm text-slate-400 dark:text-slate-500">
+            <p class="mt-8 text-sm text-slate-400 dark:text-slate-500">
               点击翻转查看标准答案
             </p>
           </div>
 
           <!-- Back: Answer -->
-          <div class="flashcard-back paper-panel p-5 sm:p-8">
+          <div class="flashcard-back memory-card p-5 sm:p-8">
             <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-              标准答案
+              Standard Answer
             </div>
             <p class="mt-4 text-sm leading-7 text-slate-700 dark:text-slate-200 whitespace-pre-wrap">
               {{ currentItem.standardAnswer || '暂无标准答案' }}
@@ -123,6 +133,9 @@
                 之前错误原因
               </div>
               <p class="mt-1 text-sm text-red-500 dark:text-red-400">{{ currentItem.errorReason }}</p>
+            </div>
+            <div class="mt-4 border-t border-[var(--bc-line)] pt-4 text-xs text-slate-500 dark:text-slate-400">
+              当前 EF：{{ (currentItem.easeFactor ?? 2.5).toFixed(2) }} · 当前间隔：{{ currentItem.intervalDays ?? 1 }} 天
             </div>
           </div>
         </div>
@@ -134,12 +147,12 @@
           v-for="btn in ratingButtons"
           :key="btn.rating"
           type="button"
-          class="flex flex-col items-center gap-1 rounded-xl p-3 text-sm font-medium transition-all"
+          class="rating-button flex flex-col items-center gap-1 p-3 text-sm font-semibold transition-all"
           :class="btn.class"
           :disabled="submitting"
           @click="handleRate(btn.rating)"
         >
-          <span class="text-lg">{{ btn.emoji }}</span>
+          <component :is="btn.icon" class="h-5 w-5" />
           <span>{{ btn.label }}</span>
           <span class="text-xs opacity-70">{{ btn.interval }}</span>
         </button>
@@ -147,7 +160,7 @@
     </section>
 
     <!-- Completion Summary -->
-    <section v-else class="paper-panel p-8">
+    <section v-else class="cockpit-panel p-8">
       <EmptyState
         icon="trophy"
         title="今日复习完成"
@@ -166,7 +179,7 @@
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import { computed, onMounted, ref } from 'vue'
+import { computed, h, onMounted, ref } from 'vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchReviewStatsApi, fetchReviewTodayApi, submitReviewRateApi } from '@/api/review'
 import type { ReviewStats, ReviewTodayItem } from '@/types/api'
@@ -229,8 +242,25 @@ const onTouchEnd = (e: TouchEvent) => {
 }
 
 const todayCount = computed(() => items.value.length)
-const estimatedMinutes = computed(() => Math.max(1, Math.ceil(items.value.length * 0.5)))
 const currentItem = computed(() => items.value[currentIndex.value] ?? null)
+
+const IconRepeat = () => h('svg', { fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2' }, [
+  h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d: 'M4 4v6h6M20 20v-6h-6M5.6 16.5A7.5 7.5 0 0018.4 7.5M18.4 7.5H14M18.4 7.5V3' })
+])
+
+const IconFriction = () => h('svg', { fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2' }, [
+  h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d: 'M12 3l8 15H4L12 3z' }),
+  h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d: 'M12 9v4m0 4h.01' })
+])
+
+const IconCheck = () => h('svg', { fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2' }, [
+  h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d: 'M5 13l4 4L19 7' })
+])
+
+const IconLift = () => h('svg', { fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2' }, [
+  h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d: 'M12 19V5m0 0l-6 6m6-6l6 6' }),
+  h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d: 'M5 21h14' })
+])
 
 const ratingButtons = computed(() => {
   const item = currentItem.value
@@ -239,10 +269,10 @@ const ratingButtons = computed(() => {
   const goodDays = Math.max(1, Math.round(interval * ef))
   const easyDays = Math.max(1, Math.round(interval * ef * 1.3))
   return [
-    { rating: 1 as const, emoji: '🔄', label: '重来', interval: '1 天', class: 'bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30' },
-    { rating: 2 as const, emoji: '😓', label: '困难', interval: '1 天', class: 'bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/30' },
-    { rating: 3 as const, emoji: '👍', label: '良好', interval: `${goodDays} 天`, class: 'bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/30' },
-    { rating: 4 as const, emoji: '🌟', label: '轻松', interval: `${easyDays} 天`, class: 'bg-green-50 text-green-600 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/30' }
+    { rating: 1 as const, icon: IconRepeat, label: '重来', interval: '1 天', class: 'border-coral/30 bg-coral/10 text-coral hover:bg-coral/15' },
+    { rating: 2 as const, icon: IconFriction, label: '困难', interval: '1 天', class: 'border-amber/30 bg-amber/10 text-amber hover:bg-amber/15' },
+    { rating: 3 as const, icon: IconCheck, label: '良好', interval: `${goodDays} 天`, class: 'border-cyan/30 bg-cyan/10 text-cyan hover:bg-cyan/15' },
+    { rating: 4 as const, icon: IconLift, label: '轻松', interval: `${easyDays} 天`, class: 'border-lime/30 bg-lime/10 text-lime hover:bg-lime/15' }
   ]
 })
 
@@ -301,6 +331,25 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.review-orbit {
+  position: relative;
+  border: 1px solid var(--bc-line-hot);
+  background:
+    radial-gradient(circle, rgba(var(--bc-accent-rgb), 0.18), transparent 58%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.08), transparent);
+  box-shadow:
+    0 0 0 12px rgba(var(--bc-accent-rgb), 0.04),
+    0 0 60px rgba(var(--bc-accent-rgb), 0.18);
+}
+
+.review-orbit::before {
+  content: '';
+  position: absolute;
+  inset: 18px;
+  border: 1px dashed rgba(var(--bc-accent-rgb), 0.34);
+  border-radius: inherit;
+}
+
 .flashcard-wrapper {
   perspective: 1000px;
 }
@@ -308,15 +357,15 @@ onMounted(() => {
 .flashcard {
   position: relative;
   width: 100%;
-  min-height: 240px;
+  min-height: 320px;
   max-height: 70vh;
-  transition: transform 0.5s;
+  transition: transform 0.42s var(--ease-hard);
   transform-style: preserve-3d;
 }
 
 @media (min-width: 640px) {
   .flashcard {
-    min-height: 280px;
+    min-height: 360px;
   }
 }
 
@@ -337,5 +386,36 @@ onMounted(() => {
 
 .flashcard-back {
   transform: rotateY(180deg);
+}
+
+.memory-card {
+  border: 1px solid var(--bc-line);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at 80% 20%, rgba(85, 214, 190, 0.1), transparent 30%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.08), transparent 34%),
+    var(--bc-panel);
+  box-shadow:
+    var(--bc-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.rating-button {
+  min-height: 92px;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(10px);
+}
+
+.rating-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flashcard {
+    transition-duration: 0.01ms;
+  }
 }
 </style>
