@@ -6,15 +6,22 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: '#172033',
-        accent: '#2f4f9d',
-        mist: '#eef2f7',
-        fog: '#c8d2e1',
-        shell: '#f5f7fb'
+        ink: 'rgb(var(--bc-ink-rgb) / <alpha-value>)',
+        accent: 'rgb(var(--bc-accent-rgb) / <alpha-value>)',
+        mist: '#dfeaf1',
+        fog: '#8ca6bf',
+        shell: 'var(--bc-shell)',
+        void: 'var(--bc-void)',
+        depth: 'var(--bc-depth)',
+        amber: 'var(--bc-amber)',
+        cyan: 'var(--bc-cyan)',
+        coral: 'var(--bc-coral)',
+        lime: 'var(--bc-lime)'
       },
       fontFamily: {
-        display: ['Manrope', 'Avenir Next', 'sans-serif'],
-        body: ['Manrope', 'Avenir Next', 'sans-serif']
+        display: ['Barlow Condensed', 'Noto Sans SC', 'sans-serif'],
+        body: ['Noto Sans SC', 'Avenir Next', 'sans-serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace']
       },
       boxShadow: {
         frame: '0 24px 80px rgba(16, 24, 43, 0.14)'

@@ -1,8 +1,11 @@
 <template>
-  <header class="paper-panel flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
+  <header class="cockpit-panel flex flex-col gap-4 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
     <div class="min-w-0">
-      <p class="section-kicker">{{ kicker }}</p>
-      <h2 class="page-title mt-3 text-xl sm:text-2xl lg:text-3xl">{{ title }}</h2>
+      <div class="flex items-center gap-3">
+        <span class="state-pulse" aria-hidden="true"></span>
+        <p class="section-kicker">{{ kicker }}</p>
+      </div>
+      <h2 class="page-title mt-3 text-2xl sm:text-3xl lg:text-4xl">{{ title }}</h2>
       <p class="page-subtitle mt-3 hidden sm:block">{{ subtitle }}</p>
     </div>
 
