@@ -17,13 +17,58 @@
     </section>
 
     <template v-else>
+      <section class="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)]">
+        <RouterLink
+          :to="primaryMission.to"
+          class="mission-card block p-5 sm:p-6"
+          :class="{ 'border-[var(--bc-line-hot)]': primaryMission.urgent }"
+        >
+          <div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+            <div class="min-w-0">
+              <div class="flex items-center gap-3">
+                <span class="state-pulse" aria-hidden="true"></span>
+                <p class="section-kicker">Mission Focus</p>
+              </div>
+              <h3 class="mt-5 font-display text-4xl font-semibold leading-none tracking-[-0.04em] text-ink sm:text-5xl">
+                {{ primaryMission.title }}
+              </h3>
+              <p class="mt-4 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+                {{ primaryMission.description }}
+              </p>
+            </div>
+            <div class="shrink-0">
+              <span class="hard-button-primary inline-flex">
+                {{ primaryMission.cta }}
+              </span>
+            </div>
+          </div>
+        </RouterLink>
+
+        <aside class="cockpit-panel p-5">
+          <p class="section-kicker">Today Signal</p>
+          <div class="mt-4 space-y-3">
+            <div
+              v-for="signal in todaySignals"
+              :key="signal.label"
+              class="flex items-center justify-between gap-4 rounded-2xl border border-[var(--bc-line)] bg-white/35 px-4 py-3 dark:bg-white/5"
+            >
+              <div class="flex min-w-0 items-center gap-3">
+                <span class="h-2.5 w-2.5 rounded-full" :class="signal.dotClass"></span>
+                <span class="truncate text-sm text-slate-600 dark:text-slate-300">{{ signal.label }}</span>
+              </div>
+              <span class="font-mono text-sm font-semibold text-ink">{{ signal.value }}</span>
+            </div>
+          </div>
+        </aside>
+      </section>
+
       <!-- ════════════ FIRST SCREEN: Metrics + Action Bar ════════════ -->
       <DashboardMetrics :metrics="metrics" />
 
       <!-- Action Bar: 3 prominent action cards -->
       <section class="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
         <!-- Review action -->
-        <RouterLink to="/review" class="paper-panel p-5 group cursor-pointer transition hover:shadow-md">
+        <RouterLink to="/review" class="mission-card p-5 group cursor-pointer">
           <div class="flex items-start justify-between gap-3">
             <div>
               <p class="section-kicker">间隔复习</p>
@@ -46,7 +91,7 @@
         </RouterLink>
 
         <!-- Interview recommendation -->
-        <RouterLink to="/interview" class="paper-panel p-5 group cursor-pointer transition hover:shadow-md">
+        <RouterLink to="/interview" class="mission-card p-5 group cursor-pointer">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
               <p class="section-kicker">推荐面试</p>
@@ -76,14 +121,14 @@
         </RouterLink>
 
         <!-- Quick actions -->
-        <article class="paper-panel p-5">
+        <article class="cockpit-panel p-5">
           <p class="section-kicker">快捷入口</p>
           <div class="mt-3 grid grid-cols-2 gap-2">
             <RouterLink
               v-for="action in quickActions"
               :key="action.to"
               :to="action.to"
-              class="rounded-lg px-3 py-2.5 text-sm font-medium text-ink transition hover:bg-slate-100 dark:hover:bg-slate-800"
+              class="rounded-2xl border border-transparent px-3 py-2.5 text-sm font-medium text-ink transition hover:border-[var(--bc-line)] hover:bg-white/45 dark:hover:bg-white/5"
             >
               {{ action.label }}
             </RouterLink>
@@ -335,6 +380,64 @@ const metrics = computed(() => [
   { label: '平均面试分', value: formatScore(overview.value.averageScore), desc: '所有面试平均得分' },
   { label: '错题数量', value: String(overview.value.wrongCount), desc: '低于 60 分自动收录' },
   { label: '计划完成率', value: `${overview.value.planCompletionRate}%`, desc: '当前计划任务完成比' }
+])
+
+const primaryMission = computed(() => {
+  if (reviewStats.value.todayPending > 0) {
+    return {
+      to: '/review',
+      title: `先修复 ${reviewStats.value.todayPending} 道记忆断点`,
+      description: `今天还有 ${reviewStats.value.todayPending} 道题进入复习窗口。先完成间隔复习，再继续面试训练，能减少重复遗忘。`,
+      cta: '进入复习舱',
+      urgent: true
+    }
+  }
+
+  if ((overview.value.planHealthScore ?? 100) < 70) {
+    return {
+      to: '/plan',
+      title: '计划健康度需要校准',
+      description: `当前计划健康分为 ${overview.value.planHealthScore ?? 0}，建议先调整任务节奏，把薄弱点重新拆进每日执行。`,
+      cta: '查看学习轨道',
+      urgent: true
+    }
+  }
+
+  if (recommendInterview.value?.direction) {
+    return {
+      to: '/interview',
+      title: `进行一场 ${recommendInterview.value.direction} 面试`,
+      description: recommendInterview.value.reason || '系统已根据最近表现推荐下一场训练方向。',
+      cta: '启动面试舱',
+      urgent: false
+    }
+  }
+
+  return {
+    to: '/chat',
+    title: '从一个 Java 问题开始热身',
+    description: '先提问或检索知识库，让系统捕捉你的知识盲点，再进入面试和复习闭环。',
+    cta: '打开问答',
+    urgent: false
+  }
+})
+
+const todaySignals = computed(() => [
+  {
+    label: '待复习',
+    value: `${reviewStats.value.todayPending} 题`,
+    dotClass: reviewStats.value.todayPending > 0 ? 'bg-amber shadow-[0_0_16px_rgba(var(--bc-accent-rgb),0.5)]' : 'bg-lime'
+  },
+  {
+    label: '连续复习',
+    value: `${reviewStats.value.currentStreak} 天`,
+    dotClass: reviewStats.value.currentStreak > 0 ? 'bg-cyan' : 'bg-slate-400'
+  },
+  {
+    label: '计划健康',
+    value: `${overview.value.planHealthScore ?? 100}`,
+    dotClass: (overview.value.planHealthScore ?? 100) >= 70 ? 'bg-lime' : 'bg-coral'
+  }
 ])
 
 const quickActions = [
