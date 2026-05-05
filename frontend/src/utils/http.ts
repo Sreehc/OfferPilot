@@ -24,6 +24,7 @@ http.interceptors.request.use((config) => {
 http.interceptors.response.use(
   (response) => response,
   (error) => {
+    // 401: clear auth and redirect to login
     if (error.response?.status === 401) {
       storage.clearToken()
       storage.clearUser()
@@ -31,7 +32,10 @@ http.interceptors.response.use(
         window.location.replace('/login')
       }
     }
-    ElMessage.error(error.response?.data?.message || '网络异常')
+    // Network error (no response): show generic message
+    if (!error.response) {
+      ElMessage.error('网络异常，请检查网络连接')
+    }
     return Promise.reject(error)
   }
 )
@@ -42,7 +46,7 @@ export async function request<T>(config: AxiosRequestConfig): Promise<ApiRespons
   const response = await http.request<ApiResponse<T>>(config)
   const payload = response.data
   if (payload.code !== 200) {
-    ElMessage.error(payload.message || '请求失败')
+    // Business error: reject with message so caller can handle
     return Promise.reject(payload)
   }
   return payload
