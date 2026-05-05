@@ -1,42 +1,60 @@
 <template>
-  <div class="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
-    <section class="paper-panel p-5">
-      <div class="flex items-center justify-between">
-        <p class="section-kicker">会话列表</p>
-        <button type="button" class="hard-button-secondary !min-h-10 !px-3 !py-1.5 text-xs" @click="startNewSession">
+  <div class="chat-cockpit grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
+    <aside class="cockpit-panel signal-log p-4 sm:p-5">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="state-pulse" aria-hidden="true"></span>
+            <p class="section-kicker">Signal Log</p>
+          </div>
+          <h2 class="mt-3 text-2xl font-semibold tracking-[-0.04em] text-ink">问答信号库</h2>
+        </div>
+        <button type="button" class="hard-button-secondary !min-h-11 !px-3 !py-2 text-xs" @click="startNewSession">
           新会话
         </button>
       </div>
 
+      <div class="mt-5 grid grid-cols-2 gap-3">
+        <div class="data-slab p-3">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Signals</p>
+          <p class="mt-2 font-mono text-2xl font-semibold text-ink">{{ sessionTotal }}</p>
+        </div>
+        <div class="data-slab p-3">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">RAG</p>
+          <p class="mt-2 font-mono text-2xl font-semibold text-[var(--bc-cyan)]">{{ ragSessionCount }}</p>
+        </div>
+      </div>
+
       <div class="mt-5 space-y-3">
-        <article
+        <button
           v-for="session in sessions"
           :key="session.id"
-          class="surface-card surface-card-hover w-full cursor-pointer px-4 py-4 text-left"
-          :class="activeSessionId === session.id ? 'ring-1 ring-accent/20' : ''"
+          type="button"
+          class="signal-card w-full text-left"
+          :class="{ 'signal-card-active': activeSessionId === session.id }"
           @click="selectSession(session.id, session.mode)"
         >
+          <span class="signal-card__rail" aria-hidden="true"></span>
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
-              <div class="truncate font-semibold">{{ session.title }}</div>
-              <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{{ session.mode === 'rag' ? '知识库问答' : '普通问答' }}</p>
+              <div class="truncate text-sm font-semibold text-ink">{{ session.title }}</div>
+              <div class="mt-3 flex flex-wrap items-center gap-2">
+                <span class="hard-chip !px-2 !py-0.5 !text-[9px]" :class="session.mode === 'rag' ? 'signal-chip-rag' : 'signal-chip-chat'">
+                  {{ session.mode === 'rag' ? 'RAG' : 'CHAT' }}
+                </span>
+                <span class="text-[11px] text-slate-500 dark:text-slate-400">{{ formatSessionTime(session.lastMessageTime || session.updateTime) }}</span>
+              </div>
             </div>
-            <button
-              type="button"
-              class="text-xs text-slate-400 dark:text-slate-500 transition hover:text-slate-700 dark:hover:text-slate-300"
-              @click.stop="removeSession(session.id)"
-            >
-              删除
-            </button>
+            <span class="signal-card__delete" @click.stop="removeSession(session.id)">删除</span>
           </div>
-        </article>
+        </button>
       </div>
 
       <EmptyState
         v-if="!sessions.length"
         icon="chat"
-        title="还没有会话"
-        description="直接发起第一个问题，系统会自动创建会话标题并开始沉淀历史。"
+        title="还没有信号"
+        description="发起第一个问题，系统会自动创建会话并沉淀问答轨迹。"
         compact
         class="mt-5"
       />
@@ -51,94 +69,164 @@
           @current-change="handleSessionPageChange"
         />
       </div>
-    </section>
+    </aside>
 
-    <section class="paper-panel flex min-h-[580px] flex-col p-5">
-      <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p class="section-kicker">对话</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">{{ currentTitle }}</h3>
+    <section class="cockpit-panel chat-console flex min-h-[640px] flex-col p-4 sm:p-5">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div class="min-w-0">
+          <p class="section-kicker">Knowledge Dive</p>
+          <h1 class="mt-3 text-2xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">知识潜航问答</h1>
+          <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+            {{ currentTitle }} · 用检索信号锁定资料来源，再进入 cockpit 阅读舱生成可追溯答案。
+          </p>
         </div>
-        <el-select v-model="mode" size="large" class="md:w-[180px]">
-          <el-option label="知识库问答" value="rag" />
-          <el-option label="普通问答" value="chat" />
-        </el-select>
+
+        <div class="mode-switch grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            class="mode-switch__item"
+            :class="{ 'mode-switch__item-active': mode === 'rag' }"
+            @click="mode = 'rag'"
+          >
+            RAG 潜航
+          </button>
+          <button
+            type="button"
+            class="mode-switch__item"
+            :class="{ 'mode-switch__item-active': mode === 'chat' }"
+            @click="mode = 'chat'"
+          >
+            快速问答
+          </button>
+        </div>
       </div>
 
-      <div ref="messageContainer" class="mt-5 flex-1 space-y-4 overflow-y-auto pr-1">
-        <article
-          v-for="message in messages"
-          :key="message.id"
-          class="p-4"
-          style="border-radius: var(--radius-md);"
-          :class="message.role === 'assistant' ? 'surface-card border-l-2 border-l-accent' : 'bg-slate-100 dark:bg-slate-800 text-ink'"
-        >
-          <div class="text-xs uppercase tracking-[0.24em]" :class="message.role === 'assistant' ? 'text-slate-500 dark:text-slate-400' : 'text-slate-400 dark:text-slate-500'">
-            {{ message.role === 'assistant' ? 'AI 助手' : '你' }}
-          </div>
-          <div class="bc-markdown mt-3 text-sm leading-7" v-html="renderMarkdown(message.content)"></div>
+      <div class="mt-5 grid gap-3 sm:grid-cols-3">
+        <div class="data-slab p-3">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Status</p>
+          <p class="mt-2 text-sm font-semibold text-ink">{{ cockpitStatus }}</p>
+        </div>
+        <div class="data-slab p-3">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Messages</p>
+          <p class="mt-2 font-mono text-xl font-semibold text-ink">{{ messages.length }}</p>
+        </div>
+        <div class="data-slab p-3">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Reference Deck</p>
+          <p class="mt-2 font-mono text-xl font-semibold text-[var(--bc-cyan)]">{{ referenceDeck.length }}</p>
+        </div>
+      </div>
 
-          <div v-if="message.references && message.references.length" class="surface-muted mt-4 space-y-2 px-3 py-3 text-xs text-slate-600 dark:text-slate-300">
-            <div class="mb-1 font-semibold text-slate-500 dark:text-slate-400">知识库引用</div>
-            <div v-for="reference in message.references" :key="reference.chunkId" class="space-y-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-800/60 px-3 py-2">
-              <div class="flex items-center justify-between">
-                <div class="font-semibold text-slate-700 dark:text-slate-200">{{ reference.docTitle }}</div>
-                <span v-if="reference.score != null" class="rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-medium text-accent">
-                  {{ Math.round(reference.score * 100) }}%
-                </span>
+      <div class="mt-5 grid min-h-0 flex-1 gap-4 2xl:grid-cols-[minmax(0,1fr)_310px]">
+        <div ref="messageContainer" class="message-bay min-h-[420px] space-y-4 overflow-y-auto pr-1">
+          <article
+            v-for="message in messages"
+            :key="message.id"
+            class="message-card p-4 sm:p-5"
+            :class="message.role === 'assistant' ? 'message-card-assistant' : 'message-card-user'"
+          >
+            <div class="flex items-center justify-between gap-3">
+              <div class="text-xs font-semibold uppercase tracking-[0.24em]" :class="message.role === 'assistant' ? 'text-[var(--bc-cyan)]' : 'text-slate-400 dark:text-slate-500'">
+                {{ message.role === 'assistant' ? 'ByteCoach AI' : 'Pilot' }}
               </div>
-              <div class="leading-relaxed">{{ reference.snippet }}</div>
+              <span class="text-[11px] text-slate-400 dark:text-slate-500">{{ formatSessionTime(message.createTime) }}</span>
+            </div>
+            <div class="bc-markdown mt-3 text-sm leading-7" v-html="renderMarkdown(message.content)"></div>
+
+            <div v-if="message.references && message.references.length" class="reference-stack mt-4">
+              <div class="mb-3 flex items-center justify-between gap-3">
+                <span class="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Reference Deck</span>
+                <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ message.references.length }} sources</span>
+              </div>
+              <div class="grid gap-3 md:grid-cols-2">
+                <article v-for="reference in message.references" :key="reference.chunkId" class="reference-card p-3">
+                  <div class="flex items-start justify-between gap-3">
+                    <h3 class="line-clamp-1 text-sm font-semibold text-ink">{{ reference.docTitle }}</h3>
+                    <span class="reference-score">{{ scorePercent(reference.score) }}</span>
+                  </div>
+                  <div class="mt-2 flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                    <span>Chunk #{{ reference.chunkId }}</span>
+                    <span class="h-1 w-1 rounded-full bg-slate-400"></span>
+                    <span>{{ confidenceLabel(reference.score) }}</span>
+                  </div>
+                  <p class="mt-3 line-clamp-3 text-xs leading-6 text-slate-600 dark:text-slate-300">{{ reference.snippet }}</p>
+                </article>
+              </div>
+            </div>
+          </article>
+
+          <article v-if="streaming" class="message-card message-card-assistant p-4 sm:p-5">
+            <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-[var(--bc-cyan)]">
+              <span class="state-pulse" aria-hidden="true"></span>
+              ByteCoach AI · {{ mode === 'rag' ? '检索生成中' : '生成中' }}
+            </div>
+            <div class="bc-markdown mt-3 text-sm leading-7">
+              <span v-html="renderMarkdown(streamingContent)"></span>
+              <span class="streaming-cursor"></span>
+            </div>
+          </article>
+
+          <div v-if="loadingMessages" class="space-y-3">
+            <div v-for="n in 2" :key="n" class="surface-card animate-pulse p-4">
+              <div class="h-3 w-24 rounded bg-slate-200 dark:bg-slate-700"></div>
+              <div class="mt-3 h-4 w-full rounded bg-slate-100 dark:bg-slate-800"></div>
+              <div class="mt-2 h-4 w-4/5 rounded bg-slate-100 dark:bg-slate-800"></div>
             </div>
           </div>
-        </article>
 
-        <!-- Streaming message -->
-        <article v-if="streaming" class="surface-card border-l-2 border-l-accent p-4" style="border-radius: var(--radius-md);">
-          <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">AI 助手</div>
-          <div class="bc-markdown mt-3 text-sm leading-7">
-            <span v-html="renderMarkdown(streamingContent)"></span>
-            <span class="streaming-cursor"></span>
-          </div>
-        </article>
-
-        <div v-if="loadingMessages" class="space-y-3">
-          <div v-for="n in 2" :key="n" class="surface-card animate-pulse p-4">
-            <div class="h-3 w-20 rounded bg-slate-200 dark:bg-slate-700"></div>
-            <div class="mt-3 h-4 w-full rounded bg-slate-100 dark:bg-slate-800"></div>
-            <div class="mt-2 h-4 w-4/5 rounded bg-slate-100 dark:bg-slate-800"></div>
-          </div>
+          <EmptyState
+            v-if="!messages.length && !loadingMessages && !streaming"
+            icon="chat"
+            title="进入知识潜航"
+            description="提出一个 Java 面试问题，RAG 模式会先召回资料，再给出带来源的回答。"
+            compact
+          />
         </div>
 
-        <EmptyState
-          v-if="!messages.length && !loadingMessages && !streaming"
-          icon="chat"
-          title="开始你的第一个问题"
-          description="试试问一个 Java 面试题，或者切到知识库问答检索学习资料。"
-          compact
-        />
+        <aside class="reference-deck hidden 2xl:block">
+          <div class="flex items-center justify-between gap-3">
+            <p class="section-kicker">Reference Deck</p>
+            <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ referenceDeck.length }} cards</span>
+          </div>
+          <div v-if="referenceDeck.length" class="mt-4 space-y-3">
+            <article v-for="reference in referenceDeck" :key="reference.chunkId" class="reference-card p-3">
+              <div class="flex items-start justify-between gap-3">
+                <h3 class="line-clamp-2 text-sm font-semibold text-ink">{{ reference.docTitle }}</h3>
+                <span class="reference-score">{{ scorePercent(reference.score) }}</span>
+              </div>
+              <p class="mt-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--bc-cyan)]">
+                {{ confidenceLabel(reference.score) }}
+              </p>
+              <p class="mt-3 line-clamp-4 text-xs leading-6 text-slate-600 dark:text-slate-300">{{ reference.snippet }}</p>
+            </article>
+          </div>
+          <div v-else class="mt-4 rounded-2xl border border-dashed border-slate-300/70 p-4 text-xs leading-6 text-slate-500 dark:border-slate-700 dark:text-slate-400">
+            RAG 回答完成后，这里会固定最新引用、相似度和可信度，便于核查来源。
+          </div>
+        </aside>
       </div>
 
-      <div class="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_120px]">
+      <div class="input-console mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_150px]">
         <div>
-          <div class="mb-1.5 flex items-center gap-2">
-            <span class="hard-chip !text-[10px] !px-2 !py-0.5">{{ mode === 'rag' ? '知识库问答' : '普通问答' }}</span>
-            <button type="button" class="text-[10px] text-accent hover:underline" @click="mode = mode === 'rag' ? 'chat' : 'rag'">
-              切换
-            </button>
+          <div class="mb-2 flex flex-wrap items-center gap-2">
+            <span class="hard-chip !px-2 !py-0.5 !text-[10px]">{{ mode === 'rag' ? '知识库问答' : '普通问答' }}</span>
+            <span class="text-xs text-slate-500 dark:text-slate-400">
+              {{ mode === 'rag' ? '先检索资料，再生成回答' : '直接生成回答，不附加知识库引用' }}
+            </span>
           </div>
           <el-input
-          v-model="prompt"
-          type="textarea"
-          :rows="4"
-          placeholder="输入你的问题。知识库问答会先检索相关资料再回答，普通问答直接由 AI 回答。"
-          :disabled="streaming"
-          @keydown.enter.exact.prevent="submitChat"
-        />
+            v-model="prompt"
+            type="textarea"
+            :rows="4"
+            placeholder="输入你的问题，例如：HashMap 扩容为什么需要重新计算索引？"
+            :disabled="streaming"
+            @keydown.enter.exact.prevent="submitChat"
+          />
+        </div>
         <div class="flex flex-col gap-2">
-          <el-button :loading="sending" :disabled="streaming" type="primary" size="large" class="action-button transition active:translate-y-px" @click="submitChat">
-            {{ streaming ? '回答中...' : '发送' }}
+          <el-button :loading="sending" :disabled="streaming" type="primary" size="large" class="action-button !min-h-12 transition active:translate-y-px" @click="submitChat">
+            {{ streaming ? '回答中...' : '发送潜航' }}
           </el-button>
-          <span class="text-center text-xs text-slate-400 dark:text-slate-500">Enter 发送</span>
+          <span class="text-center text-xs text-slate-400 dark:text-slate-500">Enter 发送 · Shift 换行</span>
         </div>
       </div>
     </section>
@@ -190,6 +278,45 @@ const currentTitle = computed(() => {
   if (!activeSessionId.value) return mode.value === 'rag' ? '新的知识库问答' : '新的普通问答'
   return sessions.value.find((item) => item.id === activeSessionId.value)?.title || '当前会话'
 })
+
+const ragSessionCount = computed(() => sessions.value.filter((session) => session.mode === 'rag').length)
+
+const referenceDeck = computed(() => {
+  const latestAssistantMessage = [...messages.value]
+    .reverse()
+    .find((message) => message.role === 'assistant' && message.references?.length)
+  return latestAssistantMessage?.references.slice(0, 4) ?? []
+})
+
+const cockpitStatus = computed(() => {
+  if (streaming.value) return mode.value === 'rag' ? '检索中 / 生成中 / 引用锁定' : '生成中'
+  if (loadingMessages.value) return '同步历史信号'
+  return mode.value === 'rag' ? 'RAG 引擎待命' : '直接问答待命'
+})
+
+const formatSessionTime = (value?: string) => {
+  if (!value) return '刚刚'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '刚刚'
+  return new Intl.DateTimeFormat('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
+}
+
+const scorePercent = (score?: number) => {
+  if (score == null) return 'N/A'
+  return `${Math.round(score * 100)}%`
+}
+
+const confidenceLabel = (score?: number) => {
+  if (score == null) return '待核验'
+  if (score >= 0.82) return '高可信'
+  if (score >= 0.66) return '可参考'
+  return '弱相关'
+}
 
 const loadSessions = async (selectLatest = false) => {
   const response = await fetchChatSessionsApi(sessionPage.value, sessionPageSize.value)
@@ -401,7 +528,7 @@ onMounted(async () => {
 .bc-markdown :deep(code) {
   padding: 0.1rem 0.35rem;
   border-radius: 4px;
-  background: rgba(15, 23, 42, 0.08);
+  background: rgba(var(--bc-cyan-rgb, 85, 214, 190), 0.12);
   font-size: 0.92em;
 }
 
@@ -410,7 +537,9 @@ onMounted(async () => {
   margin: 0.75rem 0;
   padding: 0.9rem 1rem;
   border-radius: 8px;
-  background: rgba(15, 23, 42, 0.06);
+  border: 1px solid var(--bc-border-subtle);
+  background: rgba(7, 17, 31, 0.72);
+  color: #e6f6ff;
 }
 
 .bc-markdown :deep(ul),
@@ -422,10 +551,208 @@ onMounted(async () => {
   display: inline-block;
   width: 2px;
   height: 1em;
-  background: var(--accent);
+  background: var(--bc-cyan);
   margin-left: 2px;
   vertical-align: text-bottom;
   animation: cursor-blink 1s step-end infinite;
+}
+
+.chat-cockpit {
+  --bc-cyan-rgb: 85, 214, 190;
+}
+
+.signal-log,
+.chat-console {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(85, 214, 190, 0.18), transparent 32%),
+    linear-gradient(155deg, rgba(var(--bc-accent-rgb), 0.08), transparent 34%),
+    var(--bc-panel);
+}
+
+.signal-card {
+  position: relative;
+  min-height: 76px;
+  overflow: hidden;
+  border: 1px solid var(--bc-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bc-surface-card);
+  padding: 14px 14px 14px 18px;
+  transition:
+    border-color 160ms var(--ease-hard),
+    background-color 160ms var(--ease-hard),
+    box-shadow 160ms var(--ease-hard),
+    transform 160ms var(--ease-hard);
+}
+
+.signal-card:hover,
+.signal-card-active {
+  border-color: rgba(85, 214, 190, 0.46);
+  background: var(--bc-surface-card-hover);
+  box-shadow: var(--bc-shadow-hover);
+  transform: translateY(-1px);
+}
+
+.signal-card__rail {
+  position: absolute;
+  inset: 12px auto 12px 8px;
+  width: 3px;
+  border-radius: var(--radius-pill);
+  background: rgba(148, 163, 184, 0.35);
+}
+
+.signal-card-active .signal-card__rail {
+  background: linear-gradient(180deg, var(--bc-cyan), var(--bc-amber));
+  box-shadow: 0 0 16px rgba(85, 214, 190, 0.32);
+}
+
+.signal-card__delete {
+  min-height: 32px;
+  border-radius: var(--radius-pill);
+  padding: 6px 8px;
+  color: rgb(148 163 184);
+  font-size: 11px;
+  transition: color 160ms var(--ease-hard), background-color 160ms var(--ease-hard);
+}
+
+.signal-card__delete:hover {
+  background: rgba(255, 107, 107, 0.1);
+  color: var(--bc-coral);
+}
+
+.signal-chip-rag {
+  color: var(--bc-cyan) !important;
+  background: rgba(85, 214, 190, 0.12) !important;
+}
+
+.signal-chip-chat {
+  color: var(--bc-amber) !important;
+  background: rgba(var(--bc-accent-rgb), 0.12) !important;
+}
+
+.mode-switch {
+  min-width: min(100%, 300px);
+  border: 1px solid var(--bc-border-subtle);
+  border-radius: 999px;
+  background: rgba(7, 17, 31, 0.08);
+  padding: 4px;
+}
+
+.mode-switch__item {
+  min-height: 44px;
+  border-radius: 999px;
+  padding: 0 14px;
+  color: rgb(100 116 139);
+  font-size: 12px;
+  font-weight: 700;
+  transition:
+    background-color 160ms var(--ease-hard),
+    color 160ms var(--ease-hard),
+    transform 160ms var(--ease-hard);
+}
+
+.mode-switch__item-active {
+  background: linear-gradient(180deg, rgba(85, 214, 190, 0.22), rgba(var(--bc-accent-rgb), 0.14));
+  color: var(--bc-ink);
+  box-shadow: inset 0 0 0 1px rgba(85, 214, 190, 0.28);
+}
+
+.message-bay {
+  border: 1px solid var(--bc-border-subtle);
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(rgba(var(--bc-ink-rgb), 0.035) 1px, transparent 1px),
+    rgba(7, 17, 31, 0.04);
+  background-size: 100% 44px, auto;
+  padding: 12px;
+}
+
+.message-card {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--bc-border-subtle);
+  box-shadow: var(--bc-shadow-soft);
+}
+
+.message-card-assistant {
+  background:
+    linear-gradient(145deg, rgba(85, 214, 190, 0.12), transparent 34%),
+    var(--bc-surface-card);
+}
+
+.message-card-user {
+  margin-left: clamp(0px, 8vw, 96px);
+  background:
+    linear-gradient(145deg, rgba(var(--bc-accent-rgb), 0.12), transparent 34%),
+    var(--bc-surface-card);
+}
+
+.reference-stack,
+.reference-deck,
+.input-console {
+  border: 1px solid var(--bc-border-subtle);
+  border-radius: var(--radius-md);
+  background: rgba(7, 17, 31, 0.05);
+  padding: 12px;
+}
+
+.reference-card {
+  border: 1px solid rgba(85, 214, 190, 0.2);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(85, 214, 190, 0.12), transparent 48%),
+    var(--bc-surface-card);
+}
+
+.reference-score {
+  display: inline-flex;
+  min-width: 46px;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  background: rgba(85, 214, 190, 0.12);
+  padding: 3px 7px;
+  color: var(--bc-cyan);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.line-clamp-1,
+.line-clamp-2,
+.line-clamp-3,
+.line-clamp-4 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-1 {
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+  -webkit-line-clamp: 3;
+}
+
+.line-clamp-4 {
+  -webkit-line-clamp: 4;
+}
+
+@media (max-width: 640px) {
+  .message-bay {
+    max-height: none;
+    padding: 8px;
+  }
+
+  .message-card-user {
+    margin-left: 0;
+  }
+
+  .mode-switch {
+    width: 100%;
+  }
 }
 
 @keyframes cursor-blink {
