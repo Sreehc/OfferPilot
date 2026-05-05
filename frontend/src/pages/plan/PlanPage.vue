@@ -1,11 +1,14 @@
 <template>
-  <div class="space-y-6">
+  <div class="plan-orbit space-y-6">
     <!-- Header -->
-    <section class="paper-panel p-4 sm:p-6">
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p class="section-kicker">学习计划</p>
-          <h3 class="mt-3 text-xl sm:text-2xl font-semibold tracking-[-0.03em] text-ink">
+    <section class="cockpit-panel p-4 sm:p-6">
+      <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div class="max-w-3xl">
+          <div class="flex items-center gap-3">
+            <span class="state-pulse" aria-hidden="true"></span>
+            <p class="section-kicker">Learning Orbit</p>
+          </div>
+          <h3 class="mt-4 font-display text-4xl font-semibold leading-none tracking-[-0.04em] text-ink sm:text-5xl">
             {{ currentPlan ? currentPlan.title : '生成学习计划' }}
           </h3>
           <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
@@ -39,7 +42,7 @@
     </section>
 
     <!-- Generate Form -->
-    <section v-if="showGenerate" class="paper-panel p-6">
+    <section v-if="showGenerate" class="cockpit-panel p-6">
       <p class="section-kicker">计划生成器</p>
       <h4 class="mt-4 text-lg font-semibold text-ink">设置计划参数</h4>
 
@@ -91,13 +94,13 @@
     </section>
 
     <!-- Loading -->
-    <section v-if="loading" class="paper-panel p-8 text-center">
+    <section v-if="loading" class="cockpit-panel p-8 text-center">
       <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
       <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">加载计划中...</p>
     </section>
 
     <!-- Empty State -->
-    <section v-else-if="!currentPlan && !showGenerate" class="paper-panel p-6">
+    <section v-else-if="!currentPlan && !showGenerate" class="cockpit-panel p-6">
       <EmptyState
         icon="document"
         title="暂无学习计划"
@@ -113,13 +116,18 @@
 
     <!-- Plan Content -->
     <template v-if="currentPlan && !loading">
-      <!-- Progress Bar + Health Score -->
-      <section class="paper-panel p-6">
-        <div class="flex items-center justify-between gap-4">
-          <div class="flex items-center gap-4">
-            <!-- Ring chart -->
-            <svg class="h-16 w-16 shrink-0 -rotate-90" viewBox="0 0 36 36">
-              <circle cx="18" cy="18" r="15.5" fill="none" class="stroke-slate-200 dark:stroke-slate-700" stroke-width="3" />
+      <section class="grid gap-4 lg:grid-cols-[minmax(0,1.18fr)_minmax(300px,0.82fr)]">
+        <article class="cockpit-panel p-6">
+          <div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p class="section-kicker">Current Trajectory</p>
+              <h4 class="mt-3 font-display text-4xl font-semibold leading-none text-ink">{{ progressPercent }}% 完成</h4>
+              <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+                已完成 {{ completedCount }} / {{ currentPlan.tasks.length }} 个节点。优先执行今日任务，再推进后续轨道。
+              </p>
+            </div>
+            <svg class="h-28 w-28 shrink-0 -rotate-90" viewBox="0 0 36 36" aria-label="计划完成进度">
+              <circle cx="18" cy="18" r="15.5" fill="none" class="stroke-slate-200 dark:stroke-white/10" stroke-width="3" />
               <circle
                 cx="18" cy="18" r="15.5" fill="none"
                 class="stroke-accent transition-all duration-700"
@@ -127,73 +135,87 @@
                 stroke-linecap="round"
                 :stroke-dasharray="`${progressPercent * 0.974} 97.4`"
               />
+              <text x="18" y="20" class="fill-ink text-[7px] font-semibold" text-anchor="middle" transform="rotate(90 18 18)">{{ progressPercent }}%</text>
             </svg>
-            <div>
-              <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">进度</span>
-              <div class="mt-1 text-2xl font-semibold text-ink">{{ completedCount }}/{{ currentPlan.tasks.length }}</div>
-            </div>
           </div>
-          <div class="flex items-center gap-3">
-            <!-- Health Score Badge -->
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">健康分</span>
-              <span
-                class="inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white"
-                :class="healthColorClass"
-              >
-                {{ currentPlan.healthScore ?? '—' }}
-              </span>
-            </div>
-            <span class="hard-chip" :class="currentPlan.status === 'active' ? '!bg-accent !text-white' : '!bg-slate-200 dark:!bg-slate-700 !text-slate-600 dark:!text-slate-300'">
-              {{ currentPlan.status === 'active' ? '进行中' : '已完成' }}
-            </span>
-          </div>
-        </div>
-        <div class="mt-4 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-          <div
-            class="h-full rounded-full bg-accent transition-all duration-500"
-            :style="{ width: progressPercent + '%' }"
-          ></div>
-        </div>
-        <!-- Health Score Bar -->
-        <div v-if="currentPlan.healthScore != null" class="mt-3">
-          <div class="flex items-center justify-between mb-1">
-            <span class="text-xs text-slate-400 dark:text-slate-500">计划健康度</span>
-            <span class="text-xs font-medium" :class="healthTextColor">{{ currentPlan.healthScore }}/100</span>
-          </div>
-          <div class="h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+          <div class="mt-6 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
             <div
-              class="h-full rounded-full transition-all duration-500"
-              :class="healthBarColor"
-              :style="{ width: currentPlan.healthScore + '%' }"
+              class="h-full rounded-full bg-accent transition-all duration-500"
+              :style="{ width: progressPercent + '%' }"
             ></div>
           </div>
-        </div>
+        </article>
+
+        <aside class="cockpit-panel p-6">
+          <p class="section-kicker">Today Nodes</p>
+          <div v-if="todayTasks.length" class="mt-4 space-y-3">
+            <div
+              v-for="task in todayTasks"
+              :key="task.id"
+              class="rounded-2xl border border-[var(--bc-line)] bg-white/35 p-3 dark:bg-white/5"
+            >
+              <div class="flex items-start gap-3">
+                <button
+                  type="button"
+                  class="orbit-check mt-0.5"
+                  :class="task.status === 'done' ? 'is-done' : ''"
+                  :aria-label="task.status === 'done' ? '标记为未完成' : '标记为已完成'"
+                  @click="toggleTaskStatus(task)"
+                >
+                  <svg v-if="task.status === 'done'" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </button>
+                <div class="min-w-0">
+                  <span class="hard-chip text-[10px]" :class="task.taskType === 'interview' ? '!bg-accent/10 !text-accent' : '!bg-cyan/10 !text-cyan'">
+                    {{ taskTypeLabel(task.taskType) }}
+                  </span>
+                  <p class="mt-2 text-sm font-medium leading-6 text-ink" :class="task.status === 'done' ? 'line-through opacity-60' : ''">
+                    {{ task.content }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div v-else class="mt-4 rounded-2xl border border-[var(--bc-line)] bg-white/35 p-5 text-sm text-slate-500 dark:bg-white/5 dark:text-slate-400">
+            今日暂无任务。可以继续查看后续轨道，或让 AI 调整计划。
+          </div>
+          <div class="mt-5 grid grid-cols-2 gap-3">
+            <div class="data-slab p-3">
+              <p class="metric-label">健康分</p>
+              <p class="metric-value !mt-2 !text-2xl" :class="healthTextColor">{{ currentPlan.healthScore ?? '—' }}</p>
+            </div>
+            <div class="data-slab p-3">
+              <p class="metric-label">状态</p>
+              <p class="metric-value !mt-2 !text-2xl">{{ currentPlan.status === 'active' ? '进行中' : '已完成' }}</p>
+            </div>
+          </div>
+        </aside>
       </section>
 
       <!-- Task Timeline -->
-      <section class="paper-panel p-6">
-        <p class="section-kicker">任务时间线</p>
-        <div class="mt-4 space-y-2">
+      <section class="cockpit-panel p-6">
+        <p class="section-kicker">Orbit Timeline</p>
+        <div class="mt-5 space-y-6">
           <template v-for="(group, dateKey) in groupedTasks" :key="dateKey">
-            <div class="mb-4">
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{{ dateKey }}</span>
-                <span class="text-xs text-slate-400 dark:text-slate-500">({{ group.filter(t => t.status === 'done').length }}/{{ group.length }})</span>
+            <div class="orbit-day">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{{ dateKey }}</span>
+                <span class="text-xs text-slate-400 dark:text-slate-500">{{ group.filter(t => t.status === 'done').length }}/{{ group.length }} done</span>
               </div>
-              <div class="mt-2 divide-y divide-slate-200/60 dark:divide-slate-700/60 overflow-hidden rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+              <div class="mt-3 space-y-3">
                 <div
                   v-for="task in group"
                   :key="task.id"
-                  class="flex items-center gap-4 px-4 py-3 transition hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
+                  class="orbit-task"
+                  :class="task.status === 'done' ? 'is-done' : ''"
                 >
                   <!-- Checkbox -->
                   <button
                     type="button"
-                    class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-all"
-                    :class="task.status === 'done'
-                      ? 'border-accent bg-accent text-white'
-                      : 'border-slate-300 dark:border-slate-600 hover:border-accent'"
+                    class="orbit-check"
+                    :class="task.status === 'done' ? 'is-done' : ''"
+                    :aria-label="task.status === 'done' ? '标记为未完成' : '标记为已完成'"
                     @click="toggleTaskStatus(task)"
                   >
                     <svg v-if="task.status === 'done'" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
@@ -204,7 +226,7 @@
                   <!-- Content -->
                   <div class="flex-1 min-w-0">
                     <span
-                      class="text-sm font-medium"
+                      class="text-sm font-medium leading-6"
                       :class="task.status === 'done' ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-ink'"
                     >
                       {{ task.content }}
@@ -215,10 +237,10 @@
                   <span
                     class="hard-chip shrink-0 text-xs"
                     :class="task.taskType === 'interview'
-                      ? '!bg-purple-100 !text-purple-700'
-                      : '!bg-blue-100 !text-blue-700'"
+                      ? '!bg-accent/10 !text-accent'
+                      : '!bg-cyan/10 !text-cyan'"
                   >
-                    {{ task.taskType === 'interview' ? '面试' : '复习' }}
+                    {{ taskTypeLabel(task.taskType) }}
                   </span>
                 </div>
               </div>
@@ -228,39 +250,43 @@
       </section>
 
       <!-- Plan History -->
-      <section v-if="planHistory.length > 1" class="paper-panel p-6">
-        <p class="section-kicker">版本记录</p>
-        <h4 class="mt-3 text-lg font-semibold text-ink">计划版本记录</h4>
-        <div class="mt-4 divide-y divide-slate-200/60 dark:divide-slate-700/60 overflow-hidden rounded-xl border border-slate-200/60 dark:border-slate-700/60">
-          <div
-            v-for="version in planHistory"
-            :key="version.id"
-            class="flex items-center gap-4 px-4 py-3 transition hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
-            :class="version.id === currentPlan?.id ? 'bg-accent/5' : ''"
-          >
-            <span
-              class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-              :class="version.id === currentPlan?.id ? 'bg-accent' : 'bg-slate-400 dark:bg-slate-600'"
+      <section v-if="planHistory.length > 1" class="cockpit-panel p-6">
+        <details>
+          <summary class="cursor-pointer list-none">
+            <p class="section-kicker">版本记录</p>
+            <h4 class="mt-3 text-lg font-semibold text-ink">查看计划版本记录</h4>
+          </summary>
+          <div class="mt-4 space-y-2">
+            <div
+              v-for="version in planHistory"
+              :key="version.id"
+              class="flex items-center gap-4 rounded-2xl border border-[var(--bc-line)] bg-white/35 px-4 py-3 transition hover:bg-white/50 dark:bg-white/5 dark:hover:bg-white/10"
+              :class="version.id === currentPlan?.id ? 'border-[var(--bc-line-hot)]' : ''"
             >
-              v{{ version.version || 1 }}
-            </span>
-            <div class="flex-1 min-w-0">
-              <span class="text-sm font-medium text-ink">{{ version.title }}</span>
-              <span class="ml-2 text-xs text-slate-400 dark:text-slate-500">{{ version.startDate }} ~ {{ version.endDate }}</span>
+              <span
+                class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                :class="version.id === currentPlan?.id ? 'bg-accent' : 'bg-slate-400 dark:bg-slate-600'"
+              >
+                v{{ version.version || 1 }}
+              </span>
+              <div class="flex-1 min-w-0">
+                <span class="text-sm font-medium text-ink">{{ version.title }}</span>
+                <span class="ml-2 text-xs text-slate-400 dark:text-slate-500">{{ version.startDate }} ~ {{ version.endDate }}</span>
+              </div>
+              <span class="text-xs text-slate-400 dark:text-slate-500">
+                {{ version.completedTasks || 0 }}/{{ version.totalTasks || 0 }} 完成
+              </span>
+              <span
+                class="hard-chip text-xs"
+                :class="version.status === 'active'
+                  ? '!bg-accent !text-white'
+                  : '!bg-slate-200 dark:!bg-slate-700 !text-slate-600 dark:!text-slate-300'"
+              >
+                {{ version.status === 'active' ? '当前' : '已归档' }}
+              </span>
             </div>
-            <span class="text-xs text-slate-400 dark:text-slate-500">
-              {{ version.completedTasks || 0 }}/{{ version.totalTasks || 0 }} 完成
-            </span>
-            <span
-              class="hard-chip text-xs"
-              :class="version.status === 'active'
-                ? '!bg-accent !text-white'
-                : '!bg-slate-200 dark:!bg-slate-700 !text-slate-600 dark:!text-slate-300'"
-            >
-              {{ version.status === 'active' ? '当前' : '已归档' }}
-            </span>
           </div>
-        </div>
+        </details>
       </section>
     </template>
   </div>
@@ -303,20 +329,6 @@ const progressPercent = computed(() => {
   return Math.round((completedCount.value / currentPlan.value.tasks.length) * 100)
 })
 
-const healthColorClass = computed(() => {
-  const score = currentPlan.value?.healthScore ?? 100
-  if (score >= 70) return 'bg-green-500'
-  if (score >= 40) return 'bg-amber-500'
-  return 'bg-red-500'
-})
-
-const healthBarColor = computed(() => {
-  const score = currentPlan.value?.healthScore ?? 100
-  if (score >= 70) return 'bg-green-500'
-  if (score >= 40) return 'bg-amber-500'
-  return 'bg-red-500'
-})
-
 const healthTextColor = computed(() => {
   const score = currentPlan.value?.healthScore ?? 100
   if (score >= 70) return 'text-green-600'
@@ -334,6 +346,22 @@ const groupedTasks = computed(() => {
   }
   return groups
 })
+
+const todayTasks = computed(() => {
+  if (!currentPlan.value) return []
+  const today = new Date().toISOString().slice(0, 10)
+  return currentPlan.value.tasks.filter((task) => task.taskDate === today)
+})
+
+const taskTypeLabel = (type: string) => {
+  const map: Record<string, string> = {
+    interview: '面试',
+    review: '复习',
+    wrong: '错题',
+    knowledge: '知识'
+  }
+  return map[type] || type || '任务'
+}
 
 const loadCurrentPlan = async () => {
   loading.value = true
@@ -420,3 +448,93 @@ onMounted(() => {
   void loadAbilityProfile()
 })
 </script>
+
+<style scoped>
+.plan-orbit :deep(.el-input-number),
+.plan-orbit :deep(.el-select) {
+  width: 100%;
+}
+
+.orbit-day {
+  position: relative;
+  padding-left: 22px;
+}
+
+.orbit-day::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 28px;
+  bottom: -20px;
+  width: 1px;
+  background: linear-gradient(180deg, var(--bc-accent), transparent);
+  opacity: 0.42;
+}
+
+.orbit-task {
+  position: relative;
+  display: flex;
+  min-height: 64px;
+  align-items: flex-start;
+  gap: 14px;
+  border: 1px solid var(--bc-line);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.35);
+  padding: 14px;
+  transition:
+    border-color var(--motion-base) var(--ease-hard),
+    background-color var(--motion-base) var(--ease-hard),
+    transform var(--motion-base) var(--ease-hard);
+}
+
+.dark .orbit-task {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.orbit-task:hover {
+  border-color: var(--bc-line-hot);
+  transform: translateY(-1px);
+}
+
+.orbit-task.is-done {
+  opacity: 0.76;
+}
+
+.orbit-check {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bc-line);
+  border-radius: var(--radius-pill);
+  color: #101826;
+  transition:
+    background-color var(--motion-fast) var(--ease-hard),
+    border-color var(--motion-fast) var(--ease-hard),
+    transform var(--motion-fast) var(--ease-hard);
+}
+
+.orbit-check:hover {
+  border-color: var(--bc-line-hot);
+  transform: scale(1.04);
+}
+
+.orbit-check.is-done {
+  border-color: var(--bc-accent);
+  background: var(--bc-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orbit-task,
+  .orbit-check {
+    transition-duration: 0.01ms;
+  }
+
+  .orbit-task:hover,
+  .orbit-check:hover {
+    transform: none;
+  }
+}
+</style>
