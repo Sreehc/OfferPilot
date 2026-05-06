@@ -3,7 +3,7 @@
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
         <p class="section-kicker">最近面试</p>
-        <h3 class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-ink">最近面试结果</h3>
+        <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">最近练习结果</h3>
       </div>
       <div class="flex gap-3">
         <RouterLink class="accent-link text-sm font-semibold" to="/interview/history">全部历史</RouterLink>

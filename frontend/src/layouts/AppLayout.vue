@@ -1,10 +1,13 @@
 <template>
-  <div class="ambient-shell min-h-screen px-3 py-3 pb-24 md:pb-5 md:px-5 md:py-5">
-    <div class="shell-frame mx-auto max-w-[1520px] lg:grid lg:grid-cols-[292px_minmax(0,1fr)]">
+  <div class="ambient-shell min-h-screen px-3 py-3 pb-24 md:pb-5 md:px-5 md:py-5 lg:h-screen lg:overflow-hidden">
+    <div class="shell-frame mx-auto max-w-[1520px] lg:grid lg:h-full lg:grid-cols-[292px_minmax(0,1fr)]">
       <!-- Desktop sidebar: hidden below lg -->
-      <NavRail v-show="sidebarVisible" class="hidden min-h-[280px] border-r border-[var(--bc-line)] lg:block" />
+      <NavRail
+        v-show="sidebarVisible"
+        class="hidden min-h-[280px] border-r border-[var(--bc-line)] lg:block lg:h-full lg:overflow-hidden"
+      />
 
-      <main class="relative z-[1] space-y-4 p-3 md:p-5 lg:p-6">
+      <main class="relative z-[1] space-y-5 p-3 md:p-5 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:p-6">
         <AppShellHeader
           :kicker="headerMeta.kicker"
           :title="headerMeta.title"
@@ -17,7 +20,7 @@
           <template #actions></template>
         </AppShellHeader>
 
-        <section class="overflow-hidden p-1 md:p-2">
+        <section class="min-h-0 pb-2">
           <RouterView v-slot="{ Component, route: viewRoute }">
             <Transition name="page-slide" mode="out-in">
               <component :is="Component" :key="viewRoute.path" />
@@ -46,7 +49,7 @@
           ref="searchInputRef"
           v-model="searchQuery"
           size="large"
-          placeholder="搜索页面、功能..."
+          placeholder="搜索页面或操作..."
           clearable
           @keydown.escape="searchVisible = false"
           @keydown.enter="handleSearchNavigate"
@@ -106,8 +109,8 @@ const searchQuery = ref('')
 const searchInputRef = ref<ComponentPublicInstance | null>(null)
 
 const allSearchItems = [
-  { label: '首页看板', path: '/dashboard' },
-  { label: '知识问答', path: '/chat' },
+  { label: '首页概览', path: '/dashboard' },
+  { label: '智能问答', path: '/chat' },
   { label: '知识库', path: '/knowledge' },
   { label: '模拟面试', path: '/interview' },
   { label: '面试历史', path: '/interview/history' },
@@ -117,7 +120,7 @@ const allSearchItems = [
   { label: '排行榜', path: '/community/leaderboard' },
   { label: '学习计划', path: '/plan' },
   { label: '数据分析', path: '/analytics' },
-  { label: '后台管理', path: '/admin', adminOnly: true },
+  { label: '管理后台', path: '/admin', adminOnly: true },
   { label: '账户设置', path: '/settings' }
 ]
 
@@ -189,8 +192,8 @@ const headerMeta = computed(() => {
   const meta = route.meta as { kicker?: string; title?: string; subtitle?: string }
   return {
     kicker: meta.kicker ?? 'ByteCoach',
-    title: meta.title ?? 'Interview Studio',
-    subtitle: meta.subtitle ?? '围绕学习闭环组织功能、状态和下一步动作。'
+    title: meta.title ?? '学习页面',
+    subtitle: meta.subtitle ?? '围绕任务、进度和下一步动作安排你的训练。'
   }
 })
 

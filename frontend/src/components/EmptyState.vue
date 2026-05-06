@@ -1,16 +1,16 @@
 <template>
   <div
-    class="flex flex-col items-center justify-center px-4 text-center"
-    :class="compact ? 'py-8' : 'py-12'"
+    class="flex flex-col items-center justify-center rounded-[24px] border border-dashed border-[var(--bc-line)] bg-white/35 px-4 text-center dark:bg-white/[0.03]"
+    :class="compact ? 'py-6' : 'py-9'"
   >
     <!-- Icon -->
     <div
-      class="flex items-center justify-center rounded-full mb-4"
-      :class="[iconBg, compact ? 'h-10 w-10' : 'h-16 w-16']"
+      class="mb-4 flex items-center justify-center rounded-full"
+      :class="[iconBg, compact ? 'h-10 w-10' : 'h-14 w-14']"
     >
       <svg
         class="fill-none"
-        :class="[iconColor, compact ? 'h-5 w-5' : 'h-8 w-8']"
+        :class="[iconColor, compact ? 'h-5 w-5' : 'h-7 w-7']"
         viewBox="0 0 24 24"
         stroke="currentColor"
         stroke-width="1.5"
@@ -78,7 +78,7 @@
 
     <!-- Description -->
     <p
-      :class="compact ? 'mt-1 text-xs max-w-xs' : 'mt-1.5 text-sm max-w-sm'"
+      :class="compact ? 'mt-1 text-xs max-w-xs' : 'mt-2 text-sm max-w-md'"
       class="leading-6 text-slate-500 dark:text-slate-400"
     >
       {{ description }}

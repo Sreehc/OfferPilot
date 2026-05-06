@@ -1,6 +1,6 @@
 <template>
   <section
-    class="paper-panel relative overflow-hidden bg-[linear-gradient(135deg,rgba(47,79,157,0.08),rgba(255,255,255,0.94))] p-6"
+    class="paper-panel relative overflow-hidden bg-[linear-gradient(135deg,rgba(47,79,157,0.08),rgba(255,255,255,0.94))] p-5 sm:p-6"
     style="border-radius: var(--radius-lg);"
   >
     <div
@@ -10,9 +10,9 @@
     <div class="relative flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
       <div class="max-w-3xl">
         <p class="section-kicker">首次使用</p>
-        <h3 class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-ink">从一个动作开始，不要让首页只是空白看板</h3>
+        <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink sm:text-3xl">先做一个动作，首页才会开始有用</h3>
         <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-          先发起一次问答或一场面试，系统才会逐步生成错题、薄弱点和计划完成率。这个阶段的首页重点是帮助你找到第一步。
+          先提一个问题、完成一场面试，或者开始第一次复习。系统会在你产生真实记录后，逐步生成错题、薄弱点和学习计划。
         </p>
         <div class="mt-5 flex flex-wrap gap-3">
           <RouterLink

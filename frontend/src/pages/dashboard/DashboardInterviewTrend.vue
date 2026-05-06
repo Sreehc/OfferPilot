@@ -1,7 +1,7 @@
 <template>
   <article class="paper-panel p-6">
     <p class="section-kicker">成绩趋势</p>
-    <h3 class="mt-3 text-lg font-semibold text-ink">面试成绩趋势</h3>
+    <h3 class="mt-3 text-lg font-semibold text-ink">分数变化</h3>
 
     <div v-if="loading" class="mt-4 flex h-[260px] items-center justify-center">
       <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>

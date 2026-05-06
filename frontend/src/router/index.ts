@@ -4,8 +4,8 @@ import { useAuthStore } from '@/stores/auth'
 const pageMeta = {
   dashboard: {
     kicker: '学习概览',
-    title: 'Your Java interview cockpit',
-    subtitle: '把最近的学习行为、面试结果、错题和计划压缩成一块可操作的主看板。'
+    title: '今日学习概览',
+    subtitle: '先完成今天最重要的训练，再查看分析、趋势和历史记录。'
   },
   chat: {
     kicker: '智能问答',
