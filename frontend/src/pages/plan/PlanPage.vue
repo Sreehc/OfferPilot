@@ -1,18 +1,17 @@
 <template>
   <div class="plan-orbit space-y-6">
-    <!-- Header -->
     <section class="cockpit-panel p-4 sm:p-6">
       <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div class="max-w-3xl">
           <div class="flex items-center gap-3">
             <span class="state-pulse" aria-hidden="true"></span>
-            <p class="section-kicker">Learning Orbit</p>
+            <p class="section-kicker">学习计划</p>
           </div>
           <h3 class="mt-4 font-display text-4xl font-semibold leading-none tracking-[-0.04em] text-ink sm:text-5xl">
             {{ currentPlan ? currentPlan.title : '生成学习计划' }}
           </h3>
           <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-            {{ currentPlan ? currentPlan.goal : '根据错题薄弱点，AI 自动生成每日复习任务。' }}
+            {{ currentPlan ? currentPlan.goal : '根据你的薄弱点生成一份可执行的每日学习安排。' }}
           </p>
           <div v-if="currentPlan" class="mt-3 flex items-center gap-3">
             <span class="hard-chip !bg-slate-100 dark:!bg-slate-700 !text-slate-600 dark:!text-slate-300 text-xs">
@@ -32,7 +31,7 @@
             :loading="adjusting"
             @click="handleAdjust"
           >
-            {{ adjusting ? 'AI 调整中...' : 'AI 调整' }}
+            {{ adjusting ? '调整中...' : '调整计划' }}
           </el-button>
           <el-button size="large" class="hard-button-primary" @click="showGenerate = true">
             {{ currentPlan ? '重新生成' : '生成计划' }}
@@ -41,12 +40,10 @@
       </div>
     </section>
 
-    <!-- Generate Form -->
     <section v-if="showGenerate" class="cockpit-panel p-6">
-      <p class="section-kicker">计划生成器</p>
-      <h4 class="mt-4 text-lg font-semibold text-ink">设置计划参数</h4>
+      <p class="section-kicker">生成计划</p>
+      <h4 class="mt-4 text-lg font-semibold text-ink">先确认复习方向和计划时长</h4>
 
-      <!-- Weak Categories Hint -->
       <div v-if="abilityProfile?.weakCategories && abilityProfile.weakCategories.length > 0" class="mt-4 surface-muted p-4">
         <p class="text-xs font-semibold uppercase tracking-[0.2em] text-red-600 dark:text-red-400 mb-2">检测到薄弱分类</p>
         <div class="flex flex-wrap gap-2">
@@ -87,24 +84,22 @@
       </div>
       <div class="mt-4 flex gap-3">
         <el-button size="large" class="hard-button-primary" :loading="generating" @click="handleGenerate">
-          {{ generating ? 'AI 生成中...' : '确认生成' }}
+          {{ generating ? '生成中...' : '确认生成' }}
         </el-button>
         <el-button size="large" class="hard-button-secondary" @click="showGenerate = false">取消</el-button>
       </div>
     </section>
 
-    <!-- Loading -->
     <section v-if="loading" class="cockpit-panel p-8 text-center">
       <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
       <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">加载计划中...</p>
     </section>
 
-    <!-- Empty State -->
     <section v-else-if="!currentPlan && !showGenerate" class="cockpit-panel p-6">
       <EmptyState
         icon="document"
         title="暂无学习计划"
-        description="点击「生成计划」，AI 将根据你的错题薄弱点自动生成每日任务。"
+        description="先生成一份学习计划，再按今天的任务逐步完成。"
       >
         <template #action>
           <el-button size="large" class="hard-button-primary" @click="showGenerate = true">
@@ -114,16 +109,15 @@
       </EmptyState>
     </section>
 
-    <!-- Plan Content -->
     <template v-if="currentPlan && !loading">
       <section class="grid gap-4 lg:grid-cols-[minmax(0,1.18fr)_minmax(300px,0.82fr)]">
         <article class="cockpit-panel p-6">
           <div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p class="section-kicker">Current Trajectory</p>
+              <p class="section-kicker">当前计划</p>
               <h4 class="mt-3 font-display text-4xl font-semibold leading-none text-ink">{{ progressPercent }}% 完成</h4>
               <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                已完成 {{ completedCount }} / {{ currentPlan.tasks.length }} 个节点。优先执行今日任务，再推进后续轨道。
+                已完成 {{ completedCount }} / {{ currentPlan.tasks.length }} 个任务。先把今天的任务做完，再推进后面的安排。
               </p>
             </div>
             <svg class="h-28 w-28 shrink-0 -rotate-90" viewBox="0 0 36 36" aria-label="计划完成进度">
@@ -147,7 +141,7 @@
         </article>
 
         <aside class="cockpit-panel p-6">
-          <p class="section-kicker">Today Nodes</p>
+          <p class="section-kicker">今日任务</p>
           <div v-if="todayTasks.length" class="mt-4 space-y-3">
             <div
               v-for="task in todayTasks"
@@ -178,7 +172,7 @@
             </div>
           </div>
           <div v-else class="mt-4 rounded-2xl border border-[var(--bc-line)] bg-white/35 p-5 text-sm text-slate-500 dark:bg-white/5 dark:text-slate-400">
-            今日暂无任务。可以继续查看后续轨道，或让 AI 调整计划。
+            今日暂无任务。你可以提前处理后续任务，或重新调整当前计划。
           </div>
           <div class="mt-5 grid grid-cols-2 gap-3">
             <div class="data-slab p-3">
@@ -193,15 +187,15 @@
         </aside>
       </section>
 
-      <!-- Task Timeline -->
       <section class="cockpit-panel p-6">
-        <p class="section-kicker">Orbit Timeline</p>
+        <p class="section-kicker">完整时间线</p>
+        <h4 class="mt-3 text-lg font-semibold text-ink">按日期查看全部任务</h4>
         <div class="mt-5 space-y-6">
           <template v-for="(group, dateKey) in groupedTasks" :key="dateKey">
             <div class="orbit-day">
               <div class="flex flex-wrap items-center gap-2">
                 <span class="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{{ dateKey }}</span>
-                <span class="text-xs text-slate-400 dark:text-slate-500">{{ group.filter(t => t.status === 'done').length }}/{{ group.length }} done</span>
+                <span class="text-xs text-slate-400 dark:text-slate-500">{{ group.filter(t => t.status === 'done').length }}/{{ group.length }} 已完成</span>
               </div>
               <div class="mt-3 space-y-3">
                 <div
@@ -210,7 +204,6 @@
                   class="orbit-task"
                   :class="task.status === 'done' ? 'is-done' : ''"
                 >
-                  <!-- Checkbox -->
                   <button
                     type="button"
                     class="orbit-check"
@@ -223,7 +216,6 @@
                     </svg>
                   </button>
 
-                  <!-- Content -->
                   <div class="flex-1 min-w-0">
                     <span
                       class="text-sm font-medium leading-6"
@@ -233,7 +225,6 @@
                     </span>
                   </div>
 
-                  <!-- Type Badge -->
                   <span
                     class="hard-chip shrink-0 text-xs"
                     :class="task.taskType === 'interview'
@@ -249,12 +240,11 @@
         </div>
       </section>
 
-      <!-- Plan History -->
       <section v-if="planHistory.length > 1" class="cockpit-panel p-6">
         <details>
           <summary class="cursor-pointer list-none">
             <p class="section-kicker">版本记录</p>
-            <h4 class="mt-3 text-lg font-semibold text-ink">查看计划版本记录</h4>
+            <h4 class="mt-3 text-lg font-semibold text-ink">查看历史版本</h4>
           </summary>
           <div class="mt-4 space-y-2">
             <div
@@ -434,12 +424,11 @@ const loadAbilityProfile = async () => {
   try {
     const response = await fetchAbilityProfileApi()
     abilityProfile.value = response.data
-    // Auto-set direction based on suggested focus
     if (response.data.suggestedFocus) {
       form.value.direction = response.data.suggestedFocus
     }
   } catch {
-    // Silently fail — use defaults
+    // Keep defaults when profile is unavailable.
   }
 }
 
