@@ -4,13 +4,13 @@
       <aside class="cockpit-panel p-4 sm:p-6">
         <div class="flex items-center gap-3">
           <span class="state-pulse" aria-hidden="true"></span>
-          <p class="section-kicker">Interview Chamber</p>
+          <p class="section-kicker">模拟面试</p>
         </div>
         <h3 class="mt-5 font-display text-4xl font-semibold leading-[0.9] tracking-[-0.04em] text-ink">
-          {{ phase === 'idle' ? '启动一场高压模拟' : `Q${currentQuestion?.currentIndex ?? '?'} / ${currentQuestion?.questionCount ?? '?'}` }}
+          {{ phase === 'idle' ? '开始一场模拟面试' : `第 ${currentQuestion?.currentIndex ?? '?'} 题 / 共 ${currentQuestion?.questionCount ?? '?'} 题` }}
         </h3>
         <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
-          {{ phase === 'idle' ? '选择方向、题量和作答模式，进入专注面试舱。每题计时、即时评分、低分自动进入错题修复队列。' : '保持结构化表达：定义、机制、场景、风险和权衡。' }}
+          {{ phase === 'idle' ? '先选方向、题量和作答方式。每题都会计时并即时评分，低分题会自动进入后续复习。' : '建议按结论、原理、场景和权衡来组织答案。' }}
         </p>
 
         <div v-if="phase === 'idle'" class="mt-6 space-y-4">
@@ -52,7 +52,7 @@
             class="action-button w-full"
             @click="handleStart()"
           >
-            {{ interviewMode === 'voice' && voiceAvailable ? '开始语音面试' : '启动面试舱' }}
+            {{ interviewMode === 'voice' && voiceAvailable ? '开始语音面试' : '开始面试' }}
           </el-button>
         </div>
 
@@ -105,10 +105,10 @@
             <div class="interview-orbit mx-auto flex h-52 w-52 items-center justify-center rounded-full">
               <div class="font-mono text-5xl font-semibold text-ink">3-5</div>
             </div>
-            <p class="section-kicker mt-8">Ready Check</p>
-            <h4 class="mt-3 font-display text-4xl font-semibold leading-none text-ink">一轮追问，一次真实压测</h4>
+            <p class="section-kicker mt-8">开始前说明</p>
+            <h4 class="mt-3 font-display text-4xl font-semibold leading-none text-ink">像真实面试一样回答</h4>
             <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
-              系统会抽取题目并在答题后给出评分、点评、标准答案和追问。建议先用文字模式完成一轮，再开启语音模式训练表达流畅度。
+              系统会抽题、计时、评分，并给出点评、标准答案和追问。建议先用文字模式完成一轮，再尝试语音模式训练表达。
             </p>
           </div>
         </div>
@@ -116,7 +116,7 @@
         <div v-else-if="phase === 'answering'" class="flex flex-1 flex-col">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p class="section-kicker">{{ interviewMode === 'voice' && voiceAvailable ? 'Voice Answer' : 'Answer Console' }}</p>
+              <p class="section-kicker">{{ interviewMode === 'voice' && voiceAvailable ? '语音作答' : '当前作答' }}</p>
               <h4 class="mt-2 text-xl font-semibold text-ink">在倒计时内给出结构化回答</h4>
             </div>
             <div class="rounded-2xl border px-4 py-3" :class="countdownUrgent ? 'border-coral/40 bg-coral/10' : 'border-[var(--bc-line)] bg-white/35 dark:bg-white/5'">
@@ -186,14 +186,14 @@
             <div class="scoring-scan mx-auto flex h-40 w-40 items-center justify-center rounded-full">
               <div class="h-12 w-12 animate-spin rounded-full border-4 border-accent border-t-transparent"></div>
             </div>
-            <p class="section-kicker mt-8">Scoring</p>
-            <h4 class="mt-3 font-display text-4xl font-semibold leading-none text-ink">AI 正在拆解答案</h4>
+            <p class="section-kicker mt-8">正在评分</p>
+            <h4 class="mt-3 font-display text-4xl font-semibold leading-none text-ink">系统正在分析你的回答</h4>
             <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">准确性、完整性、结构化和深度会被纳入本题评分。</p>
           </div>
         </div>
 
         <div v-else-if="phase === 'result'" class="space-y-4">
-          <p class="section-kicker">Score Debrief</p>
+          <p class="section-kicker">本题结果</p>
 
           <div v-if="voiceTranscript" class="data-slab p-4">
             <div class="flex items-center justify-between">
@@ -243,7 +243,7 @@
           </div>
 
           <div v-if="lastResult?.addedToWrongBook" class="rounded-2xl border border-coral/30 bg-coral/10 p-4 text-sm text-slate-600 dark:text-slate-300">
-            <span class="font-semibold text-ink">已进入错题修复队列</span>：该题得分低于 60 分，后续会进入间隔复习。
+            <span class="font-semibold text-ink">已加入错题本</span>：该题得分低于 60 分，后续会进入间隔复习。
           </div>
 
           <div class="flex gap-3">
@@ -269,7 +269,7 @@
         </div>
 
         <div v-else-if="phase === 'finished'" class="space-y-4">
-          <p class="section-kicker">Interview Complete</p>
+          <p class="section-kicker">面试完成</p>
 
           <div class="score-card score-card-pass p-6">
             <div class="text-xs uppercase tracking-[0.24em] text-white/65">总分</div>
