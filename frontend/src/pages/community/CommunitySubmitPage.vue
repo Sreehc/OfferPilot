@@ -1,87 +1,432 @@
 <template>
-  <div class="max-w-3xl mx-auto space-y-6">
+  <div class="community-submit space-y-6">
     <button
-      class="flex items-center gap-2 text-sm text-slate-500 hover:text-ink transition-colors"
+      class="inline-flex items-center gap-2 text-sm text-slate-500 transition-colors hover:text-ink"
       @click="$router.back()"
     >
-      <span>&larr;</span> 返回
+      <span>&larr;</span> 返回社区
     </button>
 
-    <div class="paper-panel px-8 py-8">
-      <h2 class="text-xl font-semibold text-ink mb-6">发起提问</h2>
+    <section class="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(300px,0.9fr)]">
+      <article class="cockpit-panel p-5 sm:p-6">
+        <div class="flex items-center gap-3">
+          <span class="state-pulse" aria-hidden="true"></span>
+          <p class="section-kicker">Question Workshop</p>
+        </div>
+        <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">把问题写成可回答的训练任务</h2>
+        <p class="mt-4 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+          社区更偏向可执行的面试讨论，而不是一句“为什么报错”。先讲清背景、现象和已尝试方案，回答者才能更快进入有效推演。
+        </p>
 
-      <div class="space-y-5">
-        <div>
-          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">标题</label>
-          <input
-            v-model="form.title"
-            type="text"
-            placeholder="简明扼要地描述你的问题"
-            maxlength="200"
-            class="w-full px-4 py-3 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/30"
-          />
-          <p class="mt-1 text-xs text-slate-400">{{ form.title.length }}/200</p>
+        <div class="mt-6 grid gap-3 md:grid-cols-3">
+          <article v-for="tip in writingSignals" :key="tip.label" class="data-slab p-4" :class="tip.toneClass">
+            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ tip.label }}</p>
+            <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ tip.value }}</p>
+            <p class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ tip.detail }}</p>
+          </article>
         </div>
 
-        <div>
-          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">内容</label>
-          <textarea
-            v-model="form.content"
-            rows="12"
-            placeholder="详细描述你的问题，包括背景、代码、错误信息等..."
-            maxlength="10000"
-            class="w-full px-4 py-3 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/30 resize-none"
-          ></textarea>
-          <p class="mt-1 text-xs text-slate-400">{{ form.content.length }}/10000</p>
+        <div class="mt-6 rounded-[24px] border border-[var(--bc-line)] bg-white/40 p-5 dark:bg-white/5">
+          <p class="text-sm font-semibold text-ink">推荐结构</p>
+          <div class="mt-4 space-y-3">
+            <article v-for="section in promptSections" :key="section.title" class="prompt-lane">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="text-sm font-semibold text-ink">{{ section.title }}</p>
+                  <p class="mt-1 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ section.description }}</p>
+                </div>
+                <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ section.tag }}</span>
+              </div>
+            </article>
+          </div>
+        </div>
+      </article>
+
+      <aside class="cockpit-panel p-5 sm:p-6">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <p class="section-kicker">Quality Gate</p>
+            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">提问质量闸门</h3>
+          </div>
+          <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ qualityBadge }}</span>
         </div>
 
-        <div class="flex justify-end gap-3 pt-2">
+        <div class="mt-5 rounded-[24px] border border-[var(--bc-line)] bg-white/38 p-5 dark:bg-white/5">
+          <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-ink">当前完整度</p>
+              <p class="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+                标题清晰度、问题上下文和已尝试方案会直接影响回答效率。
+              </p>
+            </div>
+            <div class="quality-gauge">
+              <span class="quality-gauge__value">{{ qualityScore }}</span>
+            </div>
+          </div>
+
+          <div class="mt-5 space-y-3">
+            <article v-for="check in qualityChecklist" :key="check.label" class="quality-check">
+              <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                  <span class="inline-flex h-2.5 w-2.5 rounded-full" :class="check.ok ? 'bg-[var(--bc-lime)]' : 'bg-[var(--bc-coral)]'"></span>
+                  <span class="text-sm text-ink">{{ check.label }}</span>
+                </div>
+                <span class="text-xs font-semibold" :class="check.ok ? 'text-[var(--bc-lime)]' : 'text-[var(--bc-coral)]'">
+                  {{ check.ok ? '已满足' : '待补充' }}
+                </span>
+              </div>
+              <p class="mt-1 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ check.detail }}</p>
+            </article>
+          </div>
+        </div>
+
+        <div class="mt-5 rounded-[24px] border border-[var(--bc-line)] bg-white/38 p-5 dark:bg-white/5">
+          <p class="text-sm font-semibold text-ink">示例开场</p>
+          <div class="mt-3 rounded-[18px] bg-slate-100/80 p-4 text-sm leading-7 text-slate-600 dark:bg-slate-900/50 dark:text-slate-300">
+            <p>背景：我在准备 Spring Boot 面试，自己实现一个简化版 IOC 容器。</p>
+            <p>现象：循环依赖场景下，二级缓存和三级缓存的职责总是解释不清。</p>
+            <p>已尝试：看过源码和几篇文章，但仍无法把创建流程串成完整叙事。</p>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="cockpit-panel p-5 sm:p-6">
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p class="section-kicker">Compose</p>
+          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">发起提问</h3>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <span class="question-chip">背景 / 现象 / 已尝试方案</span>
+          <span class="question-chip">避免只贴错误截图</span>
+        </div>
+      </div>
+
+      <el-form
+        ref="formRef"
+        :model="form"
+        :rules="formRules"
+        class="mt-6"
+        label-position="top"
+        @submit.prevent
+      >
+        <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <div class="space-y-5">
+            <el-form-item label="标题" prop="title">
+              <template #label>
+                <div class="form-label-row">
+                  <span>标题</span>
+                  <span class="text-xs text-slate-400">{{ form.title.length }}/200</span>
+                </div>
+              </template>
+              <el-input
+                v-model="form.title"
+                maxlength="200"
+                size="large"
+                placeholder="例如：Spring 循环依赖里三级缓存的作用为什么不能被二级缓存完全替代？"
+              />
+            </el-form-item>
+
+            <el-form-item label="问题内容" prop="content">
+              <template #label>
+                <div class="form-label-row">
+                  <span>问题内容</span>
+                  <span class="text-xs text-slate-400">{{ form.content.length }}/10000</span>
+                </div>
+              </template>
+              <el-input
+                v-model="form.content"
+                type="textarea"
+                :rows="14"
+                maxlength="10000"
+                resize="none"
+                placeholder="建议按“背景 / 现象 / 已尝试方案”描述。越像真实面试中的追问场景，越容易得到高质量回答。"
+              />
+            </el-form-item>
+          </div>
+
+          <aside class="compose-side space-y-4">
+            <article class="compose-note">
+              <p class="text-sm font-semibold text-ink">写作提醒</p>
+              <ul class="mt-3 space-y-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                <li>说明你在哪个知识点、项目或面试情境里遇到这个问题。</li>
+                <li>写清你已经尝试过哪些分析，而不是只问“怎么做”。</li>
+                <li>如果有多个疑点，优先保留最关键的一个。</li>
+              </ul>
+            </article>
+
+            <article class="compose-note">
+              <p class="text-sm font-semibold text-ink">发布后会发生什么</p>
+              <div class="mt-3 space-y-3">
+                <div v-for="step in publishSteps" :key="step.title" class="publish-step">
+                  <span class="publish-step__index">{{ step.index }}</span>
+                  <div>
+                    <p class="text-sm font-semibold text-ink">{{ step.title }}</p>
+                    <p class="text-xs leading-6 text-slate-500 dark:text-slate-400">{{ step.detail }}</p>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </aside>
+        </div>
+
+        <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
           <button
-            class="px-5 py-2.5 text-sm font-semibold rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            type="button"
+            class="hard-button-secondary"
             @click="$router.back()"
           >
             取消
           </button>
           <button
-            class="hard-button-primary px-5 py-2.5 text-sm disabled:opacity-50"
+            type="button"
+            class="hard-button-primary"
             :disabled="!canSubmit || submitting"
             @click="handleSubmit"
           >
             {{ submitting ? '提交中...' : '发布问题' }}
           </button>
         </div>
-      </div>
-    </div>
+      </el-form>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import type { FormInstance, FormRules } from 'element-plus'
+import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { createCommunityQuestionApi } from '@/api/community'
+import { useFormRules } from '@/composables/useFormRules'
 
 const router = useRouter()
+const formRef = ref<FormInstance>()
+const { presets } = useFormRules()
 
-const form = ref({
+const form = reactive({
   title: '',
   content: '',
 })
 
 const submitting = ref(false)
 
-const canSubmit = computed(() => form.value.title.trim().length > 0 && form.value.content.trim().length > 0)
+const formRules: FormRules<typeof form> = {
+  title: presets.title,
+  content: presets.content,
+}
+
+const titleScore = computed(() => {
+  const length = form.title.trim().length
+  if (length >= 36) return 35
+  if (length >= 20) return 26
+  if (length >= 10) return 16
+  if (length > 0) return 8
+  return 0
+})
+
+const contentScore = computed(() => {
+  const length = form.content.trim().length
+  if (length >= 280) return 35
+  if (length >= 160) return 28
+  if (length >= 80) return 18
+  if (length > 0) return 10
+  return 0
+})
+
+const hasContextKeywords = computed(() => /背景|场景|项目|面试|环境/.test(form.content))
+const hasProblemKeywords = computed(() => /问题|现象|报错|异常|卡住|不会/.test(form.content))
+const hasAttemptKeywords = computed(() => /尝试|排查|分析|看过|验证/.test(form.content))
+
+const qualityScore = computed(() => {
+  const structureBonus = [hasContextKeywords.value, hasProblemKeywords.value, hasAttemptKeywords.value].filter(Boolean).length * 10
+  return Math.min(100, titleScore.value + contentScore.value + structureBonus)
+})
+
+const qualityBadge = computed(() => {
+  if (qualityScore.value >= 80) return 'Ready'
+  if (qualityScore.value >= 55) return 'Improving'
+  return 'Draft'
+})
+
+const canSubmit = computed(() => form.title.trim().length > 0 && form.content.trim().length > 0)
+
+const qualityChecklist = computed(() => [
+  {
+    label: '说明了问题背景',
+    ok: hasContextKeywords.value,
+    detail: '最好交代这是面试题、项目场景还是源码理解问题。',
+  },
+  {
+    label: '描述了具体现象',
+    ok: hasProblemKeywords.value,
+    detail: '回答者需要知道你到底卡在哪里，而不是只看到一个抽象概念。',
+  },
+  {
+    label: '写了已尝试方案',
+    ok: hasAttemptKeywords.value,
+    detail: '补上你已经查过什么，避免社区重复给出你已经知道的建议。',
+  },
+])
+
+const writingSignals = computed(() => [
+  {
+    label: 'Title Depth',
+    value: form.title.trim().length || 0,
+    detail: '标题越具体，越容易吸引真正理解该知识点的人回答。',
+    toneClass: '',
+  },
+  {
+    label: 'Context Lines',
+    value: form.content.trim().split('\n').filter(Boolean).length,
+    detail: '至少给出一个背景段和一个问题段。',
+    toneClass: 'submit-slab-cyan',
+  },
+  {
+    label: 'Quality Score',
+    value: qualityScore.value,
+    detail: '达到 80 分以上时，通常已经具备高质量讨论基础。',
+    toneClass: 'submit-slab-lime',
+  },
+])
+
+const promptSections = [
+  {
+    title: '背景',
+    description: '你在准备哪一类面试、看哪段源码、或在什么项目场景里遇到了这个问题。',
+    tag: 'Context',
+  },
+  {
+    title: '现象',
+    description: '你具体卡在哪一步，是无法解释原理、还是逻辑链条断了，或者结果和预期不一致。',
+    tag: 'Signal',
+  },
+  {
+    title: '已尝试方案',
+    description: '列出你已经查过、试过或仍然不能说服自己的部分，帮助回答者直接进入关键分歧点。',
+    tag: 'Attempt',
+  },
+]
+
+const publishSteps = [
+  { index: '01', title: '进入问题流', detail: '你的问题会立刻出现在社区热区中。' },
+  { index: '02', title: '等待回答', detail: '其他用户可以围绕你的问题继续补充、点赞和解答。' },
+  { index: '03', title: '沉淀最佳答案', detail: '采纳回答后，这个问题会变成可复盘的社区资产。' },
+]
 
 async function handleSubmit() {
-  if (!canSubmit.value) return
+  const valid = await formRef.value?.validate().catch(() => false)
+  if (!valid) return
+
   submitting.value = true
   try {
     const { data } = await createCommunityQuestionApi({
-      title: form.value.title.trim(),
-      content: form.value.content.trim(),
+      title: form.title.trim(),
+      content: form.content.trim(),
     })
-    router.push(`/community/question/${data}`)
+    await router.push(`/community/question/${data}`)
   } finally {
     submitting.value = false
   }
 }
 </script>
+
+<style scoped>
+.prompt-lane,
+.quality-check,
+.compose-note {
+  border-radius: 20px;
+  border: 1px solid var(--bc-line);
+  background: rgba(255, 255, 255, 0.34);
+  padding: 14px 16px;
+}
+
+.dark .prompt-lane,
+.dark .quality-check,
+.dark .compose-note {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.quality-gauge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 86px;
+  height: 86px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--bc-accent-rgb), 0.24);
+  background:
+    radial-gradient(circle at center, rgba(var(--bc-accent-rgb), 0.18), transparent 62%),
+    rgba(255, 255, 255, 0.38);
+}
+
+.dark .quality-gauge {
+  background:
+    radial-gradient(circle at center, rgba(var(--bc-accent-rgb), 0.2), transparent 62%),
+    rgba(255, 255, 255, 0.05);
+}
+
+.quality-gauge__value {
+  font-family: theme('fontFamily.mono');
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--bc-ink);
+}
+
+.submit-slab-cyan {
+  border-left-color: var(--bc-cyan);
+}
+
+.submit-slab-lime {
+  border-left-color: var(--bc-lime);
+}
+
+.question-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--bc-line);
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--bc-ink-secondary);
+}
+
+.form-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 12px;
+}
+
+.compose-side {
+  min-width: 0;
+}
+
+.publish-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.publish-step__index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(var(--bc-accent-rgb), 0.14);
+  color: var(--bc-accent);
+  font-family: theme('fontFamily.mono');
+  font-size: 11px;
+  font-weight: 700;
+}
+
+@media (max-width: 1280px) {
+  .compose-side {
+    order: -1;
+  }
+}
+</style>
