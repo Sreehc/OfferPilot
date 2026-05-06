@@ -6,13 +6,13 @@
         <div class="max-w-3xl">
           <div class="flex items-center gap-3">
             <span class="state-pulse" aria-hidden="true"></span>
-            <p class="section-kicker">Repair Vault</p>
+            <p class="section-kicker">错题本</p>
           </div>
           <h3 class="mt-4 font-display text-4xl font-semibold leading-none tracking-[-0.04em] text-ink sm:text-5xl">
-            {{ total }} 个知识断点
+            {{ total }} 道题等待处理
           </h3>
           <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-            低分面试题自动沉淀到修复库。优先处理逾期、未开始和复习中的题目，再回到面试舱验证。
+            低分题会自动进入这里。优先处理今日到期、未开始和仍在复习中的题目，再回到面试里验证。
           </p>
         </div>
         <div class="flex flex-wrap gap-2 sm:gap-3">
@@ -66,7 +66,7 @@
       <EmptyState
         icon="review"
         title="错题本为空"
-        description="完成一场模拟面试后，低分会自动沉淀到这里。也可以从 Dashboard 快捷进入面试。"
+        description="完成一场模拟面试后，低分题会自动出现在这里。"
       >
         <template #action>
           <RouterLink to="/interview" class="hard-button-primary inline-flex">
@@ -97,8 +97,8 @@
             </span>
           </div>
 
-          <!-- Review Info -->
           <div class="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+            <span v-if="isDue(item)" class="rounded-full bg-coral/10 px-2 py-1 font-semibold text-coral">优先处理</span>
             <span v-if="item.nextReviewDate">
               下次复习: <span :class="isDueToday(item.nextReviewDate) ? 'text-coral font-semibold' : ''">
                 {{ formatDate(item.nextReviewDate) }}
@@ -108,7 +108,6 @@
             <span v-if="item.streak && item.streak > 0" class="text-lime">连续 {{ item.streak }}</span>
           </div>
 
-          <!-- Error Reason (collapsed preview) -->
           <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
             {{ item.errorReason || '暂无错误原因记录' }}
           </p>
@@ -125,7 +124,7 @@
                 <p class="mt-2 text-sm font-semibold text-ink">{{ item.intervalDays ?? 1 }} 天</p>
               </div>
               <div class="rounded-2xl border border-[var(--bc-line)] bg-white/35 p-3 dark:bg-white/5">
-                <div class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">EF</div>
+                <div class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">记忆强度</div>
                 <p class="mt-2 text-sm font-semibold text-ink">{{ item.easeFactor?.toFixed(2) ?? '2.50' }}</p>
               </div>
             </div>
@@ -150,7 +149,7 @@
                 class="hard-button-secondary !min-h-10 !px-3 !py-1 text-xs"
                 @click.stop
               >
-                进入复习
+                去复习
               </RouterLink>
               <button
                 type="button"
@@ -171,7 +170,7 @@
 
           <!-- Collapsed hint -->
           <div v-else class="mt-3 text-xs tracking-[0.2em] text-slate-400 dark:text-slate-500">
-            点击展开修复动作
+            点击展开查看答案与处理动作
           </div>
         </article>
       </div>
@@ -266,10 +265,10 @@ const longestOverdue = computed(() => {
 })
 
 const repairSignals = computed(() => [
-  { label: '待修复', value: String(total.value), desc: '当前错题库总量', dotClass: 'bg-accent' },
-  { label: '今日到期', value: String(todayDue.value), desc: '建议优先进入复习', dotClass: todayDue.value > 0 ? 'bg-coral' : 'bg-lime' },
-  { label: '掌握率', value: `${masteryRate.value}%`, desc: `${masteredCount.value} 道已掌握`, dotClass: masteryRate.value >= 70 ? 'bg-lime' : 'bg-amber' },
-  { label: '最长逾期', value: `${longestOverdue.value} 天`, desc: '越久越应先处理', dotClass: longestOverdue.value > 0 ? 'bg-coral' : 'bg-cyan' }
+  { label: '错题总数', value: String(total.value), desc: '当前错题本里的全部题目。', dotClass: 'bg-accent' },
+  { label: '今日待复习', value: String(todayDue.value), desc: '建议先进入复习页处理。', dotClass: todayDue.value > 0 ? 'bg-coral' : 'bg-lime' },
+  { label: '已掌握比例', value: `${masteryRate.value}%`, desc: `${masteredCount.value} 道已进入掌握状态。`, dotClass: masteryRate.value >= 70 ? 'bg-lime' : 'bg-amber' },
+  { label: '最长逾期', value: `${longestOverdue.value} 天`, desc: '逾期越久，越建议优先处理。', dotClass: longestOverdue.value > 0 ? 'bg-coral' : 'bg-cyan' }
 ])
 
 const loadData = async () => {
