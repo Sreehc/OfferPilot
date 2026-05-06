@@ -172,5 +172,40 @@ const rechunkDoc = async (id: number) => { knowledgeActionId.value = `rechunk-${
 const reindexDoc = async (id: number) => { knowledgeActionId.value = `reindex-${id}`; try { await reindexKnowledgeDocApi(id); ElMessage.success('索引已重建'); await loadKnowledgeDocs() } catch { ElMessage.error('重建索引失败') } finally { knowledgeActionId.value = null } }
 const resetKnowledgeFilter = () => { knowledgeFilter.categoryId = undefined; knowledgeFilter.status = undefined; knowledgeFilter.keyword = ''; void loadKnowledgeDocs() }
 
+const downloadBlob = (blob: BlobPart, filename: string) => {
+  const url = URL.createObjectURL(blob instanceof Blob ? blob : new Blob([blob]))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
+const handleExportQuestions = async () => {
+  exportingQuestions.value = true
+  try {
+    const response = await exportQuestionsApi()
+    downloadBlob(response.data as unknown as BlobPart, `bytecoach-questions-${Date.now()}.xlsx`)
+    ElMessage.success('题库导出成功')
+  } catch {
+    ElMessage.error('题库导出失败')
+  } finally {
+    exportingQuestions.value = false
+  }
+}
+
+const handleExportUsers = async () => {
+  exportingUsers.value = true
+  try {
+    const response = await exportUsersApi()
+    downloadBlob(response.data as unknown as BlobPart, `bytecoach-users-${Date.now()}.xlsx`)
+    ElMessage.success('用户导出成功')
+  } catch {
+    ElMessage.error('用户导出失败')
+  } finally {
+    exportingUsers.value = false
+  }
+}
+
 onMounted(async () => { await loadCategories(); await Promise.all([loadQuestions(), loadKnowledgeDocs()]) })
 </script>

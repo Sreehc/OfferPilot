@@ -257,7 +257,7 @@ import {
   submitCommunityAnswerApi,
   voteCommunityApi,
 } from '@/api/community'
-import type { CommunityAnswer, CommunityQuestion, CommunityQuestionDetail } from '@/types/api'
+import type { CommunityQuestion, CommunityQuestionDetail } from '@/types/api'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()

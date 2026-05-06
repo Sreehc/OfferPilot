@@ -120,10 +120,9 @@
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
 import { banUserApi, fetchAdminUsersApi, fetchUserDetailApi, unbanUserApi, updateAdminUserApi } from '@/api/admin'
-import type { AdminUserDetail } from '@/api/admin'
-import type { UserInfo } from '@/types/api'
+import type { AdminUserDetail, AdminUserListItem } from '@/api/admin'
 
-const users = ref<UserInfo[]>([])
+const users = ref<AdminUserListItem[]>([])
 const loading = ref(false)
 const keyword = ref('')
 const roleFilter = ref('')
@@ -153,7 +152,7 @@ const loadUsers = async () => {
 const handleSearch = () => { pageNum.value = 1; void loadUsers() }
 const handlePageChange = (p: number) => { pageNum.value = p; void loadUsers() }
 
-const handleEdit = (row: UserInfo) => {
+const handleEdit = (row: AdminUserListItem) => {
   editUserId.value = row.id
   editForm.nickname = row.nickname || ''
   editForm.role = row.role || 'USER'
@@ -170,16 +169,16 @@ const saveEdit = async () => {
   } catch { ElMessage.error('更新失败') } finally { editSaving.value = false }
 }
 
-const handleBan = async (row: UserInfo) => {
+const handleBan = async (row: AdminUserListItem) => {
   await ElMessageBox.confirm(`确认封禁用户「${row.username}」？该用户将被踢出所有设备。`, '封禁确认', { type: 'warning' })
   try { await banUserApi(row.id); ElMessage.success('已封禁'); await loadUsers() } catch { ElMessage.error('封禁失败') }
 }
 
-const handleUnban = async (row: UserInfo) => {
+const handleUnban = async (row: AdminUserListItem) => {
   try { await unbanUserApi(row.id); ElMessage.success('已解封'); await loadUsers() } catch { ElMessage.error('解封失败') }
 }
 
-const handleDetail = async (row: UserInfo) => {
+const handleDetail = async (row: AdminUserListItem) => {
   try {
     const res = await fetchUserDetailApi(row.id)
     detail.value = res.data

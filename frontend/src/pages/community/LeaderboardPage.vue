@@ -206,8 +206,6 @@ const ranks = [
 const topEntry = computed(() => leaderboard.value[0] ?? null)
 const totalScore = computed(() => leaderboard.value.reduce((sum, entry) => sum + entry.communityScore, 0))
 const totalAccepted = computed(() => leaderboard.value.reduce((sum, entry) => sum + entry.communityAccepted, 0))
-const totalAnswers = computed(() => leaderboard.value.reduce((sum, entry) => sum + entry.communityAnswers, 0))
-
 const boardSignals = computed(() => [
   {
     label: 'Visible Pilots',

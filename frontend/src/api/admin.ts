@@ -1,5 +1,5 @@
 import { request } from '@/utils/http'
-import type { PageResult, UserInfo } from '@/types/api'
+import type { PageResult } from '@/types/api'
 
 // ─── User management ───
 
@@ -26,8 +26,19 @@ export interface AdminUserDetail {
   communityAnswers: number
 }
 
+export interface AdminUserListItem {
+  id: number
+  username: string
+  nickname: string
+  avatar?: string
+  role: string
+  status?: number
+  createTime?: string
+  lastLoginTime?: string
+}
+
 export const fetchAdminUsersApi = (params: { keyword?: string; role?: string; pageNum?: number; pageSize?: number }) => {
-  return request<PageResult<UserInfo>>({ url: '/admin/users', method: 'get', params })
+  return request<PageResult<AdminUserListItem>>({ url: '/admin/users', method: 'get', params })
 }
 
 export const updateAdminUserApi = (id: number, payload: AdminUserUpdatePayload) => {
