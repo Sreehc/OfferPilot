@@ -1,21 +1,21 @@
 <template>
   <div class="auth-immersive-shell px-4 py-8 md:px-6 md:py-10">
-    <div class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1280px] items-stretch gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(380px,0.95fr)]">
+    <div class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1180px] items-stretch gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(380px,1.05fr)]">
       <section class="cockpit-panel auth-brand-panel p-6 sm:p-8">
         <div class="flex items-center gap-3">
           <span class="state-pulse" aria-hidden="true"></span>
-          <p class="section-kicker">ByteCoach Signup</p>
+          <p class="section-kicker">创建账号</p>
         </div>
 
         <div class="mt-8 max-w-2xl">
-          <h1 class="auth-hero-title">创建你的训练身份</h1>
+          <h1 class="auth-hero-title">用一个账号开始学习</h1>
           <p class="mt-5 text-sm leading-8 text-slate-600 dark:text-slate-300 sm:text-base">
-            一个账号会把你的问答、面试、错题和复习轨迹串到同一条训练链路里。注册完成后直接进入首页，不需要再做额外设置。
+            注册后会自动登录，并直接进入首页。之后你的问答、面试、错题和复习都会记录在这个账号下，方便持续学习。
           </p>
         </div>
 
         <div class="auth-orbit-grid mt-8">
-          <article v-for="signal in setupSignals" :key="signal.label" class="data-slab p-4" :class="signal.toneClass">
+          <article v-for="signal in setupHighlights" :key="signal.label" class="data-slab p-4" :class="signal.toneClass">
             <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ signal.label }}</p>
             <p class="mt-3 text-xl font-semibold text-ink">{{ signal.title }}</p>
             <p class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ signal.detail }}</p>
@@ -23,9 +23,10 @@
         </div>
 
         <div class="mission-orbit mt-8">
+          <p class="text-sm font-semibold text-ink">创建后会发生什么</p>
           <div class="mission-orbit__track">
             <div
-              v-for="step in setupSteps"
+              v-for="step in registerSteps"
               :key="step.index"
               class="mission-orbit__node"
             >
@@ -42,10 +43,10 @@
       <section class="cockpit-panel auth-form-panel p-6 sm:p-8 md:p-10">
         <div class="flex items-start justify-between gap-4">
           <div>
-            <p class="section-kicker">Register</p>
-            <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">创建账号</h2>
+            <p class="section-kicker">注册</p>
+            <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">填写三个字段即可</h2>
             <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-              只需昵称、用户名和密码。完成后系统会自动登录，并把你送到训练主看板。
+              只需昵称、用户名和密码。完成后会自动登录，不需要额外配置。
             </p>
           </div>
           <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ readinessLabel }}</span>
@@ -103,7 +104,7 @@
               class="action-button !min-h-12 w-full transition active:translate-y-px"
               @click="handleRegister"
             >
-              {{ loading ? '创建中...' : '创建账号并进入训练舱' }}
+              {{ loading ? '创建中...' : '创建账号并开始学习' }}
             </el-button>
             <div class="auth-links">
               <span class="text-sm text-slate-500 dark:text-slate-400">
@@ -117,11 +118,11 @@
         <div class="auth-footnote mt-8">
           <div class="auth-footnote__item">
             <span class="inline-flex h-2.5 w-2.5 rounded-full bg-[var(--bc-lime)]"></span>
-            注册成功后自动持久化当前设备。
+            注册成功后会自动记录当前设备，后续可在设置里管理。
           </div>
           <div class="auth-footnote__item">
             <span class="inline-flex h-2.5 w-2.5 rounded-full bg-[var(--bc-cyan)]"></span>
-            后续可在设置页继续开启 2FA 与设备管理。
+            后续可按需要开启两步验证，不影响现在先开始学习。
           </div>
         </div>
       </section>
@@ -137,37 +138,31 @@ import { useRouter } from 'vue-router'
 import type { RegisterPayload } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 
-const setupSignals = [
+const setupHighlights = [
   {
-    label: 'Identity',
-    title: '训练身份',
-    detail: '昵称会作为社区和学习 cockpit 里的主显示名。',
+    label: '学习记录',
+    title: '所有训练集中保留',
+    detail: '问答、面试、错题和复习都会归到同一个账号下。',
     toneClass: 'auth-slab-cyan',
   },
   {
-    label: 'Device',
-    title: '设备绑定',
-    detail: '注册时会自动记录当前设备，方便后续安全管理。',
+    label: '快速开始',
+    title: '注册后自动登录',
+    detail: '创建完成后直接进入首页，不需要再回登录页。',
     toneClass: 'auth-slab-amber',
   },
   {
-    label: 'Launch',
-    title: '直接进入',
-    detail: '成功后不再停留在认证流，会直接进入首页开始训练。',
+    label: '账号安全',
+    title: '后续再补充安全设置',
+    detail: '设备管理和两步验证都可以在进入系统后再慢慢完成。',
     toneClass: 'auth-slab-lime',
-  },
-  {
-    label: 'Growth',
-    title: '长期轨迹',
-    detail: '你的问答、面试和复习都会累计到同一个学习档案里。',
-    toneClass: 'auth-slab-coral',
   },
 ]
 
-const setupSteps = [
-  { index: '01', title: '创建身份', detail: '先留下你在社区和训练 cockpit 中使用的昵称。' },
-  { index: '02', title: '绑定设备', detail: '系统会自动把当前设备接入安全链路。' },
-  { index: '03', title: '进入看板', detail: '注册成功后直接进入首页开始第一轮训练。' },
+const registerSteps = [
+  { index: '01', title: '填写昵称和账号', detail: '昵称用于展示，用户名用于后续登录。' },
+  { index: '02', title: '设置密码', detail: '密码至少 6 位，之后可在设置里进一步增强安全性。' },
+  { index: '03', title: '自动进入首页', detail: '创建成功后直接开始学习，不需要再次登录。' },
 ]
 
 const router = useRouter()
@@ -207,28 +202,28 @@ const readinessScore = computed(() => {
 })
 
 const readinessLabel = computed(() => {
-  if (readinessScore.value >= 100) return 'Ready'
-  if (readinessScore.value >= 65) return 'Almost'
-  return 'Draft'
+  if (readinessScore.value >= 100) return '可创建'
+  if (readinessScore.value >= 65) return '快完成'
+  return '填写中'
 })
 
 const readinessSignals = computed(() => [
   {
-    label: 'Nickname',
+    label: '昵称',
     value: form.nickname.trim().length || 0,
-    detail: '建议使用后续愿意公开展示的学习身份。',
+    detail: '建议使用后续愿意公开展示的名字。',
     toneClass: 'auth-slab-cyan',
   },
   {
-    label: 'Username',
+    label: '用户名',
     value: form.username.trim().length || 0,
     detail: '保持简洁，后续用于登录。',
     toneClass: 'auth-slab-amber',
   },
   {
-    label: 'Readiness',
+    label: '完成度',
     value: `${readinessScore.value}%`,
-    detail: '三个字段填满后即可直接进入训练舱。',
+    detail: '三个字段填写完成后即可直接进入首页。',
     toneClass: readinessScore.value >= 100 ? 'auth-slab-lime' : 'auth-slab-coral',
   },
 ])
