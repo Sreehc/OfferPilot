@@ -46,7 +46,7 @@
 
     <section v-else-if="devices.length === 0" class="paper-panel p-6">
       <EmptyState
-        icon="shield"
+        icon="bell"
         title="暂无已登录设备"
         description="登录后设备会自动出现在此列表中。"
       />

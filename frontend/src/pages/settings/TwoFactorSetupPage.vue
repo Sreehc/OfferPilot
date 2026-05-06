@@ -93,7 +93,7 @@ import { computed, onMounted, ref } from 'vue'
 import { enableTwoFactorApi, setupTwoFactorApi } from '@/api/auth'
 import type { TwoFactorSetup } from '@/types/api'
 
-const emit = defineEmits<{ done: [] }>()
+defineEmits<{ done: [] }>()
 
 const step = ref(1)
 const setupData = ref<TwoFactorSetup | null>(null)
