@@ -22,6 +22,7 @@ import com.bytecoach.wrong.entity.WrongQuestion;
 import com.bytecoach.wrong.mapper.ReviewLogMapper;
 import com.bytecoach.wrong.mapper.WrongQuestionMapper;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
@@ -66,7 +67,11 @@ public class DataExportServiceImpl implements DataExportService {
                         .build())
                 .toList();
 
-        EasyExcel.write(response.getOutputStream(), QuestionExportRow.class).sheet("题库").doWrite(rows);
+        try {
+            EasyExcel.write(response.getOutputStream(), QuestionExportRow.class).sheet("题库").doWrite(rows);
+        } catch (IOException ex) {
+            throw new IllegalStateException("导出题库失败", ex);
+        }
     }
 
     @Override
@@ -88,7 +93,11 @@ public class DataExportServiceImpl implements DataExportService {
                         .build())
                 .toList();
 
-        EasyExcel.write(response.getOutputStream(), UserExportRow.class).sheet("用户列表").doWrite(rows);
+        try {
+            EasyExcel.write(response.getOutputStream(), UserExportRow.class).sheet("用户列表").doWrite(rows);
+        } catch (IOException ex) {
+            throw new IllegalStateException("导出用户列表失败", ex);
+        }
     }
 
     @Override
@@ -101,6 +110,10 @@ public class DataExportServiceImpl implements DataExportService {
                     new LambdaQueryWrapper<InterviewSession>()
                             .eq(InterviewSession::getUserId, userId)
                             .orderByDesc(InterviewSession::getCreateTime));
+            Map<Long, Question> questionMap = new HashMap<>();
+            for (Question question : questionMapper.selectList(null)) {
+                questionMap.put(question.getId(), question);
+            }
 
             List<Map<String, Object>> interviewRows = new ArrayList<>();
             for (InterviewSession s : sessions) {
@@ -115,7 +128,8 @@ public class DataExportServiceImpl implements DataExportService {
                     row.put("得分", r.getScore());
                     row.put("我的回答", r.getUserAnswer());
                     row.put("点评", r.getComment());
-                    row.put("标准答案", r.getStandardAnswer());
+                    Question question = questionMap.get(r.getQuestionId());
+                    row.put("标准答案", question != null ? question.getStandardAnswer() : "");
                     interviewRows.add(row);
                 }
             }
@@ -166,6 +180,8 @@ public class DataExportServiceImpl implements DataExportService {
                     .head(headOf("错题ID", "评分", "复习时间", "EF变化", "间隔变化"))
                     .build();
             writer.write(reviewRows, sheet3);
+        } catch (IOException ex) {
+            throw new IllegalStateException("导出个人数据失败", ex);
         }
     }
 

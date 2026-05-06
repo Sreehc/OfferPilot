@@ -1,13 +1,16 @@
 <template>
   <div class="ambient-shell min-h-screen px-3 py-3 pb-24 md:pb-5 md:px-5 md:py-5 lg:h-screen lg:overflow-hidden">
-    <div class="shell-frame mx-auto max-w-[1520px] lg:grid lg:h-full lg:grid-cols-[292px_minmax(0,1fr)]">
+    <div
+      class="shell-frame mx-auto max-w-[1520px] lg:grid lg:h-full"
+      :class="sidebarVisible ? 'lg:grid-cols-[292px_minmax(0,1fr)]' : 'lg:grid-cols-[minmax(0,1fr)]'"
+    >
       <!-- Desktop sidebar: hidden below lg -->
       <NavRail
         v-show="sidebarVisible"
         class="hidden min-h-[280px] border-r border-[var(--bc-line)] lg:block lg:h-full lg:overflow-hidden"
       />
 
-      <main class="relative z-[1] space-y-5 p-3 md:p-5 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:p-6">
+      <main class="relative z-[1] min-w-0 space-y-5 p-3 md:p-5 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:p-6">
         <AppShellHeader
           :kicker="headerMeta.kicker"
           :title="headerMeta.title"

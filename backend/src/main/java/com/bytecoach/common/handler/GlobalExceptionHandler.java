@@ -6,6 +6,7 @@ import com.bytecoach.common.exception.BusinessException;
 import jakarta.validation.ConstraintViolationException;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -47,10 +48,14 @@ public class GlobalExceptionHandler {
         return Result.failure(ResultCode.BAD_REQUEST.getCode(), "request body is invalid");
     }
 
+    @ExceptionHandler(BadCredentialsException.class)
+    public Result<Void> handleBadCredentialsException(BadCredentialsException ex) {
+        return Result.failure(ResultCode.UNAUTHORIZED.getCode(), "账号或密码错误");
+    }
+
     @ExceptionHandler(Exception.class)
     public Result<Void> handleException(Exception ex) {
         log.error("Unhandled exception", ex);
         return Result.failure(ResultCode.SERVER_ERROR.getCode(), ResultCode.SERVER_ERROR.getMessage());
     }
 }
-

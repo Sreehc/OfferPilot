@@ -47,6 +47,7 @@ ByteCoach
 ### 1. 初始化数据库
 
 执行 `sql/init.sql` 创建表结构，再执行 `sql/initdata.sql` 插入测试数据。
+如果数据库是在两步验证字段加入前初始化的，再额外执行 `sql/migrate_2fa_user_columns.sql` 补齐 `user` 表字段。
 
 ### 2. 启动本地依赖
 
@@ -73,6 +74,11 @@ npm run dev
 ```
 
 默认端口 `5173`
+
+## 默认测试账号
+
+- 用户名：`demo`
+- 密码：`123456`
 
 ## 环境变量
 
