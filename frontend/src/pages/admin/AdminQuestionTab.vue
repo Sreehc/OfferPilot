@@ -1,6 +1,7 @@
 <template>
   <div class="grid gap-4 xl:grid-cols-[380px_minmax(0,1fr)]">
     <div class="surface-muted p-4">
+      <div class="text-xs text-slate-500 dark:text-slate-400">左侧维护题目内容，右侧筛选并浏览现有题目。</div>
       <div class="text-sm font-semibold text-ink">{{ form.id ? '编辑题目' : '新增题目' }}</div>
       <div class="mt-4 space-y-3">
         <el-input v-model="form.title" placeholder="题目标题" size="large" />
@@ -8,9 +9,9 @@
           <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
         </el-select>
         <el-select v-model="form.difficulty" placeholder="难度" size="large" class="w-full">
-          <el-option label="easy" value="easy" />
-          <el-option label="medium" value="medium" />
-          <el-option label="hard" value="hard" />
+          <el-option label="简单" value="easy" />
+          <el-option label="中等" value="medium" />
+          <el-option label="困难" value="hard" />
         </el-select>
         <el-input v-model="form.tags" placeholder="标签，例如：Spring,AOP" size="large" />
         <el-input v-model="form.standardAnswer" type="textarea" :rows="5" placeholder="标准答案" />
@@ -24,14 +25,15 @@
     </div>
 
     <div class="space-y-4">
+      <div class="text-sm text-slate-500 dark:text-slate-400">先筛选，再编辑或删除。</div>
       <div class="grid gap-3 md:grid-cols-3">
         <el-select v-model="filter.categoryId" clearable placeholder="分类筛选" size="large">
           <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
         </el-select>
         <el-select v-model="filter.difficulty" clearable placeholder="难度筛选" size="large">
-          <el-option label="easy" value="easy" />
-          <el-option label="medium" value="medium" />
-          <el-option label="hard" value="hard" />
+          <el-option label="简单" value="easy" />
+          <el-option label="中等" value="medium" />
+          <el-option label="困难" value="hard" />
         </el-select>
         <el-input v-model="filter.keyword" clearable placeholder="关键字" size="large" />
       </div>
@@ -54,7 +56,7 @@
             <div class="font-semibold text-ink">{{ item.title }}</div>
             <div class="mt-2 flex flex-wrap gap-2 text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
               <span>{{ item.categoryName }}</span>
-              <span>{{ item.difficulty }}</span>
+              <span>{{ item.difficulty === 'easy' ? '简单' : item.difficulty === 'medium' ? '中等' : '困难' }}</span>
             </div>
             <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ item.standardAnswer || '暂无标准答案' }}</p>
           </div>
@@ -142,6 +144,6 @@ const handleImport = async (file: File) => {
   } finally {
     importing.value = false
   }
-  return false // prevent el-upload default behavior
+  return false
 }
 </script>

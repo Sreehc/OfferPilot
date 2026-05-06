@@ -1,9 +1,18 @@
 <template>
   <div class="space-y-4">
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h4 class="text-lg font-semibold text-ink">待审核内容</h4>
+        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          先看类型、标题和提交时间，再快速决定通过或拒绝。
+        </p>
+      </div>
       <div class="text-sm text-slate-500 dark:text-slate-400">
         待审核内容：<span class="font-semibold text-ink">{{ total }}</span> 条
       </div>
+    </div>
+
+    <div class="flex justify-end">
       <el-button :loading="loading" type="primary" size="large" class="action-button" @click="loadPending">刷新</el-button>
     </div>
 
@@ -39,7 +48,6 @@
       <el-pagination :current-page="pageNum" :page-size="pageSize" :total="total" layout="prev, pager, next" @current-change="handlePageChange" />
     </div>
 
-    <!-- Reject dialog -->
     <el-dialog v-model="rejectVisible" title="审核拒绝" width="400px">
       <p class="text-sm text-slate-600 dark:text-slate-300 mb-3">请填写拒绝原因（可选）：</p>
       <el-input v-model="rejectReason" type="textarea" :rows="3" placeholder="拒绝原因..." />

@@ -1,6 +1,13 @@
 <template>
   <div class="space-y-4">
-    <div class="flex items-center gap-3">
+    <div>
+      <h4 class="text-lg font-semibold text-ink">后台登录日志</h4>
+      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        先按用户名搜索，再结合时间、IP 和状态排查后台访问情况。
+      </p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3">
       <el-input
         v-model="keyword"
         placeholder="按用户名搜索"
@@ -58,7 +65,6 @@
       </el-table-column>
     </el-table>
 
-    <!-- Mobile card view -->
     <div class="mobile-card-list">
       <div v-for="row in logs" :key="row.id" class="mobile-card-item">
         <div class="flex items-center gap-2 mb-2">

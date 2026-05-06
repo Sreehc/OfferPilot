@@ -1,23 +1,43 @@
 <template>
   <div class="space-y-6">
-    <section class="paper-panel p-6">
-      <div class="flex items-start justify-between gap-4">
-        <div>
-          <p class="section-kicker">管理后台</p>
-          <h2 class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-ink">系统概览与运营管理</h2>
-          <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-            系统概览、用户管理、内容审核、题库管理、文档管理、登录日志，一站式运营工具。
+    <section class="cockpit-panel p-5 sm:p-6">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div class="max-w-3xl">
+          <div class="flex items-center gap-3">
+            <span class="state-pulse" aria-hidden="true"></span>
+            <p class="section-kicker">管理后台</p>
+          </div>
+          <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">先切到对应模块，再直接执行管理动作</h2>
+          <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            这里集中处理概览、用户、审核、分类、题库、文档和登录日志。优先使用下方标签进入具体管理区。
           </p>
         </div>
-        <div class="flex shrink-0 gap-2">
-          <el-button :loading="exportingQuestions" size="large" @click="handleExportQuestions">导出题库</el-button>
-          <el-button :loading="exportingUsers" size="large" @click="handleExportUsers">导出用户</el-button>
+        <div class="flex flex-wrap gap-2">
+          <el-button :loading="exportingQuestions" size="large" class="hard-button-secondary" @click="handleExportQuestions">导出题库</el-button>
+          <el-button :loading="exportingUsers" size="large" class="hard-button-primary" @click="handleExportUsers">导出用户</el-button>
         </div>
+      </div>
+
+      <div class="mt-6 grid gap-3 md:grid-cols-3">
+        <article v-for="signal in adminSignals" :key="signal.label" class="data-slab p-4" :class="signal.toneClass">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ signal.label }}</p>
+          <p class="mt-3 text-xl font-semibold text-ink">{{ signal.title }}</p>
+          <p class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ signal.detail }}</p>
+        </article>
       </div>
     </section>
 
-    <section class="paper-panel p-6">
-      <el-tabs v-model="activeTab">
+    <section class="cockpit-panel p-5 sm:p-6">
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p class="section-kicker">管理模块</p>
+          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">{{ currentTabMeta.title }}</h3>
+          <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{ currentTabMeta.description }}</p>
+        </div>
+      </div>
+
+      <section class="admin-tab-shell mt-6">
+      <el-tabs v-model="activeTab" class="admin-tabs">
         <el-tab-pane label="系统概览" name="overview">
           <AdminOverviewTab />
         </el-tab-pane>
@@ -91,6 +111,7 @@
           <AdminLoginLogTab />
         </el-tab-pane>
       </el-tabs>
+      </section>
     </section>
   </div>
 </template>
@@ -149,6 +170,39 @@ const builtInSeeds = [
   { seedKey: 'jvm-interview-handbook', title: 'JVM 面试手册', summary: '内存区域、GC、类加载。' },
   { seedKey: 'mysql-high-frequency', title: 'MySQL 高频题', summary: '索引、事务、锁与执行计划。' }
 ]
+
+const adminSignals = [
+  {
+    label: '用户',
+    title: '用户与权限',
+    detail: '查找用户、调整角色、处理封禁与详情查看。',
+    toneClass: '',
+  },
+  {
+    label: '内容',
+    title: '审核与题库',
+    detail: '快速处理待审核内容，并维护分类、题目和知识文档。',
+    toneClass: 'admin-slab-cyan',
+  },
+  {
+    label: '导出',
+    title: '数据可留档',
+    detail: '题库和用户数据都可以直接导出，用于留档或排查。',
+    toneClass: 'admin-slab-lime',
+  },
+]
+
+const tabMeta = {
+  overview: { title: '系统概览', description: '先看核心指标和近 30 天趋势。' },
+  users: { title: '用户管理', description: '优先搜索用户，再处理角色、状态和详情。' },
+  contentReview: { title: '内容审核', description: '按提交时间扫描待审核内容，快速通过或拒绝。' },
+  category: { title: '分类管理', description: '左侧编辑，右侧查看现有分类列表。' },
+  question: { title: '题库管理', description: '先筛选题目，再决定编辑、删除或批量导入。' },
+  knowledge: { title: '文档管理', description: '先筛选文档，再执行导入、重切分和重建索引。' },
+  loginLogs: { title: '登录日志', description: '按用户名、时间和状态排查后台登录情况。' },
+} as const
+
+const currentTabMeta = computed(() => tabMeta[activeTab.value as keyof typeof tabMeta] ?? tabMeta.overview)
 
 const loadCategories = async () => { const r = await fetchCategoriesApi(); categories.value = r.data }
 const loadQuestions = async () => { questionLoading.value = true; try { const r = await fetchQuestionsApi({ categoryId: questionFilter.categoryId, difficulty: questionFilter.difficulty, keyword: questionFilter.keyword || undefined, pageNum: questionPage.value, pageSize: questionPageSize.value }); questions.value = r.data.records; questionTotal.value = r.data.total; questionTotalPages.value = r.data.totalPages } catch { ElMessage.error('题库加载失败') } finally { questionLoading.value = false } }
@@ -209,3 +263,47 @@ const handleExportUsers = async () => {
 
 onMounted(async () => { await loadCategories(); await Promise.all([loadQuestions(), loadKnowledgeDocs()]) })
 </script>
+
+<style scoped>
+.admin-slab-cyan {
+  border-left-color: var(--bc-cyan);
+}
+
+.admin-slab-lime {
+  border-left-color: var(--bc-lime);
+}
+
+.admin-tab-shell {
+  border-radius: 28px;
+  border: 1px solid var(--bc-line);
+  background: rgba(255, 255, 255, 0.26);
+  padding: 12px;
+}
+
+.dark .admin-tab-shell {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+:deep(.admin-tabs > .el-tabs__header) {
+  margin-bottom: 0;
+  padding: 0 8px;
+}
+
+:deep(.admin-tabs .el-tabs__nav-wrap::after) {
+  display: none;
+}
+
+:deep(.admin-tabs .el-tabs__item) {
+  min-height: 44px;
+  color: var(--bc-ink-secondary);
+  font-weight: 600;
+}
+
+:deep(.admin-tabs .el-tabs__item.is-active) {
+  color: var(--bc-ink);
+}
+
+:deep(.admin-tabs .el-tabs__active-bar) {
+  background: var(--bc-accent);
+}
+</style>

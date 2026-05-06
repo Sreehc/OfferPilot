@@ -1,6 +1,13 @@
 <template>
   <div class="space-y-4">
-    <div class="flex items-center gap-3">
+    <div>
+      <h4 class="text-lg font-semibold text-ink">用户列表</h4>
+      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        优先用用户名和角色筛选，再进行编辑、封禁、解封或查看详情。
+      </p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3">
       <el-input v-model="keyword" placeholder="搜索用户名/昵称" clearable size="large" class="max-w-xs" @keyup.enter="handleSearch" @clear="handleSearch" />
       <el-select v-model="roleFilter" placeholder="角色筛选" clearable size="large" class="w-32" @change="handleSearch">
         <el-option label="全部" value="" />
@@ -49,7 +56,6 @@
       </el-table-column>
     </el-table>
 
-    <!-- Mobile card view -->
     <div class="mobile-card-list">
       <div v-for="row in users" :key="row.id" class="mobile-card-item">
         <div class="flex items-center gap-2 mb-2">
@@ -74,7 +80,6 @@
       <el-pagination :current-page="pageNum" :page-size="pageSize" :total="total" layout="prev, pager, next" @current-change="handlePageChange" />
     </div>
 
-    <!-- Edit dialog -->
     <el-dialog v-model="editVisible" title="编辑用户" width="400px">
       <el-form label-position="top">
         <el-form-item label="昵称">
@@ -93,7 +98,6 @@
       </template>
     </el-dialog>
 
-    <!-- Detail dialog -->
     <el-dialog v-model="detailVisible" title="用户详情" width="500px">
       <div v-if="detail" class="space-y-3">
         <div class="grid grid-cols-2 gap-3">
