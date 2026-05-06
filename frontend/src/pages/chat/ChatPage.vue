@@ -1,13 +1,13 @@
 <template>
-  <div class="chat-cockpit grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
+  <div class="chat-cockpit grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
     <aside class="cockpit-panel signal-log p-4 sm:p-5">
       <div class="flex items-start justify-between gap-3">
         <div>
           <div class="flex items-center gap-2">
             <span class="state-pulse" aria-hidden="true"></span>
-            <p class="section-kicker">Signal Log</p>
+            <p class="section-kicker">会话列表</p>
           </div>
-          <h2 class="mt-3 text-2xl font-semibold tracking-[-0.04em] text-ink">问答信号库</h2>
+          <h2 class="mt-3 text-2xl font-semibold tracking-[-0.04em] text-ink">最近会话</h2>
         </div>
         <button type="button" class="hard-button-secondary !min-h-11 !px-3 !py-2 text-xs" @click="startNewSession">
           新会话
@@ -16,11 +16,11 @@
 
       <div class="mt-5 grid grid-cols-2 gap-3">
         <div class="data-slab p-3">
-          <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Signals</p>
+          <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">会话数</p>
           <p class="mt-2 font-mono text-2xl font-semibold text-ink">{{ sessionTotal }}</p>
         </div>
         <div class="data-slab p-3">
-          <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">RAG</p>
+          <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">知识库问答</p>
           <p class="mt-2 font-mono text-2xl font-semibold text-[var(--bc-cyan)]">{{ ragSessionCount }}</p>
         </div>
       </div>
@@ -40,7 +40,7 @@
               <div class="truncate text-sm font-semibold text-ink">{{ session.title }}</div>
               <div class="mt-3 flex flex-wrap items-center gap-2">
                 <span class="hard-chip !px-2 !py-0.5 !text-[9px]" :class="session.mode === 'rag' ? 'signal-chip-rag' : 'signal-chip-chat'">
-                  {{ session.mode === 'rag' ? 'RAG' : 'CHAT' }}
+                  {{ session.mode === 'rag' ? '知识库' : '直答' }}
                 </span>
                 <span class="text-[11px] text-slate-500 dark:text-slate-400">{{ formatSessionTime(session.lastMessageTime || session.updateTime) }}</span>
               </div>
@@ -53,8 +53,8 @@
       <EmptyState
         v-if="!sessions.length"
         icon="chat"
-        title="还没有信号"
-        description="发起第一个问题，系统会自动创建会话并沉淀问答轨迹。"
+        title="还没有会话"
+        description="发起第一个问题后，这里会保留你的问答历史。"
         compact
         class="mt-5"
       />
@@ -74,10 +74,10 @@
     <section class="cockpit-panel chat-console flex min-h-[640px] flex-col p-4 sm:p-5">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div class="min-w-0">
-          <p class="section-kicker">Knowledge Dive</p>
-          <h1 class="mt-3 text-2xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">知识潜航问答</h1>
+          <p class="section-kicker">智能问答</p>
+          <h1 class="mt-3 text-2xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">带引用回答，或直接提问</h1>
           <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-            {{ currentTitle }} · 用检索信号锁定资料来源，再进入 cockpit 阅读舱生成可追溯答案。
+            {{ currentTitle }}。知识库问答会先检索资料并附上来源，直接问答则更适合快速确认概念。
           </p>
         </div>
 
@@ -88,7 +88,7 @@
             :class="{ 'mode-switch__item-active': mode === 'rag' }"
             @click="mode = 'rag'"
           >
-            RAG 潜航
+            知识库问答
           </button>
           <button
             type="button"
@@ -96,27 +96,52 @@
             :class="{ 'mode-switch__item-active': mode === 'chat' }"
             @click="mode = 'chat'"
           >
-            快速问答
+            直接问答
           </button>
         </div>
       </div>
 
       <div class="mt-5 grid gap-3 sm:grid-cols-3">
         <div class="data-slab p-3">
-          <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Status</p>
+          <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">当前状态</p>
           <p class="mt-2 text-sm font-semibold text-ink">{{ cockpitStatus }}</p>
         </div>
         <div class="data-slab p-3">
-          <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Messages</p>
+          <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">消息数</p>
           <p class="mt-2 font-mono text-xl font-semibold text-ink">{{ messages.length }}</p>
         </div>
         <div class="data-slab p-3">
-          <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Reference Deck</p>
+          <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">当前引用</p>
           <p class="mt-2 font-mono text-xl font-semibold text-[var(--bc-cyan)]">{{ referenceDeck.length }}</p>
         </div>
       </div>
 
-      <div class="mt-5 grid min-h-0 flex-1 gap-4 2xl:grid-cols-[minmax(0,1fr)_310px]">
+      <div class="input-console mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_160px]">
+        <div>
+          <div class="mb-2 flex flex-wrap items-center gap-2">
+            <span class="hard-chip !px-2 !py-0.5 !text-[10px]">{{ mode === 'rag' ? '知识库问答' : '直接问答' }}</span>
+            <span class="text-xs text-slate-500 dark:text-slate-400">
+              {{ mode === 'rag' ? '先检索资料，再生成回答并附上来源。' : '直接生成回答，不附带知识库引用。' }}
+            </span>
+          </div>
+          <el-input
+            v-model="prompt"
+            type="textarea"
+            :rows="4"
+            placeholder="输入你的问题，例如：HashMap 扩容为什么需要重新计算索引？"
+            :disabled="streaming"
+            @keydown.enter.exact.prevent="submitChat"
+          />
+        </div>
+        <div class="flex flex-col gap-2">
+          <el-button :loading="sending" :disabled="streaming" type="primary" size="large" class="action-button !min-h-12 transition active:translate-y-px" @click="submitChat">
+            {{ streaming ? '回答中...' : '发送问题' }}
+          </el-button>
+          <span class="text-center text-xs text-slate-400 dark:text-slate-500">Enter 发送 · Shift 换行</span>
+        </div>
+      </div>
+
+      <div class="mt-4 grid min-h-0 flex-1 gap-4" :class="referenceDeck.length ? '2xl:grid-cols-[minmax(0,1fr)_310px]' : ''">
         <div ref="messageContainer" class="message-bay min-h-[420px] space-y-4 overflow-y-auto pr-1">
           <article
             v-for="message in messages"
@@ -126,7 +151,7 @@
           >
             <div class="flex items-center justify-between gap-3">
               <div class="text-xs font-semibold uppercase tracking-[0.24em]" :class="message.role === 'assistant' ? 'text-[var(--bc-cyan)]' : 'text-slate-400 dark:text-slate-500'">
-                {{ message.role === 'assistant' ? 'ByteCoach AI' : 'Pilot' }}
+                {{ message.role === 'assistant' ? 'ByteCoach' : '我' }}
               </div>
               <span class="text-[11px] text-slate-400 dark:text-slate-500">{{ formatSessionTime(message.createTime) }}</span>
             </div>
@@ -134,8 +159,8 @@
 
             <div v-if="message.references && message.references.length" class="reference-stack mt-4">
               <div class="mb-3 flex items-center justify-between gap-3">
-                <span class="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Reference Deck</span>
-                <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ message.references.length }} sources</span>
+                <span class="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">引用资料</span>
+                <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ message.references.length }} 条引用</span>
               </div>
               <div class="grid gap-3 md:grid-cols-2">
                 <article v-for="reference in message.references" :key="reference.chunkId" class="reference-card p-3">
@@ -144,7 +169,7 @@
                     <span class="reference-score">{{ scorePercent(reference.score) }}</span>
                   </div>
                   <div class="mt-2 flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
-                    <span>Chunk #{{ reference.chunkId }}</span>
+                    <span>片段 #{{ reference.chunkId }}</span>
                     <span class="h-1 w-1 rounded-full bg-slate-400"></span>
                     <span>{{ confidenceLabel(reference.score) }}</span>
                   </div>
@@ -157,7 +182,7 @@
           <article v-if="streaming" class="message-card message-card-assistant p-4 sm:p-5">
             <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-[var(--bc-cyan)]">
               <span class="state-pulse" aria-hidden="true"></span>
-              ByteCoach AI · {{ mode === 'rag' ? '检索生成中' : '生成中' }}
+              ByteCoach · {{ mode === 'rag' ? '检索并生成中' : '生成中' }}
             </div>
             <div class="bc-markdown mt-3 text-sm leading-7">
               <span v-html="renderMarkdown(streamingContent)"></span>
@@ -176,18 +201,18 @@
           <EmptyState
             v-if="!messages.length && !loadingMessages && !streaming"
             icon="chat"
-            title="进入知识潜航"
-            description="提出一个 Java 面试问题，RAG 模式会先召回资料，再给出带来源的回答。"
+            title="从一个问题开始"
+            description="可以直接提问，也可以用知识库问答查看带来源的回答。"
             compact
           />
         </div>
 
-        <aside class="reference-deck hidden 2xl:block">
+        <aside v-if="referenceDeck.length" class="reference-deck hidden 2xl:block">
           <div class="flex items-center justify-between gap-3">
-            <p class="section-kicker">Reference Deck</p>
-            <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ referenceDeck.length }} cards</span>
+            <p class="section-kicker">本轮引用</p>
+            <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ referenceDeck.length }} 条</span>
           </div>
-          <div v-if="referenceDeck.length" class="mt-4 space-y-3">
+          <div class="mt-4 space-y-3">
             <article v-for="reference in referenceDeck" :key="reference.chunkId" class="reference-card p-3">
               <div class="flex items-start justify-between gap-3">
                 <h3 class="line-clamp-2 text-sm font-semibold text-ink">{{ reference.docTitle }}</h3>
@@ -199,35 +224,7 @@
               <p class="mt-3 line-clamp-4 text-xs leading-6 text-slate-600 dark:text-slate-300">{{ reference.snippet }}</p>
             </article>
           </div>
-          <div v-else class="mt-4 rounded-2xl border border-dashed border-slate-300/70 p-4 text-xs leading-6 text-slate-500 dark:border-slate-700 dark:text-slate-400">
-            RAG 回答完成后，这里会固定最新引用、相似度和可信度，便于核查来源。
-          </div>
         </aside>
-      </div>
-
-      <div class="input-console mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_150px]">
-        <div>
-          <div class="mb-2 flex flex-wrap items-center gap-2">
-            <span class="hard-chip !px-2 !py-0.5 !text-[10px]">{{ mode === 'rag' ? '知识库问答' : '普通问答' }}</span>
-            <span class="text-xs text-slate-500 dark:text-slate-400">
-              {{ mode === 'rag' ? '先检索资料，再生成回答' : '直接生成回答，不附加知识库引用' }}
-            </span>
-          </div>
-          <el-input
-            v-model="prompt"
-            type="textarea"
-            :rows="4"
-            placeholder="输入你的问题，例如：HashMap 扩容为什么需要重新计算索引？"
-            :disabled="streaming"
-            @keydown.enter.exact.prevent="submitChat"
-          />
-        </div>
-        <div class="flex flex-col gap-2">
-          <el-button :loading="sending" :disabled="streaming" type="primary" size="large" class="action-button !min-h-12 transition active:translate-y-px" @click="submitChat">
-            {{ streaming ? '回答中...' : '发送潜航' }}
-          </el-button>
-          <span class="text-center text-xs text-slate-400 dark:text-slate-500">Enter 发送 · Shift 换行</span>
-        </div>
       </div>
     </section>
   </div>
@@ -275,7 +272,7 @@ marked.setOptions({
 })
 
 const currentTitle = computed(() => {
-  if (!activeSessionId.value) return mode.value === 'rag' ? '新的知识库问答' : '新的普通问答'
+  if (!activeSessionId.value) return mode.value === 'rag' ? '当前是新的知识库问答' : '当前是新的直接问答'
   return sessions.value.find((item) => item.id === activeSessionId.value)?.title || '当前会话'
 })
 
@@ -289,9 +286,9 @@ const referenceDeck = computed(() => {
 })
 
 const cockpitStatus = computed(() => {
-  if (streaming.value) return mode.value === 'rag' ? '检索中 / 生成中 / 引用锁定' : '生成中'
-  if (loadingMessages.value) return '同步历史信号'
-  return mode.value === 'rag' ? 'RAG 引擎待命' : '直接问答待命'
+  if (streaming.value) return mode.value === 'rag' ? '正在检索资料并生成回答' : '正在生成回答'
+  if (loadingMessages.value) return '正在同步历史会话'
+  return mode.value === 'rag' ? '等待你的问题，回答会附带引用' : '等待你的问题，直接生成回答'
 })
 
 const formatSessionTime = (value?: string) => {
@@ -343,7 +340,7 @@ const loadMessages = async (sessionId: number) => {
     messages.value = response.data
     scrollToBottom()
   } catch {
-    ElMessage.error('消息历史加载失败')
+    ElMessage.error('会话内容加载失败')
   } finally {
     loadingMessages.value = false
   }
@@ -497,7 +494,7 @@ const submitChat = async () => {
     if (e.name === 'AbortError') {
       // User cancelled
     } else {
-      ElMessage.error('问答发送失败')
+      ElMessage.error('发送失败，请稍后重试')
       console.error('SSE error:', e)
     }
   } finally {
