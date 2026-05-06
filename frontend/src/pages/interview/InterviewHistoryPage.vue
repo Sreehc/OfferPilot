@@ -6,10 +6,10 @@
         <div>
           <p class="section-kicker">面试历史</p>
           <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
-            面试历史记录
+            最近完成的模拟面试
           </h3>
           <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-            查看所有已完成的面试记录，点击可查看详情和复盘。
+            按方向快速筛选，先看题量、得分和时间，再进入详情复盘。
           </p>
         </div>
         <div class="flex gap-3">
@@ -37,7 +37,7 @@
       <EmptyState
         icon="chart"
         title="暂无面试记录"
-        description="完成一场面试后，记录会自动出现在这里。"
+        description="完成一场模拟面试后，记录会自动出现在这里。"
       >
         <template #action>
           <RouterLink to="/interview" class="hard-button-primary inline-flex">
@@ -56,23 +56,30 @@
           class="paper-panel cursor-pointer p-5 transition hover:ring-2 hover:ring-accent/20"
           @click="goToDetail(item.sessionId)"
         >
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <span class="hard-chip !bg-blue-100 !text-blue-700 text-xs">{{ item.direction }}</span>
-              <span class="text-sm text-slate-400 dark:text-slate-500">{{ item.questionCount }} 题</span>
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="hard-chip !bg-blue-100 !text-blue-700 text-xs">{{ item.direction }}</span>
+                <span class="text-xs text-slate-400 dark:text-slate-500">{{ item.questionCount }} 题</span>
+              </div>
+              <div class="mt-3 text-lg font-semibold text-ink">完成一次 {{ item.direction }} 方向练习</div>
+              <div class="mt-2 flex flex-wrap items-center gap-4 text-xs text-slate-400 dark:text-slate-500">
+                <span v-if="item.startTime">{{ formatTime(item.startTime) }}</span>
+                <span v-if="item.endTime">结束于 {{ formatTime(item.endTime) }}</span>
+              </div>
             </div>
-            <div class="text-right">
-              <span
-                class="text-2xl font-semibold tracking-[-0.03em]"
-                :class="item.totalScore >= 60 ? 'text-accent' : 'text-red-500'"
-              >
-                {{ formatScore(item.totalScore) }}
-              </span>
+            <div class="flex shrink-0 items-center gap-6">
+              <div class="text-right">
+                <div class="text-xs text-slate-400 dark:text-slate-500">得分</div>
+                <span
+                  class="text-2xl font-semibold tracking-[-0.03em]"
+                  :class="item.totalScore >= 60 ? 'text-accent' : 'text-red-500'"
+                >
+                  {{ formatScore(item.totalScore) }}
+                </span>
+              </div>
+              <div class="text-sm font-semibold text-accent">查看详情</div>
             </div>
-          </div>
-          <div class="mt-2 flex items-center gap-4 text-xs text-slate-400 dark:text-slate-500">
-            <span v-if="item.startTime">{{ formatTime(item.startTime) }}</span>
-            <span v-if="item.endTime">~ {{ formatTime(item.endTime) }}</span>
           </div>
         </div>
       </div>
