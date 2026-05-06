@@ -1,21 +1,21 @@
 <template>
   <div class="auth-immersive-shell px-4 py-8 md:px-6 md:py-10">
-    <div class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1180px] items-stretch gap-4 xl:grid-cols-[minmax(0,1.02fr)_minmax(360px,0.98fr)]">
+    <div class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1120px] items-stretch gap-4 xl:grid-cols-[minmax(0,0.92fr)_minmax(360px,1.08fr)]">
       <section class="cockpit-panel auth-brand-panel p-6 sm:p-8">
         <div class="flex items-center gap-3">
           <span class="state-pulse" aria-hidden="true"></span>
-          <p class="section-kicker">Security Checkpoint</p>
+          <p class="section-kicker">两步验证</p>
         </div>
 
         <div class="mt-8 max-w-2xl">
-          <h1 class="auth-hero-title">完成最后一道安全校验</h1>
+          <h1 class="auth-hero-title">完成最后一步验证</h1>
           <p class="mt-5 text-sm leading-8 text-slate-600 dark:text-slate-300 sm:text-base">
-            你已经通过账号密码校验，接下来只需要输入验证码或恢复码。验证通过后会立刻回到训练现场，不会打断原本的跳转目标。
+            你已经通过账号密码校验，现在只需要输入验证码或恢复码。验证成功后会直接回到刚才要访问的页面。
           </p>
         </div>
 
         <div class="auth-orbit-grid mt-8">
-          <article v-for="signal in verifySignals" :key="signal.label" class="data-slab p-4" :class="signal.toneClass">
+          <article v-for="signal in verifyHighlights" :key="signal.label" class="data-slab p-4" :class="signal.toneClass">
             <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ signal.label }}</p>
             <p class="mt-3 text-xl font-semibold text-ink">{{ signal.title }}</p>
             <p class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ signal.detail }}</p>
@@ -23,6 +23,7 @@
         </div>
 
         <div class="mission-orbit mt-8">
+          <p class="text-sm font-semibold text-ink">验证流程</p>
           <div class="mission-orbit__track">
             <div v-for="step in verifySteps" :key="step.index" class="mission-orbit__node">
               <span class="mission-orbit__index">{{ step.index }}</span>
@@ -38,27 +39,27 @@
       <section class="cockpit-panel auth-form-panel p-6 sm:p-8 md:p-10">
         <div class="flex items-start justify-between gap-4">
           <div>
-            <p class="section-kicker">Two-Factor Verify</p>
-            <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">两步验证</h2>
+            <p class="section-kicker">验证</p>
+            <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">输入验证码继续</h2>
             <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-              {{ useRecovery ? '请输入恢复码完成登录。' : '请输入身份验证器中的 6 位验证码。' }}
+              {{ useRecovery ? '请输入恢复码完成登录。' : '请输入身份验证器里的 6 位验证码。' }}
             </p>
           </div>
-          <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ useRecovery ? 'Recovery' : 'Authenticator' }}</span>
+          <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ useRecovery ? '恢复码' : '验证码' }}</span>
         </div>
 
         <div class="mt-6 grid gap-3 sm:grid-cols-2">
           <article class="auth-stat-card" :class="useRecovery ? 'auth-slab-coral' : 'auth-slab-cyan'">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Mode</p>
-            <p class="mt-2 text-lg font-semibold text-ink">{{ useRecovery ? '恢复码' : '验证码' }}</p>
+            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">当前方式</p>
+            <p class="mt-2 text-lg font-semibold text-ink">{{ useRecovery ? '恢复码登录' : '身份验证器验证码' }}</p>
             <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
               {{ useRecovery ? '适用于无法访问身份验证器的情况。' : '来自你的身份验证器应用。' }}
             </p>
           </article>
           <article class="auth-stat-card auth-slab-amber">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Redirect</p>
+            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">验证后去向</p>
             <p class="mt-2 text-lg font-semibold text-ink">{{ redirectLabel }}</p>
-            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">验证成功后的落点。</p>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">成功后会回到这里继续操作。</p>
           </article>
         </div>
 
@@ -81,7 +82,7 @@
               class="action-button !min-h-12 w-full"
               @click="handleVerify"
             >
-              {{ loading ? '验证中...' : '完成验证并进入训练舱' }}
+              {{ loading ? '验证中...' : '验证并继续' }}
             </el-button>
           </div>
         </el-form>
@@ -115,37 +116,31 @@ import { useRoute, useRouter } from 'vue-router'
 import { verifyTwoFactorApi } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 
-const verifySignals = [
+const verifyHighlights = [
   {
-    label: 'Checkpoint',
-    title: '最后校验',
-    detail: '这一步完成后就会恢复你的完整登录态。',
+    label: '当前状态',
+    title: '只差最后一步',
+    detail: '完成这一步后就会恢复完整登录状态。',
     toneClass: 'auth-slab-cyan',
   },
   {
-    label: 'Fallback',
-    title: '恢复码',
-    detail: '当身份验证器不可用时，可以切换到恢复码模式。',
+    label: '备用方式',
+    title: '可切换到恢复码',
+    detail: '如果暂时拿不到身份验证器，可以改用恢复码继续。',
     toneClass: 'auth-slab-coral',
   },
   {
-    label: 'Return',
-    title: '原路返回',
-    detail: '验证成功后会跳回你最初要访问的页面。',
+    label: '返回路径',
+    title: '成功后自动回到原页面',
+    detail: '不会把你丢回首页，也不用重新寻找入口。',
     toneClass: 'auth-slab-amber',
-  },
-  {
-    label: 'State',
-    title: '不中断训练',
-    detail: '这一步只做安全确认，不会重置训练上下文。',
-    toneClass: 'auth-slab-lime',
   },
 ]
 
 const verifySteps = [
-  { index: '01', title: '读取验证码', detail: '从身份验证器中读取当前 6 位验证码。' },
-  { index: '02', title: '提交校验', detail: '系统会用临时令牌完成最后一步验证。' },
-  { index: '03', title: '恢复上下文', detail: '验证完成后直接回到原始训练页面。' },
+  { index: '01', title: '选择验证方式', detail: '默认使用验证码，拿不到时再切换到恢复码。' },
+  { index: '02', title: '输入并提交', detail: '系统会使用临时令牌完成最后一步校验。' },
+  { index: '03', title: '继续刚才的操作', detail: '验证通过后会直接回到你原本要访问的页面。' },
 ]
 
 const router = useRouter()
@@ -159,10 +154,10 @@ const useRecovery = ref(false)
 const tempToken = route.query.tempToken as string
 const redirectTarget = computed(() => (route.query.redirect as string) || '/dashboard')
 const redirectLabel = computed(() => {
-  if (redirectTarget.value.includes('/interview')) return '面试舱'
-  if (redirectTarget.value.includes('/review')) return '记忆回放'
-  if (redirectTarget.value.includes('/chat')) return '知识潜航'
-  return '任务看板'
+  if (redirectTarget.value.includes('/interview')) return '模拟面试'
+  if (redirectTarget.value.includes('/review')) return '今日复习'
+  if (redirectTarget.value.includes('/chat')) return '智能问答'
+  return '首页概览'
 })
 
 const toggleMode = () => {
