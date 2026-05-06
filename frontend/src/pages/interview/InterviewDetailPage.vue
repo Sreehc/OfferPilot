@@ -23,11 +23,10 @@
     </section>
 
     <template v-else>
-      <!-- Summary Header -->
       <section class="paper-panel p-6">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p class="section-kicker">面试详情</p>
+            <p class="section-kicker">总览</p>
             <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
               {{ detail.direction }} 方向面试
               <span v-if="detail.mode === 'voice'" class="ml-2 inline-flex items-center rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-semibold text-accent">语音</span>
@@ -50,13 +49,26 @@
         </div>
       </section>
 
-      <!-- Per-Question Comparison -->
+      <section class="paper-panel p-6">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p class="section-kicker">逐题复盘</p>
+            <h4 class="mt-2 text-xl font-semibold text-ink">按题目对比你的回答与标准答案</h4>
+            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+              每题都按“题目、点评、我的回答、标准答案、追问”的固定顺序展示，方便快速扫读。
+            </p>
+          </div>
+          <RouterLink to="/interview" class="text-sm font-semibold text-accent hover:underline">
+            再来一场类似练习
+          </RouterLink>
+        </div>
+      </section>
+
       <section
         v-for="(record, index) in detail.records"
         :key="record.questionId"
         class="paper-panel overflow-hidden"
       >
-        <!-- Question Header -->
         <div class="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 px-6 py-4">
           <div class="flex items-center gap-3">
             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-bold text-white">
@@ -72,13 +84,11 @@
           </span>
         </div>
 
-        <!-- AI Comment -->
         <div class="surface-muted mx-6 mt-4 rounded-lg p-4">
-          <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">AI 点评</div>
+          <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">本题点评</div>
           <p class="mt-1 text-sm leading-6 text-slate-700 dark:text-slate-200">{{ record.comment || '暂无点评' }}</p>
         </div>
 
-        <!-- Voice Transcript (if voice mode) -->
         <div v-if="record.voiceTranscript" class="mx-6 mt-4 surface-card p-4">
           <div class="flex items-center gap-2">
             <div class="h-2 w-2 rounded-full bg-purple-400"></div>
@@ -92,9 +102,7 @@
           </p>
         </div>
 
-        <!-- Answer Comparison -->
         <div class="mt-4 grid gap-4 px-6 pb-5 md:grid-cols-2">
-          <!-- User Answer -->
           <div class="surface-card p-4">
             <div class="flex items-center gap-2">
               <div class="h-2 w-2 rounded-full bg-amber-400"></div>
@@ -105,7 +113,6 @@
             </p>
           </div>
 
-          <!-- Standard Answer -->
           <div class="surface-card p-4">
             <div class="flex items-center gap-2">
               <div class="h-2 w-2 rounded-full bg-green-400"></div>
@@ -117,14 +124,20 @@
           </div>
         </div>
 
-        <!-- Follow-up -->
         <div v-if="record.followUp" class="border-t border-slate-200/60 dark:border-slate-700/60 px-6 py-4">
           <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">追问</div>
           <p class="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ record.followUp }}</p>
         </div>
       </section>
 
-      <!-- Bottom Actions -->
+      <section class="paper-panel p-6">
+        <p class="section-kicker">下一步</p>
+        <h4 class="mt-2 text-xl font-semibold text-ink">继续练习，或先回到错题与历史记录</h4>
+        <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          如果某几题得分明显偏低，建议先去错题本和复习页处理，再开始下一场。
+        </p>
+      </section>
+
       <section class="flex gap-3">
         <RouterLink to="/interview/history" class="hard-button-secondary flex-1 text-center">
           查看历史
