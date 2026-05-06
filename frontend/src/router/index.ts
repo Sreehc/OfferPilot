@@ -5,32 +5,32 @@ const pageMeta = {
   dashboard: {
     kicker: '学习概览',
     title: '今日学习概览',
-    subtitle: '先完成今天最重要的训练，再查看分析、趋势和历史记录。'
+    subtitle: '查看今天的学习任务和最新进展。'
   },
   chat: {
     kicker: '智能问答',
     title: '带着资料上下文来提问',
-    subtitle: '普通问答和知识问答放在同一入口，方便后续把问题直接带回复习链路。'
+    subtitle: '直接提问，或结合资料获得带来源的回答。'
   },
   knowledge: {
     kicker: '知识库',
     title: '集中管理你的学习资料',
-    subtitle: '内置资料库支持检索和引用，也可以上传自己的学习材料统一管理。'
+    subtitle: '上传、查看和筛选资料，确认哪些文档已可用于问答。'
   },
   interview: {
     kicker: '模拟面试',
     title: '先把真实面试前的压力练熟',
-    subtitle: '每场控制在 3-5 题，通过评分、点评和追问把问题沉淀到后续复习。'
+    subtitle: '完成一场限时练习，并查看评分、点评和追问。'
   },
   wrong: {
     kicker: '错题本',
     title: '把薄弱回答变成后续复习重点',
-    subtitle: '错题不只是归档，而是驱动下一步复习与计划生成的基础资产。'
+    subtitle: '查看需要继续复习和修正的题目。'
   },
   review: {
     kicker: '间隔复习',
     title: '在合适的时间复习，而不是天天重复',
-    subtitle: '基于遗忘曲线自动调度复习时机，让每一次复习都恰好在快要忘记的时候。'
+    subtitle: '按今天的安排完成复习任务。'
   },
   community: {
     kicker: '学习社区',
@@ -40,17 +40,17 @@ const pageMeta = {
   plan: {
     kicker: '学习计划',
     title: '把薄弱点拆成每天能完成的任务',
-    subtitle: '计划模块把薄弱点和错题拆成可完成的节奏，而不是停留在泛泛建议。'
+    subtitle: '查看当前计划，并完成今天的任务。'
   },
   analytics: {
     kicker: '数据分析',
     title: '看清你的学习节奏和问题分布',
-    subtitle: '从趋势、效率、时段等维度深入分析你的学习模式。'
+    subtitle: '查看学习趋势、复习情况和当前重点。'
   },
   admin: {
     kicker: '管理后台',
     title: '直接在站内处理内容与数据',
-    subtitle: '后台仍然嵌在同一个应用里，先服务题库、知识库和分类管理。'
+    subtitle: '管理用户、内容、题库和文档。'
   }
 } as const
 
@@ -157,7 +157,7 @@ const router = createRouter({
           path: 'settings',
           name: 'settings',
           component: () => import('@/pages/settings/SettingsPage.vue'),
-          meta: { kicker: '账户安全', title: '账户设置', subtitle: '管理已登录设备、查看登录历史，保障账户安全。' }
+          meta: { kicker: '账户安全', title: '账户设置', subtitle: '管理设备、登录安全和数据导出。' }
         }
       ]
     },

@@ -16,7 +16,7 @@
           </div>
           <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">把问题写清楚，更容易得到有效回答</h2>
           <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-            优先说清背景、现象和你已经尝试过什么。问题越具体，社区越容易直接给出可执行答案。
+            写清背景、现象和已尝试的方法，更容易获得有效回答。
           </p>
         </div>
         <span class="quality-badge" :class="qualityBadgeClass">{{ qualityBadge }}</span>
@@ -68,7 +68,7 @@
                 :rows="14"
                 maxlength="10000"
                 resize="none"
-                placeholder="建议按“背景 / 现象 / 已尝试方案”描述。越像真实面试中的追问场景，越容易得到高质量回答。"
+                placeholder="可按“背景 / 现象 / 已尝试方案”描述问题。"
               />
             </el-form-item>
           </div>

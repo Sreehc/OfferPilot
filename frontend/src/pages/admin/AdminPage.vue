@@ -7,9 +7,9 @@
             <span class="state-pulse" aria-hidden="true"></span>
             <p class="section-kicker">管理后台</p>
           </div>
-          <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">先切到对应模块，再直接执行管理动作</h2>
+          <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">统一管理站内内容与数据</h2>
           <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-            这里集中处理概览、用户、审核、分类、题库、文档和登录日志。优先使用下方标签进入具体管理区。
+            查看系统概览，并管理用户、内容、题库、文档和登录日志。
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
@@ -193,12 +193,12 @@ const adminSignals = [
 ]
 
 const tabMeta = {
-  overview: { title: '系统概览', description: '先看核心指标和近 30 天趋势。' },
-  users: { title: '用户管理', description: '优先搜索用户，再处理角色、状态和详情。' },
+  overview: { title: '系统概览', description: '查看核心指标和近 30 天趋势。' },
+  users: { title: '用户管理', description: '搜索用户并处理角色、状态和详情。' },
   contentReview: { title: '内容审核', description: '按提交时间扫描待审核内容，快速通过或拒绝。' },
   category: { title: '分类管理', description: '左侧编辑，右侧查看现有分类列表。' },
-  question: { title: '题库管理', description: '先筛选题目，再决定编辑、删除或批量导入。' },
-  knowledge: { title: '文档管理', description: '先筛选文档，再执行导入、重切分和重建索引。' },
+  question: { title: '题库管理', description: '筛选题目并进行编辑、删除或导入。' },
+  knowledge: { title: '文档管理', description: '筛选文档并执行导入、重切分和重建索引。' },
   loginLogs: { title: '登录日志', description: '按用户名、时间和状态排查后台登录情况。' },
 } as const
 

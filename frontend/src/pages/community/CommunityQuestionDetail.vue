@@ -84,7 +84,7 @@
         <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p class="section-kicker">回答列表</p>
-            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">先看已有回答，再决定是否补充</h3>
+            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">查看已有回答</h3>
           </div>
           <div class="flex flex-wrap gap-2">
             <span class="detail-pill">{{ question.answers.length }} 条回答</span>
@@ -158,7 +158,7 @@
             class="empty-state-card"
             icon="chat"
             title="还没有回答"
-            description="现在就写下第一个回答，帮助这个问题形成可执行结论。"
+            description="现在就写下第一个回答。"
             compact
           />
         </div>
@@ -170,7 +170,7 @@
             <p class="section-kicker">发表回答</p>
             <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">发表回答</h3>
             <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-              直接给出结论、推理链条和必要前提。如果你是在解释原理，尽量把“为什么”讲清楚，而不是只给结论。
+              补充你的结论、思路和必要说明。
             </p>
           </div>
           <span class="detail-pill">可先写结论，再补过程</span>
@@ -182,7 +182,7 @@
               ref="answerInputRef"
               v-model="answerContent"
               rows="8"
-              placeholder="建议结构：1. 先给结论；2. 再说明推理链；3. 如有误区，补充为什么很多人会混淆。"
+              placeholder="可先写结论，再补充过程和说明。"
               class="answer-textarea"
             ></textarea>
             <div class="mt-4 flex justify-end">

@@ -42,7 +42,7 @@
 
     <section v-if="showGenerate" class="cockpit-panel p-6">
       <p class="section-kicker">生成计划</p>
-      <h4 class="mt-4 text-lg font-semibold text-ink">先确认复习方向和计划时长</h4>
+      <h4 class="mt-4 text-lg font-semibold text-ink">设置计划方向和时长</h4>
 
       <div v-if="abilityProfile?.weakCategories && abilityProfile.weakCategories.length > 0" class="mt-4 surface-muted p-4">
         <p class="text-xs font-semibold uppercase tracking-[0.2em] text-red-600 dark:text-red-400 mb-2">检测到薄弱分类</p>
@@ -56,7 +56,7 @@
           </span>
         </div>
         <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
-          建议优先复习薄弱分类，系统已自动填充推荐方向。
+          已根据当前薄弱分类提供推荐方向。
         </p>
       </div>
 
@@ -99,7 +99,7 @@
       <EmptyState
         icon="document"
         title="暂无学习计划"
-        description="先生成一份学习计划，再按今天的任务逐步完成。"
+        description="生成计划后，这里会显示今天的学习任务。"
       >
         <template #action>
           <el-button size="large" class="hard-button-primary" @click="showGenerate = true">
@@ -117,7 +117,7 @@
               <p class="section-kicker">当前计划</p>
               <h4 class="mt-3 font-display text-4xl font-semibold leading-none text-ink">{{ progressPercent }}% 完成</h4>
               <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                已完成 {{ completedCount }} / {{ currentPlan.tasks.length }} 个任务。先把今天的任务做完，再推进后面的安排。
+                已完成 {{ completedCount }} / {{ currentPlan.tasks.length }} 个任务。
               </p>
             </div>
             <svg class="h-28 w-28 shrink-0 -rotate-90" viewBox="0 0 36 36" aria-label="计划完成进度">
@@ -172,7 +172,7 @@
             </div>
           </div>
           <div v-else class="mt-4 rounded-2xl border border-[var(--bc-line)] bg-white/35 p-5 text-sm text-slate-500 dark:bg-white/5 dark:text-slate-400">
-            今日暂无任务。你可以提前处理后续任务，或重新调整当前计划。
+            今天没有待处理任务。
           </div>
           <div class="mt-5 grid grid-cols-2 gap-3">
             <div class="data-slab p-3">

@@ -10,7 +10,7 @@
         <div class="mt-8 max-w-2xl">
           <h1 class="auth-hero-title">快速进入今天的学习</h1>
           <p class="mt-5 text-sm leading-8 text-slate-600 dark:text-slate-300 sm:text-base">
-            登录后会回到你刚才要去的页面，继续问答、面试、复习或查看计划。这里只保留必要说明，不打断你开始训练。
+            登录后可继续问答、面试、复习或查看计划。
           </p>
         </div>
 
@@ -23,7 +23,7 @@
         </div>
 
         <div class="mission-orbit mt-8">
-          <p class="text-sm font-semibold text-ink">登录后可以直接做什么</p>
+          <p class="text-sm font-semibold text-ink">登录后可继续</p>
           <div class="mission-orbit__track">
             <div
               v-for="(step, index) in nextSteps"
@@ -62,7 +62,7 @@
           <article class="auth-stat-card">
             <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">登录后去向</p>
             <p class="mt-2 text-lg font-semibold text-ink">{{ redirectLabel }}</p>
-            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">成功后会回到这个页面继续操作。</p>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">登录后会自动跳转。</p>
           </article>
         </div>
 

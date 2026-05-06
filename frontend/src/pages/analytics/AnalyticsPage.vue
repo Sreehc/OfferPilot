@@ -7,9 +7,9 @@
             <span class="state-pulse" aria-hidden="true"></span>
             <p class="section-kicker">学习分析</p>
           </div>
-          <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">先看结论，再决定下一步怎么学</h2>
+          <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">查看最近的学习表现</h2>
           <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-            这一页先告诉你最近是在进步、遗忘率是否偏高、当前最该处理哪类题，再展开图表细看趋势。
+            查看学习趋势、复习情况和当前需要关注的重点。
           </p>
         </div>
 
@@ -71,7 +71,7 @@
           <p class="section-kicker">能力趋势</p>
           <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">最近几周的面试表现变化</h3>
           <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-            先看整体分数变化，再按分类筛选。哪条线掉得最明显，哪类问题就该优先补。
+            查看整体分数变化，也可按分类筛选。
           </p>
         </div>
       </div>
@@ -80,7 +80,7 @@
         <div class="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
       </div>
       <div v-else-if="!trendData.overallTrend?.length" class="mt-5 flex h-[380px] items-center justify-center">
-        <EmptyState icon="chart" title="暂无面试数据" description="完成面试后，能力地形图会在这里生成。" compact />
+        <EmptyState icon="chart" title="暂无面试数据" description="完成面试后，这里会显示最近的表现趋势。" compact />
       </div>
       <div v-else class="mt-5">
         <div v-if="trendData.categoryTrends?.length" class="mb-4 flex flex-wrap gap-2">
@@ -117,14 +117,14 @@
           <span class="detail-pill">2.5 初始值 / 1.3 风险线</span>
         </div>
         <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-          记忆系数越高代表题目越稳。2.5 是初始值，低于 1.3 往往意味着你反复忘记或评分过低，需要尽快回到复习链路。
+          记忆系数越高，表示当前掌握越稳定。
         </p>
 
         <div v-if="efficiencyLoading" class="mt-5 flex h-[300px] items-center justify-center">
           <div class="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
         </div>
         <div v-else-if="!efficiencyData.efTrend?.length" class="mt-5 flex h-[300px] items-center justify-center">
-          <EmptyState icon="review" title="暂无复习数据" description="完成复习后，记忆系数曲线会出现在这里。" compact />
+          <EmptyState icon="review" title="暂无复习数据" description="完成复习后，这里会显示记忆系数变化。" compact />
         </div>
         <div v-else class="mt-5">
           <div class="grid gap-3 sm:grid-cols-3">
@@ -154,14 +154,14 @@
           <span class="detail-pill">重来次数 / 总评分</span>
         </div>
         <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-          遗忘率越低越好。这里同时展示每周遗忘率和评分分布，帮助判断是整体复习不足，还是只在某个区间持续掉分。
+          查看每周遗忘率和评分分布。
         </p>
 
         <div v-if="efficiencyLoading" class="mt-5 flex h-[300px] items-center justify-center">
           <div class="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
         </div>
         <div v-else-if="!efficiencyData.forgettingRateTrend?.length" class="mt-5 flex h-[300px] items-center justify-center">
-          <EmptyState icon="review" title="暂无复习数据" description="完成复习后，遗忘率趋势和评分分布会出现在这里。" compact />
+          <EmptyState icon="review" title="暂无复习数据" description="完成复习后，这里会显示遗忘率趋势和评分分布。" compact />
         </div>
         <div v-else class="mt-5">
           <div class="flex flex-wrap gap-2">
@@ -182,7 +182,7 @@
           <p class="section-kicker">掌握分布</p>
           <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">掌握分布</h3>
           <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-            不再用 emoji，而是直接展示每种掌握状态的数量和占比，快速判断错题池当前更接近“待启动”还是“已稳定”。
+            查看各掌握状态的数量和占比。
           </p>
         </div>
         <span class="detail-pill">{{ totalMasteryCount }} 道题</span>
@@ -213,12 +213,12 @@
         </div>
 
         <aside class="cockpit-panel p-5">
-          <p class="section-kicker">阅读建议</p>
-          <h4 class="mt-3 text-xl font-semibold text-ink">如何读这张图</h4>
+          <p class="section-kicker">状态说明</p>
+          <h4 class="mt-3 text-xl font-semibold text-ink">不同状态代表什么</h4>
           <div class="mt-4 space-y-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-            <p>“未开始”高：说明错题池堆积，需要先清理入口和安排首轮复习。</p>
-            <p>“复习中”高：当前最需要维持节奏，避免集中回落到“重来”。</p>
-            <p>“已掌握”高：说明复习体系有效，可以把精力转移到新方向或更高难度面试。</p>
+            <p>“未开始”表示这些题还没进入复习。</p>
+            <p>“复习中”表示这些题还在持续巩固。</p>
+            <p>“已掌握”表示这些题已经较稳定。</p>
           </div>
         </aside>
       </div>

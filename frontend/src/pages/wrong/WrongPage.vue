@@ -12,7 +12,7 @@
             {{ total }} 道题等待处理
           </h3>
           <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-            低分题会自动进入这里。优先处理今日到期、未开始和仍在复习中的题目，再回到面试里验证。
+            这里会保留需要继续复习和修正的题目。
           </p>
         </div>
         <div class="flex flex-wrap gap-2 sm:gap-3">
@@ -66,7 +66,7 @@
       <EmptyState
         icon="review"
         title="错题本为空"
-        description="完成一场模拟面试后，低分题会自动出现在这里。"
+        description="完成练习后，需要继续复习的题目会显示在这里。"
       >
         <template #action>
           <RouterLink to="/interview" class="hard-button-primary inline-flex">

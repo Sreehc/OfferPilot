@@ -10,7 +10,7 @@
           {{ phase === 'idle' ? '开始一场模拟面试' : `第 ${currentQuestion?.currentIndex ?? '?'} 题 / 共 ${currentQuestion?.questionCount ?? '?'} 题` }}
         </h3>
         <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
-          {{ phase === 'idle' ? '先选方向、题量和作答方式。每题都会计时并即时评分，低分题会自动进入后续复习。' : '建议按结论、原理、场景和权衡来组织答案。' }}
+          {{ phase === 'idle' ? '选择方向、题量和作答方式后即可开始。' : '建议按结论、原理、场景和权衡来组织答案。' }}
         </p>
 
         <div v-if="phase === 'idle'" class="mt-6 space-y-4">
@@ -108,7 +108,7 @@
             <p class="section-kicker mt-8">开始前说明</p>
             <h4 class="mt-3 font-display text-4xl font-semibold leading-none text-ink">像真实面试一样回答</h4>
             <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
-              系统会抽题、计时、评分，并给出点评、标准答案和追问。建议先用文字模式完成一轮，再尝试语音模式训练表达。
+              每题限时作答，提交后可查看评分、点评和标准答案。
             </p>
           </div>
         </div>

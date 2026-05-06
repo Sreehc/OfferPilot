@@ -7,9 +7,9 @@
             <span class="state-pulse" aria-hidden="true"></span>
             <p class="section-kicker">账号与安全</p>
           </div>
-          <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">直接进入你要处理的安全设置</h2>
+          <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">管理账号与安全</h2>
           <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-            这里集中管理设备、登录历史、两步验证和数据导出。先切到对应标签，再完成具体操作。
+            查看设备、登录历史、两步验证和数据导出。
           </p>
         </div>
         <div class="settings-tab-hint rounded-full border border-[var(--bc-line)] px-3 py-2">

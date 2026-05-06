@@ -10,7 +10,7 @@
         <div class="mt-8 max-w-2xl">
           <h1 class="auth-hero-title">用一个账号开始学习</h1>
           <p class="mt-5 text-sm leading-8 text-slate-600 dark:text-slate-300 sm:text-base">
-            注册后会自动登录，并直接进入首页。之后你的问答、面试、错题和复习都会记录在这个账号下，方便持续学习。
+            注册后会自动登录，学习记录会保存在这个账号中。
           </p>
         </div>
 
@@ -23,7 +23,7 @@
         </div>
 
         <div class="mission-orbit mt-8">
-          <p class="text-sm font-semibold text-ink">创建后会发生什么</p>
+          <p class="text-sm font-semibold text-ink">创建后</p>
           <div class="mission-orbit__track">
             <div
               v-for="step in registerSteps"
@@ -118,11 +118,11 @@
         <div class="auth-footnote mt-8">
           <div class="auth-footnote__item">
             <span class="inline-flex h-2.5 w-2.5 rounded-full bg-[var(--bc-lime)]"></span>
-            注册成功后会自动记录当前设备，后续可在设置里管理。
+            当前设备会自动记录到账号中。
           </div>
           <div class="auth-footnote__item">
             <span class="inline-flex h-2.5 w-2.5 rounded-full bg-[var(--bc-cyan)]"></span>
-            后续可按需要开启两步验证，不影响现在先开始学习。
+            两步验证可在设置中按需开启。
           </div>
         </div>
       </section>

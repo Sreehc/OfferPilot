@@ -16,7 +16,7 @@
           </div>
           <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">谁的回答更稳定，一眼就能看出来</h2>
           <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-            优先看积分、回答数和采纳数。采纳率高，通常代表这个人的回答更容易直接解决问题。
+            按积分、回答数和采纳数查看社区贡献。
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
@@ -41,7 +41,7 @@
           <p class="section-kicker">排名列表</p>
           <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">按排名查看贡献者</h3>
           <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-            排名前列通常更适合作为回答参考对象。回答占比高、采纳率高的人，通常更擅长把问题讲清楚。
+            查看不同用户在社区中的提问、回答和采纳情况。
           </p>
         </div>
         <span v-if="topEntry" class="detail-rank-pill" :class="rankBadgeClass(topEntry.rankTitle)">
@@ -111,7 +111,7 @@
             <p class="section-kicker">榜首摘要</p>
             <h4 class="mt-3 text-xl font-semibold text-ink">{{ topEntry.username || `用户${topEntry.userId}` }}</h4>
             <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-              当前榜首的优势主要看回答数量和采纳数量，适合优先参考其回答风格。
+              查看当前榜首用户的积分、回答数和采纳数。
             </p>
             <div class="mt-4 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
               <article class="top-pilot-node">
@@ -144,10 +144,10 @@
 
           <article class="cockpit-panel p-5">
             <p class="section-kicker">阅读提示</p>
-            <h4 class="mt-3 text-xl font-semibold text-ink">怎么看这张榜</h4>
+            <h4 class="mt-3 text-xl font-semibold text-ink">如何阅读这张榜</h4>
             <div class="mt-4 space-y-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
               <p>高积分但低采纳：说明参与度高，但答案未必最稳定。</p>
-              <p>回答数不高但采纳率高：通常代表更擅长给出可执行答案。</p>
+              <p>回答数不高但采纳率高：通常代表回答更容易被认可。</p>
               <p>提问数高：常常意味着这个用户愿意公开暴露学习盲点，适合持续关注。</p>
             </div>
           </article>

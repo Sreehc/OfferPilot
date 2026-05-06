@@ -8,9 +8,9 @@
               <span class="state-pulse" aria-hidden="true"></span>
               <p class="section-kicker">资料概览</p>
             </div>
-            <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">先上传，再筛选，再查看状态</h2>
+            <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">管理你的学习资料</h2>
             <p class="mt-4 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-              这里统一管理系统资料和你上传的文档。首屏重点是上传文件、筛选文档，以及确认哪些资料已经可以参与问答。
+              上传、查看和筛选资料，确认哪些文档已可用于问答。
             </p>
           </div>
           <div class="grid min-w-[220px] gap-3 sm:grid-cols-2">
@@ -49,7 +49,7 @@
         <div class="flex items-center justify-between gap-3">
           <div>
             <p class="section-kicker">上传资料</p>
-            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">上传后系统会自动处理</h3>
+            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">上传资料</h3>
           </div>
           <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ activeTab === 'my' ? '我的文档' : '系统资料' }}</span>
         </div>
@@ -67,7 +67,7 @@
           <div class="text-center">
             <p class="text-sm font-semibold text-ink">拖拽文档到这里，或直接选择上传</p>
             <p class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">
-              支持 `md / txt / pdf`，单文件不超过 20MB。上传后会自动解析并建立检索索引。
+              支持 `md / txt / pdf`，单文件不超过 20MB。上传后会自动处理，完成后可用于检索。
             </p>
           </div>
           <el-upload
@@ -107,9 +107,9 @@
         <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div class="min-w-0">
             <p class="section-kicker">文档列表</p>
-            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">先筛选，再查看资料状态</h3>
+            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">查看资料列表</h3>
             <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-              切换系统资料与个人文档，按分类、状态和关键词缩小范围。列表里会直接告诉你文档是否已可用于问答。
+              按分类、状态和关键词筛选资料，并查看当前处理状态。
             </p>
           </div>
           <div class="mode-switch grid grid-cols-2 gap-2">
@@ -158,7 +158,7 @@
             icon="document"
             :title="activeTab === 'my' ? '你还没有上传文档' : '系统资料暂时为空'"
             :description="activeTab === 'my'
-              ? '上传 Markdown、TXT 或 PDF 后，系统会自动切分并进入索引处理。'
+              ? '上传文档后，可在这里查看处理进度。'
               : '请联系管理员导入知识资料，或先切换到“我的文档”上传学习材料。'"
           />
         </div>

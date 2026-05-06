@@ -10,7 +10,7 @@
         <div class="mt-8 max-w-2xl">
           <h1 class="auth-hero-title">完成最后一步验证</h1>
           <p class="mt-5 text-sm leading-8 text-slate-600 dark:text-slate-300 sm:text-base">
-            你已经通过账号密码校验，现在只需要输入验证码或恢复码。验证成功后会直接回到刚才要访问的页面。
+            输入验证码或恢复码以完成登录。
           </p>
         </div>
 
@@ -59,7 +59,7 @@
           <article class="auth-stat-card auth-slab-amber">
             <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">验证后去向</p>
             <p class="mt-2 text-lg font-semibold text-ink">{{ redirectLabel }}</p>
-            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">成功后会回到这里继续操作。</p>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">验证后会自动跳转。</p>
           </article>
         </div>
 

@@ -7,9 +7,9 @@
             <span class="state-pulse" aria-hidden="true"></span>
             <p class="section-kicker">社区问答</p>
           </div>
-          <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">先看问题，再决定回答还是提问</h2>
+          <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">浏览问题并参与讨论</h2>
           <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-            这里优先展示真实问题列表。先搜同类问题，再进入回答；如果没人提过，再发起新问题。
+            搜索问题、查看回答，或直接发起提问。
           </p>
         </div>
         <div class="flex flex-wrap gap-3">
@@ -67,7 +67,7 @@
           <p class="section-kicker">问题列表</p>
           <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">搜索、筛选并直接进入问题</h3>
           <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-            优先查看待补充和讨论中的问题。已解决的问题更适合当作答案参考，不需要重复提问。
+            查看正在讨论的问题，或参考已解决的问题。
           </p>
         </div>
 

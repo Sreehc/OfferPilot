@@ -54,7 +54,7 @@
         v-if="!sessions.length"
         icon="chat"
         title="还没有会话"
-        description="发起第一个问题后，这里会保留你的问答历史。"
+        description="你的问答记录会显示在这里。"
         compact
         class="mt-5"
       />
@@ -77,7 +77,7 @@
           <p class="section-kicker">智能问答</p>
           <h1 class="mt-3 text-2xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">带引用回答，或直接提问</h1>
           <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-            {{ currentTitle }}。知识库问答会先检索资料并附上来源，直接问答则更适合快速确认概念。
+            {{ currentTitle }}。可选择带资料来源的回答，或直接提问。
           </p>
         </div>
 
@@ -121,7 +121,7 @@
           <div class="mb-2 flex flex-wrap items-center gap-2">
             <span class="hard-chip !px-2 !py-0.5 !text-[10px]">{{ mode === 'rag' ? '知识库问答' : '直接问答' }}</span>
             <span class="text-xs text-slate-500 dark:text-slate-400">
-              {{ mode === 'rag' ? '先检索资料，再生成回答并附上来源。' : '直接生成回答，不附带知识库引用。' }}
+              {{ mode === 'rag' ? '回答会附带相关资料来源。' : '直接生成回答。' }}
             </span>
           </div>
           <el-input
@@ -202,7 +202,7 @@
             v-if="!messages.length && !loadingMessages && !streaming"
             icon="chat"
             title="从一个问题开始"
-            description="可以直接提问，也可以用知识库问答查看带来源的回答。"
+            description="输入一个问题开始问答。"
             compact
           />
         </div>

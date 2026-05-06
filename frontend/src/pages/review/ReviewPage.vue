@@ -12,7 +12,7 @@
             {{ loading ? '加载中...' : `${todayCount} 道题待复习` }}
           </h3>
           <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-            先回忆，再翻看答案，再给自己评分。系统会据此安排下一次复习时间。
+            回忆后再查看答案，并按掌握程度评分。
           </p>
         </div>
         <div class="flex items-center gap-4">
@@ -42,7 +42,7 @@
       <EmptyState
         icon="review"
         title="今日无待复习题目"
-        description="完成面试后错题会自动加入复习队列，也可以前往错题本查看所有题目。"
+        description="可前往错题本查看需要复习的题目。"
       >
         <template #action>
           <div class="flex justify-center gap-3">
@@ -62,7 +62,7 @@
         <p class="section-kicker mt-8">开始前</p>
         <h3 class="mt-3 font-display text-4xl font-semibold leading-none text-ink">{{ todayCount }} 道题等待你完成复习</h3>
         <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
-          先回忆，再翻卡。根据真实掌握程度评分，系统会计算下一次复习日期。
+          根据掌握程度评分，系统会更新下次复习时间。
         </p>
         <div class="mt-6">
           <button type="button" class="hard-button-primary" @click="startReview">

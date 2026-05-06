@@ -8,7 +8,7 @@
         </div>
         <h1 class="mt-4 font-display text-4xl font-semibold leading-[0.9] tracking-[-0.03em] text-ink">Java 面试训练</h1>
         <p class="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">
-          先完成今日任务，再回看趋势、复盘和社区讨论。
+          围绕面试、复习和计划持续练习。
         </p>
       </div>
 
@@ -65,10 +65,10 @@ const allItems = [
   { path: '/chat', label: '问答', hint: '提问并查看资料引用', index: '02' },
   { path: '/knowledge', label: '知识库', hint: '上传、筛选和管理资料', index: '03' },
   { path: '/interview', label: '面试', hint: '开始练习或查看结果', index: '04' },
-  { path: '/wrong', label: '错题本', hint: '优先处理待修复问题', index: '05' },
+  { path: '/wrong', label: '错题本', hint: '查看待复习和待修正题目', index: '05' },
   { path: '/review', label: '复习', hint: '按计划完成今日复习', index: '06' },
   { path: '/community', label: '社区', hint: '浏览问题和发布回答', index: '07' },
-  { path: '/plan', label: '学习计划', hint: '安排今天与后续任务', index: '08' },
+  { path: '/plan', label: '学习计划', hint: '查看今天的计划任务', index: '08' },
   { path: '/admin', label: '管理后台', hint: '内容与数据管理', index: '09', adminOnly: true }
 ]
 
