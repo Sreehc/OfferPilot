@@ -1,107 +1,73 @@
 <template>
   <div class="community-cockpit space-y-6">
-    <section class="grid gap-4 xl:grid-cols-[minmax(0,1.12fr)_minmax(320px,0.88fr)]">
-      <article class="cockpit-panel p-5 sm:p-6">
-        <div class="flex flex-wrap items-start justify-between gap-4">
-          <div class="min-w-0">
-            <div class="flex items-center gap-3">
-              <span class="state-pulse" aria-hidden="true"></span>
-              <p class="section-kicker">Community Arena</p>
-            </div>
-            <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">训练社区热区</h2>
-            <p class="mt-4 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-              把面试讨论从普通问答列表升级为同伴训练场，先看今天最活跃的问题、解决率和个人贡献信号，再决定是提问、围观还是直接参与解答。
-            </p>
+    <section class="cockpit-panel p-5 sm:p-6">
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="min-w-0 max-w-3xl">
+          <div class="flex items-center gap-3">
+            <span class="state-pulse" aria-hidden="true"></span>
+            <p class="section-kicker">社区问答</p>
           </div>
-          <div class="flex flex-wrap gap-3">
-            <button
-              class="hard-button-primary text-sm"
-              @click="$router.push('/community/submit')"
-            >
-              发起提问
-            </button>
-            <button
-              class="hard-button-secondary text-sm"
-              @click="$router.push('/community/leaderboard')"
-            >
-              排行榜
-            </button>
-          </div>
+          <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">先看问题，再决定回答还是提问</h2>
+          <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            这里优先展示真实问题列表。先搜同类问题，再进入回答；如果没人提过，再发起新问题。
+          </p>
         </div>
-
-        <div class="mt-6 grid gap-3 md:grid-cols-3">
-          <article
-            v-for="signal in arenaSignals"
-            :key="signal.label"
-            class="data-slab p-4"
-            :class="signal.toneClass"
+        <div class="flex flex-wrap gap-3">
+          <button
+            class="hard-button-primary text-sm"
+            @click="$router.push('/community/submit')"
           >
-            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-              {{ signal.label }}
-            </p>
-            <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ signal.value }}</p>
-            <p class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ signal.detail }}</p>
-          </article>
-        </div>
-      </article>
-
-      <article class="cockpit-panel p-5 sm:p-6">
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <p class="section-kicker">My Contribution</p>
-            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">我的训练信号</h3>
-          </div>
-          <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ myContribution.badge }}</span>
-        </div>
-
-        <div class="mt-5 rounded-[24px] border border-[var(--bc-line)] bg-white/40 p-5 dark:bg-white/5">
-          <div class="flex items-start justify-between gap-4">
-            <div class="min-w-0">
-              <p class="text-sm font-semibold text-ink">{{ myContribution.title }}</p>
-              <p class="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">{{ myContribution.description }}</p>
-            </div>
-            <div class="contribution-gauge">
-              <span class="contribution-gauge__value">{{ myContribution.score }}</span>
-            </div>
-          </div>
-
-          <div class="mt-5 grid gap-3 sm:grid-cols-3">
-            <article v-for="item in contributionStats" :key="item.label" class="contribution-node">
-              <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{{ item.label }}</p>
-              <p class="mt-2 font-mono text-2xl font-semibold text-ink">{{ item.value }}</p>
-              <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ item.caption }}</p>
-            </article>
-          </div>
-        </div>
-
-        <div class="mt-5 space-y-3">
-          <article
-            v-for="highlight in laneHighlights"
-            :key="highlight.label"
-            class="highlight-lane"
+            发起提问
+          </button>
+          <button
+            class="hard-button-secondary text-sm"
+            @click="$router.push('/community/leaderboard')"
           >
-            <div class="flex items-center justify-between gap-3">
-              <div class="flex items-center gap-3">
-                <span class="inline-flex h-2.5 w-2.5 rounded-full" :class="highlight.dotClass"></span>
-                <div>
-                  <p class="text-sm font-semibold text-ink">{{ highlight.label }}</p>
-                  <p class="text-xs text-slate-500 dark:text-slate-400">{{ highlight.detail }}</p>
-                </div>
-              </div>
-              <span class="font-mono text-sm font-semibold text-ink">{{ highlight.value }}</span>
-            </div>
-          </article>
+            查看排行榜
+          </button>
         </div>
-      </article>
+      </div>
+
+      <div class="community-overview-bar mt-6">
+        <article
+          v-for="signal in overviewSignals"
+          :key="signal.label"
+          class="data-slab p-4"
+          :class="signal.toneClass"
+        >
+          <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+            {{ signal.label }}
+          </p>
+          <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ signal.value }}</p>
+          <p class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ signal.detail }}</p>
+        </article>
+      </div>
+
+      <div class="priority-strip mt-4">
+        <article
+          v-for="item in priorityTips"
+          :key="item.label"
+          class="priority-strip__item"
+        >
+          <div class="flex items-center gap-3">
+            <span class="inline-flex h-2.5 w-2.5 rounded-full" :class="item.dotClass"></span>
+            <div>
+              <p class="text-sm font-semibold text-ink">{{ item.label }}</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">{{ item.detail }}</p>
+            </div>
+          </div>
+          <span class="font-mono text-sm font-semibold text-ink">{{ item.value }}</span>
+        </article>
+      </div>
     </section>
 
     <section class="cockpit-panel p-5 sm:p-6">
       <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div class="min-w-0">
-          <p class="section-kicker">Question Stream</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">问题流</h3>
+          <p class="section-kicker">问题列表</p>
+          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">搜索、筛选并直接进入问题</h3>
           <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-            先按节奏筛选讨论流，再进入具体问题。已解决、待补充、热门围观这三种状态会直接影响你下一步是学习、答疑还是提问。
+            优先查看待补充和讨论中的问题。已解决的问题更适合当作答案参考，不需要重复提问。
           </p>
         </div>
 
@@ -190,17 +156,17 @@
               <div class="question-card__signal-row">
                 <span class="inline-flex items-center gap-2">
                   <span class="h-2 w-2 rounded-full" :class="questionStatusDotClass(q)"></span>
-                  State
+                  状态
                 </span>
                 <span>{{ questionStatusLabel(q) }}</span>
               </div>
               <div class="question-card__signal-row">
-                <span>Intensity</span>
+                <span>互动数</span>
                 <span>{{ q.upvoteCount + q.answerCount }}</span>
               </div>
               <div class="question-card__signal-row">
-                <span>Path</span>
-                <span>{{ q.categoryName || 'General' }}</span>
+                <span>分类</span>
+                <span>{{ q.categoryName || '未分类' }}</span>
               </div>
             </div>
           </div>
@@ -211,8 +177,8 @@
         <EmptyState
           class="empty-state-card"
           icon="chat"
-          title="热区里还没有问题"
-          description="成为第一个提问的人，或者换一个关键词查看已有训练讨论。"
+          title="还没有找到问题"
+          description="换个关键词继续搜，或者直接发起一个新问题。"
         >
           <template #action>
             <RouterLink to="/community/submit" class="hard-button-primary inline-flex">
@@ -272,75 +238,50 @@ const personalQuestionCount = computed(() => {
   return questions.value.filter((item) => item.userId === currentUserId).length
 })
 
-const myContribution = computed(() => {
-  const rank = authStore.user?.role === 'ADMIN' ? 'Control' : 'Pilot'
-  const score = personalQuestionCount.value * 12 + resolvedCount.value * 4 + questions.value.reduce((sum, item) => sum + item.upvoteCount, 0)
-  return {
-    badge: rank,
-    score,
-    title: personalQuestionCount.value > 0 ? '你已经在训练社区留下了问题轨迹' : '还没有你的问题轨迹',
-    description: personalQuestionCount.value > 0
-      ? '继续补充高质量问题或参与讨论，可以更快建立自己的知识协作网络。'
-      : '先发起一个真实的面试问题，系统会把你的首个问题接入社区热区。',
-  }
-})
-
-const arenaSignals = computed(() => [
+const overviewSignals = computed(() => [
   {
-    label: 'Today Questions',
+    label: '当前页问题数',
     value: questions.value.length,
-    detail: '当前页可见的问题数量，反映今天的讨论密度。',
+    detail: '便于快速判断这一页是否需要继续翻页查看。',
     toneClass: '',
   },
   {
-    label: 'Solved Rate',
+    label: '已解决占比',
     value: `${solvedRate.value}%`,
-    detail: '已解决问题占比，越高说明社区更接近可执行答案。',
+    detail: '优先把已解决问题当答案参考，把未解决问题当参与入口。',
     toneClass: 'community-slab-cyan',
   },
   {
-    label: 'Open Threads',
+    label: '待补充问题',
     value: activeCount.value,
-    detail: '仍在讨论中的问题，适合直接切入回答或收藏跟进。',
+    detail: '这部分最适合直接补充回答或继续追问。',
     toneClass: 'community-slab-coral',
   },
-])
-
-const contributionStats = computed(() => [
   {
-    label: '我的问题',
+    label: '我的提问',
     value: personalQuestionCount.value,
-    caption: '当前可见问题中属于你的提问数。',
-  },
-  {
-    label: '已解决',
-    value: resolvedCount.value,
-    caption: '当前热区中已经形成明确答案的问题数。',
-  },
-  {
-    label: '总互动',
-    value: questions.value.reduce((sum, item) => sum + item.upvoteCount + item.answerCount, 0),
-    caption: '赞同和回答的总量，衡量讨论强度。',
+    detail: personalQuestionCount.value > 0 ? '你可以继续追踪自己的问题是否得到解决。' : '还没有你的问题，遇到卡点可以直接发起提问。',
+    toneClass: 'community-slab-lime',
   },
 ])
 
-const laneHighlights = computed(() => [
+const priorityTips = computed(() => [
   {
     label: '推荐动作',
     value: activeCount.value > 0 ? '去答疑' : '去提问',
-    detail: activeCount.value > 0 ? '还有问题处于待解决状态，优先进入回答工作台。' : '热区偏平稳，适合补充新的真实问题。' ,
+    detail: activeCount.value > 0 ? '还有问题没有形成结论，优先进入详情页补充回答。' : '当前列表较平稳，适合补充一个新问题。' ,
     dotClass: activeCount.value > 0 ? 'bg-[var(--bc-amber)]' : 'bg-[var(--bc-cyan)]',
   },
   {
-    label: '最强信号',
+    label: '最热问题',
     value: hottestQuestion.value ? `${hottestQuestion.value.upvoteCount + hottestQuestion.value.answerCount}` : '0',
     detail: hottestQuestion.value ? hottestQuestion.value.title : '暂无高热问题',
     dotClass: 'bg-[var(--bc-coral)]',
   },
   {
-    label: '主要路径',
+    label: '讨论最多的分类',
     value: topCategory.value,
-    detail: '当前热区里讨论最密集的分类路径。',
+    detail: '能帮助你快速判断最近大家最常遇到的主题。',
     dotClass: 'bg-[var(--bc-lime)]',
   },
 ])
@@ -353,11 +294,11 @@ const hottestQuestion = computed(() => {
 const topCategory = computed(() => {
   const bucket = new Map<string, number>()
   questions.value.forEach((item) => {
-    const key = item.categoryName || 'General'
+    const key = item.categoryName || '未分类'
     bucket.set(key, (bucket.get(key) ?? 0) + 1)
   })
   const top = [...bucket.entries()].sort((a, b) => b[1] - a[1])[0]
-  return top?.[0] ?? 'General'
+  return top?.[0] ?? '未分类'
 })
 
 const displayPages = computed(() => {
@@ -456,6 +397,33 @@ onMounted(() => {
   gap: 12px;
 }
 
+.community-overview-bar {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.priority-strip {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.priority-strip__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-radius: 18px;
+  border: 1px solid var(--bc-line);
+  background: rgba(255, 255, 255, 0.34);
+  padding: 14px 16px;
+}
+
+.dark .priority-strip__item {
+  background: rgba(255, 255, 255, 0.05);
+}
+
 .mode-switch {
   border: 1px solid var(--bc-line);
   border-radius: calc(var(--radius-md) + 4px);
@@ -531,52 +499,8 @@ onMounted(() => {
   border-left-color: var(--bc-coral);
 }
 
-.contribution-gauge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 84px;
-  height: 84px;
-  border-radius: 999px;
-  border: 1px solid rgba(var(--bc-accent-rgb), 0.24);
-  background:
-    radial-gradient(circle at center, rgba(var(--bc-accent-rgb), 0.18), transparent 62%),
-    rgba(255, 255, 255, 0.38);
-}
-
-.dark .contribution-gauge {
-  background:
-    radial-gradient(circle at center, rgba(var(--bc-accent-rgb), 0.2), transparent 62%),
-    rgba(255, 255, 255, 0.05);
-}
-
-.contribution-gauge__value {
-  font-family: theme('fontFamily.mono');
-  font-size: 26px;
-  font-weight: 700;
-  color: var(--bc-ink);
-}
-
-.contribution-node {
-  border-radius: 18px;
-  border: 1px solid var(--bc-line);
-  background: rgba(255, 255, 255, 0.36);
-  padding: 14px;
-}
-
-.dark .contribution-node {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.highlight-lane {
-  border-radius: 18px;
-  border: 1px solid var(--bc-line);
-  background: rgba(255, 255, 255, 0.32);
-  padding: 14px 16px;
-}
-
-.dark .highlight-lane {
-  background: rgba(255, 255, 255, 0.04);
+.community-slab-lime {
+  border-left-color: var(--bc-lime);
 }
 
 .question-card {
@@ -721,12 +645,22 @@ onMounted(() => {
 }
 
 @media (max-width: 1024px) {
+  .community-overview-bar,
+  .priority-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .question-card__signal {
     min-width: 100%;
   }
 }
 
 @media (max-width: 640px) {
+  .community-overview-bar,
+  .priority-strip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .community-search {
     grid-template-columns: minmax(0, 1fr);
   }
