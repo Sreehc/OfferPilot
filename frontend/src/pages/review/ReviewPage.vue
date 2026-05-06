@@ -6,13 +6,13 @@
         <div>
           <div class="flex items-center gap-3">
             <span class="state-pulse" aria-hidden="true"></span>
-            <p class="section-kicker">Memory Replay</p>
+            <p class="section-kicker">今日复习</p>
           </div>
           <h3 class="mt-4 font-display text-4xl font-semibold leading-none tracking-[-0.04em] text-ink">
             {{ loading ? '加载中...' : `${todayCount} 道题待复习` }}
           </h3>
           <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-            基于遗忘曲线自动调度，复习间隔随掌握程度动态调整。
+            先回忆，再翻看答案，再给自己评分。系统会据此安排下一次复习时间。
           </p>
         </div>
         <div class="flex items-center gap-4">
@@ -59,14 +59,14 @@
         <div class="review-orbit mx-auto flex h-44 w-44 items-center justify-center rounded-full">
           <span class="font-mono text-5xl font-semibold text-ink">{{ todayCount }}</span>
         </div>
-        <p class="section-kicker mt-8">Due Cards</p>
-        <h3 class="mt-3 font-display text-4xl font-semibold leading-none text-ink">{{ todayCount }} 道题等待回放</h3>
+        <p class="section-kicker mt-8">开始前</p>
+        <h3 class="mt-3 font-display text-4xl font-semibold leading-none text-ink">{{ todayCount }} 道题等待你完成复习</h3>
         <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
           先回忆，再翻卡。根据真实掌握程度评分，系统会计算下一次复习日期。
         </p>
         <div class="mt-6">
           <button type="button" class="hard-button-primary" @click="startReview">
-            进入记忆回放室
+            开始复习
           </button>
         </div>
       </div>
@@ -108,9 +108,9 @@
           <div class="flashcard-front memory-card p-5 sm:p-8">
             <div class="flex items-center justify-between gap-4">
               <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                Recall Prompt
+                先回忆问题
               </div>
-              <span class="hard-chip">{{ currentItem.masteryLevel }}</span>
+              <span class="hard-chip">{{ masteryLabel(currentItem.masteryLevel) }}</span>
             </div>
             <h3 class="mt-8 text-xl font-semibold leading-relaxed text-ink sm:text-2xl">
               {{ currentItem.title }}
@@ -123,7 +123,7 @@
           <!-- Back: Answer -->
           <div class="flashcard-back memory-card p-5 sm:p-8">
             <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-              Standard Answer
+              标准答案
             </div>
             <p class="mt-4 text-sm leading-7 text-slate-700 dark:text-slate-200 whitespace-pre-wrap">
               {{ currentItem.standardAnswer || '暂无标准答案' }}
@@ -275,6 +275,15 @@ const ratingButtons = computed(() => {
     { rating: 4 as const, icon: IconLift, label: '轻松', interval: `${easyDays} 天`, class: 'border-lime/30 bg-lime/10 text-lime hover:bg-lime/15' }
   ]
 })
+
+const masteryLabel = (level: string) => {
+  const map: Record<string, string> = {
+    not_started: '未开始',
+    reviewing: '复习中',
+    mastered: '已掌握'
+  }
+  return map[level] || level
+}
 
 const loadData = async () => {
   loading.value = true
