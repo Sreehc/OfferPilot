@@ -8,109 +8,83 @@
     </button>
 
     <section v-if="loading" class="cockpit-panel px-8 py-16 text-center text-slate-400">
-      正在同步问题工作台...
+      正在加载问题内容...
     </section>
 
     <template v-else-if="question">
-      <section class="grid gap-4 xl:grid-cols-[minmax(0,1.08fr)_minmax(320px,0.92fr)]">
-        <article class="cockpit-panel p-5 sm:p-6">
-          <div class="flex flex-col gap-5 lg:flex-row">
-            <div class="question-vote-rail">
+      <section class="cockpit-panel p-5 sm:p-6">
+        <div class="flex flex-col gap-5 lg:flex-row">
+          <div class="question-vote-rail">
+            <button
+              class="question-vote-rail__button"
+              :class="{ 'question-vote-rail__button-active': question.hasVoted }"
+              @click="voteQuestion"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
+              </svg>
+            </button>
+            <span class="question-vote-rail__value">{{ question.upvoteCount }}</span>
+            <span class="question-vote-rail__label">赞同</span>
+          </div>
+
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="hard-chip !px-2 !py-0.5 !text-[9px]" :class="questionResolved(question) ? 'detail-chip-resolved' : 'detail-chip-active'">
+                {{ questionResolved(question) ? '已解决' : '讨论中' }}
+              </span>
+              <span v-if="question.categoryName" class="detail-pill">{{ question.categoryName }}</span>
+              <span class="detail-pill">{{ question.answers.length }} 条回答</span>
+            </div>
+
+            <h1 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">{{ question.title }}</h1>
+
+            <div class="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+              <span>{{ question.authorName || '匿名用户' }}</span>
+              <span v-if="question.authorRank" class="detail-pill detail-pill-accent">{{ question.authorRank }}</span>
+              <span>{{ formatTime(question.createdAt) }}</span>
+              <span>{{ questionResolved(question) ? '已经有明确结论，可直接参考最佳答案。' : '还没有形成最终答案，适合继续补充。' }}</span>
+            </div>
+
+            <div class="mt-5 rounded-[24px] border border-[var(--bc-line)] bg-white/36 p-5 text-sm leading-8 text-slate-700 dark:bg-white/5 dark:text-slate-200 whitespace-pre-wrap">
+              {{ question.content }}
+            </div>
+
+            <div class="mt-5 grid gap-3 sm:grid-cols-3">
+              <article v-for="signal in answerSignals" :key="signal.label" class="data-slab p-4" :class="signal.toneClass">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ signal.label }}</p>
+                <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ signal.value }}</p>
+                <p class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ signal.detail }}</p>
+              </article>
+            </div>
+
+            <div class="mt-5 flex flex-wrap gap-3">
               <button
-                class="question-vote-rail__button"
-                :class="{ 'question-vote-rail__button-active': question.hasVoted }"
-                @click="voteQuestion"
+                type="button"
+                class="hard-button-primary"
+                @click="focusAnswerComposer"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
-                </svg>
+                写回答
               </button>
-              <span class="question-vote-rail__value">{{ question.upvoteCount }}</span>
-              <span class="question-vote-rail__label">赞同</span>
-            </div>
-
-            <div class="min-w-0 flex-1">
-              <div class="flex flex-wrap items-center gap-2">
-                <span class="hard-chip !px-2 !py-0.5 !text-[9px]" :class="questionResolved(question) ? 'detail-chip-resolved' : 'detail-chip-active'">
-                  {{ questionResolved(question) ? '已解决' : '讨论中' }}
-                </span>
-                <span v-if="question.categoryName" class="detail-pill">{{ question.categoryName }}</span>
-                <span class="detail-pill">{{ question.answers.length }} 条回答</span>
-              </div>
-
-              <h1 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">{{ question.title }}</h1>
-
-              <div class="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-                <span>{{ question.authorName || '匿名用户' }}</span>
-                <span v-if="question.authorRank" class="detail-pill detail-pill-accent">{{ question.authorRank }}</span>
-                <span>{{ formatTime(question.createdAt) }}</span>
-                <span>{{ questionResolved(question) ? '已形成可复盘答案' : '仍在等待更完整回答' }}</span>
-              </div>
-
-              <div class="mt-5 rounded-[24px] border border-[var(--bc-line)] bg-white/36 p-5 text-sm leading-8 text-slate-700 dark:bg-white/5 dark:text-slate-200 whitespace-pre-wrap">
-                {{ question.content }}
-              </div>
-
-              <div class="mt-5 flex flex-wrap gap-3">
-                <button
-                  v-if="isAuthor"
-                  type="button"
-                  class="hard-button-secondary !border-red-300 !text-[var(--bc-coral)]"
-                  @click="handleDeleteQuestion"
-                >
-                  删除问题
-                </button>
-                <button
-                  type="button"
-                  class="hard-button-secondary"
-                  @click="focusAnswerComposer"
-                >
-                  直接回答
-                </button>
-              </div>
+              <button
+                v-if="isAuthor"
+                type="button"
+                class="hard-button-secondary !border-red-300 !text-[var(--bc-coral)]"
+                @click="handleDeleteQuestion"
+              >
+                删除问题
+              </button>
+              <span class="detail-pill">{{ acceptedAnswer ? '已存在最佳答案' : '等待最佳答案' }}</span>
             </div>
           </div>
-        </article>
-
-        <aside class="cockpit-panel p-5 sm:p-6">
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <p class="section-kicker">Answer Deck</p>
-              <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">回答态势板</h3>
-            </div>
-            <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ questionResolved(question) ? 'Resolved' : 'Open' }}</span>
-          </div>
-
-          <div class="mt-5 grid gap-3 sm:grid-cols-3">
-            <article v-for="signal in answerSignals" :key="signal.label" class="data-slab p-4" :class="signal.toneClass">
-              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ signal.label }}</p>
-              <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ signal.value }}</p>
-              <p class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ signal.detail }}</p>
-            </article>
-          </div>
-
-          <div class="mt-5 space-y-3">
-            <article v-for="lane in answerLanes" :key="lane.label" class="answer-lane">
-              <div class="flex items-center justify-between gap-3">
-                <div class="flex items-center gap-3">
-                  <span class="inline-flex h-2.5 w-2.5 rounded-full" :class="lane.dotClass"></span>
-                  <div>
-                    <p class="text-sm font-semibold text-ink">{{ lane.label }}</p>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ lane.detail }}</p>
-                  </div>
-                </div>
-                <span class="font-mono text-sm font-semibold text-ink">{{ lane.value }}</span>
-              </div>
-            </article>
-          </div>
-        </aside>
+        </div>
       </section>
 
       <section class="cockpit-panel p-5 sm:p-6">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p class="section-kicker">Answer Workspace</p>
-            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">回答工作台</h3>
+            <p class="section-kicker">回答列表</p>
+            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">先看已有回答，再决定是否补充</h3>
           </div>
           <div class="flex flex-wrap gap-2">
             <span class="detail-pill">{{ question.answers.length }} 条回答</span>
@@ -193,7 +167,7 @@
       <section class="cockpit-panel p-5 sm:p-6">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p class="section-kicker">Reply Console</p>
+            <p class="section-kicker">发表回答</p>
             <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">发表回答</h3>
             <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
               直接给出结论、推理链条和必要前提。如果你是在解释原理，尽量把“为什么”讲清楚，而不是只给结论。
@@ -276,6 +250,7 @@ const acceptedAnswer = computed(() => question.value?.answers.find((answer) => a
 const orderedAnswers = computed(() => {
   if (!question.value) return []
   return [...question.value.answers]
+    .filter((answer) => !answer.isAccepted)
     .sort((a, b) => Number(b.isAccepted) - Number(a.isAccepted) || b.upvoteCount - a.upvoteCount)
 })
 
@@ -285,47 +260,22 @@ const answerSignals = computed(() => {
   const totalVotes = currentQuestion.answers.reduce((sum, answer) => sum + answer.upvoteCount, 0)
   return [
     {
-      label: 'Answers',
+      label: '回答数',
       value: currentQuestion.answers.length,
-      detail: '当前问题已经收到的回答数量。',
+      detail: '可以先看是否已经有人回答过相同思路。',
       toneClass: '',
     },
     {
-      label: 'Best Answer',
+      label: '最佳答案',
       value: acceptedAnswer.value ? '1' : '0',
-      detail: acceptedAnswer.value ? '已经存在最佳答案。' : '提问者尚未采纳回答。',
+      detail: acceptedAnswer.value ? '提问者已经采纳了一条答案。' : '还没有被采纳的答案。',
       toneClass: 'detail-slab-lime',
     },
     {
-      label: 'Support',
+      label: '累计赞同',
       value: totalVotes,
-      detail: '所有回答累计收到的赞同数量。',
+      detail: '赞同越多，通常越值得优先阅读。',
       toneClass: 'detail-slab-cyan',
-    },
-  ]
-})
-
-const answerLanes = computed(() => {
-  const currentQuestion = question.value
-  if (!currentQuestion) return []
-  return [
-    {
-      label: '问题状态',
-      value: questionResolved(currentQuestion) ? 'Resolved' : 'Open',
-      detail: questionResolved(currentQuestion) ? '已经形成明确答案。' : '仍然需要补充结论或推理。',
-      dotClass: questionResolved(currentQuestion) ? 'bg-[var(--bc-lime)]' : 'bg-[var(--bc-amber)]',
-    },
-    {
-      label: '最高赞同',
-      value: currentQuestion.answers.length ? Math.max(...currentQuestion.answers.map((answer) => answer.upvoteCount)) : 0,
-      detail: '当前最受认可的回答支持度。',
-      dotClass: 'bg-[var(--bc-cyan)]',
-    },
-    {
-      label: '你的权限',
-      value: isAuthor.value ? '可采纳' : '可回答',
-      detail: isAuthor.value ? '你可以把最合适的回答采纳为最佳答案。' : '你可以直接补充自己的观点。',
-      dotClass: 'bg-[var(--bc-amber)]',
     },
   ]
 })
