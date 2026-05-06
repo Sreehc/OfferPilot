@@ -6,23 +6,23 @@
           <div class="min-w-0">
             <div class="flex items-center gap-3">
               <span class="state-pulse" aria-hidden="true"></span>
-              <p class="section-kicker">Knowledge Constellation</p>
+              <p class="section-kicker">资料概览</p>
             </div>
-            <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">资料星图控制台</h2>
+            <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">先上传，再筛选，再查看状态</h2>
             <p class="mt-4 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-              把系统资料、个人上传文档和检索命中轨迹放进同一座知识驾驶舱，先看索引状态，再决定下一步上传、筛选或验证召回结果。
+              这里统一管理系统资料和你上传的文档。首屏重点是上传文件、筛选文档，以及确认哪些资料已经可以参与问答。
             </p>
           </div>
           <div class="grid min-w-[220px] gap-3 sm:grid-cols-2">
             <div class="data-slab p-3">
-              <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Visible Docs</p>
+              <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">当前文档</p>
               <p class="mt-2 font-mono text-2xl font-semibold text-ink">{{ docs.length }}</p>
               <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ activeTabLabel }} 当前页</p>
             </div>
             <div class="data-slab border-l-[var(--bc-cyan)] p-3">
-              <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Indexed</p>
+              <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">可检索</p>
               <p class="mt-2 font-mono text-2xl font-semibold text-[var(--bc-cyan)]">{{ statusSummary.indexed }}</p>
-              <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">已进入检索引擎</p>
+              <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">已经可以参与知识库问答</p>
             </div>
           </div>
         </div>
@@ -48,10 +48,10 @@
       <article class="cockpit-panel p-5 sm:p-6">
         <div class="flex items-center justify-between gap-3">
           <div>
-            <p class="section-kicker">Index Command</p>
-            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">上传与索引控制</h3>
+            <p class="section-kicker">上传资料</p>
+            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">上传后系统会自动处理</h3>
           </div>
-          <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ activeTab === 'my' ? 'MY DOCS' : 'SYSTEM' }}</span>
+          <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ activeTab === 'my' ? '我的文档' : '系统资料' }}</span>
         </div>
 
         <div
@@ -65,9 +65,9 @@
             </svg>
           </div>
           <div class="text-center">
-            <p class="text-sm font-semibold text-ink">拖拽文档进入资料星图</p>
+            <p class="text-sm font-semibold text-ink">拖拽文档到这里，或直接选择上传</p>
             <p class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">
-              支持 `md / txt / pdf`，单文件不超过 20MB。上传后会进入解析与索引轨道。
+              支持 `md / txt / pdf`，单文件不超过 20MB。上传后会自动解析并建立检索索引。
             </p>
           </div>
           <el-upload
@@ -102,14 +102,14 @@
       </article>
     </section>
 
-    <section class="grid gap-4 xl:grid-cols-[minmax(0,1.18fr)_minmax(280px,0.82fr)]">
+    <section class="space-y-4">
       <article class="cockpit-panel p-5 sm:p-6">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div class="min-w-0">
-            <p class="section-kicker">Document Console</p>
-            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">文档控制台</h3>
+            <p class="section-kicker">文档列表</p>
+            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">先筛选，再查看资料状态</h3>
             <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-              切换系统资料与个人文档，按分类、状态和关键词缩小范围，再沿着索引状态查看哪些资料已经可以参与知识问答。
+              切换系统资料与个人文档，按分类、状态和关键词缩小范围。列表里会直接告诉你文档是否已可用于问答。
             </p>
           </div>
           <div class="mode-switch grid grid-cols-2 gap-2">
@@ -156,7 +156,7 @@
           <EmptyState
             class="empty-state-card"
             icon="document"
-            :title="activeTab === 'my' ? '你的文档轨道还是空的' : '系统资料暂未入轨'"
+            :title="activeTab === 'my' ? '你还没有上传文档' : '系统资料暂时为空'"
             :description="activeTab === 'my'
               ? '上传 Markdown、TXT 或 PDF 后，系统会自动切分并进入索引处理。'
               : '请联系管理员导入知识资料，或先切换到“我的文档”上传学习材料。'"
@@ -209,7 +209,7 @@
                 {{ doc.categoryName || '未分类' }}
               </span>
               <span class="rounded-full border border-[var(--bc-line)] px-2.5 py-1 text-slate-500 dark:text-slate-300">
-                {{ doc.chunkCount ?? 0 }} chunks
+                {{ doc.chunkCount ?? 0 }} 个片段
               </span>
               <span class="rounded-full border border-[var(--bc-line)] px-2.5 py-1 text-slate-500 dark:text-slate-300">
                 {{ formatDate(doc.updateTime) }}
@@ -222,17 +222,17 @@
 
             <div class="mt-4 rounded-[18px] border border-[var(--bc-line)] bg-white/45 p-3 dark:bg-white/5">
               <div class="flex items-center justify-between gap-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                <span>Hit Path</span>
+                <span>参与问答路径</span>
                 <span>{{ statusPathLabel(doc.status) }}</span>
               </div>
               <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                <span class="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800/80">Question</span>
+                <span class="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800/80">问题</span>
                 <span>→</span>
-                <span class="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800/80">{{ doc.categoryName || 'Category' }}</span>
+                <span class="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800/80">{{ doc.categoryName || '分类' }}</span>
                 <span>→</span>
                 <span class="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800/80 truncate max-w-[130px]">{{ doc.title }}</span>
                 <span>→</span>
-                <span class="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800/80">Chunk {{ doc.chunkCount ? Math.min(doc.chunkCount, 1) : 0 }}</span>
+                <span class="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800/80">片段 {{ doc.chunkCount ? Math.min(doc.chunkCount, 1) : 0 }}</span>
               </div>
             </div>
           </article>
@@ -252,10 +252,10 @@
       <article class="cockpit-panel p-5 sm:p-6">
         <div class="flex items-center justify-between gap-3">
           <div>
-            <p class="section-kicker">Category Matrix</p>
-            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">分类状态矩阵</h3>
+            <p class="section-kicker">分类状态</p>
+            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">按分类查看文档分布</h3>
           </div>
-          <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ categories.length }} nodes</span>
+          <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ categories.length }} 个分类</span>
         </div>
 
         <div v-if="categoryMatrix.length" class="mt-5 space-y-3">
@@ -301,22 +301,22 @@
     <section class="cockpit-panel p-5 sm:p-6">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div class="min-w-0">
-          <p class="section-kicker">Search Console</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">检索验证台</h3>
+          <p class="section-kicker">检索验证</p>
+          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">确认资料是否真的能被问答命中</h3>
           <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-            先提出一个面试问题，再检查召回路径、文档来源和命中强度，确认知识库回答是否足够可信。
+            提一个问题后，检查命中的文档、片段和相关度。这样能判断知识库回答是否值得参考。
           </p>
         </div>
         <div class="grid min-w-[220px] gap-3 sm:grid-cols-2">
           <div class="data-slab border-l-[var(--bc-cyan)] p-3">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">References</p>
+            <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">命中引用</p>
             <p class="mt-2 font-mono text-2xl font-semibold text-[var(--bc-cyan)]">{{ searchResult?.references.length ?? 0 }}</p>
-            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">当前命中分片</p>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">当前检索命中的资料片段</p>
           </div>
           <div class="data-slab border-l-[var(--bc-line-hot)] p-3">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Mode</p>
-            <p class="mt-2 text-sm font-semibold text-ink">Question → Category → Doc → Chunk</p>
-            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">逐级验证召回链路</p>
+            <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">验证路径</p>
+            <p class="mt-2 text-sm font-semibold text-ink">问题 → 分类 → 文档 → 片段</p>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">逐步确认资料来源是否合理</p>
           </div>
         </div>
       </div>
@@ -324,7 +324,7 @@
       <div class="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_150px]">
         <el-input v-model="searchQuery" placeholder="例如：JVM 垃圾回收器分类，以及 CMS 和 G1 的差异" size="large" />
         <el-button :loading="searching" type="primary" size="large" class="action-button !min-h-12" @click="runSearch">
-          {{ searching ? '检索中...' : '启动检索' }}
+          {{ searching ? '检索中...' : '开始检索' }}
         </el-button>
       </div>
 
@@ -337,7 +337,7 @@
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2">
-                <span class="hard-chip !px-2 !py-0.5 !text-[9px]">Hit {{ reference.rank }}</span>
+                <span class="hard-chip !px-2 !py-0.5 !text-[9px]">命中 {{ reference.rank }}</span>
                 <span class="text-[11px] font-semibold uppercase tracking-[0.2em]" :class="reference.confidenceClass">
                   {{ reference.confidenceLabel }}
                 </span>
@@ -354,7 +354,7 @@
             <span>→</span>
             <span class="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800/80 truncate max-w-[150px]">{{ reference.docTitle }}</span>
             <span>→</span>
-            <span class="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800/80">Chunk {{ reference.chunkId }}</span>
+            <span class="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800/80">片段 {{ reference.chunkId }}</span>
           </div>
 
           <p class="mt-4 text-sm leading-7 text-slate-700 dark:text-slate-200" v-html="reference.snippetHtml"></p>
@@ -445,21 +445,21 @@ const freshestUpdate = computed(() => {
 
 const knowledgeSignals = computed(() => [
   {
-    label: 'Indexed Ratio',
+    label: '可检索占比',
     value: `${indexedRatio.value}%`,
-    detail: '当前页里有多少资料已经可以参与 RAG 召回。',
+    detail: '当前页里有多少资料已经可以参与知识库问答。',
     dotClass: 'bg-[var(--bc-cyan)]',
   },
   {
-    label: 'Total Chunks',
+    label: '总片段数',
     value: totalChunks.value,
-    detail: '分片越多，检索覆盖越细，但也更需要检查命中质量。',
+    detail: '片段越多，覆盖越细，也更需要检查命中质量。',
     dotClass: 'bg-[var(--bc-amber)]',
   },
   {
-    label: 'Latest Update',
+    label: '最近更新',
     value: freshestUpdate.value,
-    detail: '最近一次资料状态变化，方便判断是否需要重跑检索验证。',
+    detail: '方便判断是否需要重新验证检索结果。',
     dotClass: 'bg-[var(--bc-lime)]',
   },
 ])
@@ -469,26 +469,26 @@ const statusCards = computed(() => {
   return [
     {
       status: 'draft',
-      label: 'Draft',
+      label: '待处理',
       count: statusSummary.value.draft,
       percent: Math.round((statusSummary.value.draft / totalDocs) * 100),
-      description: '仅完成上传，还未进入稳定解析轨道。',
+      description: '刚上传，还没有完成解析。',
       toneClass: 'status-orbit-draft',
     },
     {
       status: 'parsed',
-      label: 'Parsed',
+      label: '已解析',
       count: statusSummary.value.parsed,
       percent: Math.round((statusSummary.value.parsed / totalDocs) * 100),
-      description: '已切分完成，待进入最终索引流程。',
+      description: '已经切分完成，等待进入检索。',
       toneClass: 'status-orbit-parsed',
     },
     {
       status: 'indexed',
-      label: 'Indexed',
+      label: '可检索',
       count: statusSummary.value.indexed,
       percent: Math.round((statusSummary.value.indexed / totalDocs) * 100),
-      description: '已被问答引擎接入，可在 Search Console 中验证命中。',
+      description: '已经可以参与知识库问答。',
       toneClass: 'status-orbit-indexed',
     },
   ]
@@ -660,9 +660,9 @@ const statusLabel = (status: KnowledgeDocItem['status']) => {
 
 const statusPathLabel = (status: KnowledgeDocItem['status']) => {
   const map: Record<KnowledgeDocItem['status'], string> = {
-    draft: 'Upload locked',
-    parsed: 'Chunked',
-    indexed: 'Searchable',
+    draft: '上传完成',
+    parsed: '已切分',
+    indexed: '可参与问答',
   }
   return map[status]
 }
