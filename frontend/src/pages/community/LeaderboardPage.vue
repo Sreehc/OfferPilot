@@ -7,91 +7,49 @@
       <span>&larr;</span> 返回社区
     </button>
 
-    <section class="grid gap-4 xl:grid-cols-[minmax(0,1.08fr)_minmax(320px,0.92fr)]">
-      <article class="cockpit-panel p-5 sm:p-6">
-        <div class="flex items-center gap-3">
-          <span class="state-pulse" aria-hidden="true"></span>
-          <p class="section-kicker">Contribution Board</p>
-        </div>
-        <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">社区贡献榜</h2>
-        <p class="mt-4 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-          排名不只是积分表，而是训练社区里谁在持续输出高质量回答、帮助别人把问题落成可复盘答案的状态面板。
-        </p>
-
-        <div class="mt-6 grid gap-3 md:grid-cols-3">
-          <article v-for="signal in boardSignals" :key="signal.label" class="data-slab p-4" :class="signal.toneClass">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ signal.label }}</p>
-            <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ signal.value }}</p>
-            <p class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ signal.detail }}</p>
-          </article>
-        </div>
-      </article>
-
-      <article class="cockpit-panel p-5 sm:p-6">
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <p class="section-kicker">Top Signal</p>
-            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">榜首聚焦</h3>
-          </div>
-          <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ topEntry ? 'No.1' : 'Pending' }}</span>
-        </div>
-
-        <div v-if="topEntry" class="top-pilot-card mt-5">
-          <div class="flex items-start justify-between gap-4">
-            <div class="min-w-0">
-              <span class="hard-chip detail-rank-chip !px-2 !py-0.5 !text-[9px]">Top Pilot</span>
-              <h4 class="mt-4 text-2xl font-semibold tracking-[-0.03em] text-ink">{{ topEntry.username || `用户${topEntry.userId}` }}</h4>
-              <p class="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                以回答质量和被采纳次数领跑当前社区热区，属于最值得参考的训练同伴。
-              </p>
-            </div>
-            <div class="rank-medal">#1</div>
-          </div>
-
-          <div class="mt-5 grid gap-3 sm:grid-cols-3">
-            <article class="top-pilot-node">
-              <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">积分</p>
-              <p class="mt-2 font-mono text-2xl font-semibold text-ink">{{ topEntry.communityScore }}</p>
-            </article>
-            <article class="top-pilot-node">
-              <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">回答</p>
-              <p class="mt-2 font-mono text-2xl font-semibold text-ink">{{ topEntry.communityAnswers }}</p>
-            </article>
-            <article class="top-pilot-node">
-              <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">采纳</p>
-              <p class="mt-2 font-mono text-2xl font-semibold text-ink">{{ topEntry.communityAccepted }}</p>
-            </article>
-          </div>
-        </div>
-
-        <EmptyState
-          v-else
-          class="empty-state-card mt-5"
-          icon="trophy"
-          title="还没有榜首信号"
-          description="一旦社区里出现真实互动，这里会显示最强贡献者。"
-          compact
-        />
-      </article>
-    </section>
-
     <section class="cockpit-panel p-5 sm:p-6">
-      <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p class="section-kicker">Ranking Flow</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">贡献流</h3>
-          <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-            每个人的排名由提问、回答和被采纳共同决定。优先看回答与采纳比，能更快识别谁更擅长把问题解释清楚。
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="min-w-0 max-w-3xl">
+          <div class="flex items-center gap-3">
+            <span class="state-pulse" aria-hidden="true"></span>
+            <p class="section-kicker">社区排行榜</p>
+          </div>
+          <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">谁的回答更稳定，一眼就能看出来</h2>
+          <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            优先看积分、回答数和采纳数。采纳率高，通常代表这个人的回答更容易直接解决问题。
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
           <span class="leaderboard-pill">采纳 +50</span>
           <span class="leaderboard-pill">点赞 +2</span>
-          <span class="leaderboard-pill">问题与回答共同计入</span>
+          <span class="leaderboard-pill">问题与回答都会计分</span>
         </div>
       </div>
 
-      <div v-if="leaderboard.length" class="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(280px,0.9fr)]">
+      <div class="mt-6 grid gap-3 md:grid-cols-3">
+        <article v-for="signal in boardSignals" :key="signal.label" class="data-slab p-4" :class="signal.toneClass">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ signal.label }}</p>
+          <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ signal.value }}</p>
+          <p class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ signal.detail }}</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="cockpit-panel p-5 sm:p-6">
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p class="section-kicker">排名列表</p>
+          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">按排名查看贡献者</h3>
+          <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+            排名前列通常更适合作为回答参考对象。回答占比高、采纳率高的人，通常更擅长把问题讲清楚。
+          </p>
+        </div>
+        <span v-if="topEntry" class="detail-rank-pill" :class="rankBadgeClass(topEntry.rankTitle)">
+          榜首：{{ topEntry.username || `用户${topEntry.userId}` }}
+        </span>
+      </div>
+
+      <div v-if="leaderboard.length" class="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)]">
         <div class="space-y-4">
           <article
             v-for="entry in leaderboard"
@@ -132,15 +90,15 @@
 
               <div class="rank-card__signal">
                 <div class="rank-card__signal-row">
-                  <span>Answer Rate</span>
+                  <span>回答占比</span>
                   <span>{{ answerRate(entry) }}</span>
                 </div>
                 <div class="rank-card__signal-row">
-                  <span>Accept Rate</span>
+                  <span>采纳率</span>
                   <span>{{ acceptRate(entry) }}</span>
                 </div>
                 <div class="rank-card__signal-row">
-                  <span>Tier</span>
+                  <span>活跃度</span>
                   <span>{{ rankIntensity(entry.position) }}</span>
                 </div>
               </div>
@@ -149,9 +107,31 @@
         </div>
 
         <aside class="space-y-4">
+          <article v-if="topEntry" class="cockpit-panel p-5">
+            <p class="section-kicker">榜首摘要</p>
+            <h4 class="mt-3 text-xl font-semibold text-ink">{{ topEntry.username || `用户${topEntry.userId}` }}</h4>
+            <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+              当前榜首的优势主要看回答数量和采纳数量，适合优先参考其回答风格。
+            </p>
+            <div class="mt-4 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+              <article class="top-pilot-node">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">积分</p>
+                <p class="mt-2 font-mono text-2xl font-semibold text-ink">{{ topEntry.communityScore }}</p>
+              </article>
+              <article class="top-pilot-node">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">回答</p>
+                <p class="mt-2 font-mono text-2xl font-semibold text-ink">{{ topEntry.communityAnswers }}</p>
+              </article>
+              <article class="top-pilot-node">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">采纳</p>
+                <p class="mt-2 font-mono text-2xl font-semibold text-ink">{{ topEntry.communityAccepted }}</p>
+              </article>
+            </div>
+          </article>
+
           <article class="cockpit-panel p-5">
-            <p class="section-kicker">Tier Map</p>
-            <h4 class="mt-3 text-xl font-semibold text-ink">等级体系</h4>
+            <p class="section-kicker">等级体系</p>
+            <h4 class="mt-3 text-xl font-semibold text-ink">当前头衔分布</h4>
             <div class="mt-4 space-y-3">
               <article v-for="rank in ranks" :key="rank.name" class="tier-card">
                 <div class="flex items-center justify-between gap-3">
@@ -163,7 +143,7 @@
           </article>
 
           <article class="cockpit-panel p-5">
-            <p class="section-kicker">Interpretation</p>
+            <p class="section-kicker">阅读提示</p>
             <h4 class="mt-3 text-xl font-semibold text-ink">怎么看这张榜</h4>
             <div class="mt-4 space-y-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
               <p>高积分但低采纳：说明参与度高，但答案未必最稳定。</p>
@@ -179,7 +159,7 @@
         class="empty-state-card mt-6"
         icon="trophy"
         title="暂无排名数据"
-        description="完成面试和社区互动后，排行榜会在这里形成贡献流。"
+        description="有了提问、回答和采纳记录后，这里会自动生成排行榜。"
         compact
       />
     </section>
@@ -208,21 +188,21 @@ const totalScore = computed(() => leaderboard.value.reduce((sum, entry) => sum +
 const totalAccepted = computed(() => leaderboard.value.reduce((sum, entry) => sum + entry.communityAccepted, 0))
 const boardSignals = computed(() => [
   {
-    label: 'Visible Pilots',
+    label: '上榜人数',
     value: leaderboard.value.length,
-    detail: '当前榜单中可见的贡献者数量。',
+    detail: '当前排行榜里可见的贡献者总数。',
     toneClass: '',
   },
   {
-    label: 'Total Score',
+    label: '总积分',
     value: totalScore.value,
-    detail: '所有上榜用户累计贡献分，反映社区整体活跃度。',
+    detail: '所有上榜用户累计贡献分，可用来判断整体活跃度。',
     toneClass: 'leaderboard-slab-cyan',
   },
   {
-    label: 'Accepted Answers',
+    label: '总采纳数',
     value: totalAccepted.value,
-    detail: '社区里真正落地为最佳答案的总数。',
+    detail: '社区里被采纳为最佳答案的回答总量。',
     toneClass: 'leaderboard-slab-lime',
   },
 ])
@@ -241,10 +221,10 @@ function rankCardClass(position: number) {
 }
 
 function rankIntensity(position: number) {
-  if (position === 1) return 'Top'
-  if (position <= 3) return 'Lead'
-  if (position <= 10) return 'Active'
-  return 'Watch'
+  if (position === 1) return '榜首'
+  if (position <= 3) return '领先'
+  if (position <= 10) return '活跃'
+  return '持续参与'
 }
 
 function rankBadgeClass(rank: string) {
