@@ -2,15 +2,17 @@
   <div class="space-y-6">
     <section class="paper-panel p-4 sm:p-6">
       <p class="section-kicker">两步验证</p>
-      <h3 class="mt-4 text-xl sm:text-3xl font-semibold tracking-[-0.03em] text-ink">设置两步验证</h3>
+      <h3 class="mt-4 text-xl sm:text-3xl font-semibold tracking-[-0.03em] text-ink">按步骤完成两步验证</h3>
       <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
         使用身份验证器应用（如 Google Authenticator、Microsoft Authenticator）扫描二维码，输入 6 位验证码完成设置。
       </p>
     </section>
 
-    <!-- Step 1: Show QR code -->
     <section v-if="step === 1" class="paper-panel p-4 sm:p-6">
       <h4 class="text-lg font-semibold text-ink">第 1 步：扫描二维码</h4>
+      <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+        先用身份验证器应用扫描下方二维码；如果无法扫描，也可以手动复制密钥。
+      </p>
       <div class="mt-4 flex flex-col items-center gap-6">
         <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white p-4">
           <img
@@ -38,7 +40,6 @@
       </el-button>
     </section>
 
-    <!-- Step 2: Verify code -->
     <section v-if="step === 2" class="paper-panel p-4 sm:p-6">
       <h4 class="text-lg font-semibold text-ink">第 2 步：输入验证码</h4>
       <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
@@ -61,7 +62,6 @@
       </div>
     </section>
 
-    <!-- Step 3: Show recovery codes -->
     <section v-if="step === 3" class="paper-panel p-4 sm:p-6">
       <h4 class="text-lg font-semibold text-ink">恢复码</h4>
       <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
@@ -103,7 +103,6 @@ const enabling = ref(false)
 
 const qrCodeUrl = computed(() => {
   if (!setupData.value?.otpauthUri) return ''
-  // Use a QR code API service to generate the image
   return `https://api.qrserver.com/v1/create-qr-code/?size=192x192&data=${encodeURIComponent(setupData.value.otpauthUri)}`
 })
 

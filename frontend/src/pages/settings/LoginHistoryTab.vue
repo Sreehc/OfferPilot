@@ -1,9 +1,18 @@
 <template>
   <div class="space-y-4">
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h4 class="text-lg font-semibold text-ink">最近登录记录</h4>
+        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          用时间、地点和设备快速排查异常登录。
+        </p>
+      </div>
       <div class="text-sm text-slate-500 dark:text-slate-400">
         共 <span class="font-semibold text-ink">{{ total }}</span> 条记录
       </div>
+    </div>
+
+    <div class="flex justify-end">
       <el-button :loading="loading" type="primary" size="large" class="action-button" @click="loadLogs">
         刷新
       </el-button>

@@ -1,14 +1,19 @@
 <template>
   <div class="space-y-4">
-    <!-- Status -->
     <div v-if="loading" class="flex items-center justify-center py-8">
       <el-icon class="is-loading text-slate-400" :size="24"><i class="el-icon-loading" /></el-icon>
       <span class="ml-3 text-sm text-slate-400">加载中...</span>
     </div>
 
     <template v-else>
-      <!-- Already enabled -->
       <div v-if="status?.enabled" class="space-y-4">
+        <div>
+          <h4 class="text-lg font-semibold text-ink">两步验证已开启</h4>
+          <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            登录时需要额外输入验证码，安全性更高。
+          </p>
+        </div>
+
         <div class="flex items-center gap-3 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 p-4">
           <div class="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 dark:bg-green-800/40">
             <svg class="h-4 w-4 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -23,7 +28,6 @@
           </div>
         </div>
 
-        <!-- Disable -->
         <div class="paper-panel p-4">
           <h4 class="text-sm font-semibold text-ink">关闭两步验证</h4>
           <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -49,8 +53,14 @@
         </div>
       </div>
 
-      <!-- Not enabled: show setup -->
       <div v-else>
+        <div>
+          <h4 class="text-lg font-semibold text-ink">两步验证未开启</h4>
+          <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            建议尽快启用，为账号增加一道额外校验。
+          </p>
+        </div>
+
         <div class="flex items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-4">
           <div class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
             <svg class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
