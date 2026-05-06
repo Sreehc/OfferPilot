@@ -1,89 +1,77 @@
 <template>
   <div class="analytics-cockpit space-y-6">
-    <section class="grid gap-4 xl:grid-cols-[minmax(0,1.08fr)_minmax(320px,0.92fr)]">
-      <article class="cockpit-panel p-5 sm:p-6">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div class="min-w-0">
+    <section class="cockpit-panel p-5 sm:p-6">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div class="min-w-0 max-w-3xl">
+          <div class="flex items-center gap-3">
+            <span class="state-pulse" aria-hidden="true"></span>
+            <p class="section-kicker">学习分析</p>
+          </div>
+          <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">先看结论，再决定下一步怎么学</h2>
+          <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            这一页先告诉你最近是在进步、遗忘率是否偏高、当前最该处理哪类题，再展开图表细看趋势。
+          </p>
+        </div>
+
+        <div class="mode-switch grid grid-cols-3 gap-2">
+          <button
+            v-for="w in weekOptions"
+            :key="w.value"
+            type="button"
+            class="mode-switch__item"
+            :class="{ 'mode-switch__item-active': selectedWeeks === w.value }"
+            @click="changeWeeks(w.value)"
+          >
+            {{ w.label }}
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-6 grid gap-3 md:grid-cols-3">
+        <article v-for="insight in headlineInsights" :key="insight.label" class="insight-card" :class="insight.toneClass">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ insight.label }}</p>
+              <p class="mt-3 text-xl font-semibold text-ink">{{ insight.title }}</p>
+            </div>
+            <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ insight.badge }}</span>
+          </div>
+          <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">{{ insight.detail }}</p>
+          <p class="mt-4 text-xs font-semibold uppercase tracking-[0.18em]" :class="insight.ctaClass">{{ insight.cta }}</p>
+        </article>
+      </div>
+
+      <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <article v-for="signal in summarySignals" :key="signal.label" class="data-slab p-4" :class="signal.toneClass">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ signal.label }}</p>
+          <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ signal.value }}</p>
+          <p class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ signal.detail }}</p>
+        </article>
+      </div>
+
+      <div class="mt-5 space-y-3">
+        <article v-for="lane in signalLanes" :key="lane.label" class="signal-lane">
+          <div class="flex items-center justify-between gap-3">
             <div class="flex items-center gap-3">
-              <span class="state-pulse" aria-hidden="true"></span>
-              <p class="section-kicker">Terrain Radar</p>
-            </div>
-            <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">能力地形图</h2>
-            <p class="mt-4 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-              不再把图表堆成一页，而是先给你最值得行动的洞察，再展开趋势、遗忘率和掌握分布，判断接下来要补哪一类训练。
-            </p>
-          </div>
-
-          <div class="mode-switch grid grid-cols-3 gap-2">
-            <button
-              v-for="w in weekOptions"
-              :key="w.value"
-              type="button"
-              class="mode-switch__item"
-              :class="{ 'mode-switch__item-active': selectedWeeks === w.value }"
-              @click="changeWeeks(w.value)"
-            >
-              {{ w.label }}
-            </button>
-          </div>
-        </div>
-
-        <div class="mt-6 grid gap-3 md:grid-cols-3">
-          <article v-for="insight in headlineInsights" :key="insight.label" class="insight-card" :class="insight.toneClass">
-            <div class="flex items-start justify-between gap-3">
+              <span class="inline-flex h-2.5 w-2.5 rounded-full" :class="lane.dotClass"></span>
               <div>
-                <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ insight.label }}</p>
-                <p class="mt-3 text-xl font-semibold text-ink">{{ insight.title }}</p>
+                <p class="text-sm font-semibold text-ink">{{ lane.label }}</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ lane.detail }}</p>
               </div>
-              <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ insight.badge }}</span>
             </div>
-            <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">{{ insight.detail }}</p>
-            <p class="mt-4 text-xs font-semibold uppercase tracking-[0.18em]" :class="insight.ctaClass">{{ insight.cta }}</p>
-          </article>
-        </div>
-      </article>
-
-      <article class="cockpit-panel p-5 sm:p-6">
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <p class="section-kicker">Learning Signals</p>
-            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">学习信号摘要</h3>
+            <span class="font-mono text-sm font-semibold text-ink">{{ lane.value }}</span>
           </div>
-          <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ selectedWeeks }} weeks</span>
-        </div>
-
-        <div class="mt-5 grid gap-3 sm:grid-cols-2">
-          <article v-for="signal in summarySignals" :key="signal.label" class="data-slab p-4" :class="signal.toneClass">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ signal.label }}</p>
-            <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ signal.value }}</p>
-            <p class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ signal.detail }}</p>
-          </article>
-        </div>
-
-        <div class="mt-5 space-y-3">
-          <article v-for="lane in signalLanes" :key="lane.label" class="signal-lane">
-            <div class="flex items-center justify-between gap-3">
-              <div class="flex items-center gap-3">
-                <span class="inline-flex h-2.5 w-2.5 rounded-full" :class="lane.dotClass"></span>
-                <div>
-                  <p class="text-sm font-semibold text-ink">{{ lane.label }}</p>
-                  <p class="text-xs text-slate-500 dark:text-slate-400">{{ lane.detail }}</p>
-                </div>
-              </div>
-              <span class="font-mono text-sm font-semibold text-ink">{{ lane.value }}</span>
-            </div>
-          </article>
-        </div>
-      </article>
+        </article>
+      </div>
     </section>
 
     <section class="cockpit-panel p-5 sm:p-6">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div class="min-w-0">
-          <p class="section-kicker">Ability Radar</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">面试能力趋势</h3>
+          <p class="section-kicker">能力趋势</p>
+          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">最近几周的面试表现变化</h3>
           <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-            先看综合能力线，再按分类过滤。不同分类的变化会叠加到同一张暗色网格里，便于比较哪一段正在掉队。
+            先看整体分数变化，再按分类筛选。哪条线掉得最明显，哪类问题就该优先补。
           </p>
         </div>
       </div>
@@ -123,10 +111,10 @@
       <article class="cockpit-panel p-5 sm:p-6">
         <div class="flex items-center justify-between gap-3">
           <div>
-            <p class="section-kicker">Memory Strength</p>
-            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">EF 记忆强度</h3>
+            <p class="section-kicker">记忆强度</p>
+            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">复习后的稳定程度</h3>
           </div>
-          <span class="detail-pill">2.5 baseline / 1.3 risk</span>
+          <span class="detail-pill">2.5 初始值 / 1.3 风险线</span>
         </div>
         <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
           EF 越高代表题目越稳。2.5 是初始值，低于 1.3 往往意味着你反复忘记或评分过低，需要尽快回到复习链路。
@@ -141,15 +129,15 @@
         <div v-else class="mt-5">
           <div class="grid gap-3 sm:grid-cols-3">
             <article class="data-slab p-4">
-              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Avg EF</p>
+              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">平均 EF</p>
               <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ efficiencyData.avgEaseFactor }}</p>
             </article>
             <article class="data-slab border-l-[var(--bc-cyan)] p-4">
-              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Reviews</p>
+              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">复习次数</p>
               <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ efficiencyData.totalReviews }}</p>
             </article>
             <article class="data-slab border-l-[var(--bc-lime)] p-4">
-              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Streak</p>
+              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">连续天数</p>
               <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ efficiencyData.currentStreak }} 天</p>
             </article>
           </div>
@@ -160,10 +148,10 @@
       <article class="cockpit-panel p-5 sm:p-6">
         <div class="flex items-center justify-between gap-3">
           <div>
-            <p class="section-kicker">Forgetting Wave</p>
-            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">遗忘率波形</h3>
+            <p class="section-kicker">遗忘率</p>
+            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">哪一段最容易忘</h3>
           </div>
-          <span class="detail-pill">Again / Total Ratings</span>
+          <span class="detail-pill">重来次数 / 总评分</span>
         </div>
         <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
           遗忘率越低越好。这里同时展示每周遗忘率和评分分布，帮助判断是整体复习不足，还是只在某个区间持续掉分。
@@ -191,13 +179,13 @@
     <section v-if="!efficiencyLoading && hasMasteryData" class="cockpit-panel p-5 sm:p-6">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p class="section-kicker">Mastery Distribution</p>
+          <p class="section-kicker">掌握分布</p>
           <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">掌握分布</h3>
           <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
             不再用 emoji，而是直接展示每种掌握状态的数量和占比，快速判断错题池当前更接近“待启动”还是“已稳定”。
           </p>
         </div>
-        <span class="detail-pill">{{ totalMasteryCount }} items</span>
+        <span class="detail-pill">{{ totalMasteryCount }} 道题</span>
       </div>
 
       <div class="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
@@ -225,11 +213,11 @@
         </div>
 
         <aside class="cockpit-panel p-5">
-          <p class="section-kicker">Interpretation</p>
+          <p class="section-kicker">阅读建议</p>
           <h4 class="mt-3 text-xl font-semibold text-ink">如何读这张图</h4>
           <div class="mt-4 space-y-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
             <p>“未开始”高：说明错题池堆积，需要先清理入口和安排首轮复习。</p>
-            <p>“复习中”高：当前最需要维持节奏，避免集中回落到 Again。</p>
+            <p>“复习中”高：当前最需要维持节奏，避免集中回落到“重来”。</p>
             <p>“已掌握”高：说明复习体系有效，可以把精力转移到新方向或更高难度面试。</p>
           </div>
         </aside>
@@ -273,7 +261,7 @@ let trendChart: echarts.ECharts | null = null
 let efChart: echarts.ECharts | null = null
 let frChart: echarts.ECharts | null = null
 
-const ratingLabels: Record<number, string> = { 1: 'Again', 2: 'Hard', 3: 'Good', 4: 'Easy' }
+const ratingLabels: Record<number, string> = { 1: '重来', 2: '困难', 3: '良好', 4: '轻松' }
 const chartColors = ['#ffb74d', '#55d6be', '#ff6b6b', '#9fe870', '#76b4ff', '#f59e0b', '#22c55e']
 
 const ratingColor = (key: number) => {
@@ -329,7 +317,7 @@ const headlineInsights = computed(() => [
       : weeklyScoreDelta.value >= 0
         ? '本窗口内综合得分在上升，可以继续沿当前训练方向推进。'
         : '综合得分出现回落，建议先回看近几周掉分最大的分类。',
-    badge: weeklyScoreDelta.value == null ? 'Pending' : weeklyScoreDelta.value >= 0 ? 'Up' : 'Risk',
+    badge: weeklyScoreDelta.value == null ? '待生成' : weeklyScoreDelta.value >= 0 ? '上升' : '风险',
     cta: weeklyScoreDelta.value == null ? '先完成更多面试' : weeklyScoreDelta.value >= 0 ? '继续强化当前方向' : '优先修复掉分分类',
     ctaClass: weeklyScoreDelta.value == null ? 'text-slate-400' : weeklyScoreDelta.value >= 0 ? 'text-[var(--bc-lime)]' : 'text-[var(--bc-coral)]',
     toneClass: weeklyScoreDelta.value != null && weeklyScoreDelta.value < 0 ? 'insight-card-risk' : '',
@@ -341,8 +329,8 @@ const headlineInsights = computed(() => [
       ? '完成复习后，这里会生成最新遗忘率。'
       : latestForgettingRate.value <= 20
         ? '遗忘率处于较稳区间，当前复习节奏可以继续保持。'
-        : 'Again 比例偏高，需要降低新题输入或补齐旧题回顾。',
-    badge: latestForgettingRate.value == null ? 'Pending' : latestForgettingRate.value <= 20 ? 'Stable' : 'Warn',
+        : '“重来”比例偏高，需要降低新题输入或补齐旧题回顾。',
+    badge: latestForgettingRate.value == null ? '待生成' : latestForgettingRate.value <= 20 ? '稳定' : '偏高',
     cta: latestForgettingRate.value == null ? '先完成复习' : latestForgettingRate.value <= 20 ? '维持复习节奏' : '优先安排记忆修复',
     ctaClass: latestForgettingRate.value == null ? 'text-slate-400' : latestForgettingRate.value <= 20 ? 'text-[var(--bc-cyan)]' : 'text-[var(--bc-coral)]',
     toneClass: latestForgettingRate.value != null && latestForgettingRate.value > 20 ? 'insight-card-risk' : 'insight-card-cyan',
@@ -354,7 +342,7 @@ const headlineInsights = computed(() => [
       ? `${weakestMastery.value.label} 当前数量最高，说明错题池的主要压力集中在这一状态。`
       : '完成复习后，这里会显示最需要优先处理的掌握状态。'
     ,
-    badge: weakestMastery.value ? 'Focus' : 'Pending',
+    badge: weakestMastery.value ? '重点' : '待生成',
     cta: weakestMastery.value?.label === '未开始' ? '先清空待启动错题' : weakestMastery.value?.label === '复习中' ? '维持复习节奏' : '转向新方向训练',
     ctaClass: weakestMastery.value?.label === '已掌握' ? 'text-[var(--bc-lime)]' : 'text-[var(--bc-amber)]',
     toneClass: weakestMastery.value?.label === '已掌握' ? 'insight-card-lime' : '',
@@ -363,25 +351,25 @@ const headlineInsights = computed(() => [
 
 const summarySignals = computed(() => [
   {
-    label: 'Trend Weeks',
+    label: '观察周数',
     value: trendData.value.weeks.length,
     detail: '当前趋势图覆盖的周数。',
     toneClass: '',
   },
   {
-    label: 'Avg EF',
+    label: '平均 EF',
     value: efficiencyData.value.avgEaseFactor,
     detail: '当前错题池平均记忆强度。',
     toneClass: 'summary-slab-cyan',
   },
   {
-    label: 'Reviews',
+    label: '总复习次数',
     value: efficiencyData.value.totalReviews,
     detail: '累计完成的复习次数。',
     toneClass: 'summary-slab-lime',
   },
   {
-    label: 'Current Streak',
+    label: '连续复习',
     value: `${efficiencyData.value.currentStreak} 天`,
     detail: '连续复习天数。',
     toneClass: 'summary-slab-amber',
@@ -391,19 +379,19 @@ const summarySignals = computed(() => [
 const signalLanes = computed(() => [
   {
     label: '趋势判断',
-    value: weeklyScoreDelta.value == null ? 'Pending' : weeklyScoreDelta.value >= 0 ? 'Rising' : 'Dropping',
+    value: weeklyScoreDelta.value == null ? '待生成' : weeklyScoreDelta.value >= 0 ? '上升中' : '回落中',
     detail: weeklyScoreDelta.value == null ? '等待更多面试数据。' : '根据窗口首尾分数估算整体走势。',
     dotClass: weeklyScoreDelta.value == null ? 'bg-slate-400' : weeklyScoreDelta.value >= 0 ? 'bg-[var(--bc-lime)]' : 'bg-[var(--bc-coral)]',
   },
   {
     label: '遗忘风险',
-    value: latestForgettingRate.value == null ? 'Pending' : `${latestForgettingRate.value}%`,
+    value: latestForgettingRate.value == null ? '待生成' : `${latestForgettingRate.value}%`,
     detail: '最近一次遗忘率快照。',
     dotClass: latestForgettingRate.value == null ? 'bg-slate-400' : latestForgettingRate.value <= 20 ? 'bg-[var(--bc-cyan)]' : 'bg-[var(--bc-coral)]',
   },
   {
     label: '掌握压力',
-    value: weakestMastery.value?.label || 'Pending',
+    value: weakestMastery.value?.label || '待生成',
     detail: '当前最需要优先处理的掌握状态。',
     dotClass: weakestMastery.value?.label === '已掌握' ? 'bg-[var(--bc-lime)]' : 'bg-[var(--bc-amber)]',
   },
@@ -631,8 +619,8 @@ const renderEFChart = () => {
           symbol: 'none',
           lineStyle: { type: 'dashed', color: 'rgba(255, 183, 77, 0.55)' },
           data: [
-            { yAxis: 2.5, label: { formatter: 'Base 2.5', color: '#ffb74d' } },
-            { yAxis: 1.3, label: { formatter: 'Risk 1.3', color: '#ff6b6b' }, lineStyle: { color: 'rgba(255,107,107,0.55)' } },
+            { yAxis: 2.5, label: { formatter: '初始值 2.5', color: '#ffb74d' } },
+            { yAxis: 1.3, label: { formatter: '风险线 1.3', color: '#ff6b6b' }, lineStyle: { color: 'rgba(255,107,107,0.55)' } },
           ],
         },
       },
@@ -657,7 +645,7 @@ const renderFRChart = () => {
         if (!first) return ''
         const item = getChartPoint(data, first.dataIndex)
         if (!item) return ''
-        return `${item.week}<br/>遗忘率: <strong>${(item.forgettingRate * 100).toFixed(1)}%</strong><br/>Again: ${item.againCount}/${item.totalRatings}`
+        return `${item.week}<br/>遗忘率: <strong>${(item.forgettingRate * 100).toFixed(1)}%</strong><br/>重来: ${item.againCount}/${item.totalRatings}`
       },
     },
     xAxis: {
@@ -688,7 +676,7 @@ const renderFRChart = () => {
         },
       },
       {
-        name: 'Again 次数',
+        name: '重来次数',
         type: 'line',
         yAxisIndex: 0,
         data: data.map((d) => d.againCount),
