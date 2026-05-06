@@ -1,66 +1,157 @@
 <template>
-  <div class="flex min-h-screen items-center justify-center px-4 py-8">
-    <section class="paper-panel w-full max-w-md p-8 md:p-10">
-      <h1 class="text-2xl font-bold tracking-[-0.03em] text-ink text-center">登录 ByteCoach</h1>
-      <p class="mt-2 text-sm text-slate-400 text-center">Java 面试准备，一站搞定</p>
+  <div class="auth-immersive-shell px-4 py-8 md:px-6 md:py-10">
+    <div class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1280px] items-stretch gap-4 xl:grid-cols-[minmax(0,1.08fr)_minmax(360px,0.92fr)]">
+      <section class="cockpit-panel auth-brand-panel p-6 sm:p-8">
+        <div class="flex items-center gap-3">
+          <span class="state-pulse" aria-hidden="true"></span>
+          <p class="section-kicker">ByteCoach Access</p>
+        </div>
 
-      <!-- Feature chips -->
-      <div class="mt-5 flex flex-wrap justify-center gap-2">
-        <span v-for="f in featureLabels" :key="f"
-          class="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-[11px] font-medium text-slate-500 dark:text-slate-400"
-        >{{ f }}</span>
-      </div>
+        <div class="mt-8 max-w-2xl">
+          <h1 class="auth-hero-title">进入 Java 面试训练舱</h1>
+          <p class="mt-5 text-sm leading-8 text-slate-600 dark:text-slate-300 sm:text-base">
+            登录后会直接回到你的训练主航道。问答、模拟面试、错题修复、复习与计划都在同一座 cockpit 里衔接，不再是割裂的功能页跳转。
+          </p>
+        </div>
 
-      <div class="rule-divider mt-6"></div>
+        <div class="auth-orbit-grid mt-8">
+          <article v-for="item in orbitSignals" :key="item.label" class="data-slab p-4" :class="item.toneClass">
+            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ item.label }}</p>
+            <p class="mt-3 text-xl font-semibold text-ink">{{ item.title }}</p>
+            <p class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ item.detail }}</p>
+          </article>
+        </div>
 
-      <el-form ref="formRef" :model="form" :rules="rules" class="mt-6 space-y-1" label-position="top" @submit.prevent>
-        <el-form-item label="用户名" prop="username">
-          <el-input v-model="form.username" placeholder="请输入用户名" size="large" />
-        </el-form-item>
-        <el-form-item label="密码" prop="password">
-          <el-input v-model="form.password" type="password" show-password placeholder="请输入密码" size="large" />
-        </el-form-item>
+        <div class="mission-orbit mt-8">
+          <div class="mission-orbit__track">
+            <div
+              v-for="(step, index) in missionSteps"
+              :key="step.title"
+              class="mission-orbit__node"
+              :style="{ '--mission-delay': `${index * 90}ms` }"
+            >
+              <span class="mission-orbit__index">{{ step.index }}</span>
+              <div>
+                <p class="text-sm font-semibold text-ink">{{ step.title }}</p>
+                <p class="mt-1 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ step.detail }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-        <!-- Captcha: shown after 3 consecutive failures -->
-        <el-form-item v-if="showCaptcha" label="验证码" prop="captchaCode">
-          <div class="flex items-center gap-3 w-full">
+      <section class="cockpit-panel auth-form-panel p-6 sm:p-8 md:p-10">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="section-kicker">Login</p>
+            <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">身份校验</h2>
+            <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+              输入账号后即可返回训练现场。连续失败 3 次后会自动打开验证码校验。
+            </p>
+          </div>
+          <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ showCaptcha ? 'Captcha Armed' : 'Fast Entry' }}</span>
+        </div>
+
+        <div class="mt-6 grid gap-3 sm:grid-cols-2">
+          <article class="auth-stat-card">
+            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Mode</p>
+            <p class="mt-2 text-lg font-semibold text-ink">{{ showCaptcha ? 'Secure' : 'Standard' }}</p>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ showCaptcha ? '验证码已激活' : '常规登录模式' }}</p>
+          </article>
+          <article class="auth-stat-card">
+            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Redirect</p>
+            <p class="mt-2 text-lg font-semibold text-ink">{{ redirectLabel }}</p>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">登录成功后的默认落点。</p>
+          </article>
+        </div>
+
+        <el-form
+          ref="formRef"
+          :model="form"
+          :rules="rules"
+          class="mt-8 space-y-1"
+          label-position="top"
+          @submit.prevent
+        >
+          <el-form-item label="用户名" prop="username">
             <el-input
-              v-model="form.captchaCode"
-              placeholder="请输入验证码"
+              v-model="form.username"
+              placeholder="请输入用户名"
               size="large"
-              class="flex-1"
+              autocomplete="username"
+            />
+          </el-form-item>
+          <el-form-item label="密码" prop="password">
+            <el-input
+              v-model="form.password"
+              type="password"
+              show-password
+              placeholder="请输入密码"
+              size="large"
+              autocomplete="current-password"
               @keyup.enter="handleLogin"
             />
-            <div class="shrink-0 text-center">
-              <div
-                class="cursor-pointer rounded border border-slate-200 dark:border-slate-700 overflow-hidden"
+          </el-form-item>
+
+          <el-form-item v-if="showCaptcha" label="验证码" prop="captchaCode">
+            <div class="captcha-console">
+              <el-input
+                v-model="form.captchaCode"
+                placeholder="请输入验证码"
+                size="large"
+                class="flex-1"
+                @keyup.enter="handleLogin"
+              />
+              <button
+                type="button"
+                class="captcha-panel"
                 @click="refreshCaptcha"
               >
                 <img
                   v-if="captchaImage"
                   :src="captchaImage"
                   alt="验证码"
-                  class="h-12 w-[140px] object-cover"
+                  class="h-14 w-[148px] object-cover"
                 />
-                <div v-else class="flex h-12 w-[140px] items-center justify-center text-xs text-slate-400">
+                <div v-else class="flex h-14 w-[148px] items-center justify-center text-xs text-slate-400">
                   加载中...
                 </div>
-              </div>
-              <p class="mt-1 text-[10px] text-slate-400">点击刷新</p>
+                <span class="captcha-panel__hint">点击刷新</span>
+              </button>
+            </div>
+          </el-form-item>
+
+          <div class="mt-6 grid gap-3">
+            <el-button
+              :loading="loading"
+              type="primary"
+              size="large"
+              class="action-button !min-h-12 w-full transition active:translate-y-px"
+              @click="handleLogin"
+            >
+              {{ loading ? '验证中...' : '进入训练舱' }}
+            </el-button>
+            <div class="auth-links">
+              <span class="text-sm text-slate-500 dark:text-slate-400">
+                还没有账号？
+                <RouterLink class="accent-link font-semibold" to="/register">立即注册</RouterLink>
+              </span>
             </div>
           </div>
-        </el-form-item>
+        </el-form>
 
-        <el-button :loading="loading" type="primary" size="large" class="action-button mt-6 w-full transition active:translate-y-px" @click="handleLogin">
-          登录
-        </el-button>
-      </el-form>
-
-      <div class="mt-6 text-center text-sm text-slate-400">
-        还没有账号？
-        <RouterLink class="font-semibold text-accent hover:underline" to="/register">立即注册</RouterLink>
-      </div>
-    </section>
+        <div class="auth-footnote mt-8">
+          <div class="auth-footnote__item">
+            <span class="inline-flex h-2.5 w-2.5 rounded-full bg-[var(--bc-cyan)]"></span>
+            登录后支持 2FA 复核和设备管理。
+          </div>
+          <div class="auth-footnote__item">
+            <span class="inline-flex h-2.5 w-2.5 rounded-full bg-[var(--bc-amber)]"></span>
+            成功后将恢复你的最后训练上下文。
+          </div>
+        </div>
+      </section>
+    </div>
   </div>
 </template>
 
@@ -69,10 +160,41 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { fetchCaptchaApi } from '@/api/auth'
+import { fetchCaptchaApi, type LoginPayload } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 
-const featureLabels = ['AI 问答', '模拟面试', '错题复习', '学习计划']
+const orbitSignals = [
+  {
+    label: 'Ask',
+    title: '知识潜航',
+    detail: '带引用的问答先帮你定位知识来源，再进入后续训练链路。',
+    toneClass: 'auth-slab-cyan',
+  },
+  {
+    label: 'Simulate',
+    title: '面试舱',
+    detail: '在有倒计时与评分反馈的场景里练习真实回答。',
+    toneClass: 'auth-slab-amber',
+  },
+  {
+    label: 'Repair',
+    title: '错题修复',
+    detail: '把低分回答沉淀为错题与复习资产。',
+    toneClass: 'auth-slab-coral',
+  },
+  {
+    label: 'Retain',
+    title: '记忆回放',
+    detail: '按间隔复习节奏控制复盘，不再盲目重复。',
+    toneClass: 'auth-slab-lime',
+  },
+]
+
+const missionSteps = [
+  { index: '01', title: '进入看板', detail: '先看今天的任务焦点和当前风险。' },
+  { index: '02', title: '切入训练', detail: '在面试或问答场景里完成当前最强动作。' },
+  { index: '03', title: '沉淀修复', detail: '把低分点转入错题和复习轨道。' },
+]
 
 const router = useRouter()
 const route = useRoute()
@@ -84,6 +206,13 @@ const captchaImage = ref('')
 const captchaKey = ref('')
 
 const showCaptcha = computed(() => failCount.value >= 3)
+const redirectTarget = computed(() => (route.query.redirect as string) || '/dashboard')
+const redirectLabel = computed(() => {
+  if (redirectTarget.value.includes('/interview')) return '面试舱'
+  if (redirectTarget.value.includes('/review')) return '记忆回放'
+  if (redirectTarget.value.includes('/chat')) return '知识潜航'
+  return '任务看板'
+})
 
 const form = reactive({
   username: '',
@@ -93,7 +222,7 @@ const form = reactive({
 
 const rules: FormRules<typeof form> = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
 }
 
 const refreshCaptcha = async () => {
@@ -117,13 +246,13 @@ const handleLogin = async () => {
 
   loading.value = true
   try {
-    const payload: Record<string, string> = {
-      username: form.username,
-      password: form.password
+    const payload: LoginPayload = {
+      username: form.username.trim(),
+      password: form.password,
     }
     if (showCaptcha.value && captchaKey.value) {
       payload.captchaKey = captchaKey.value
-      payload.captchaCode = form.captchaCode
+      payload.captchaCode = form.captchaCode.trim()
     }
     const data = await authStore.login(payload)
 
@@ -132,14 +261,14 @@ const handleLogin = async () => {
         path: '/verify-2fa',
         query: {
           tempToken: data.tempToken,
-          redirect: route.query.redirect as string || '/dashboard'
+          redirect: redirectTarget.value,
         }
       })
       return
     }
 
     ElMessage.success('登录成功')
-    await router.push((route.query.redirect as string) || '/dashboard')
+    await router.push(redirectTarget.value)
   } catch {
     failCount.value++
     if (failCount.value >= 3) {
@@ -150,3 +279,167 @@ const handleLogin = async () => {
   }
 }
 </script>
+
+<style scoped>
+.auth-immersive-shell {
+  min-height: 100dvh;
+}
+
+.auth-viewport {
+  align-items: stretch;
+}
+
+.auth-brand-panel,
+.auth-form-panel {
+  min-height: 100%;
+}
+
+.auth-brand-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(var(--bc-accent-rgb), 0.16), transparent 34%),
+    radial-gradient(circle at 82% 16%, rgba(85, 214, 190, 0.14), transparent 30%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.06), transparent 42%),
+    var(--bc-panel);
+}
+
+.auth-hero-title {
+  font-family: theme('fontFamily.display');
+  font-size: clamp(2.6rem, 4vw, 4.8rem);
+  line-height: 0.94;
+  letter-spacing: -0.05em;
+  color: var(--bc-ink);
+}
+
+.auth-orbit-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.auth-slab-cyan {
+  border-left-color: var(--bc-cyan);
+}
+
+.auth-slab-amber {
+  border-left-color: var(--bc-amber);
+}
+
+.auth-slab-coral {
+  border-left-color: var(--bc-coral);
+}
+
+.auth-slab-lime {
+  border-left-color: var(--bc-lime);
+}
+
+.mission-orbit {
+  border-radius: 28px;
+  border: 1px solid var(--bc-line);
+  background: rgba(255, 255, 255, 0.32);
+  padding: 22px;
+}
+
+.dark .mission-orbit {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.mission-orbit__track {
+  display: grid;
+  gap: 14px;
+}
+
+.mission-orbit__node {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.mission-orbit__index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  background: rgba(var(--bc-accent-rgb), 0.14);
+  color: var(--bc-accent);
+  font-family: theme('fontFamily.mono');
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.auth-stat-card,
+.captcha-panel {
+  border-radius: 22px;
+  border: 1px solid var(--bc-line);
+  background: rgba(255, 255, 255, 0.34);
+}
+
+.dark .auth-stat-card,
+.dark .captcha-panel {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.auth-stat-card {
+  padding: 14px;
+}
+
+.captcha-console {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.captcha-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  color: var(--bc-ink-secondary);
+}
+
+.captcha-panel__hint {
+  font-size: 11px;
+}
+
+.auth-links {
+  display: flex;
+  justify-content: center;
+}
+
+.auth-footnote {
+  display: grid;
+  gap: 10px;
+}
+
+.auth-footnote__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--bc-ink-secondary);
+}
+
+@media (max-width: 1024px) {
+  .auth-orbit-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .captcha-console {
+    grid-template-columns: 1fr;
+  }
+
+  .captcha-panel {
+    width: 100%;
+  }
+}
+</style>
