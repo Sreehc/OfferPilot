@@ -135,7 +135,7 @@
               <p class="mt-1 text-sm text-red-500 dark:text-red-400">{{ currentItem.errorReason }}</p>
             </div>
             <div class="mt-4 border-t border-[var(--bc-line)] pt-4 text-xs text-slate-500 dark:text-slate-400">
-              当前 EF：{{ (currentItem.easeFactor ?? 2.5).toFixed(2) }} · 当前间隔：{{ currentItem.intervalDays ?? 1 }} 天
+              当前记忆系数：{{ (currentItem.easeFactor ?? 2.5).toFixed(2) }} · 当前间隔：{{ currentItem.intervalDays ?? 1 }} 天
             </div>
           </div>
         </div>

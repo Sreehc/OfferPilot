@@ -30,7 +30,7 @@
           {{ formatTime(row.createTime) }}
         </template>
       </el-table-column>
-      <el-table-column label="IP" prop="ip" min-width="120" />
+      <el-table-column label="网络地址" prop="ip" min-width="120" />
       <el-table-column label="城市" min-width="100">
         <template #default="{ row }">
           {{ row.city || '-' }}
@@ -38,7 +38,7 @@
       </el-table-column>
       <el-table-column label="设备" min-width="140">
         <template #default="{ row }">
-          {{ row.device || '-' }}
+          {{ formatDeviceName(row.device) }}
         </template>
       </el-table-column>
       <el-table-column label="状态" min-width="80">
@@ -71,6 +71,7 @@
 import { ElMessage } from 'element-plus'
 import { onMounted, ref } from 'vue'
 import { fetchLoginLogsApi } from '@/api/auth'
+import { localizeDeviceName } from '@/utils/device'
 import type { LoginLogItem } from '@/types/api'
 
 const logs = ref<LoginLogItem[]>([])
@@ -113,6 +114,8 @@ const formatTime = (value?: string) => {
     second: '2-digit'
   }).format(new Date(value))
 }
+
+const formatDeviceName = (name?: string) => localizeDeviceName(name)
 
 onMounted(loadLogs)
 </script>

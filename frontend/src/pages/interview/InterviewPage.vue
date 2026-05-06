@@ -154,7 +154,7 @@
               >
                 提交答案并评分
               </el-button>
-              <span class="text-xs text-slate-400 dark:text-slate-500">Ctrl + Enter 快捷提交</span>
+              <span class="text-xs text-slate-400 dark:text-slate-500">可用快捷键快速提交</span>
             </div>
           </template>
 
@@ -206,7 +206,7 @@
           </div>
 
           <div class="score-card p-6" :class="(lastResult?.score ?? 0) >= 60 ? 'score-card-pass' : 'score-card-risk'">
-            <div class="text-xs uppercase tracking-[0.24em] text-white/65">AI 评分</div>
+            <div class="text-xs uppercase tracking-[0.24em] text-white/65">智能评分</div>
             <div class="mt-3 font-mono text-6xl font-semibold tracking-[-0.04em] text-white">{{ animatedScore }}</div>
             <p class="mt-4 text-sm leading-7 text-white/82">{{ lastResult?.comment }}</p>
           </div>

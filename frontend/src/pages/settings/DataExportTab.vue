@@ -3,7 +3,7 @@
     <div>
       <h4 class="text-lg font-semibold text-ink">导出学习数据</h4>
       <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
-        导出面试记录、错题本和复习记录，文件格式为 Excel。
+        导出面试记录、错题本和复习记录，文件格式为表格文件。
       </p>
     </div>
 
@@ -21,7 +21,7 @@
       <ul class="text-xs text-slate-500 dark:text-slate-400 space-y-1">
         <li>• 面试记录：面试方向、时间、总分、得分、回答内容、点评</li>
         <li>• 错题本：题目来源、掌握程度、复习次数、下次复习日期</li>
-        <li>• 复习记录：评分、EF 变化、间隔变化</li>
+        <li>• 复习记录：评分、记忆系数变化、间隔变化</li>
       </ul>
     </div>
   </div>

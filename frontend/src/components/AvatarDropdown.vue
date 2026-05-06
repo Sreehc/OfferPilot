@@ -6,7 +6,7 @@
       class="flex h-10 w-10 items-center justify-center rounded-full bg-accent text-sm font-semibold text-white transition hover:ring-2 hover:ring-accent/30"
       @click="open = !open"
     >
-      <img v-if="avatarUrl" :src="avatarUrl" alt="avatar" class="h-full w-full rounded-full object-cover" />
+      <img v-if="avatarUrl" :src="avatarUrl" alt="用户头像" class="h-full w-full rounded-full object-cover" />
       <span v-else>{{ initials }}</span>
     </button>
 

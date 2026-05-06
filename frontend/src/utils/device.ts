@@ -38,32 +38,49 @@ export function getDeviceName(): string {
   const ua = navigator.userAgent
 
   // Detect browser
-  let browser = 'Unknown'
+  let browser = '未知浏览器'
   if (ua.includes('Firefox/')) {
-    browser = 'Firefox'
+    browser = '火狐浏览器'
   } else if (ua.includes('Edg/')) {
-    browser = 'Edge'
+    browser = '系统浏览器'
   } else if (ua.includes('Chrome/')) {
-    browser = 'Chrome'
+    browser = '谷歌浏览器'
   } else if (ua.includes('Safari/')) {
-    browser = 'Safari'
+    browser = '苹果浏览器'
   }
 
   // Detect OS
-  let os = 'Unknown'
+  let os = '未知系统'
   if (ua.includes('Windows')) {
-    os = 'Windows'
+    os = '视窗系统'
   } else if (ua.includes('Mac OS')) {
-    os = 'macOS'
+    os = '苹果电脑'
   } else if (ua.includes('Linux')) {
-    os = 'Linux'
+    os = 'Linux 系统'
   } else if (ua.includes('Android')) {
-    os = 'Android'
+    os = '安卓设备'
   } else if (ua.includes('iPhone') || ua.includes('iPad')) {
-    os = 'iOS'
+    os = '苹果设备'
   }
 
-  return `${browser} on ${os}`
+  return `${os} · ${browser}`
+}
+
+export function localizeDeviceName(name?: string): string {
+  if (!name) return '未知设备'
+
+  return name
+    .replace(/Firefox/g, '火狐浏览器')
+    .replace(/Edge/g, '系统浏览器')
+    .replace(/Chrome/g, '谷歌浏览器')
+    .replace(/Safari/g, '苹果浏览器')
+    .replace(/Windows/g, '视窗系统')
+    .replace(/macOS/g, '苹果电脑')
+    .replace(/Linux/g, 'Linux 系统')
+    .replace(/Android/g, '安卓设备')
+    .replace(/\biOS\b/g, '苹果设备')
+    .replace(/\bon\b/g, '·')
+    .trim()
 }
 
 const DEVICE_ID_KEY = 'bytecoach_device_id'

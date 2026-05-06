@@ -117,19 +117,19 @@
           <span class="detail-pill">2.5 初始值 / 1.3 风险线</span>
         </div>
         <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-          EF 越高代表题目越稳。2.5 是初始值，低于 1.3 往往意味着你反复忘记或评分过低，需要尽快回到复习链路。
+          记忆系数越高代表题目越稳。2.5 是初始值，低于 1.3 往往意味着你反复忘记或评分过低，需要尽快回到复习链路。
         </p>
 
         <div v-if="efficiencyLoading" class="mt-5 flex h-[300px] items-center justify-center">
           <div class="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
         </div>
         <div v-else-if="!efficiencyData.efTrend?.length" class="mt-5 flex h-[300px] items-center justify-center">
-          <EmptyState icon="review" title="暂无复习数据" description="完成复习后，EF 强度曲线会出现在这里。" compact />
+          <EmptyState icon="review" title="暂无复习数据" description="完成复习后，记忆系数曲线会出现在这里。" compact />
         </div>
         <div v-else class="mt-5">
           <div class="grid gap-3 sm:grid-cols-3">
             <article class="data-slab p-4">
-              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">平均 EF</p>
+              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">平均记忆系数</p>
               <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ efficiencyData.avgEaseFactor }}</p>
             </article>
             <article class="data-slab border-l-[var(--bc-cyan)] p-4">
@@ -357,7 +357,7 @@ const summarySignals = computed(() => [
     toneClass: '',
   },
   {
-    label: '平均 EF',
+    label: '平均记忆系数',
     value: efficiencyData.value.avgEaseFactor,
     detail: '当前错题池平均记忆强度。',
     toneClass: 'summary-slab-cyan',
@@ -584,7 +584,7 @@ const renderEFChart = () => {
         if (!first) return ''
         const item = getChartPoint(data, first.dataIndex)
         if (!item) return ''
-        return `${item.week}<br/>EF: <strong>${item.avgEF}</strong><br/>复习: ${item.reviewCount} 次`
+        return `${item.week}<br/>记忆系数: <strong>${item.avgEF}</strong><br/>复习: ${item.reviewCount} 次`
       },
     },
     xAxis: {

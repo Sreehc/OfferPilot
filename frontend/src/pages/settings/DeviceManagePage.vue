@@ -73,7 +73,7 @@
             </div>
             <div>
               <div class="flex items-center gap-2">
-                <h4 class="font-semibold text-ink text-sm">{{ device.deviceName || '未知设备' }}</h4>
+                <h4 class="font-semibold text-ink text-sm">{{ formatDeviceName(device.deviceName) }}</h4>
                 <span
                   v-if="device.current"
                   class="rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-semibold text-accent"
@@ -114,6 +114,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, ref } from 'vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchDevicesApi, revokeDeviceApi, revokeAllDevicesApi } from '@/api/auth'
+import { localizeDeviceName } from '@/utils/device'
 import type { LoginDeviceItem } from '@/types/api'
 
 const devices = ref<LoginDeviceItem[]>([])
@@ -181,6 +182,8 @@ const formatTime = (value?: string) => {
     minute: '2-digit',
   }).format(new Date(value))
 }
+
+const formatDeviceName = (name?: string) => localizeDeviceName(name)
 
 const deviceIcon = (name?: string): 'phone' | 'tablet' | 'computer' => {
   if (!name) return 'computer'

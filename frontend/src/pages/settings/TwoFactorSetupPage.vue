@@ -4,7 +4,7 @@
       <p class="section-kicker">两步验证</p>
       <h3 class="mt-4 text-xl sm:text-3xl font-semibold tracking-[-0.03em] text-ink">按步骤完成两步验证</h3>
       <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
-        使用身份验证器应用（如 Google Authenticator、Microsoft Authenticator）扫描二维码，输入 6 位验证码完成设置。
+        使用身份验证器应用扫描二维码，输入 6 位验证码完成设置。
       </p>
     </section>
 
@@ -18,7 +18,7 @@
           <img
             v-if="qrCodeUrl"
             :src="qrCodeUrl"
-            alt="TOTP QR Code"
+            alt="两步验证二维码"
             class="h-48 w-48"
           />
           <div v-else class="flex h-48 w-48 items-center justify-center text-slate-400">
@@ -153,12 +153,12 @@ const copyRecoveryCodes = async () => {
 }
 
 const downloadRecoveryCodes = () => {
-  const content = `ByteCoach 两步验证恢复码\n生成时间：${new Date().toLocaleString()}\n\n${recoveryCodes.value.join('\n')}\n\n请妥善保管，每个恢复码只能使用一次。`
+  const content = `两步验证恢复码\n生成时间：${new Date().toLocaleString()}\n\n${recoveryCodes.value.join('\n')}\n\n请妥善保管，每个恢复码只能使用一次。`
   const blob = new Blob([content], { type: 'text/plain' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = 'bytecoach-recovery-codes.txt'
+  a.download = '两步验证恢复码.txt'
   a.click()
   URL.revokeObjectURL(url)
 }

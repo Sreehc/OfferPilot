@@ -4,7 +4,7 @@
       <div>
         <div class="flex items-center gap-3">
           <span class="state-pulse" aria-hidden="true"></span>
-          <div class="section-kicker">ByteCoach</div>
+          <div class="section-kicker">学习训练</div>
         </div>
         <h1 class="mt-4 font-display text-4xl font-semibold leading-[0.9] tracking-[-0.03em] text-ink">Java 面试训练</h1>
         <p class="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">

@@ -137,7 +137,7 @@
           <el-button :loading="sending" :disabled="streaming" type="primary" size="large" class="action-button !min-h-12 transition active:translate-y-px" @click="submitChat">
             {{ streaming ? '回答中...' : '发送问题' }}
           </el-button>
-          <span class="text-center text-xs text-slate-400 dark:text-slate-500">Enter 发送 · Shift 换行</span>
+          <span class="text-center text-xs text-slate-400 dark:text-slate-500">回车发送 · 可继续换行输入</span>
         </div>
       </div>
 
@@ -151,7 +151,7 @@
           >
             <div class="flex items-center justify-between gap-3">
               <div class="text-xs font-semibold uppercase tracking-[0.24em]" :class="message.role === 'assistant' ? 'text-[var(--bc-cyan)]' : 'text-slate-400 dark:text-slate-500'">
-                {{ message.role === 'assistant' ? 'ByteCoach' : '我' }}
+                {{ message.role === 'assistant' ? '学习助手' : '我' }}
               </div>
               <span class="text-[11px] text-slate-400 dark:text-slate-500">{{ formatSessionTime(message.createTime) }}</span>
             </div>
@@ -182,7 +182,7 @@
           <article v-if="streaming" class="message-card message-card-assistant p-4 sm:p-5">
             <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-[var(--bc-cyan)]">
               <span class="state-pulse" aria-hidden="true"></span>
-              ByteCoach · {{ mode === 'rag' ? '检索并生成中' : '生成中' }}
+              学习助手 · {{ mode === 'rag' ? '检索并生成中' : '生成中' }}
             </div>
             <div class="bc-markdown mt-3 text-sm leading-7">
               <span v-html="renderMarkdown(streamingContent)"></span>

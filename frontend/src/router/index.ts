@@ -9,47 +9,47 @@ const pageMeta = {
   },
   chat: {
     kicker: '智能问答',
-    title: 'Ask with context, not just chat',
+    title: '带着资料上下文来提问',
     subtitle: '普通问答和知识问答放在同一入口，方便后续把问题直接带回复习链路。'
   },
   knowledge: {
     kicker: '知识库',
-    title: 'A built-in library for interview recall',
+    title: '集中管理你的学习资料',
     subtitle: '内置资料库支持检索和引用，也可以上传自己的学习材料统一管理。'
   },
   interview: {
     kicker: '模拟面试',
-    title: 'Simulate the pressure before the real round',
+    title: '先把真实面试前的压力练熟',
     subtitle: '每场控制在 3-5 题，通过评分、点评和追问把问题沉淀到后续复习。'
   },
   wrong: {
     kicker: '错题本',
-    title: 'Turn weak answers into review assets',
+    title: '把薄弱回答变成后续复习重点',
     subtitle: '错题不只是归档，而是驱动下一步复习与计划生成的基础资产。'
   },
   review: {
     kicker: '间隔复习',
-    title: 'Review on the right day, not every day',
+    title: '在合适的时间复习，而不是天天重复',
     subtitle: '基于遗忘曲线自动调度复习时机，让每一次复习都恰好在快要忘记的时候。'
   },
   community: {
     kicker: '学习社区',
-    title: 'Learn together, grow together',
+    title: '在交流中补齐盲点',
     subtitle: '提问、讨论、互助，通过社区贡献积累积分和等级。'
   },
   plan: {
     kicker: '学习计划',
-    title: 'Convert weak points into daily execution',
+    title: '把薄弱点拆成每天能完成的任务',
     subtitle: '计划模块把薄弱点和错题拆成可完成的节奏，而不是停留在泛泛建议。'
   },
   analytics: {
     kicker: '数据分析',
-    title: 'Discover patterns in your learning',
+    title: '看清你的学习节奏和问题分布',
     subtitle: '从趋势、效率、时段等维度深入分析你的学习模式。'
   },
   admin: {
     kicker: '管理后台',
-    title: 'Operate content without splitting the product',
+    title: '直接在站内处理内容与数据',
     subtitle: '后台仍然嵌在同一个应用里，先服务题库、知识库和分类管理。'
   }
 } as const

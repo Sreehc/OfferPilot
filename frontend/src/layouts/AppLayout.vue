@@ -79,7 +79,7 @@
       <template #footer>
         <div class="flex items-center justify-between px-1 text-xs text-slate-400 dark:text-slate-500">
           <span><kbd class="rounded border border-slate-300 px-1 py-0.5 text-[10px] dark:border-slate-600">/</kbd> 或 <kbd class="rounded border border-slate-300 px-1 py-0.5 text-[10px] dark:border-slate-600">⌘K</kbd> 搜索</span>
-          <span><kbd class="rounded border border-slate-300 px-1 py-0.5 text-[10px] dark:border-slate-600">Esc</kbd> 关闭 · <kbd class="rounded border border-slate-300 px-1 py-0.5 text-[10px] dark:border-slate-600">Enter</kbd> 跳转</span>
+          <span><kbd class="rounded border border-slate-300 px-1 py-0.5 text-[10px] dark:border-slate-600">Esc</kbd> 关闭 · <kbd class="rounded border border-slate-300 px-1 py-0.5 text-[10px] dark:border-slate-600">回车</kbd> 跳转</span>
         </div>
       </template>
     </el-dialog>
@@ -186,12 +186,12 @@ onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
 })
 
-const displayName = computed(() => authStore.user?.nickname || 'Visitor')
+const displayName = computed(() => authStore.user?.nickname || '访客')
 const initials = computed(() => displayName.value.slice(0, 1).toUpperCase())
 const headerMeta = computed(() => {
   const meta = route.meta as { kicker?: string; title?: string; subtitle?: string }
   return {
-    kicker: meta.kicker ?? 'ByteCoach',
+    kicker: meta.kicker ?? '学习训练',
     title: meta.title ?? '学习页面',
     subtitle: meta.subtitle ?? '围绕任务、进度和下一步动作安排你的训练。'
   }
