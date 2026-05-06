@@ -1,21 +1,21 @@
 <template>
   <div class="auth-immersive-shell px-4 py-8 md:px-6 md:py-10">
-    <div class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1280px] items-stretch gap-4 xl:grid-cols-[minmax(0,1.08fr)_minmax(360px,0.92fr)]">
+    <div class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1180px] items-stretch gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(380px,1.05fr)]">
       <section class="cockpit-panel auth-brand-panel p-6 sm:p-8">
         <div class="flex items-center gap-3">
           <span class="state-pulse" aria-hidden="true"></span>
-          <p class="section-kicker">ByteCoach Access</p>
+          <p class="section-kicker">账号登录</p>
         </div>
 
         <div class="mt-8 max-w-2xl">
-          <h1 class="auth-hero-title">进入 Java 面试训练舱</h1>
+          <h1 class="auth-hero-title">快速进入今天的学习</h1>
           <p class="mt-5 text-sm leading-8 text-slate-600 dark:text-slate-300 sm:text-base">
-            登录后会直接回到你的训练主航道。问答、模拟面试、错题修复、复习与计划都在同一座 cockpit 里衔接，不再是割裂的功能页跳转。
+            登录后会回到你刚才要去的页面，继续问答、面试、复习或查看计划。这里只保留必要说明，不打断你开始训练。
           </p>
         </div>
 
         <div class="auth-orbit-grid mt-8">
-          <article v-for="item in orbitSignals" :key="item.label" class="data-slab p-4" :class="item.toneClass">
+          <article v-for="item in accessHighlights" :key="item.label" class="data-slab p-4" :class="item.toneClass">
             <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ item.label }}</p>
             <p class="mt-3 text-xl font-semibold text-ink">{{ item.title }}</p>
             <p class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ item.detail }}</p>
@@ -23,9 +23,10 @@
         </div>
 
         <div class="mission-orbit mt-8">
+          <p class="text-sm font-semibold text-ink">登录后可以直接做什么</p>
           <div class="mission-orbit__track">
             <div
-              v-for="(step, index) in missionSteps"
+              v-for="(step, index) in nextSteps"
               :key="step.title"
               class="mission-orbit__node"
               :style="{ '--mission-delay': `${index * 90}ms` }"
@@ -43,25 +44,25 @@
       <section class="cockpit-panel auth-form-panel p-6 sm:p-8 md:p-10">
         <div class="flex items-start justify-between gap-4">
           <div>
-            <p class="section-kicker">Login</p>
-            <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">身份校验</h2>
+            <p class="section-kicker">登录</p>
+            <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">输入账号继续</h2>
             <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-              输入账号后即可返回训练现场。连续失败 3 次后会自动打开验证码校验。
+              输入用户名和密码即可继续。连续失败 3 次后才需要验证码。
             </p>
           </div>
-          <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ showCaptcha ? 'Captcha Armed' : 'Fast Entry' }}</span>
+          <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ showCaptcha ? '需要验证码' : '快速进入' }}</span>
         </div>
 
         <div class="mt-6 grid gap-3 sm:grid-cols-2">
           <article class="auth-stat-card">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Mode</p>
-            <p class="mt-2 text-lg font-semibold text-ink">{{ showCaptcha ? 'Secure' : 'Standard' }}</p>
-            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ showCaptcha ? '验证码已激活' : '常规登录模式' }}</p>
+            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">登录状态</p>
+            <p class="mt-2 text-lg font-semibold text-ink">{{ showCaptcha ? '加强校验中' : '常规登录' }}</p>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ showCaptcha ? '请输入验证码后再继续。' : '当前无需额外验证。' }}</p>
           </article>
           <article class="auth-stat-card">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Redirect</p>
+            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">登录后去向</p>
             <p class="mt-2 text-lg font-semibold text-ink">{{ redirectLabel }}</p>
-            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">登录成功后的默认落点。</p>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">成功后会回到这个页面继续操作。</p>
           </article>
         </div>
 
@@ -129,7 +130,7 @@
               class="action-button !min-h-12 w-full transition active:translate-y-px"
               @click="handleLogin"
             >
-              {{ loading ? '验证中...' : '进入训练舱' }}
+              {{ loading ? '登录中...' : '登录并继续' }}
             </el-button>
             <div class="auth-links">
               <span class="text-sm text-slate-500 dark:text-slate-400">
@@ -143,11 +144,11 @@
         <div class="auth-footnote mt-8">
           <div class="auth-footnote__item">
             <span class="inline-flex h-2.5 w-2.5 rounded-full bg-[var(--bc-cyan)]"></span>
-            登录后支持 2FA 复核和设备管理。
+            登录后可在设置里开启两步验证和设备管理。
           </div>
           <div class="auth-footnote__item">
             <span class="inline-flex h-2.5 w-2.5 rounded-full bg-[var(--bc-amber)]"></span>
-            成功后将恢复你的最后训练上下文。
+            如果你是从其他页面跳转过来，成功后会自动返回。
           </div>
         </div>
       </section>
@@ -163,37 +164,31 @@ import { useRoute, useRouter } from 'vue-router'
 import { fetchCaptchaApi, type LoginPayload } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 
-const orbitSignals = [
+const accessHighlights = [
   {
-    label: 'Ask',
-    title: '知识潜航',
-    detail: '带引用的问答先帮你定位知识来源，再进入后续训练链路。',
+    label: '继续学习',
+    title: '不中断当前任务',
+    detail: '登录成功后会回到你原本想访问的页面，不需要重新找入口。',
     toneClass: 'auth-slab-cyan',
   },
   {
-    label: 'Simulate',
-    title: '面试舱',
-    detail: '在有倒计时与评分反馈的场景里练习真实回答。',
+    label: '统一记录',
+    title: '所有训练放在同一账号下',
+    detail: '问答、面试、错题、复习和计划都会累计到同一个学习记录里。',
     toneClass: 'auth-slab-amber',
   },
   {
-    label: 'Repair',
-    title: '错题修复',
-    detail: '把低分回答沉淀为错题与复习资产。',
-    toneClass: 'auth-slab-coral',
-  },
-  {
-    label: 'Retain',
-    title: '记忆回放',
-    detail: '按间隔复习节奏控制复盘，不再盲目重复。',
+    label: '账号安全',
+    title: '必要时再增加验证',
+    detail: '只有连续失败后才触发验证码，平时不会额外增加登录负担。',
     toneClass: 'auth-slab-lime',
   },
 ]
 
-const missionSteps = [
-  { index: '01', title: '进入看板', detail: '先看今天的任务焦点和当前风险。' },
-  { index: '02', title: '切入训练', detail: '在面试或问答场景里完成当前最强动作。' },
-  { index: '03', title: '沉淀修复', detail: '把低分点转入错题和复习轨道。' },
+const nextSteps = [
+  { index: '01', title: '查看今天要做什么', detail: '先看首页中的主任务和待处理项。' },
+  { index: '02', title: '继续刚才的训练', detail: '如果你是从问答、面试或复习跳转过来，会直接回到原页面。' },
+  { index: '03', title: '把结果沉淀下来', detail: '继续训练后，系统会自动更新错题、复习和计划。' },
 ]
 
 const router = useRouter()
@@ -208,10 +203,10 @@ const captchaKey = ref('')
 const showCaptcha = computed(() => failCount.value >= 3)
 const redirectTarget = computed(() => (route.query.redirect as string) || '/dashboard')
 const redirectLabel = computed(() => {
-  if (redirectTarget.value.includes('/interview')) return '面试舱'
-  if (redirectTarget.value.includes('/review')) return '记忆回放'
-  if (redirectTarget.value.includes('/chat')) return '知识潜航'
-  return '任务看板'
+  if (redirectTarget.value.includes('/interview')) return '模拟面试'
+  if (redirectTarget.value.includes('/review')) return '今日复习'
+  if (redirectTarget.value.includes('/chat')) return '智能问答'
+  return '首页概览'
 })
 
 const form = reactive({
@@ -269,11 +264,12 @@ const handleLogin = async () => {
 
     ElMessage.success('登录成功')
     await router.push(redirectTarget.value)
-  } catch {
+  } catch (error: any) {
     failCount.value++
     if (failCount.value >= 3) {
       await refreshCaptcha()
     }
+    ElMessage.error(error?.message || '登录失败，请稍后重试')
   } finally {
     loading.value = false
   }
