@@ -7,100 +7,27 @@
       <span>&larr;</span> 返回社区
     </button>
 
-    <section class="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(300px,0.9fr)]">
-      <article class="cockpit-panel p-5 sm:p-6">
-        <div class="flex items-center gap-3">
-          <span class="state-pulse" aria-hidden="true"></span>
-          <p class="section-kicker">Question Workshop</p>
-        </div>
-        <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">把问题写成可回答的训练任务</h2>
-        <p class="mt-4 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-          社区更偏向可执行的面试讨论，而不是一句“为什么报错”。先讲清背景、现象和已尝试方案，回答者才能更快进入有效推演。
-        </p>
-
-        <div class="mt-6 grid gap-3 md:grid-cols-3">
-          <article v-for="tip in writingSignals" :key="tip.label" class="data-slab p-4" :class="tip.toneClass">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ tip.label }}</p>
-            <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ tip.value }}</p>
-            <p class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ tip.detail }}</p>
-          </article>
-        </div>
-
-        <div class="mt-6 rounded-[24px] border border-[var(--bc-line)] bg-white/40 p-5 dark:bg-white/5">
-          <p class="text-sm font-semibold text-ink">推荐结构</p>
-          <div class="mt-4 space-y-3">
-            <article v-for="section in promptSections" :key="section.title" class="prompt-lane">
-              <div class="flex items-start justify-between gap-3">
-                <div>
-                  <p class="text-sm font-semibold text-ink">{{ section.title }}</p>
-                  <p class="mt-1 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ section.description }}</p>
-                </div>
-                <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ section.tag }}</span>
-              </div>
-            </article>
-          </div>
-        </div>
-      </article>
-
-      <aside class="cockpit-panel p-5 sm:p-6">
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <p class="section-kicker">Quality Gate</p>
-            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">提问质量闸门</h3>
-          </div>
-          <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ qualityBadge }}</span>
-        </div>
-
-        <div class="mt-5 rounded-[24px] border border-[var(--bc-line)] bg-white/38 p-5 dark:bg-white/5">
-          <div class="flex items-start justify-between gap-4">
-            <div class="min-w-0">
-              <p class="text-sm font-semibold text-ink">当前完整度</p>
-              <p class="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                标题清晰度、问题上下文和已尝试方案会直接影响回答效率。
-              </p>
-            </div>
-            <div class="quality-gauge">
-              <span class="quality-gauge__value">{{ qualityScore }}</span>
-            </div>
-          </div>
-
-          <div class="mt-5 space-y-3">
-            <article v-for="check in qualityChecklist" :key="check.label" class="quality-check">
-              <div class="flex items-center justify-between gap-3">
-                <div class="flex items-center gap-3">
-                  <span class="inline-flex h-2.5 w-2.5 rounded-full" :class="check.ok ? 'bg-[var(--bc-lime)]' : 'bg-[var(--bc-coral)]'"></span>
-                  <span class="text-sm text-ink">{{ check.label }}</span>
-                </div>
-                <span class="text-xs font-semibold" :class="check.ok ? 'text-[var(--bc-lime)]' : 'text-[var(--bc-coral)]'">
-                  {{ check.ok ? '已满足' : '待补充' }}
-                </span>
-              </div>
-              <p class="mt-1 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ check.detail }}</p>
-            </article>
-          </div>
-        </div>
-
-        <div class="mt-5 rounded-[24px] border border-[var(--bc-line)] bg-white/38 p-5 dark:bg-white/5">
-          <p class="text-sm font-semibold text-ink">示例开场</p>
-          <div class="mt-3 rounded-[18px] bg-slate-100/80 p-4 text-sm leading-7 text-slate-600 dark:bg-slate-900/50 dark:text-slate-300">
-            <p>背景：我在准备 Spring Boot 面试，自己实现一个简化版 IOC 容器。</p>
-            <p>现象：循环依赖场景下，二级缓存和三级缓存的职责总是解释不清。</p>
-            <p>已尝试：看过源码和几篇文章，但仍无法把创建流程串成完整叙事。</p>
-          </div>
-        </div>
-      </aside>
-    </section>
-
     <section class="cockpit-panel p-5 sm:p-6">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p class="section-kicker">Compose</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">发起提问</h3>
+          <div class="flex items-center gap-3">
+            <span class="state-pulse" aria-hidden="true"></span>
+            <p class="section-kicker">发起提问</p>
+          </div>
+          <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">把问题写清楚，更容易得到有效回答</h2>
+          <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+            优先说清背景、现象和你已经尝试过什么。问题越具体，社区越容易直接给出可执行答案。
+          </p>
         </div>
-        <div class="flex flex-wrap gap-2">
-          <span class="question-chip">背景 / 现象 / 已尝试方案</span>
-          <span class="question-chip">避免只贴错误截图</span>
-        </div>
+        <span class="quality-badge" :class="qualityBadgeClass">{{ qualityBadge }}</span>
+      </div>
+
+      <div class="mt-6 grid gap-3 md:grid-cols-3">
+        <article v-for="tip in writingSignals" :key="tip.label" class="data-slab p-4" :class="tip.toneClass">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ tip.label }}</p>
+          <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ tip.value }}</p>
+          <p class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ tip.detail }}</p>
+        </article>
       </div>
 
       <el-form
@@ -148,6 +75,38 @@
 
           <aside class="compose-side space-y-4">
             <article class="compose-note">
+              <p class="text-sm font-semibold text-ink">提问前先检查</p>
+              <div class="mt-4 space-y-3">
+                <article v-for="check in qualityChecklist" :key="check.label" class="quality-check">
+                  <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                      <span class="inline-flex h-2.5 w-2.5 rounded-full" :class="check.ok ? 'bg-[var(--bc-lime)]' : 'bg-[var(--bc-coral)]'"></span>
+                      <span class="text-sm text-ink">{{ check.label }}</span>
+                    </div>
+                    <span class="text-xs font-semibold" :class="check.ok ? 'text-[var(--bc-lime)]' : 'text-[var(--bc-coral)]'">
+                      {{ check.ok ? '已满足' : '待补充' }}
+                    </span>
+                  </div>
+                  <p class="mt-1 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ check.detail }}</p>
+                </article>
+              </div>
+            </article>
+
+            <article class="compose-note">
+              <p class="text-sm font-semibold text-ink">推荐结构</p>
+              <div class="mt-4 space-y-3">
+                <article v-for="section in promptSections" :key="section.title" class="prompt-lane">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <p class="text-sm font-semibold text-ink">{{ section.title }}</p>
+                      <p class="mt-1 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ section.description }}</p>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            </article>
+
+            <article class="compose-note">
               <p class="text-sm font-semibold text-ink">写作提醒</p>
               <ul class="mt-3 space-y-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 <li>说明你在哪个知识点、项目或面试情境里遇到这个问题。</li>
@@ -157,7 +116,16 @@
             </article>
 
             <article class="compose-note">
-              <p class="text-sm font-semibold text-ink">发布后会发生什么</p>
+              <p class="text-sm font-semibold text-ink">示例开场</p>
+              <div class="mt-3 rounded-[18px] bg-slate-100/80 p-4 text-sm leading-7 text-slate-600 dark:bg-slate-900/50 dark:text-slate-300">
+                <p>背景：我在准备 Spring Boot 面试，自己实现一个简化版 IOC 容器。</p>
+                <p>现象：循环依赖场景下，二级缓存和三级缓存的职责总是解释不清。</p>
+                <p>已尝试：看过源码和几篇文章，但仍无法把创建流程串成完整叙事。</p>
+              </div>
+            </article>
+
+            <article class="compose-note">
+              <p class="text-sm font-semibold text-ink">发布后会怎样</p>
               <div class="mt-3 space-y-3">
                 <div v-for="step in publishSteps" :key="step.title" class="publish-step">
                   <span class="publish-step__index">{{ step.index }}</span>
@@ -244,9 +212,15 @@ const qualityScore = computed(() => {
 })
 
 const qualityBadge = computed(() => {
-  if (qualityScore.value >= 80) return 'Ready'
-  if (qualityScore.value >= 55) return 'Improving'
-  return 'Draft'
+  if (qualityScore.value >= 80) return '可发布'
+  if (qualityScore.value >= 55) return '待补充'
+  return '草稿中'
+})
+
+const qualityBadgeClass = computed(() => {
+  if (qualityScore.value >= 80) return 'quality-badge-ready'
+  if (qualityScore.value >= 55) return 'quality-badge-improving'
+  return 'quality-badge-draft'
 })
 
 const canSubmit = computed(() => form.title.trim().length > 0 && form.content.trim().length > 0)
@@ -271,21 +245,21 @@ const qualityChecklist = computed(() => [
 
 const writingSignals = computed(() => [
   {
-    label: 'Title Depth',
+    label: '标题字数',
     value: form.title.trim().length || 0,
-    detail: '标题越具体，越容易吸引真正理解该知识点的人回答。',
+    detail: '越具体，越容易吸引真正理解该问题的人回答。',
     toneClass: '',
   },
   {
-    label: 'Context Lines',
+    label: '内容段落',
     value: form.content.trim().split('\n').filter(Boolean).length,
-    detail: '至少给出一个背景段和一个问题段。',
+    detail: '建议至少写出背景、现象两个段落。',
     toneClass: 'submit-slab-cyan',
   },
   {
-    label: 'Quality Score',
+    label: '完整度',
     value: qualityScore.value,
-    detail: '达到 80 分以上时，通常已经具备高质量讨论基础。',
+    detail: '80 分以上通常已经具备可讨论的基础。',
     toneClass: 'submit-slab-lime',
   },
 ])
@@ -294,17 +268,14 @@ const promptSections = [
   {
     title: '背景',
     description: '你在准备哪一类面试、看哪段源码、或在什么项目场景里遇到了这个问题。',
-    tag: 'Context',
   },
   {
     title: '现象',
     description: '你具体卡在哪一步，是无法解释原理、还是逻辑链条断了，或者结果和预期不一致。',
-    tag: 'Signal',
   },
   {
     title: '已尝试方案',
     description: '列出你已经查过、试过或仍然不能说服自己的部分，帮助回答者直接进入关键分歧点。',
-    tag: 'Attempt',
   },
 ]
 
@@ -371,6 +342,31 @@ async function handleSubmit() {
   font-size: 26px;
   font-weight: 700;
   color: var(--bc-ink);
+}
+
+.quality-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.quality-badge-ready {
+  background: rgba(159, 232, 112, 0.14);
+  color: var(--bc-lime);
+}
+
+.quality-badge-improving {
+  background: rgba(255, 183, 77, 0.14);
+  color: var(--bc-amber);
+}
+
+.quality-badge-draft {
+  background: rgba(140, 166, 191, 0.14);
+  color: var(--bc-ink-secondary);
 }
 
 .submit-slab-cyan {
