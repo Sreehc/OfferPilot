@@ -1,6 +1,5 @@
 package com.bytecoach.dashboard.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.bytecoach.adaptive.service.AdaptiveService;
 import com.bytecoach.adaptive.vo.AbilityProfileVO;
 import com.bytecoach.analytics.service.AnalyticsService;
@@ -13,9 +12,6 @@ import com.bytecoach.dashboard.dto.RecentInterviewVO;
 import com.bytecoach.dashboard.dto.WeakPointVO;
 import com.bytecoach.dashboard.mapper.DashboardMetricsMapper;
 import com.bytecoach.dashboard.service.DashboardService;
-import com.bytecoach.plan.entity.StudyPlan;
-import com.bytecoach.plan.mapper.StudyPlanMapper;
-import com.bytecoach.plan.service.PlanAdjustService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.List;
@@ -36,8 +32,6 @@ public class DashboardServiceImpl implements DashboardService {
     private final DashboardMetricsMapper dashboardMetricsMapper;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
-    private final PlanAdjustService planAdjustService;
-    private final StudyPlanMapper planMapper;
     private final AdaptiveService adaptiveService;
     private final AnalyticsService analyticsService;
     private final ByteCoachProperties props;
@@ -65,26 +59,13 @@ public class DashboardServiceImpl implements DashboardService {
         int learningCount = (int) (chatCount + interviewCount);
         BigDecimal averageScore = defaultDecimal(dashboardMetricsMapper.averageInterviewScore(userId));
         int wrongCount = (int) defaultLong(dashboardMetricsMapper.countWrongQuestions(userId));
-        int planCompletionRate = defaultInt(dashboardMetricsMapper.planCompletionRate(userId));
         List<RecentInterviewVO> recentInterviews = defaultList(dashboardMetricsMapper.selectRecentInterviews(userId));
         List<WeakPointVO> weakPoints = defaultList(dashboardMetricsMapper.selectWeakPoints(userId));
-
-        // Calculate plan health score from active plan
-        int planHealthScore = 100;
-        StudyPlan activePlan = planMapper.selectOne(new LambdaQueryWrapper<StudyPlan>()
-                .eq(StudyPlan::getUserId, userId)
-                .eq(StudyPlan::getStatus, "active")
-                .last("LIMIT 1"));
-        if (activePlan != null) {
-            planHealthScore = planAdjustService.calculateHealthScore(activePlan.getId());
-        }
 
         DashboardOverviewVO result = DashboardOverviewVO.builder()
                 .learningCount(learningCount)
                 .averageScore(averageScore)
                 .wrongCount(wrongCount)
-                .planCompletionRate(planCompletionRate)
-                .planHealthScore(planHealthScore)
                 .recentInterviews(recentInterviews)
                 .weakPoints(weakPoints)
                 .firstVisit(learningCount == 0 && wrongCount == 0)
@@ -127,7 +108,7 @@ public class DashboardServiceImpl implements DashboardService {
 
     /**
      * Clear the dashboard cache for a user. Call this after interview completion,
-     * wrong book updates, or plan changes.
+     * wrong book updates, or other dashboard-affecting changes.
      */
     public void evictCache(Long userId) {
         try {
@@ -139,10 +120,6 @@ public class DashboardServiceImpl implements DashboardService {
 
     private long defaultLong(Long value) {
         return value == null ? 0L : value;
-    }
-
-    private int defaultInt(Integer value) {
-        return value == null ? 0 : value;
     }
 
     private BigDecimal defaultDecimal(BigDecimal value) {

@@ -1,17 +1,79 @@
 <template>
   <div class="space-y-4 interview-cockpit">
-    <section class="grid gap-4" :class="phase === 'idle' ? 'lg:grid-cols-[0.92fr_1.08fr]' : 'lg:grid-cols-[360px_minmax(0,1fr)]'">
-      <aside class="cockpit-panel p-4 sm:p-6">
-        <div class="flex items-center gap-3">
+    <section class="cockpit-panel p-4 sm:p-5">
+      <div class="module-topbar">
+        <div class="module-topbar__title">
           <span class="state-pulse" aria-hidden="true"></span>
-          <p class="section-kicker">模拟面试</p>
+          <div class="module-topbar__title-row">
+            <h2 class="module-topbar__heading">模拟面试</h2>
+            <div v-if="phase === 'idle'" class="interview-status">
+              <span class="detail-pill">{{ direction }}</span>
+              <span class="detail-pill">{{ questionCount }} 题</span>
+            </div>
+            <p v-else class="module-topbar__summary">
+              {{
+                phase === 'answering'
+                  ? `第 ${currentQuestion?.currentIndex ?? '?'} 题 / 共 ${currentQuestion?.questionCount ?? '?'} 题`
+                  : phase === 'result'
+                    ? '本题结果'
+                    : phase === 'finished'
+                      ? '面试结果'
+                      : '正在评分'
+              }}
+            </p>
+          </div>
         </div>
-        <h3 class="mt-5 font-display text-4xl font-semibold leading-[0.9] tracking-[-0.04em] text-ink">
-          {{ phase === 'idle' ? '开始一场模拟面试' : `第 ${currentQuestion?.currentIndex ?? '?'} 题 / 共 ${currentQuestion?.questionCount ?? '?'} 题` }}
-        </h3>
-        <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
-          {{ phase === 'idle' ? '选择方向、题量和作答方式后即可开始。' : '建议按结论、原理、场景和权衡来组织答案。' }}
-        </p>
+
+        <div class="module-topbar__center">
+          <div v-if="phase !== 'idle'" class="interview-status">
+            <span class="detail-pill">{{ direction }}</span>
+            <span class="detail-pill">
+              {{ interviewMode === 'voice' && voiceAvailable ? '语音作答' : '文字作答' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="module-topbar__action">
+          <el-button
+            v-if="phase === 'finished'"
+            size="large"
+            class="hard-button-secondary !min-h-11 !px-5"
+            @click="handleViewDetail"
+          >
+            查看详情
+          </el-button>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="grid gap-4"
+      :class="phase === 'idle' ? 'lg:grid-cols-[0.92fr_1.08fr]' : 'lg:grid-cols-[360px_minmax(0,1fr)]'"
+    >
+      <aside class="cockpit-panel p-4 sm:p-6">
+        <div class="panel-heading">
+          <p class="section-kicker">{{ phase === 'idle' ? '面试设置' : '当前状态' }}</p>
+          <h3 class="panel-heading__title">
+            {{
+              phase === 'idle'
+                ? '开始前设置'
+                : phase === 'finished'
+                  ? '面试已完成'
+                  : phase === 'result'
+                    ? '本题已评分'
+                    : '继续当前流程'
+            }}
+          </h3>
+          <p class="panel-heading__meta">
+            {{
+              phase === 'idle'
+                ? '选择方向、题量和作答方式后即可开始。'
+                : phase === 'finished'
+                  ? '查看本场面试结果，或直接开始下一场。'
+                  : '按结论、原理、场景和权衡来组织答案。'
+            }}
+          </p>
+        </div>
 
         <div v-if="phase === 'idle'" class="mt-6 space-y-4">
           <div class="data-slab p-4">
@@ -30,7 +92,11 @@
               <button
                 type="button"
                 class="min-h-11 rounded-2xl border px-3 py-2 text-sm font-semibold transition-all"
-                :class="interviewMode === 'text' ? 'border-[var(--bc-line-hot)] bg-accent/10 text-ink' : 'border-[var(--bc-line)] text-slate-600 hover:bg-white/40 dark:text-slate-300 dark:hover:bg-white/5'"
+                :class="
+                  interviewMode === 'text'
+                    ? 'border-[var(--bc-line-hot)] bg-accent/10 text-ink'
+                    : 'border-[var(--bc-line)] text-slate-600 hover:bg-white/40 dark:text-slate-300 dark:hover:bg-white/5'
+                "
                 @click="interviewMode = 'text'"
               >
                 打字作答
@@ -38,7 +104,11 @@
               <button
                 type="button"
                 class="min-h-11 rounded-2xl border px-3 py-2 text-sm font-semibold transition-all"
-                :class="interviewMode === 'voice' ? 'border-[var(--bc-line-hot)] bg-accent/10 text-ink' : 'border-[var(--bc-line)] text-slate-600 hover:bg-white/40 dark:text-slate-300 dark:hover:bg-white/5'"
+                :class="
+                  interviewMode === 'voice'
+                    ? 'border-[var(--bc-line-hot)] bg-accent/10 text-ink'
+                    : 'border-[var(--bc-line)] text-slate-600 hover:bg-white/40 dark:text-slate-300 dark:hover:bg-white/5'
+                "
                 @click="interviewMode = 'voice'"
               >
                 语音作答
@@ -58,7 +128,9 @@
 
         <div v-else class="mt-6 space-y-4">
           <div class="data-slab p-4">
-            <div class="flex items-center justify-between text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+            <div
+              class="flex items-center justify-between text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400"
+            >
               <span>进度</span>
               <span>{{ currentQuestion?.currentIndex ?? 0 }} / {{ currentQuestion?.questionCount ?? 0 }}</span>
             </div>
@@ -70,13 +142,6 @@
             </div>
           </div>
 
-          <div class="data-slab p-4">
-            <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">当前题目</div>
-            <div class="mt-3 text-lg font-semibold leading-relaxed text-ink">
-              {{ currentQuestion?.questionTitle ?? '加载中...' }}
-            </div>
-          </div>
-
           <div class="grid grid-cols-2 gap-3">
             <div class="data-slab p-4">
               <div class="text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">方向</div>
@@ -84,18 +149,12 @@
             </div>
             <div class="data-slab p-4">
               <div class="text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">模式</div>
-              <div class="mt-2 font-semibold text-ink">{{ interviewMode === 'voice' && voiceAvailable ? '语音' : '文字' }}</div>
+              <div class="mt-2 font-semibold text-ink">
+                {{ interviewMode === 'voice' && voiceAvailable ? '语音' : '文字' }}
+              </div>
             </div>
           </div>
 
-          <el-button
-            v-if="phase === 'finished'"
-            size="large"
-            class="hard-button-secondary w-full"
-            @click="handleViewDetail"
-          >
-            查看面试详情
-          </el-button>
         </div>
       </aside>
 
@@ -114,32 +173,55 @@
         </div>
 
         <div v-else-if="phase === 'answering'" class="flex flex-1 flex-col">
-          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p class="section-kicker">{{ interviewMode === 'voice' && voiceAvailable ? '语音作答' : '当前作答' }}</p>
-              <h4 class="mt-2 text-xl font-semibold text-ink">在倒计时内给出结构化回答</h4>
-            </div>
-            <div class="rounded-2xl border px-4 py-3" :class="countdownUrgent ? 'border-coral/40 bg-coral/10' : 'border-[var(--bc-line)] bg-white/35 dark:bg-white/5'">
-              <div class="flex items-center gap-3">
-                <span class="text-xs text-slate-500 dark:text-slate-400">倒计时</span>
-                <span class="font-mono text-2xl font-semibold" :class="countdownUrgent ? 'text-coral' : 'text-accent'">{{ formatCountdown(countdown) }}</span>
+          <div class="question-stage question-stage-answering">
+            <article class="question-spotlight question-spotlight-compact">
+              <div class="question-spotlight__topline">
+                <div class="question-spotlight__main">
+                  <div class="question-spotlight__meta">
+                    <span class="hard-chip">当前问题</span>
+                    <span class="question-spotlight__index">
+                      Q{{ currentQuestion?.currentIndex ?? 0 }} / {{ currentQuestion?.questionCount ?? 0 }}
+                    </span>
+                  </div>
+                  <h4 class="question-spotlight__title">
+                    {{ currentQuestion?.questionTitle ?? '加载中...' }}
+                  </h4>
+                  <p class="question-spotlight__hint">先给结论，再说明核心机制、适用场景和关键权衡。</p>
+                </div>
+
+                <div class="question-spotlight__timer">
+                  <span class="question-spotlight__timer-label">
+                    {{ interviewMode === 'voice' && voiceAvailable ? '语音作答' : '当前作答' }}
+                  </span>
+                  <span
+                    class="question-spotlight__timer-value"
+                    :class="countdownUrgent ? 'text-coral' : 'text-accent'"
+                  >
+                    {{ formatCountdown(countdown) }}
+                  </span>
+                </div>
               </div>
-              <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200/70 dark:bg-white/10">
+
+              <div class="question-spotlight__progress">
                 <div
-                  class="h-full rounded-full transition-all duration-500"
+                  class="question-spotlight__progress-bar"
                   :class="countdownUrgent ? 'bg-coral' : 'bg-accent'"
                   :style="{ width: `${countdownPercent}%` }"
                 ></div>
               </div>
-            </div>
+            </article>
           </div>
 
           <template v-if="interviewMode !== 'voice' || !voiceAvailable">
+            <div class="mt-5 flex items-center justify-between gap-3">
+              <p class="section-kicker">回答区</p>
+              <span class="text-xs text-slate-400 dark:text-slate-500">`Ctrl + Enter` 快速提交</span>
+            </div>
             <el-input
               v-model="answerText"
               type="textarea"
               :rows="12"
-              placeholder="建议按：结论 → 核心机制 → 场景权衡 → 风险补充 组织答案。"
+              placeholder="按：结论 → 核心机制 → 场景权衡 → 风险补充 组织答案"
               class="interview-answer-input mt-5 flex-1"
               size="large"
               @keydown.ctrl.enter.prevent="handleSubmitAnswer"
@@ -154,7 +236,7 @@
               >
                 提交答案并评分
               </el-button>
-              <span class="text-xs text-slate-400 dark:text-slate-500">可用快捷键快速提交</span>
+              <span class="text-xs text-slate-400 dark:text-slate-500">提交后会立即生成评分、点评和追问</span>
             </div>
           </template>
 
@@ -188,7 +270,9 @@
             </div>
             <p class="section-kicker mt-8">正在评分</p>
             <h4 class="mt-3 font-display text-4xl font-semibold leading-none text-ink">系统正在分析你的回答</h4>
-            <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">准确性、完整性、结构化和深度会被纳入本题评分。</p>
+            <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">
+              准确性、完整性、结构化和深度会被纳入本题评分。
+            </p>
           </div>
         </div>
 
@@ -224,7 +308,9 @@
                   朗读
                 </button>
               </div>
-              <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ lastResult?.standardAnswer || '暂无' }}</p>
+              <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                {{ lastResult?.standardAnswer || '暂无' }}
+              </p>
             </div>
             <div class="data-slab p-4">
               <div class="flex items-center justify-between">
@@ -238,11 +324,16 @@
                   朗读
                 </button>
               </div>
-              <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ lastResult?.followUp || '无' }}</p>
+              <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                {{ lastResult?.followUp || '无' }}
+              </p>
             </div>
           </div>
 
-          <div v-if="lastResult?.addedToWrongBook" class="rounded-2xl border border-coral/30 bg-coral/10 p-4 text-sm text-slate-600 dark:text-slate-300">
+          <div
+            v-if="lastResult?.addedToWrongBook"
+            class="rounded-2xl border border-coral/30 bg-coral/10 p-4 text-sm text-slate-600 dark:text-slate-300"
+          >
             <span class="font-semibold text-ink">已加入错题本</span>：该题得分低于 60 分，后续会进入间隔复习。
           </div>
 
@@ -256,13 +347,7 @@
             >
               下一题
             </el-button>
-            <el-button
-              v-else
-              type="primary"
-              size="large"
-              class="action-button flex-1"
-              @click="handleFinish"
-            >
+            <el-button v-else type="primary" size="large" class="action-button flex-1" @click="handleFinish">
               查看面试结果
             </el-button>
           </div>
@@ -273,10 +358,16 @@
 
           <div class="score-card score-card-pass p-6">
             <div class="text-xs uppercase tracking-[0.24em] text-white/65">总分</div>
-            <div class="mt-3 font-mono text-7xl font-semibold tracking-[-0.05em] text-white">{{ detail?.totalScore ?? '-' }}</div>
+            <div class="mt-3 font-mono text-7xl font-semibold tracking-[-0.05em] text-white">
+              {{ detail?.totalScore ?? '-' }}
+            </div>
             <p class="mt-4 text-sm text-white/82">
               共 {{ detail?.questionCount ?? 0 }} 题，方向：{{ detail?.direction }}
-              <span v-if="detail?.mode === 'voice'" class="ml-2 inline-flex items-center rounded-full bg-white/20 px-2 py-0.5 text-xs">语音面试</span>
+              <span
+                v-if="detail?.mode === 'voice'"
+                class="ml-2 inline-flex items-center rounded-full bg-white/20 px-2 py-0.5 text-xs"
+                >语音面试</span
+              >
             </p>
           </div>
 
@@ -289,9 +380,13 @@
             >
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0 flex-1">
-                  <div class="text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Q{{ index + 1 }}</div>
+                  <div class="text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                    Q{{ index + 1 }}
+                  </div>
                   <div class="mt-1 font-semibold text-ink">{{ record.questionTitle }}</div>
-                  <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300 line-clamp-2">{{ record.comment || '暂无点评' }}</p>
+                  <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300 line-clamp-2">
+                    {{ record.comment || '暂无点评' }}
+                  </p>
                 </div>
                 <div class="flex shrink-0 items-center gap-2">
                   <div
@@ -303,24 +398,40 @@
                   <svg
                     class="h-4 w-4 text-slate-400 transition-transform"
                     :class="expandedQuestions.has(record.questionId) ? 'rotate-180' : ''"
-                    fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
                   >
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                   </svg>
                 </div>
               </div>
 
-              <div v-if="expandedQuestions.has(record.questionId)" class="mt-4 space-y-3 border-t border-[var(--bc-line)] pt-4">
+              <div
+                v-if="expandedQuestions.has(record.questionId)"
+                class="mt-4 space-y-3 border-t border-[var(--bc-line)] pt-4"
+              >
                 <div v-if="record.userAnswer">
-                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">我的回答</div>
-                  <p class="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">{{ record.userAnswer }}</p>
+                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                    我的回答
+                  </div>
+                  <p class="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">
+                    {{ record.userAnswer }}
+                  </p>
                 </div>
                 <div v-if="record.standardAnswer">
-                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">标准答案</div>
-                  <p class="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">{{ record.standardAnswer }}</p>
+                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                    标准答案
+                  </div>
+                  <p class="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">
+                    {{ record.standardAnswer }}
+                  </p>
                 </div>
                 <div v-if="record.followUp">
-                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">追问</div>
+                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                    追问
+                  </div>
                   <p class="mt-1 text-sm leading-6 text-slate-700 dark:text-slate-200">{{ record.followUp }}</p>
                 </div>
               </div>
@@ -328,9 +439,7 @@
           </div>
 
           <div class="flex gap-3">
-            <RouterLink to="/wrong" class="hard-button-secondary flex-1 text-center">
-              查看错题本
-            </RouterLink>
+            <RouterLink to="/wrong" class="hard-button-secondary flex-1 text-center"> 查看错题本 </RouterLink>
             <el-button type="primary" size="large" class="action-button flex-1" @click="handleNewInterview">
               再来一场
             </el-button>
@@ -380,9 +489,9 @@ const currentQuestion = ref<InterviewCurrentQuestion | null>(null)
 const lastResult = ref<InterviewAnswerResult | null>(null)
 const lastVoiceResult = ref<VoiceSubmitResult | null>(null)
 const detail = ref<InterviewDetail | null>(null)
-const expandedQuestions = ref<Set<number>>(new Set())
+const expandedQuestions = ref<Set<string>>(new Set())
 
-const toggleQuestion = (questionId: number) => {
+const toggleQuestion = (questionId: string) => {
   if (expandedQuestions.value.has(questionId)) {
     expandedQuestions.value.delete(questionId)
   } else {
@@ -443,13 +552,16 @@ const animateScore = (target: number) => {
   scoreAnimFrame = requestAnimationFrame(tick)
 }
 
-watch(() => lastResult.value?.score, (score) => {
-  if (score != null) {
-    animateScore(Number(score))
-  } else {
-    animatedScore.value = '-'
+watch(
+  () => lastResult.value?.score,
+  (score) => {
+    if (score != null) {
+      animateScore(Number(score))
+    } else {
+      animatedScore.value = '-'
+    }
   }
-})
+)
 
 const progressPercent = computed(() => {
   if (!currentQuestion.value) return 0
@@ -470,9 +582,7 @@ const handleStart = async (reanswerQuestionId?: number) => {
       ...(reanswerQuestionId ? { reanswerQuestionId } : {})
     }
 
-    const response = isVoice
-      ? await startVoiceInterviewApi(payload)
-      : await startInterviewApi(payload)
+    const response = isVoice ? await startVoiceInterviewApi(payload) : await startInterviewApi(payload)
 
     currentQuestion.value = response.data
     answerText.value = ''
@@ -509,8 +619,8 @@ const handleSubmitAnswer = async () => {
     })
     lastResult.value = response.data
     phase.value = 'result'
-  } catch {
-    ElMessage.error('提交答案失败，请重试')
+  } catch (error: any) {
+    ElMessage.error(error?.message || '提交答案失败，请重试')
     phase.value = 'answering'
   } finally {
     submitting.value = false
@@ -618,24 +728,28 @@ const handleNewInterview = () => {
 
 onMounted(() => {
   // Check voice availability
-  void fetchVoiceStatusApi().then(res => {
-    voiceAvailable.value = res.data.available
-  }).catch(() => {
-    voiceAvailable.value = false
-  })
+  void fetchVoiceStatusApi()
+    .then((res) => {
+      voiceAvailable.value = res.data.available
+    })
+    .catch(() => {
+      voiceAvailable.value = false
+    })
 
   // Load recommended interview direction
-  void fetchRecommendInterviewApi().then(res => {
-    const rec = res.data
-    if (rec && rec.direction && directions.includes(rec.direction)) {
-      direction.value = rec.direction
-    }
-    if (rec && rec.questionCount) {
-      questionCount.value = rec.questionCount
-    }
-  }).catch(() => {
-    // Silently fail — use defaults
-  })
+  void fetchRecommendInterviewApi()
+    .then((res) => {
+      const rec = res.data
+      if (rec && rec.direction && directions.includes(rec.direction)) {
+        direction.value = rec.direction
+      }
+      if (rec && rec.questionCount) {
+        questionCount.value = rec.questionCount
+      }
+    })
+    .catch(() => {
+      // Silently fail — use defaults
+    })
 
   // Auto-start if reanswer query param is present (from wrong book)
   const reanswerId = route.query.reanswer
@@ -651,6 +765,216 @@ onMounted(() => {
   min-height: 320px !important;
   font-size: 15px;
   line-height: 1.75;
+}
+
+.module-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.module-topbar__title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.module-topbar__title-group {
+  min-width: 0;
+}
+
+.module-topbar__title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.module-topbar__heading {
+  color: var(--bc-ink);
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.module-topbar__summary {
+  margin-top: 0.25rem;
+  color: var(--bc-ink-secondary);
+  font-size: 12px;
+}
+
+.module-topbar__center {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  flex: 1;
+}
+
+.module-topbar__action {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.interview-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.panel-heading__title {
+  margin-top: 12px;
+  color: var(--bc-ink);
+  font-size: 1.55rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+.panel-heading__meta {
+  margin-top: 12px;
+  color: var(--bc-ink-secondary);
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.question-stage {
+  display: grid;
+  gap: 16px;
+}
+
+.question-stage-answering {
+  gap: 0;
+}
+
+.question-spotlight {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(var(--bc-accent-rgb), 0.2);
+  border-radius: 28px;
+  padding: 24px 24px 22px;
+  background:
+    radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.18), transparent 34%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.62));
+  box-shadow:
+    0 24px 50px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.dark .question-spotlight {
+  background:
+    radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.22), transparent 34%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+  box-shadow:
+    0 24px 50px rgba(0, 0, 0, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.question-spotlight::after {
+  content: '';
+  position: absolute;
+  right: -42px;
+  top: -42px;
+  width: 148px;
+  height: 148px;
+  border-radius: 999px;
+  border: 1px dashed rgba(var(--bc-accent-rgb), 0.26);
+  opacity: 0.8;
+}
+
+.question-spotlight__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.question-spotlight__index {
+  font-family: theme('fontFamily.mono');
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--bc-ink-secondary);
+}
+
+.question-spotlight__title {
+  margin-top: 18px;
+  max-width: 820px;
+  font-family: theme('fontFamily.display');
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.05em;
+  color: var(--bc-ink);
+  text-wrap: balance;
+}
+
+.question-spotlight__hint {
+  margin-top: 18px;
+  max-width: 760px;
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--bc-ink-secondary);
+}
+
+.question-spotlight-compact {
+  padding: 22px 24px 18px;
+}
+
+.question-spotlight__topline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.question-spotlight__main {
+  min-width: 0;
+  flex: 1;
+}
+
+.question-spotlight__timer {
+  display: flex;
+  min-width: 120px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  text-align: right;
+}
+
+.question-spotlight__timer-label {
+  color: var(--bc-ink-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.question-spotlight__timer-value {
+  font-family: theme('fontFamily.mono');
+  font-size: clamp(2rem, 3vw, 3rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.question-spotlight__progress {
+  overflow: hidden;
+  margin-top: 18px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(226, 232, 240, 0.78);
+}
+
+.question-spotlight__progress-bar {
+  height: 100%;
+  border-radius: inherit;
+  transition: width 500ms ease;
 }
 
 .interview-orbit,
@@ -715,6 +1039,42 @@ onMounted(() => {
   .interview-orbit::after,
   .scoring-scan::after {
     animation: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .module-topbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .module-topbar__title-row {
+    align-items: flex-start;
+  }
+
+  .module-topbar__center,
+  .module-topbar__action {
+    justify-content: flex-start;
+  }
+
+  .question-spotlight {
+    padding: 20px 18px 18px;
+    border-radius: 24px;
+  }
+
+  .question-spotlight__topline {
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .question-spotlight__timer {
+    min-width: 0;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .question-spotlight__title {
+    font-size: 1.9rem;
   }
 }
 </style>

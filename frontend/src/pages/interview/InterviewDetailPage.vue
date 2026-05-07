@@ -175,7 +175,7 @@ const formatTime = (time: string): string => {
 }
 
 const loadData = async () => {
-  const sessionId = Number(route.params.id)
+  const sessionId = String(route.params.id || '')
   if (!sessionId) {
     loading.value = false
     return

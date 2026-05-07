@@ -1,12 +1,5 @@
 <template>
   <div class="space-y-6">
-    <div>
-      <h4 class="text-lg font-semibold text-ink">核心指标</h4>
-      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-        先看用户、活跃和学习量，再结合趋势图判断整体状态。
-      </p>
-    </div>
-
     <div v-loading="loading" class="grid grid-cols-2 gap-4 md:grid-cols-5">
       <article class="metric-card text-center">
         <p class="metric-label">总用户数</p>
@@ -31,10 +24,6 @@
     </div>
 
     <section class="paper-panel p-6">
-      <h4 class="text-lg font-semibold text-ink mb-4">近 30 天趋势</h4>
-      <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">
-        用新增用户和活跃用户两条线判断增长和留存是否同步变化。
-      </p>
       <div ref="chartRef" class="h-72 w-full"></div>
     </section>
   </div>

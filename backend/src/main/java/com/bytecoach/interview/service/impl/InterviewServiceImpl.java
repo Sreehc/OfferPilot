@@ -30,9 +30,11 @@ import com.bytecoach.wrong.entity.WrongQuestion;
 import com.bytecoach.wrong.mapper.WrongQuestionMapper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -48,6 +50,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class InterviewServiceImpl implements InterviewService {
+
+    private static final BigDecimal DEFAULT_EASE_FACTOR = new BigDecimal("2.50");
 
     private final InterviewSessionMapper sessionMapper;
     private final InterviewRecordMapper recordMapper;
@@ -356,7 +360,28 @@ public class InterviewServiceImpl implements InterviewService {
         }
 
         Collections.shuffle(pool);
-        return pool.stream().limit(count).toList();
+        List<Question> selected = new ArrayList<>(pool.stream().limit(count).toList());
+        if (selected.size() >= count) {
+            return selected;
+        }
+
+        // If the direction-specific pool is insufficient, backfill from the broader question set.
+        List<Question> fallbackPool = questionMapper.selectList(new LambdaQueryWrapper<Question>()
+                .last("LIMIT 100"));
+        Collections.shuffle(fallbackPool);
+
+        Map<Long, Question> deduped = new LinkedHashMap<>();
+        for (Question question : selected) {
+            deduped.put(question.getId(), question);
+        }
+        for (Question question : fallbackPool) {
+            deduped.putIfAbsent(question.getId(), question);
+            if (deduped.size() >= count) {
+                break;
+            }
+        }
+
+        return new ArrayList<>(deduped.values()).stream().limit(count).toList();
     }
 
     private InterviewSession getOwnedSession(Long userId, Long sessionId) {
@@ -397,6 +422,10 @@ public class InterviewServiceImpl implements InterviewService {
         wrong.setErrorReason(aiResult.getComment());
         wrong.setMasteryLevel("not_started");
         wrong.setReviewCount(0);
+        wrong.setEaseFactor(DEFAULT_EASE_FACTOR);
+        wrong.setIntervalDays(1);
+        wrong.setNextReviewDate(LocalDate.now());
+        wrong.setStreak(0);
         wrongQuestionMapper.insert(wrong);
     }
 

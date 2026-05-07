@@ -3,44 +3,7 @@
     <p class="section-kicker">薄弱点</p>
     <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">优先补强的知识点</h3>
 
-    <div class="surface-muted mt-6 p-5">
-      <div class="flex items-center justify-between">
-        <div>
-          <div class="text-sm font-semibold text-ink">计划完成率</div>
-          <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">当前激活计划的任务推进情况</div>
-        </div>
-        <div class="text-4xl font-semibold tracking-[-0.03em] text-ink">{{ planCompletionRate }}%</div>
-      </div>
-      <div class="mt-4 h-3 rounded-full bg-slate-200/80 dark:bg-slate-700/80">
-        <div class="h-3 rounded-full bg-accent transition-all duration-300" :style="{ width: `${planCompletionRate}%` }"></div>
-      </div>
-    </div>
-
-    <div class="surface-muted mt-3 p-5">
-      <div class="flex items-center justify-between">
-        <div>
-          <div class="text-sm font-semibold text-ink">计划健康分</div>
-          <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">基于近 7 天完成率的综合评估</div>
-        </div>
-        <div class="flex items-center gap-2">
-          <span
-            class="inline-flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white"
-            :class="healthBadgeColor"
-          >
-            {{ planHealthScore }}
-          </span>
-        </div>
-      </div>
-      <div class="mt-4 h-3 rounded-full bg-slate-200/80 dark:bg-slate-700/80">
-        <div
-          class="h-3 rounded-full transition-all duration-300"
-          :class="healthBarColor"
-          :style="{ width: `${planHealthScore}%` }"
-        ></div>
-      </div>
-    </div>
-
-    <div v-if="weakPoints.length" class="mt-5">
+    <div v-if="weakPoints.length" class="mt-6">
       <div ref="radarChartRef" class="mx-auto" style="width: 100%; height: 280px;"></div>
       <div class="surface-muted mt-3 divide-y divide-slate-200/70 dark:divide-slate-700/70 overflow-hidden">
         <div v-for="point in weakPoints" :key="point.categoryName" class="px-4 py-4">
@@ -75,29 +38,15 @@
 <script setup lang="ts">
 import * as echarts from 'echarts'
 import EmptyState from '@/components/EmptyState.vue'
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import type { WeakPointItem } from '@/types/api'
 
 const props = defineProps<{
   weakPoints: WeakPointItem[]
-  planCompletionRate: number
-  planHealthScore: number
 }>()
 
 const radarChartRef = ref<HTMLElement | null>(null)
 let radarChart: echarts.ECharts | null = null
-
-const healthBadgeColor = computed(() => {
-  if (props.planHealthScore >= 70) return 'bg-green-500'
-  if (props.planHealthScore >= 40) return 'bg-amber-500'
-  return 'bg-red-500'
-})
-
-const healthBarColor = computed(() => {
-  if (props.planHealthScore >= 70) return 'bg-green-500'
-  if (props.planHealthScore >= 40) return 'bg-amber-500'
-  return 'bg-red-500'
-})
 
 const formatScore = (score: number): string => {
   return Number.isInteger(score) ? String(score) : score.toFixed(2)

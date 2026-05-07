@@ -43,7 +43,7 @@ export interface TwoFactorEnable {
 }
 
 export interface RecentInterviewItem {
-  sessionId: number
+  sessionId: string
   direction: string
   totalScore: number
   status: string
@@ -60,8 +60,6 @@ export interface DashboardOverview {
   learningCount: number
   averageScore: number
   wrongCount: number
-  planCompletionRate: number
-  planHealthScore: number
   recentInterviews: RecentInterviewItem[]
   weakPoints: WeakPointItem[]
   firstVisit: boolean
@@ -154,10 +152,10 @@ export interface ChatSendResult {
 }
 
 export interface InterviewCurrentQuestion {
-  sessionId: number
+  sessionId: string
   currentIndex: number
   questionCount: number
-  questionId: number
+  questionId: string
   questionTitle: string
 }
 
@@ -171,7 +169,7 @@ export interface InterviewAnswerResult {
 }
 
 export interface InterviewRecordItem {
-  questionId: number
+  questionId: string
   questionTitle: string
   userAnswer: string
   score: number
@@ -183,7 +181,7 @@ export interface InterviewRecordItem {
 }
 
 export interface InterviewDetail {
-  sessionId: number
+  sessionId: string
   direction: string
   status: string
   mode?: string
@@ -207,7 +205,7 @@ export interface VoiceSubmitResult {
 }
 
 export interface InterviewHistoryItem {
-  sessionId: number
+  sessionId: string
   direction: string
   status: string
   mode?: string
@@ -251,29 +249,6 @@ export interface ReviewStats {
   todayPending: number
   todayCompleted?: number
   heatmap?: Record<string, number>
-}
-
-export interface StudyPlanItem {
-  id: number
-  title: string
-  goal: string
-  status: string
-  version?: number
-  parentPlanId?: number
-  startDate?: string
-  endDate?: string
-  totalTasks?: number
-  completedTasks?: number
-  healthScore?: number
-  tasks: StudyPlanTaskItem[]
-}
-
-export interface StudyPlanTaskItem {
-  id: number
-  taskDate: string
-  taskType: string
-  content: string
-  status: 'todo' | 'done'
 }
 
 export interface CommunityQuestion {

@@ -1,43 +1,56 @@
 <template>
   <div class="space-y-6">
     <section class="cockpit-panel p-5 sm:p-6">
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div class="max-w-3xl">
-          <div class="flex items-center gap-3">
-            <span class="state-pulse" aria-hidden="true"></span>
-            <p class="section-kicker">管理后台</p>
-          </div>
-          <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">统一管理站内内容与数据</h2>
-          <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-            查看系统概览，并管理用户、内容、题库、文档和登录日志。
-          </p>
+      <div class="module-topbar">
+        <div class="module-topbar__title">
+          <span class="state-pulse" aria-hidden="true"></span>
+          <h2 class="module-topbar__heading">管理后台</h2>
         </div>
-        <div class="flex flex-wrap gap-2">
-          <el-button :loading="exportingQuestions" size="large" class="hard-button-secondary" @click="handleExportQuestions">导出题库</el-button>
-          <el-button :loading="exportingUsers" size="large" class="hard-button-primary" @click="handleExportUsers">导出用户</el-button>
-        </div>
-      </div>
 
-      <div class="mt-6 grid gap-3 md:grid-cols-3">
-        <article v-for="signal in adminSignals" :key="signal.label" class="data-slab p-4" :class="signal.toneClass">
-          <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ signal.label }}</p>
-          <p class="mt-3 text-xl font-semibold text-ink">{{ signal.title }}</p>
-          <p class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ signal.detail }}</p>
-        </article>
+        <div class="module-topbar__center">
+          <div class="admin-tab-pills" role="tablist" aria-label="管理模块">
+            <button
+              v-for="tab in tabOptions"
+              :key="tab.name"
+              type="button"
+              class="admin-tab-pill"
+              :class="{ 'admin-tab-pill-active': activeTab === tab.name }"
+              @click="activeTab = tab.name"
+            >
+              {{ tab.label }}
+            </button>
+          </div>
+        </div>
+
+        <div class="module-topbar__action">
+          <el-button
+            :loading="exportingQuestions"
+            size="large"
+            class="hard-button-secondary !min-h-11 !px-5"
+            @click="handleExportQuestions"
+          >
+            导出题库
+          </el-button>
+          <el-button
+            :loading="exportingUsers"
+            size="large"
+            class="hard-button-primary !min-h-11 !px-5"
+            @click="handleExportUsers"
+          >
+            导出用户
+          </el-button>
+        </div>
       </div>
     </section>
 
     <section class="cockpit-panel p-5 sm:p-6">
-      <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+      <div class="admin-panel-heading">
         <div>
-          <p class="section-kicker">管理模块</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">{{ currentTabMeta.title }}</h3>
-          <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{ currentTabMeta.description }}</p>
+          <h3 class="admin-panel-heading__title">{{ currentTabMeta.title }}</h3>
         </div>
       </div>
 
-      <section class="admin-tab-shell mt-6">
-      <el-tabs v-model="activeTab" class="admin-tabs">
+      <el-tabs v-model="activeTab" class="admin-tabs mt-6">
         <el-tab-pane label="系统概览" name="overview">
           <AdminOverviewTab />
         </el-tab-pane>
@@ -111,7 +124,6 @@
           <AdminLoginLogTab />
         </el-tab-pane>
       </el-tabs>
-      </section>
     </section>
   </div>
 </template>
@@ -171,27 +183,6 @@ const builtInSeeds = [
   { seedKey: 'mysql-high-frequency', title: 'MySQL 高频题', summary: '索引、事务、锁与执行计划。' }
 ]
 
-const adminSignals = [
-  {
-    label: '用户',
-    title: '用户与权限',
-    detail: '查找用户、调整角色、处理封禁与详情查看。',
-    toneClass: '',
-  },
-  {
-    label: '内容',
-    title: '审核与题库',
-    detail: '快速处理待审核内容，并维护分类、题目和知识文档。',
-    toneClass: 'admin-slab-cyan',
-  },
-  {
-    label: '导出',
-    title: '数据可留档',
-    detail: '题库和用户数据都可以直接导出，用于留档或排查。',
-    toneClass: 'admin-slab-lime',
-  },
-]
-
 const tabMeta = {
   overview: { title: '系统概览', description: '查看核心指标和近 30 天趋势。' },
   users: { title: '用户管理', description: '搜索用户并处理角色、状态和详情。' },
@@ -201,6 +192,16 @@ const tabMeta = {
   knowledge: { title: '文档管理', description: '筛选文档并执行导入、重切分和重建索引。' },
   loginLogs: { title: '登录日志', description: '按用户名、时间和状态排查后台登录情况。' },
 } as const
+
+const tabOptions = [
+  { name: 'overview', label: '概览' },
+  { name: 'users', label: '用户' },
+  { name: 'contentReview', label: '审核' },
+  { name: 'category', label: '分类' },
+  { name: 'question', label: '题库' },
+  { name: 'knowledge', label: '文档' },
+  { name: 'loginLogs', label: '日志' },
+] as const
 
 const currentTabMeta = computed(() => tabMeta[activeTab.value as keyof typeof tabMeta] ?? tabMeta.overview)
 
@@ -265,28 +266,78 @@ onMounted(async () => { await loadCategories(); await Promise.all([loadQuestions
 </script>
 
 <style scoped>
-.admin-slab-cyan {
-  border-left-color: var(--bc-cyan);
+.module-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
-.admin-slab-lime {
-  border-left-color: var(--bc-lime);
+.module-topbar__title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
 }
 
-.admin-tab-shell {
-  border-radius: 28px;
-  border: 1px solid var(--bc-line);
-  background: rgba(255, 255, 255, 0.26);
-  padding: 12px;
+.module-topbar__heading {
+  color: var(--bc-ink);
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
-.dark .admin-tab-shell {
-  background: rgba(255, 255, 255, 0.04);
+.module-topbar__center {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  flex: 1;
+}
+
+.module-topbar__action {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.admin-tab-pills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  background: rgba(241, 245, 249, 0.88);
+  padding: 0.25rem;
+}
+
+.admin-tab-pill {
+  border-radius: 999px;
+  padding: 0.68rem 0.95rem;
+  color: rgb(71 85 105);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  transition: all 160ms var(--ease-hard);
+}
+
+.admin-tab-pill-active {
+  background: #fff;
+  color: var(--bc-ink);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.admin-panel-heading__title {
+  color: var(--bc-ink);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
 }
 
 :deep(.admin-tabs > .el-tabs__header) {
-  margin-bottom: 0;
-  padding: 0 8px;
+  display: none;
 }
 
 :deep(.admin-tabs .el-tabs__nav-wrap::after) {
@@ -305,5 +356,21 @@ onMounted(async () => { await loadCategories(); await Promise.all([loadQuestions
 
 :deep(.admin-tabs .el-tabs__active-bar) {
   background: var(--bc-accent);
+}
+
+@media (max-width: 1023px) {
+  .module-topbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .module-topbar__center,
+  .module-topbar__action {
+    justify-content: flex-start;
+  }
+
+  .admin-tab-pills {
+    justify-content: flex-start;
+  }
 }
 </style>

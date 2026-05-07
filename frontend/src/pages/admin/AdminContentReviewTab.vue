@@ -1,12 +1,6 @@
 <template>
   <div class="space-y-4">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h4 class="text-lg font-semibold text-ink">待审核内容</h4>
-        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          先看类型、标题和提交时间，再快速决定通过或拒绝。
-        </p>
-      </div>
+    <div class="flex items-center justify-between gap-3">
       <div class="text-sm text-slate-500 dark:text-slate-400">
         待审核内容：<span class="font-semibold text-ink">{{ total }}</span> 条
       </div>

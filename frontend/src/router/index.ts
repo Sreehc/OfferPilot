@@ -22,25 +22,15 @@ const pageMeta = {
     title: '先把真实面试前的压力练熟',
     subtitle: '完成一场限时练习，并查看评分、点评和追问。'
   },
-  wrong: {
-    kicker: '错题本',
-    title: '把薄弱回答变成后续复习重点',
-    subtitle: '查看需要继续复习和修正的题目。'
-  },
   review: {
-    kicker: '间隔复习',
-    title: '在合适的时间复习，而不是天天重复',
-    subtitle: '按今天的安排完成复习任务。'
+    kicker: '错题复习',
+    title: '处理今天该复习的题，也管理全部错题',
+    subtitle: '在一个工作台里完成今日复习和错题回看。'
   },
   community: {
     kicker: '学习社区',
     title: '在交流中补齐盲点',
     subtitle: '提问、讨论、互助，通过社区贡献积累积分和等级。'
-  },
-  plan: {
-    kicker: '学习计划',
-    title: '把薄弱点拆成每天能完成的任务',
-    subtitle: '查看当前计划，并完成今天的任务。'
   },
   analytics: {
     kicker: '数据分析',
@@ -102,8 +92,7 @@ const router = createRouter({
         {
           path: 'wrong',
           name: 'wrong',
-          component: () => import('@/pages/wrong/WrongPage.vue'),
-          meta: pageMeta.wrong
+          redirect: { path: '/review', query: { tab: 'all' } }
         },
         {
           path: 'review',
@@ -134,12 +123,6 @@ const router = createRouter({
           name: 'community-leaderboard',
           component: () => import('@/pages/community/LeaderboardPage.vue'),
           meta: { kicker: '排行榜', title: '社区排行榜', subtitle: '查看社区贡献排名。' }
-        },
-        {
-          path: 'plan',
-          name: 'plan',
-          component: () => import('@/pages/plan/PlanPage.vue'),
-          meta: pageMeta.plan
         },
         {
           path: 'analytics',

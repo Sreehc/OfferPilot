@@ -5,6 +5,10 @@ import com.bytecoach.dashboard.dto.RecentInterviewVO;
 import com.bytecoach.dashboard.dto.WeakPointVO;
 import com.bytecoach.dashboard.mapper.DashboardMetricsMapper;
 import com.bytecoach.dashboard.service.impl.DashboardServiceImpl;
+import com.bytecoach.adaptive.service.AdaptiveService;
+import com.bytecoach.analytics.service.AnalyticsService;
+import com.bytecoach.common.config.ByteCoachProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.bytecoach.security.util.SecurityUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,6 +16,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -24,6 +29,16 @@ class DashboardServiceImplTest {
 
     @Mock
     private DashboardMetricsMapper dashboardMetricsMapper;
+    @Mock
+    private StringRedisTemplate redisTemplate;
+    @Mock
+    private ObjectMapper objectMapper;
+    @Mock
+    private AdaptiveService adaptiveService;
+    @Mock
+    private AnalyticsService analyticsService;
+    @Mock
+    private ByteCoachProperties props;
 
     @InjectMocks
     private DashboardServiceImpl dashboardService;
@@ -37,7 +52,6 @@ class DashboardServiceImplTest {
             when(dashboardMetricsMapper.countInterviewSessions(1L)).thenReturn(null);
             when(dashboardMetricsMapper.averageInterviewScore(1L)).thenReturn(null);
             when(dashboardMetricsMapper.countWrongQuestions(1L)).thenReturn(null);
-            when(dashboardMetricsMapper.planCompletionRate(1L)).thenReturn(null);
             when(dashboardMetricsMapper.selectRecentInterviews(1L)).thenReturn(null);
             when(dashboardMetricsMapper.selectWeakPoints(1L)).thenReturn(null);
 
@@ -46,7 +60,6 @@ class DashboardServiceImplTest {
             assertEquals(0, result.getLearningCount());
             assertEquals(BigDecimal.ZERO, result.getAverageScore());
             assertEquals(0, result.getWrongCount());
-            assertEquals(0, result.getPlanCompletionRate());
             assertTrue(result.getFirstVisit());
             assertTrue(result.getRecentInterviews().isEmpty());
             assertTrue(result.getWeakPoints().isEmpty());
@@ -62,7 +75,6 @@ class DashboardServiceImplTest {
             when(dashboardMetricsMapper.countInterviewSessions(1L)).thenReturn(3L);
             when(dashboardMetricsMapper.averageInterviewScore(1L)).thenReturn(new BigDecimal("78.50"));
             when(dashboardMetricsMapper.countWrongQuestions(1L)).thenReturn(10L);
-            when(dashboardMetricsMapper.planCompletionRate(1L)).thenReturn(40);
 
             RecentInterviewVO recent = RecentInterviewVO.builder()
                     .sessionId(1L).direction("Java Backend").totalScore(new BigDecimal("80")).status("finished").build();
@@ -77,7 +89,6 @@ class DashboardServiceImplTest {
             assertEquals(8, result.getLearningCount());
             assertEquals(new BigDecimal("78.50"), result.getAverageScore());
             assertEquals(10, result.getWrongCount());
-            assertEquals(40, result.getPlanCompletionRate());
             assertFalse(result.getFirstVisit());
             assertEquals(1, result.getRecentInterviews().size());
             assertEquals(1, result.getWeakPoints().size());

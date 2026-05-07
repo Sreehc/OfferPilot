@@ -1,7 +1,6 @@
 <template>
   <div class="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
     <div class="surface-muted p-4">
-      <div class="text-xs text-slate-500 dark:text-slate-400">左侧编辑表单，右侧查看现有分类。</div>
       <div class="text-sm font-semibold text-ink">{{ form.id ? '编辑分类' : '新增分类' }}</div>
       <div class="mt-4 space-y-3">
         <el-input v-model="form.name" placeholder="分类名称" size="large" />

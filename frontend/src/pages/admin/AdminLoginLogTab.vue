@@ -1,12 +1,5 @@
 <template>
   <div class="space-y-4">
-    <div>
-      <h4 class="text-lg font-semibold text-ink">后台登录日志</h4>
-      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-        先按用户名搜索，再结合时间、IP 和状态排查后台访问情况。
-      </p>
-    </div>
-
     <div class="flex flex-wrap items-center gap-3">
       <el-input
         v-model="keyword"
@@ -46,7 +39,7 @@
           {{ row.city || '-' }}
         </template>
       </el-table-column>
-      <el-table-column label="设备" min-width="140">
+      <el-table-column label="Device" min-width="140">
         <template #default="{ row }">
           {{ row.device || '-' }}
         </template>
@@ -74,7 +67,7 @@
         <div class="mobile-card-field"><span class="mobile-card-label">时间</span><span class="mobile-card-value">{{ formatTime(row.createTime) }}</span></div>
         <div class="mobile-card-field"><span class="mobile-card-label">IP</span><span class="mobile-card-value">{{ row.ip || '-' }}</span></div>
         <div class="mobile-card-field"><span class="mobile-card-label">城市</span><span class="mobile-card-value">{{ row.city || '-' }}</span></div>
-        <div class="mobile-card-field"><span class="mobile-card-label">设备</span><span class="mobile-card-value">{{ row.device || '-' }}</span></div>
+        <div class="mobile-card-field"><span class="mobile-card-label">Device</span><span class="mobile-card-value">{{ row.device || '-' }}</span></div>
         <div v-if="row.failReason" class="mobile-card-field"><span class="mobile-card-label">原因</span><span class="mobile-card-value text-red-500">{{ row.failReason }}</span></div>
       </div>
     </div>

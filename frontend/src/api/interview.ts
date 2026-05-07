@@ -9,8 +9,8 @@ export interface InterviewStartPayload {
 }
 
 export interface InterviewAnswerPayload {
-  sessionId: number
-  questionId: number
+  sessionId: string
+  questionId: string
   answer: string
 }
 
@@ -24,7 +24,7 @@ export const startInterviewApi = (payload: InterviewStartPayload) => {
   return request<InterviewCurrentQuestion>({ url: '/interview/start', method: 'post', data: payload })
 }
 
-export const currentQuestionApi = (sessionId: number) => {
+export const currentQuestionApi = (sessionId: string) => {
   return request<InterviewCurrentQuestion>({ url: `/interview/current/${sessionId}`, method: 'get' })
 }
 
@@ -32,7 +32,7 @@ export const submitAnswerApi = (payload: InterviewAnswerPayload) => {
   return request<InterviewAnswerResult>({ url: '/interview/answer', method: 'post', data: payload })
 }
 
-export const interviewDetailApi = (sessionId: number) => {
+export const interviewDetailApi = (sessionId: string) => {
   return request<InterviewDetail>({ url: `/interview/detail/${sessionId}`, method: 'get' })
 }
 
@@ -56,7 +56,7 @@ export const startVoiceInterviewApi = (payload: VoiceStartPayload) => {
   return request<InterviewCurrentQuestion>({ url: '/interview/voice/start', method: 'post', data: payload })
 }
 
-export const submitVoiceAnswerApi = (sessionId: number, questionId: number, audioBlob: Blob) => {
+export const submitVoiceAnswerApi = (sessionId: string, questionId: string, audioBlob: Blob) => {
   const formData = new FormData()
   formData.append('sessionId', String(sessionId))
   formData.append('questionId', String(questionId))

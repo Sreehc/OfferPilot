@@ -31,10 +31,10 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
     @Override
     public PageResult<QuestionVO> listQuestions(QuestionQuery query) {
         Page<Question> page = new Page<>(query.getPageNum(), query.getPageSize());
-        IPage<Question> result = page(page, lambdaQuery()
+        IPage<Question> result = page(page, new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Question>()
                 .eq(query.getCategoryId() != null, Question::getCategoryId, query.getCategoryId())
                 .eq(StringUtils.hasText(query.getDifficulty()), Question::getDifficulty, query.getDifficulty())
-                .and(StringUtils.hasText(query.getKeyword()), wrapper -> wrapper
+                .and(StringUtils.hasText(query.getKeyword()), keywordWrapper -> keywordWrapper
                         .like(Question::getTitle, query.getKeyword())
                         .or()
                         .like(Question::getTags, query.getKeyword()))

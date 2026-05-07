@@ -1,5 +1,7 @@
 package com.bytecoach.interview.vo;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.Builder;
@@ -8,6 +10,7 @@ import lombok.Data;
 @Data
 @Builder
 public class InterviewHistoryVO {
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long sessionId;
     private String direction;
     private String status;

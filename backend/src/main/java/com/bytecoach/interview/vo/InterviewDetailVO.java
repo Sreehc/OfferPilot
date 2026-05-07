@@ -1,5 +1,7 @@
 package com.bytecoach.interview.vo;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -9,6 +11,7 @@ import lombok.Data;
 @Data
 @Builder
 public class InterviewDetailVO {
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long sessionId;
     private String direction;
     private String status;
@@ -22,6 +25,7 @@ public class InterviewDetailVO {
     @Data
     @Builder
     public static class InterviewRecordVO {
+        @JsonSerialize(using = ToStringSerializer.class)
         private Long questionId;
         private String questionTitle;
         private String userAnswer;
@@ -35,4 +39,3 @@ public class InterviewDetailVO {
         private BigDecimal voiceConfidence;
     }
 }
-

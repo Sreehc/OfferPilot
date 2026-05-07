@@ -52,9 +52,6 @@ bytecoach:
     cache-ttl-hours: ${BYTECOACH_ADAPTIVE_CACHE_TTL:24}
     weak-threshold: ${BYTECOACH_ADAPTIVE_WEAK_THRESHOLD:50.0}
     cron-refresh: ${BYTECOACH_ADAPTIVE_CRON:0 10 0 * * ?}
-  plan:
-    cron-health-check: ${BYTECOACH_PLAN_HEALTH_CRON:0 0 23 * * ?}
-    low-completion-threshold: ${BYTECOACH_PLAN_LOW_THRESHOLD:0.5}
   interview:
     wrong-threshold: ${BYTECOACH_WRONG_THRESHOLD:60}
   dashboard:
@@ -82,4 +79,3 @@ management:
   endpoint:
     health:
       show-details: when-authorized
-

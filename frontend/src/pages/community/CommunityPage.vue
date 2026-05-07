@@ -1,174 +1,110 @@
 <template>
-  <div class="community-cockpit space-y-6">
-    <section class="cockpit-panel p-5 sm:p-6">
-      <div class="flex flex-wrap items-start justify-between gap-4">
-        <div class="min-w-0 max-w-3xl">
-          <div class="flex items-center gap-3">
-            <span class="state-pulse" aria-hidden="true"></span>
-            <p class="section-kicker">社区问答</p>
-          </div>
-          <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">浏览问题并参与讨论</h2>
-          <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-            搜索问题、查看回答，或直接发起提问。
-          </p>
+  <div class="community-forum space-y-6">
+    <section class="forum-hero cockpit-panel p-4 sm:p-5">
+      <div class="forum-header-bar">
+        <div class="forum-header-bar__title">
+          <span class="state-pulse" aria-hidden="true"></span>
+          <h2 class="forum-header-bar__heading">社区讨论区</h2>
         </div>
-        <div class="flex flex-wrap gap-3">
+
+        <div class="forum-header-bar__tabs">
           <button
-            class="hard-button-primary text-sm"
-            @click="$router.push('/community/submit')"
+            v-for="board in boardOptions"
+            :key="board.id"
+            type="button"
+            class="forum-board-chip"
+            :class="{ 'forum-board-chip-active': selectedCategoryId === board.id }"
+            @click="selectBoard(board.id)"
           >
-            发起提问
-          </button>
-          <button
-            class="hard-button-secondary text-sm"
-            @click="$router.push('/community/leaderboard')"
-          >
-            查看排行榜
+            {{ board.name }}
           </button>
         </div>
-      </div>
 
-      <div class="community-overview-bar mt-6">
-        <article
-          v-for="signal in overviewSignals"
-          :key="signal.label"
-          class="data-slab p-4"
-          :class="signal.toneClass"
-        >
-          <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-            {{ signal.label }}
-          </p>
-          <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ signal.value }}</p>
-          <p class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ signal.detail }}</p>
-        </article>
-      </div>
-
-      <div class="priority-strip mt-4">
-        <article
-          v-for="item in priorityTips"
-          :key="item.label"
-          class="priority-strip__item"
-        >
-          <div class="flex items-center gap-3">
-            <span class="inline-flex h-2.5 w-2.5 rounded-full" :class="item.dotClass"></span>
-            <div>
-              <p class="text-sm font-semibold text-ink">{{ item.label }}</p>
-              <p class="text-xs text-slate-500 dark:text-slate-400">{{ item.detail }}</p>
-            </div>
-          </div>
-          <span class="font-mono text-sm font-semibold text-ink">{{ item.value }}</span>
-        </article>
+        <button class="hard-button-primary forum-header-bar__action text-sm" @click="$router.push('/community/submit')">
+          发起提问
+        </button>
       </div>
     </section>
 
-    <section class="cockpit-panel p-5 sm:p-6">
-      <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <div class="min-w-0">
-          <p class="section-kicker">问题列表</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">搜索、筛选并直接进入问题</h3>
-          <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-            查看正在讨论的问题，或参考已解决的问题。
-          </p>
+    <section class="forum-feed cockpit-panel p-4 sm:p-5">
+      <div class="forum-toolbar">
+        <div class="mode-switch">
+          <button
+            v-for="s in sorts"
+            :key="s.value"
+            type="button"
+            class="mode-switch__item"
+            :class="{ 'mode-switch__item-active': sort === s.value }"
+            @click="sort = s.value"
+          >
+            {{ s.label }}
+          </button>
         </div>
 
-        <div class="community-filter-bar">
-          <div class="mode-switch grid grid-cols-2 gap-2">
-            <button
-              v-for="s in sorts"
-              :key="s.value"
-              type="button"
-              class="mode-switch__item"
-              :class="{ 'mode-switch__item-active': sort === s.value }"
-              @click="sort = s.value"
-            >
-              {{ s.label }}
-            </button>
-          </div>
-
-          <div class="community-search">
-            <input
-              v-model="keyword"
-              type="text"
-              placeholder="搜索问题、分类或关键词..."
-              class="community-search__input"
-              @keyup.enter="doSearch"
-            />
-            <button type="button" class="community-search__button" @click="doSearch">检索</button>
-          </div>
+        <div class="community-search">
+          <input
+            v-model="keyword"
+            type="text"
+            placeholder="搜索帖子标题或关键词..."
+            class="community-search__input"
+            @keyup.enter="doSearch"
+          />
+          <button type="button" class="community-search__button" @click="doSearch">搜索</button>
         </div>
       </div>
 
-      <div v-if="loading" class="mt-5 grid gap-4">
-        <article v-for="index in 3" :key="index" class="surface-card animate-pulse p-5">
-          <div class="flex items-start gap-4">
-            <div class="h-14 w-14 rounded-2xl bg-slate-200 dark:bg-slate-700"></div>
-            <div class="flex-1">
-              <div class="h-4 w-24 rounded bg-slate-200 dark:bg-slate-700"></div>
-              <div class="mt-4 h-6 w-3/5 rounded bg-slate-100 dark:bg-slate-800"></div>
-              <div class="mt-3 h-4 w-full rounded bg-slate-100 dark:bg-slate-800"></div>
-              <div class="mt-2 h-4 w-4/5 rounded bg-slate-100 dark:bg-slate-800"></div>
-            </div>
+      <div class="forum-feed__meta">
+        <span>{{ selectedCategoryName }}</span>
+        <span>{{ total }} 个主题</span>
+      </div>
+
+      <div v-if="loading" class="mt-5 grid gap-3">
+        <article v-for="index in 4" :key="index" class="forum-thread forum-thread-skeleton animate-pulse">
+          <div class="forum-thread__body">
+            <div class="h-4 w-24 rounded bg-slate-200 dark:bg-slate-700"></div>
+            <div class="mt-4 h-6 w-3/5 rounded bg-slate-100 dark:bg-slate-800"></div>
+            <div class="mt-3 h-4 w-full rounded bg-slate-100 dark:bg-slate-800"></div>
+            <div class="mt-2 h-4 w-2/3 rounded bg-slate-100 dark:bg-slate-800"></div>
+          </div>
+          <div class="forum-thread__aside">
+            <div class="h-6 w-14 rounded-full bg-slate-100 dark:bg-slate-800"></div>
+            <div class="mt-4 h-10 w-16 rounded-2xl bg-slate-100 dark:bg-slate-800"></div>
           </div>
         </article>
       </div>
 
-      <div v-else-if="questions.length" class="mt-5 space-y-4">
+      <div v-else-if="questions.length" class="mt-5 space-y-3">
         <article
           v-for="q in questions"
           :key="q.id"
-          class="mission-card question-card p-4 sm:p-5"
+          class="forum-thread"
           :class="questionToneClass(q)"
           @click="$router.push(`/community/question/${q.id}`)"
         >
-          <div class="flex flex-col gap-4 lg:flex-row lg:items-start">
-            <div class="question-card__scoreboard">
-              <div class="question-card__metric">
-                <span class="question-card__metric-value">{{ q.upvoteCount }}</span>
-                <span class="question-card__metric-label">赞同</span>
-              </div>
-              <div class="question-card__metric">
-                <span class="question-card__metric-value">{{ q.answerCount }}</span>
-                <span class="question-card__metric-label">{{ q.accepted ? '已解' : '回答' }}</span>
-              </div>
+          <div class="forum-thread__body">
+            <div class="forum-thread__badges">
+              <span class="forum-thread__status" :class="questionStatusChipClass(q)">
+                {{ questionStatusLabel(q) }}
+              </span>
+              <span v-if="q.categoryName" class="question-pill">{{ q.categoryName }}</span>
             </div>
 
-            <div class="min-w-0 flex-1">
-              <div class="flex flex-wrap items-center gap-2">
-                <span class="hard-chip !px-2 !py-0.5 !text-[9px]" :class="questionStatusChipClass(q)">
-                  {{ questionStatusLabel(q) }}
-                </span>
-                <span v-if="q.categoryName" class="question-pill">{{ q.categoryName }}</span>
-                <span class="question-pill">{{ questionHeatLabel(q) }}</span>
-              </div>
+            <h4 class="forum-thread__title">{{ q.title }}</h4>
+            <p class="forum-thread__excerpt">{{ q.content }}</p>
 
-              <h4 class="mt-4 text-xl font-semibold tracking-[-0.03em] text-ink">{{ q.title }}</h4>
-              <p class="mt-3 line-clamp-2 text-sm leading-7 text-slate-600 dark:text-slate-300">{{ q.content }}</p>
-
-              <div class="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-                <span>{{ q.authorName || '匿名用户' }}</span>
-                <span v-if="q.authorRank" class="question-pill question-pill-accent">{{ q.authorRank }}</span>
-                <span>{{ formatTime(q.createdAt) }}</span>
-                <span>{{ questionActionHint(q) }}</span>
-              </div>
+            <div class="forum-thread__meta">
+              <span>{{ q.authorName || '匿名用户' }}</span>
+              <span>{{ formatTime(q.createdAt) }}</span>
+              <span>{{ q.answerCount }} 条回复</span>
             </div>
+          </div>
 
-            <div class="question-card__signal">
-              <div class="question-card__signal-row">
-                <span class="inline-flex items-center gap-2">
-                  <span class="h-2 w-2 rounded-full" :class="questionStatusDotClass(q)"></span>
-                  状态
-                </span>
-                <span>{{ questionStatusLabel(q) }}</span>
-              </div>
-              <div class="question-card__signal-row">
-                <span>互动数</span>
-                <span>{{ q.upvoteCount + q.answerCount }}</span>
-              </div>
-              <div class="question-card__signal-row">
-                <span>分类</span>
-                <span>{{ q.categoryName || '未分类' }}</span>
-              </div>
+          <div class="forum-thread__aside">
+            <div class="forum-thread__reply">
+              <strong>{{ q.answerCount }}</strong>
+              <span>回复</span>
             </div>
+            <span class="forum-thread__jump">进入讨论</span>
           </div>
         </article>
       </div>
@@ -177,13 +113,11 @@
         <EmptyState
           class="empty-state-card"
           icon="chat"
-          title="还没有找到问题"
-          description="换个关键词继续搜，或者直接发起一个新问题。"
+          title="当前版块还没有帖子"
+          description="可以换个版块看看，或者直接发起一个新问题。"
         >
           <template #action>
-            <RouterLink to="/community/submit" class="hard-button-primary inline-flex">
-              发起提问
-            </RouterLink>
+            <RouterLink to="/community/submit" class="hard-button-primary inline-flex"> 发起提问 </RouterLink>
           </template>
         </EmptyState>
       </div>
@@ -194,7 +128,7 @@
           :key="p"
           class="community-page-button"
           :class="{ 'community-page-button-active': page === p }"
-          @click="page = p; fetchQuestions()"
+          @click="handlePageClick(p)"
         >
           {{ p }}
         </button>
@@ -205,13 +139,18 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { fetchCategoriesApi } from '@/api/category'
 import { fetchCommunityQuestionsApi } from '@/api/community'
 import EmptyState from '@/components/EmptyState.vue'
-import { useAuthStore } from '@/stores/auth'
-import type { CommunityQuestion } from '@/types/api'
+import type { CategoryItem, CommunityQuestion } from '@/types/api'
 
-const authStore = useAuthStore()
+type BoardOption = {
+  id?: number
+  name: string
+}
+
 const questions = ref<CommunityQuestion[]>([])
+const categories = ref<CategoryItem[]>([])
 const page = ref(1)
 const size = 20
 const total = ref(0)
@@ -219,86 +158,31 @@ const totalPages = ref(0)
 const sort = ref<'new' | 'hot'>('new')
 const keyword = ref('')
 const loading = ref(false)
+const selectedCategoryId = ref<number | undefined>(undefined)
 
 const sorts = [
-  { label: '最新节奏', value: 'new' as const },
-  { label: '热门围观', value: 'hot' as const },
+  { label: '最新', value: 'new' as const },
+  { label: '热门', value: 'hot' as const }
 ]
 
-const resolvedCount = computed(() => questions.value.filter((item) => questionResolved(item)).length)
-const activeCount = computed(() => questions.value.length - resolvedCount.value)
-const solvedRate = computed(() => {
-  if (!questions.value.length) return 0
-  return Math.round((resolvedCount.value / questions.value.length) * 100)
+const boardOptions = computed<BoardOption[]>(() => {
+  const boards = categories.value.map((category) => ({
+    id: category.id,
+    name: category.name
+  }))
+
+  return [
+    {
+      id: undefined,
+      name: '全部主题'
+    },
+    ...boards
+  ]
 })
 
-const personalQuestionCount = computed(() => {
-  const currentUserId = authStore.user?.id
-  if (!currentUserId) return 0
-  return questions.value.filter((item) => item.userId === currentUserId).length
-})
-
-const overviewSignals = computed(() => [
-  {
-    label: '当前页问题数',
-    value: questions.value.length,
-    detail: '便于快速判断这一页是否需要继续翻页查看。',
-    toneClass: '',
-  },
-  {
-    label: '已解决占比',
-    value: `${solvedRate.value}%`,
-    detail: '优先把已解决问题当答案参考，把未解决问题当参与入口。',
-    toneClass: 'community-slab-cyan',
-  },
-  {
-    label: '待补充问题',
-    value: activeCount.value,
-    detail: '这部分最适合直接补充回答或继续追问。',
-    toneClass: 'community-slab-coral',
-  },
-  {
-    label: '我的提问',
-    value: personalQuestionCount.value,
-    detail: personalQuestionCount.value > 0 ? '你可以继续追踪自己的问题是否得到解决。' : '还没有你的问题，遇到卡点可以直接发起提问。',
-    toneClass: 'community-slab-lime',
-  },
-])
-
-const priorityTips = computed(() => [
-  {
-    label: '推荐动作',
-    value: activeCount.value > 0 ? '去答疑' : '去提问',
-    detail: activeCount.value > 0 ? '还有问题没有形成结论，优先进入详情页补充回答。' : '当前列表较平稳，适合补充一个新问题。' ,
-    dotClass: activeCount.value > 0 ? 'bg-[var(--bc-amber)]' : 'bg-[var(--bc-cyan)]',
-  },
-  {
-    label: '最热问题',
-    value: hottestQuestion.value ? `${hottestQuestion.value.upvoteCount + hottestQuestion.value.answerCount}` : '0',
-    detail: hottestQuestion.value ? hottestQuestion.value.title : '暂无高热问题',
-    dotClass: 'bg-[var(--bc-coral)]',
-  },
-  {
-    label: '讨论最多的分类',
-    value: topCategory.value,
-    detail: '能帮助你快速判断最近大家最常遇到的主题。',
-    dotClass: 'bg-[var(--bc-lime)]',
-  },
-])
-
-const hottestQuestion = computed(() => {
-  if (!questions.value.length) return null
-  return [...questions.value].sort((a, b) => (b.upvoteCount + b.answerCount) - (a.upvoteCount + a.answerCount))[0] ?? null
-})
-
-const topCategory = computed(() => {
-  const bucket = new Map<string, number>()
-  questions.value.forEach((item) => {
-    const key = item.categoryName || '未分类'
-    bucket.set(key, (bucket.get(key) ?? 0) + 1)
-  })
-  const top = [...bucket.entries()].sort((a, b) => b[1] - a[1])[0]
-  return top?.[0] ?? '未分类'
+const selectedCategoryName = computed(() => {
+  if (selectedCategoryId.value == null) return '全部主题'
+  return categories.value.find((item) => item.id === selectedCategoryId.value)?.name || '当前版块'
 })
 
 const displayPages = computed(() => {
@@ -309,10 +193,25 @@ const displayPages = computed(() => {
   return pages
 })
 
+async function loadCategories() {
+  try {
+    const { data } = await fetchCategoriesApi({ type: 'question' })
+    categories.value = data
+  } catch {
+    categories.value = []
+  }
+}
+
 async function fetchQuestions() {
   loading.value = true
   try {
-    const { data } = await fetchCommunityQuestionsApi(page.value, size, sort.value, undefined, keyword.value || undefined)
+    const { data } = await fetchCommunityQuestionsApi(
+      page.value,
+      size,
+      sort.value,
+      selectedCategoryId.value,
+      keyword.value || undefined
+    )
     questions.value = data.records
     total.value = data.total
     totalPages.value = data.totalPages || Math.ceil(data.total / size)
@@ -326,6 +225,16 @@ function doSearch() {
   void fetchQuestions()
 }
 
+function handlePageClick(targetPage: number) {
+  page.value = targetPage
+  void fetchQuestions()
+}
+
+function selectBoard(categoryId?: number) {
+  if (selectedCategoryId.value === categoryId) return
+  selectedCategoryId.value = categoryId
+}
+
 function questionResolved(question: CommunityQuestion) {
   return question.accepted || question.status === 'resolved'
 }
@@ -333,32 +242,13 @@ function questionResolved(question: CommunityQuestion) {
 function questionStatusLabel(question: CommunityQuestion) {
   if (questionResolved(question)) return '已解决'
   if (question.answerCount > 0) return '讨论中'
-  return '待补充'
-}
-
-function questionHeatLabel(question: CommunityQuestion) {
-  const intensity = question.upvoteCount + question.answerCount
-  if (intensity >= 12) return '高热围观'
-  if (intensity >= 5) return '持续讨论'
-  return '新进问题'
-}
-
-function questionActionHint(question: CommunityQuestion) {
-  if (questionResolved(question)) return '适合复盘答案结构'
-  if (question.answerCount > 0) return '适合继续补充视角'
-  return '适合率先给出可执行回答'
+  return '新帖'
 }
 
 function questionToneClass(question: CommunityQuestion) {
-  if (questionResolved(question)) return 'question-card-resolved'
-  if (question.answerCount > 0) return 'question-card-warm'
-  return 'question-card-open'
-}
-
-function questionStatusDotClass(question: CommunityQuestion) {
-  if (questionResolved(question)) return 'bg-[var(--bc-lime)]'
-  if (question.answerCount > 0) return 'bg-[var(--bc-amber)]'
-  return 'bg-[var(--bc-coral)]'
+  if (questionResolved(question)) return 'forum-thread-resolved'
+  if (question.answerCount > 0) return 'forum-thread-warm'
+  return 'forum-thread-open'
 }
 
 function questionStatusChipClass(question: CommunityQuestion) {
@@ -373,7 +263,7 @@ function formatTime(time?: string) {
   const now = new Date()
   const diff = now.getTime() - d.getTime()
   const minutes = Math.floor(diff / 60000)
-  if (minutes < 60) return `${minutes}分钟前`
+  if (minutes < 60) return `${Math.max(1, minutes)}分钟前`
   const hours = Math.floor(minutes / 60)
   if (hours < 24) return `${hours}小时前`
   const days = Math.floor(hours / 24)
@@ -381,52 +271,107 @@ function formatTime(time?: string) {
   return d.toLocaleDateString('zh-CN')
 }
 
-watch(sort, () => {
+watch([sort, selectedCategoryId], () => {
   page.value = 1
   void fetchQuestions()
 })
 
-onMounted(() => {
-  void fetchQuestions()
+onMounted(async () => {
+  await loadCategories()
+  await fetchQuestions()
 })
 </script>
 
 <style scoped>
-.community-filter-bar {
-  display: grid;
-  gap: 12px;
+.forum-hero {
+  position: relative;
+  overflow: hidden;
 }
 
-.community-overview-bar {
-  display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
-.priority-strip {
-  display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.priority-strip__item {
+.forum-header-bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  border-radius: 18px;
-  border: 1px solid var(--bc-line);
-  background: rgba(255, 255, 255, 0.34);
-  padding: 14px 16px;
+  gap: 14px 18px;
 }
 
-.dark .priority-strip__item {
+.forum-header-bar__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: max-content;
+}
+
+.forum-header-bar__heading {
+  color: var(--bc-ink);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+
+.forum-header-bar__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex: 1;
+  min-width: min(100%, 420px);
+}
+
+.forum-header-bar__action {
+  min-height: 42px !important;
+  padding-inline: 18px !important;
+}
+
+.forum-board-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  border: 1px solid var(--bc-line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.42);
+  padding: 0 16px;
+  color: var(--bc-ink-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    border-color var(--motion-base) var(--ease-hard),
+    color var(--motion-base) var(--ease-hard),
+    background-color var(--motion-base) var(--ease-hard),
+    box-shadow var(--motion-base) var(--ease-hard);
+}
+
+.dark .forum-board-chip {
   background: rgba(255, 255, 255, 0.05);
 }
 
+.forum-board-chip:hover {
+  border-color: rgba(var(--bc-accent-rgb), 0.26);
+  color: var(--bc-ink);
+}
+
+.forum-board-chip-active {
+  border-color: rgba(var(--bc-accent-rgb), 0.36);
+  box-shadow: inset 0 0 0 1px rgba(var(--bc-accent-rgb), 0.14);
+  color: var(--bc-ink);
+  background: linear-gradient(180deg, rgba(255, 222, 173, 0.84), rgba(255, 247, 235, 0.68));
+}
+
+.forum-toolbar {
+  display: grid;
+  gap: 14px;
+}
+
 .mode-switch {
+  display: inline-grid;
+  gap: 6px;
+  grid-template-columns: repeat(2, minmax(0, auto));
+  width: fit-content;
   border: 1px solid var(--bc-line);
-  border-radius: calc(var(--radius-md) + 4px);
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.32);
   padding: 4px;
 }
@@ -436,15 +381,15 @@ onMounted(() => {
 }
 
 .mode-switch__item {
-  min-height: 44px;
+  min-width: 82px;
+  min-height: 40px;
   border: 0;
-  border-radius: calc(var(--radius-sm) + 2px);
+  border-radius: 12px;
   background: transparent;
   color: var(--bc-ink-secondary);
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  letter-spacing: 0.08em;
   transition:
     background-color var(--motion-base) var(--ease-hard),
     color var(--motion-base) var(--ease-hard),
@@ -464,10 +409,10 @@ onMounted(() => {
 }
 
 .community-search__input {
-  min-height: 48px;
+  min-height: 46px;
   width: 100%;
   border: 1px solid var(--bc-border-strong);
-  border-radius: var(--radius-sm);
+  border-radius: 14px;
   background: var(--bc-surface-input);
   color: var(--bc-ink);
   padding: 0 16px;
@@ -481,107 +426,154 @@ onMounted(() => {
 }
 
 .community-search__button {
-  min-height: 48px;
+  min-height: 46px;
   border: 0;
-  border-radius: var(--radius-sm);
-  padding: 0 16px;
+  border-radius: 14px;
+  padding: 0 18px;
   font-size: 13px;
   font-weight: 700;
   color: #101826;
   background: linear-gradient(180deg, #ffd18a 0%, var(--bc-amber) 100%);
 }
 
-.community-slab-cyan {
-  border-left-color: var(--bc-cyan);
-}
-
-.community-slab-coral {
-  border-left-color: var(--bc-coral);
-}
-
-.community-slab-lime {
-  border-left-color: var(--bc-lime);
-}
-
-.question-card {
-  cursor: pointer;
-}
-
-.question-card-open {
-  border-color: rgba(255, 107, 107, 0.24);
-}
-
-.question-card-warm {
-  border-color: rgba(255, 183, 77, 0.28);
-}
-
-.question-card-resolved {
-  border-color: rgba(159, 232, 112, 0.26);
-}
-
-.question-card__scoreboard {
-  display: grid;
+.forum-feed__meta {
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  flex-shrink: 0;
-  min-width: 132px;
-}
-
-.question-card__metric {
-  border-radius: 20px;
-  border: 1px solid var(--bc-line);
-  background: rgba(255, 255, 255, 0.34);
-  padding: 14px 12px;
-  text-align: center;
-}
-
-.dark .question-card__metric {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.question-card__metric-value {
-  display: block;
-  font-family: theme('fontFamily.mono');
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--bc-ink);
-}
-
-.question-card__metric-label {
-  display: block;
-  margin-top: 4px;
-  font-size: 11px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  margin-top: 18px;
   color: var(--bc-ink-secondary);
-}
-
-.question-card__signal {
-  display: grid;
-  gap: 10px;
-  min-width: 180px;
-  border-radius: 20px;
-  border: 1px solid var(--bc-line);
-  background: rgba(255, 255, 255, 0.36);
-  padding: 14px;
   font-size: 12px;
 }
 
-.dark .question-card__signal {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.question-card__signal-row {
-  display: flex;
+.forum-thread {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) 96px;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  color: var(--bc-ink-secondary);
+  border: 1px solid var(--bc-line);
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.42));
+  padding: 20px;
+  cursor: pointer;
+  transition:
+    transform var(--motion-base) var(--ease-hard),
+    border-color var(--motion-base) var(--ease-hard),
+    box-shadow var(--motion-base) var(--ease-hard);
 }
 
-.question-card__signal-row span:last-child {
+.dark .forum-thread {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.03));
+}
+
+.forum-thread:hover {
+  transform: translateY(-2px);
+  border-color: rgba(var(--bc-accent-rgb), 0.26);
+}
+
+.forum-thread-open {
+  border-color: rgba(255, 107, 107, 0.18);
+}
+
+.forum-thread-warm {
+  border-color: rgba(255, 183, 77, 0.22);
+}
+
+.forum-thread-resolved {
+  border-color: rgba(159, 232, 112, 0.22);
+}
+
+.forum-thread-skeleton {
+  cursor: default;
+}
+
+.forum-thread__body {
+  min-width: 0;
+}
+
+.forum-thread__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.forum-thread__status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.forum-thread__title {
+  margin-top: 14px;
   color: var(--bc-ink);
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.35;
+}
+
+.forum-thread__excerpt {
+  display: -webkit-box;
+  margin-top: 10px;
+  overflow: hidden;
+  color: rgb(71 85 105);
+  font-size: 14px;
+  line-height: 1.8;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.dark .forum-thread__excerpt {
+  color: rgb(203 213 225);
+}
+
+.forum-thread__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 14px;
+  color: var(--bc-ink-secondary);
+  font-size: 12px;
+}
+
+.forum-thread__aside {
+  display: grid;
+  gap: 12px;
+  justify-items: end;
+}
+
+.forum-thread__reply {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 78px;
+  min-height: 78px;
+  border-radius: 22px;
+  background: rgba(var(--bc-accent-rgb), 0.08);
+  color: var(--bc-ink);
+}
+
+.forum-thread__reply strong {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.forum-thread__reply span {
+  margin-top: 6px;
+  color: var(--bc-ink-secondary);
+  font-size: 11px;
+}
+
+.forum-thread__jump {
+  color: var(--bc-ink-secondary);
+  font-size: 12px;
 }
 
 .question-pill {
@@ -593,12 +585,6 @@ onMounted(() => {
   padding: 6px 10px;
   font-size: 11px;
   color: var(--bc-ink-secondary);
-}
-
-.question-pill-accent {
-  border-color: rgba(var(--bc-accent-rgb), 0.24);
-  color: var(--bc-accent);
-  background: rgba(var(--bc-accent-rgb), 0.08);
 }
 
 .question-chip-open {
@@ -637,36 +623,64 @@ onMounted(() => {
   border-color: transparent;
 }
 
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+@media (min-width: 1024px) {
+  .forum-toolbar {
+    grid-template-columns: auto minmax(320px, 440px);
+    align-items: center;
+    justify-content: space-between;
+  }
 }
 
 @media (max-width: 1024px) {
-  .community-overview-bar,
-  .priority-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .forum-header-bar__tabs {
+    order: 3;
+    flex-basis: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .forum-thread {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .question-card__signal {
-    min-width: 100%;
+  .forum-thread__aside {
+    grid-template-columns: auto auto;
+    justify-content: space-between;
+    align-items: center;
   }
 }
 
 @media (max-width: 640px) {
-  .community-overview-bar,
-  .priority-strip {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .community-search {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .question-card__scoreboard {
-    min-width: 100%;
+  .forum-header-bar {
+    align-items: stretch;
+  }
+
+  .forum-header-bar__heading {
+    font-size: 24px;
+  }
+
+  .forum-header-bar__action {
+    width: 100%;
+  }
+
+  .forum-thread {
+    padding: 18px;
+    border-radius: 20px;
+  }
+
+  .forum-thread__title {
+    font-size: 19px;
+  }
+
+  .forum-thread__reply {
+    width: 68px;
+    min-height: 68px;
+    border-radius: 18px;
   }
 }
 </style>

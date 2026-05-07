@@ -71,14 +71,15 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
     @Override
     public PageResult<KnowledgeDocVO> listDocs(KnowledgeListQuery query) {
         Page<KnowledgeDoc> page = new Page<>(query.getPageNum(), query.getPageSize());
-        IPage<KnowledgeDoc> result = page(page, lambdaQuery()
+        LambdaQueryWrapper<KnowledgeDoc> queryWrapper = new LambdaQueryWrapper<KnowledgeDoc>()
                 .eq(query.getCategoryId() != null, KnowledgeDoc::getCategoryId, query.getCategoryId())
                 .eq(StringUtils.hasText(query.getStatus()), KnowledgeDoc::getStatus, query.getStatus())
-                .and(StringUtils.hasText(query.getKeyword()), wrapper -> wrapper
+                .and(StringUtils.hasText(query.getKeyword()), keywordWrapper -> keywordWrapper
                         .like(KnowledgeDoc::getTitle, query.getKeyword())
                         .or()
                         .like(KnowledgeDoc::getSummary, query.getKeyword()))
-                .orderByDesc(KnowledgeDoc::getUpdateTime));
+                .orderByDesc(KnowledgeDoc::getUpdateTime);
+        IPage<KnowledgeDoc> result = page(page, queryWrapper);
         List<KnowledgeDocVO> voList = buildDocVOs(result.getRecords());
         return PageResult.<KnowledgeDocVO>builder()
                 .records(voList)
@@ -210,14 +211,15 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
     @Override
     public PageResult<KnowledgeDocVO> listUserDocs(Long userId, KnowledgeListQuery query) {
         Page<KnowledgeDoc> page = new Page<>(query.getPageNum(), query.getPageSize());
-        IPage<KnowledgeDoc> result = page(page, lambdaQuery()
+        LambdaQueryWrapper<KnowledgeDoc> queryWrapper = new LambdaQueryWrapper<KnowledgeDoc>()
                 .eq(KnowledgeDoc::getUserId, userId)
                 .eq(StringUtils.hasText(query.getStatus()), KnowledgeDoc::getStatus, query.getStatus())
-                .and(StringUtils.hasText(query.getKeyword()), wrapper -> wrapper
+                .and(StringUtils.hasText(query.getKeyword()), keywordWrapper -> keywordWrapper
                         .like(KnowledgeDoc::getTitle, query.getKeyword())
                         .or()
                         .like(KnowledgeDoc::getSummary, query.getKeyword()))
-                .orderByDesc(KnowledgeDoc::getUpdateTime));
+                .orderByDesc(KnowledgeDoc::getUpdateTime);
+        IPage<KnowledgeDoc> result = page(page, queryWrapper);
         List<KnowledgeDocVO> voList = buildDocVOs(result.getRecords());
         return PageResult.<KnowledgeDocVO>builder()
                 .records(voList)

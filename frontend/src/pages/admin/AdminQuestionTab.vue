@@ -1,7 +1,6 @@
 <template>
   <div class="grid gap-4 xl:grid-cols-[380px_minmax(0,1fr)]">
     <div class="surface-muted p-4">
-      <div class="text-xs text-slate-500 dark:text-slate-400">左侧维护题目内容，右侧筛选并浏览现有题目。</div>
       <div class="text-sm font-semibold text-ink">{{ form.id ? '编辑题目' : '新增题目' }}</div>
       <div class="mt-4 space-y-3">
         <el-input v-model="form.title" placeholder="题目标题" size="large" />
@@ -25,7 +24,6 @@
     </div>
 
     <div class="space-y-4">
-      <div class="text-sm text-slate-500 dark:text-slate-400">先筛选，再编辑或删除。</div>
       <div class="grid gap-3 md:grid-cols-3">
         <el-select v-model="filter.categoryId" clearable placeholder="分类筛选" size="large">
           <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />

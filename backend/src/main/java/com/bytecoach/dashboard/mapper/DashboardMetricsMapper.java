@@ -38,21 +38,6 @@ public interface DashboardMetricsMapper {
     Long countWrongQuestions(@Param("userId") Long userId);
 
     @Select("""
-            SELECT COALESCE(
-                CAST(ROUND(
-                    SUM(CASE WHEN t.status = 'done' THEN 1 ELSE 0 END) * 100.0
-                    / NULLIF(COUNT(t.id), 0)
-                ) AS SIGNED),
-                0
-            )
-            FROM study_plan p
-            LEFT JOIN study_plan_task t ON t.plan_id = p.id
-            WHERE p.user_id = #{userId}
-              AND p.status = 'active'
-            """)
-    Integer planCompletionRate(@Param("userId") Long userId);
-
-    @Select("""
             SELECT id AS session_id,
                    direction,
                    COALESCE(total_score, 0) AS total_score,
@@ -82,4 +67,3 @@ public interface DashboardMetricsMapper {
             """)
     List<WeakPointVO> selectWeakPoints(@Param("userId") Long userId);
 }
-

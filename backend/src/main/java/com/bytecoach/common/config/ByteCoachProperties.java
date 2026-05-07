@@ -17,7 +17,6 @@ public class ByteCoachProperties {
     private Notification notification = new Notification();
     private Community community = new Community();
     private Adaptive adaptive = new Adaptive();
-    private Plan plan = new Plan();
     private Interview interview = new Interview();
     private Dashboard dashboard = new Dashboard();
     private RateLimit rateLimit = new RateLimit();
@@ -41,7 +40,7 @@ public class ByteCoachProperties {
 
     @Data
     public static class Notification {
-        /** Cron for daily review/plan reminder notifications. */
+        /** Cron for daily review reminder notifications. */
         private String cronDailyReminder = "0 0 8 * * ?";
     }
 
@@ -59,14 +58,6 @@ public class ByteCoachProperties {
         private double weakThreshold = 50.0;
         /** Cron for daily adaptive profile refresh. */
         private String cronRefresh = "0 10 0 * * ?";
-    }
-
-    @Data
-    public static class Plan {
-        /** Cron for daily plan health check. */
-        private String cronHealthCheck = "0 0 23 * * ?";
-        /** Completion rate below this triggers auto-adjustment. */
-        private double lowCompletionThreshold = 0.5;
     }
 
     @Data

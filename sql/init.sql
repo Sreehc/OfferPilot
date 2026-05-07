@@ -223,44 +223,6 @@ CREATE TABLE IF NOT EXISTS review_log (
 );
 
 -- ============================================================
--- 学习计划表
--- ============================================================
-CREATE TABLE IF NOT EXISTS study_plan (
-    id BIGINT PRIMARY KEY,
-    user_id BIGINT NOT NULL,
-    title VARCHAR(128) NOT NULL,
-    goal VARCHAR(255) DEFAULT NULL,
-    content TEXT DEFAULT NULL,
-    days INT NOT NULL,
-    status VARCHAR(32) NOT NULL DEFAULT 'draft',
-    version INT NOT NULL DEFAULT 1 COMMENT '计划版本号',
-    parent_plan_id BIGINT DEFAULT NULL COMMENT '前一版本计划ID，用于追踪调整历史',
-    start_date DATE DEFAULT NULL,
-    end_date DATE DEFAULT NULL,
-    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    KEY idx_study_plan_user_id (user_id)
-);
-
--- ============================================================
--- 学习计划任务表
--- ============================================================
-CREATE TABLE IF NOT EXISTS study_plan_task (
-    id BIGINT PRIMARY KEY,
-    plan_id BIGINT NOT NULL,
-    user_id BIGINT NOT NULL,
-    task_date DATE NOT NULL,
-    task_type VARCHAR(32) NOT NULL,
-    content VARCHAR(255) NOT NULL,
-    status VARCHAR(32) NOT NULL DEFAULT 'todo',
-    sort_order INT NOT NULL DEFAULT 0,
-    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    KEY idx_study_plan_task_plan_id (plan_id),
-    KEY idx_study_plan_task_user_id (user_id)
-);
-
--- ============================================================
 -- 社区问题表
 -- ============================================================
 CREATE TABLE IF NOT EXISTS community_question (
@@ -337,7 +299,7 @@ CREATE TABLE IF NOT EXISTS user_stats (
 CREATE TABLE IF NOT EXISTS notification (
     id BIGINT PRIMARY KEY,
     user_id BIGINT NOT NULL,
-    type VARCHAR(64) NOT NULL COMMENT 'review_remind / plan_remind / interview_feedback / community_accept / community_vote / rank_upgrade',
+    type VARCHAR(64) NOT NULL COMMENT 'review_remind / interview_feedback / community_accept / community_vote / rank_upgrade',
     title VARCHAR(200) NOT NULL,
     content TEXT,
     link VARCHAR(500),

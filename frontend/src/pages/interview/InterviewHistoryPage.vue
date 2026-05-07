@@ -150,7 +150,7 @@ const handlePageChange = (page: number) => {
   void loadData()
 }
 
-const goToDetail = (sessionId: number) => {
+const goToDetail = (sessionId: string) => {
   router.push(`/interview/detail/${sessionId}`)
 }
 

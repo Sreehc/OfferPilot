@@ -1,7 +1,6 @@
 <template>
   <div class="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
     <div class="surface-muted p-4">
-      <div class="text-xs text-slate-500 dark:text-slate-400">先导入资料，再到右侧查看文档状态与处理动作。</div>
       <div class="text-sm font-semibold text-ink">导入内置知识资料</div>
       <div class="mt-4 space-y-3">
         <div v-for="seed in seeds" :key="seed.seedKey" class="surface-card p-4">
@@ -18,7 +17,6 @@
     </div>
 
     <div class="space-y-4">
-      <div class="text-sm text-slate-500 dark:text-slate-400">上传和重建前，先按分类、状态或关键词筛选文档。</div>
       <div class="grid gap-3 md:grid-cols-3">
         <el-select v-model="filter.categoryId" clearable placeholder="知识分类" size="large">
           <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />

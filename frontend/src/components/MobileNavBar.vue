@@ -45,7 +45,7 @@ const IconCommunity = () => h('svg', { class: 'h-5 w-5', fill: 'none', viewBox: 
 const items = [
   { path: '/dashboard', label: '首页', icon: IconHome },
   { path: '/interview', label: '面试', icon: IconInterview },
-  { path: '/review', label: '复习', icon: IconReview },
+  { path: '/review', label: '错题复习', icon: IconReview },
   { path: '/community', label: '社区', icon: IconCommunity },
   { path: '/chat', label: '问答', icon: IconChat },
 ]

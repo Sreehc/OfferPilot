@@ -1,12 +1,5 @@
 <template>
   <div class="space-y-4">
-    <div>
-      <h4 class="text-lg font-semibold text-ink">用户列表</h4>
-      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-        优先用用户名和角色筛选，再进行编辑、封禁、解封或查看详情。
-      </p>
-    </div>
-
     <div class="flex flex-wrap items-center gap-3">
       <el-input v-model="keyword" placeholder="搜索用户名/昵称" clearable size="large" class="max-w-xs" @keyup.enter="handleSearch" @clear="handleSearch" />
       <el-select v-model="roleFilter" placeholder="角色筛选" clearable size="large" class="w-32" @change="handleSearch">

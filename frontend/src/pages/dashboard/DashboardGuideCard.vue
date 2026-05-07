@@ -12,7 +12,7 @@
         <p class="section-kicker">首次使用</p>
         <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink sm:text-3xl">先做一个动作，首页才会开始有用</h3>
         <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-          先提一个问题、完成一场面试，或者开始第一次复习。系统会在你产生真实记录后，逐步生成错题、薄弱点和学习计划。
+          先提一个问题、完成一场面试，或者开始第一次复习。系统会在你产生真实记录后，逐步生成错题和薄弱点。
         </p>
         <div class="mt-5 flex flex-wrap gap-3">
           <RouterLink
