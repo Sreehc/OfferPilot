@@ -186,6 +186,12 @@
           <p class="mt-4 line-clamp-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
             {{ doc.summary || '暂无摘要。' }}
           </p>
+
+          <div class="mt-4 flex flex-wrap gap-2">
+            <RouterLink :to="`/cards?docId=${doc.id}`" class="hard-button-secondary text-sm">
+              生成知识卡片
+            </RouterLink>
+          </div>
         </article>
       </div>
 

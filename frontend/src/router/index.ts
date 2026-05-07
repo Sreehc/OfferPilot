@@ -17,6 +17,11 @@ const pageMeta = {
     title: '集中管理你的学习资料',
     subtitle: '上传、查看和筛选资料，确认哪些文档已可用于问答。'
   },
+  cards: {
+    kicker: '知识卡片',
+    title: '把资料变成每天能推进的记忆任务',
+    subtitle: '从知识库生成卡片，用翻牌和会/不会持续推进掌握度。'
+  },
   interview: {
     kicker: '模拟面试',
     title: '先把真实面试前的压力练熟',
@@ -70,6 +75,12 @@ const router = createRouter({
           name: 'knowledge',
           component: () => import('@/pages/knowledge/KnowledgePage.vue'),
           meta: pageMeta.knowledge
+        },
+        {
+          path: 'cards',
+          name: 'cards',
+          component: () => import('@/pages/cards/CardsPage.vue'),
+          meta: pageMeta.cards
         },
         {
           path: 'interview',

@@ -63,10 +63,11 @@ const allItems = [
   { path: '/dashboard', label: '首页', hint: '今日任务与进展', index: '01' },
   { path: '/chat', label: '问答', hint: '提问并查看资料引用', index: '02' },
   { path: '/knowledge', label: '知识库', hint: '上传、筛选和管理资料', index: '03' },
-  { path: '/interview', label: '面试', hint: '开始练习或查看结果', index: '04' },
-  { path: '/review', label: '错题复习', hint: '处理今日复习并查看全部错题', index: '05' },
-  { path: '/community', label: '社区', hint: '浏览问题和发布回答', index: '06' },
-  { path: '/admin', label: '管理后台', hint: '内容与数据管理', index: '07', adminOnly: true }
+  { path: '/cards', label: '知识卡片', hint: '把资料转成每日记忆任务', index: '04' },
+  { path: '/interview', label: '面试', hint: '开始练习或查看结果', index: '05' },
+  { path: '/review', label: '错题复习', hint: '处理今日复习并查看全部错题', index: '06' },
+  { path: '/community', label: '社区', hint: '浏览问题和发布回答', index: '07' },
+  { path: '/admin', label: '管理后台', hint: '内容与数据管理', index: '08', adminOnly: true }
 ]
 
 const items = computed(() => allItems.filter((item) => !item.adminOnly || authStore.user?.role === 'ADMIN'))

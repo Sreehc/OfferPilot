@@ -51,6 +51,22 @@
         class="hidden min-h-[280px] border-r border-[var(--bc-line)] lg:block lg:h-full lg:min-h-0 lg:overflow-y-auto"
       />
 
+      <Transition name="mobile-rail-fade">
+        <div v-if="sidebarVisible" class="mobile-rail-overlay lg:hidden" @click="sidebarVisible = false"></div>
+      </Transition>
+
+      <Transition name="mobile-rail-slide">
+        <div
+          v-if="sidebarVisible"
+          class="mobile-rail-panel lg:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-label="功能栏"
+        >
+          <NavRail class="mobile-rail-nav h-full min-h-0" />
+        </div>
+      </Transition>
+
       <main
         class="relative z-[1] flex min-w-0 flex-col px-4 py-4 md:px-6 md:py-6 lg:h-full lg:min-h-0 lg:overflow-hidden lg:px-8 lg:py-6"
       >
@@ -153,7 +169,7 @@ const route = useRoute()
 const router = useRouter()
 
 // Sidebar visibility (Cmd+B)
-const sidebarVisible = ref(true)
+const sidebarVisible = ref(false)
 
 // Global search (Cmd+K)
 const searchVisible = ref(false)
@@ -162,8 +178,9 @@ const searchInputRef = ref<ComponentPublicInstance | null>(null)
 
 const allSearchItems = [
   { label: '首页概览', path: '/dashboard' },
-  { label: '智能问答', path: '/chat' },
+  { label: '问答', path: '/chat' },
   { label: '知识库', path: '/knowledge' },
+  { label: '知识卡片', path: '/cards' },
   { label: '模拟面试', path: '/interview' },
   { label: '面试历史', path: '/interview/history' },
   { label: '错题复习', path: '/review' },
@@ -185,6 +202,7 @@ const filteredSearchItems = computed(() => {
 const navigateTo = (path: string) => {
   searchVisible.value = false
   searchQuery.value = ''
+  sidebarVisible.value = false
   router.push(path)
 }
 
@@ -227,6 +245,9 @@ const handleKeydown = (e: KeyboardEvent) => {
 
 onMounted(() => {
   document.addEventListener('keydown', handleKeydown)
+  if (window.innerWidth >= 1024) {
+    sidebarVisible.value = true
+  }
 })
 
 onUnmounted(() => {
@@ -407,6 +428,55 @@ const handleLogout = async () => {
 .global-topbar__login:hover {
   transform: translateY(-1px);
   opacity: 0.94;
+}
+
+.mobile-rail-overlay {
+  position: fixed;
+  inset: 73px 0 0;
+  z-index: 38;
+  background: rgba(8, 15, 26, 0.42);
+  backdrop-filter: blur(4px);
+}
+
+.mobile-rail-panel {
+  position: fixed;
+  top: 73px;
+  left: 0;
+  z-index: 39;
+  width: min(84vw, 320px);
+  height: calc(100dvh - 73px);
+  border-right: 1px solid var(--bc-line);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(248, 250, 252, 0.92)),
+    var(--bc-panel);
+  box-shadow: 24px 0 48px rgba(8, 15, 26, 0.18);
+}
+
+.mobile-rail-nav {
+  background: transparent;
+}
+
+.mobile-rail-fade-enter-active,
+.mobile-rail-fade-leave-active {
+  transition: opacity 180ms ease;
+}
+
+.mobile-rail-fade-enter-from,
+.mobile-rail-fade-leave-to {
+  opacity: 0;
+}
+
+.mobile-rail-slide-enter-active,
+.mobile-rail-slide-leave-active {
+  transition:
+    opacity 200ms ease,
+    transform 200ms ease;
+}
+
+.mobile-rail-slide-enter-from,
+.mobile-rail-slide-leave-to {
+  opacity: 0;
+  transform: translateX(-18px);
 }
 
 :deep(.global-topbar__right .relative > button) {
