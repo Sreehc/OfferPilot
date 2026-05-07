@@ -104,6 +104,76 @@ CREATE TABLE IF NOT EXISTS knowledge_chunk (
 );
 
 -- ============================================================
+-- 知识卡片任务表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS knowledge_card_task (
+    id BIGINT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    doc_id BIGINT NOT NULL,
+    doc_title VARCHAR(128) NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'draft' COMMENT 'draft / active / completed / invalid',
+    days INT NOT NULL DEFAULT 7,
+    current_day INT NOT NULL DEFAULT 1,
+    daily_target INT NOT NULL DEFAULT 0,
+    total_cards INT NOT NULL DEFAULT 0,
+    mastered_cards INT NOT NULL DEFAULT 0,
+    review_count INT NOT NULL DEFAULT 0,
+    invalid_reason VARCHAR(255) DEFAULT NULL,
+    started_at DATETIME DEFAULT NULL,
+    completed_at DATETIME DEFAULT NULL,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_card_task_user (user_id),
+    KEY idx_card_task_doc (doc_id),
+    KEY idx_card_task_status (user_id, status)
+);
+
+-- ============================================================
+-- 知识卡片表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS knowledge_card (
+    id BIGINT PRIMARY KEY,
+    task_id BIGINT NOT NULL,
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    scheduled_day INT NOT NULL DEFAULT 1,
+    state VARCHAR(32) NOT NULL DEFAULT 'new' COMMENT 'new / learning / weak / mastered',
+    review_count INT NOT NULL DEFAULT 0,
+    last_rating INT DEFAULT NULL COMMENT '1=Again, 2=Hard, 3=Good, 4=Easy',
+    last_review_time DATETIME DEFAULT NULL,
+    ease_factor DECIMAL(4,2) NOT NULL DEFAULT 2.50,
+    interval_days INT NOT NULL DEFAULT 0,
+    streak INT NOT NULL DEFAULT 0,
+    next_review_at DATETIME DEFAULT NULL,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_card_task_id (task_id),
+    KEY idx_card_task_state (task_id, state),
+    KEY idx_card_task_day (task_id, scheduled_day)
+);
+
+-- ============================================================
+-- 知识卡片评分记录表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS knowledge_card_log (
+    id BIGINT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    task_id BIGINT NOT NULL,
+    card_id BIGINT NOT NULL,
+    rating INT NOT NULL COMMENT '1=Again, 2=Hard, 3=Good, 4=Easy',
+    response_time_ms INT DEFAULT NULL,
+    ease_factor_before DECIMAL(4,2) NOT NULL,
+    interval_before INT NOT NULL,
+    ease_factor_after DECIMAL(4,2) NOT NULL,
+    interval_after INT NOT NULL,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_card_log_user (user_id),
+    KEY idx_card_log_task (task_id),
+    KEY idx_card_log_card (card_id)
+);
+
+-- ============================================================
 -- 题目表
 -- ============================================================
 CREATE TABLE IF NOT EXISTS question (
