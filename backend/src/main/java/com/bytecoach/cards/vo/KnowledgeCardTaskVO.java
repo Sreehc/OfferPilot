@@ -8,8 +8,8 @@ import lombok.Data;
 @Data
 @Builder
 public class KnowledgeCardTaskVO {
-    private Long id;
-    private Long docId;
+    private String id;
+    private String docId;
     private String docTitle;
     private String status;
     private Integer days;

@@ -33,6 +33,7 @@ import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -50,6 +51,24 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
 
     private static final BigDecimal MIN_EASE_FACTOR = new BigDecimal("1.30");
     private static final BigDecimal DEFAULT_EASE_FACTOR = new BigDecimal("2.50");
+
+    private static final class StudyQueue {
+        private final int currentDay;
+        private final List<KnowledgeCard> cards;
+
+        private StudyQueue(int currentDay, List<KnowledgeCard> cards) {
+            this.currentDay = currentDay;
+            this.cards = cards;
+        }
+
+        private int currentDay() {
+            return currentDay;
+        }
+
+        private List<KnowledgeCard> cards() {
+            return cards;
+        }
+    }
 
     private final KnowledgeCardTaskMapper taskMapper;
     private final KnowledgeCardMapper cardMapper;
@@ -228,7 +247,7 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
         List<KnowledgeCard> cards = loadCards(taskId);
         task.setMasteredCards((int) cards.stream().filter(item -> "mastered".equals(item.getState())).count());
         task.setReviewCount((task.getReviewCount() != null ? task.getReviewCount() : 0) + 1);
-        task.setCurrentDay(computeCurrentDay(task, cards));
+        task.setCurrentDay(resolveCurrentDay(task, cards));
         if (task.getMasteredCards() >= task.getTotalCards()) {
             task.setStatus("completed");
             if (task.getCompletedAt() == null) {
@@ -332,7 +351,7 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
     private KnowledgeCardTaskVO buildTaskVO(KnowledgeCardTask task, List<KnowledgeCard> cards) {
         List<KnowledgeCardItemVO> items = cards.stream()
                 .map(card -> KnowledgeCardItemVO.builder()
-                        .id(card.getId())
+                        .id(String.valueOf(card.getId()))
                         .question(card.getQuestion())
                         .answer(card.getAnswer())
                         .sortOrder(card.getSortOrder())
@@ -350,16 +369,17 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
                 .filter(card -> card.getLastReviewTime() != null
                         && card.getLastReviewTime().toLocalDate().equals(LocalDateTime.now().toLocalDate()))
                 .count();
-        List<KnowledgeCard> dueCards = selectDueCards(task, cards);
+        StudyQueue studyQueue = selectStudyQueue(task, cards);
+        List<KnowledgeCard> dueCards = studyQueue.cards();
         KnowledgeCard currentCard = dueCards.stream().findFirst().orElse(null);
 
         return KnowledgeCardTaskVO.builder()
-                .id(task.getId())
-                .docId(task.getDocId())
+                .id(String.valueOf(task.getId()))
+                .docId(String.valueOf(task.getDocId()))
                 .docTitle(task.getDocTitle())
                 .status(task.getStatus())
                 .days(task.getDays())
-                .currentDay(task.getCurrentDay())
+                .currentDay(studyQueue.currentDay())
                 .dailyTarget(task.getDailyTarget())
                 .totalCards(task.getTotalCards())
                 .masteredCards(task.getMasteredCards())
@@ -370,40 +390,52 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
                 .dueCount(dueCards.size())
                 .reviewedTodayCount(reviewedTodayCount)
                 .currentCard(currentCard == null ? null : items.stream()
-                        .filter(item -> item.getId().equals(currentCard.getId()))
+                        .filter(item -> item.getId().equals(String.valueOf(currentCard.getId())))
                         .findFirst()
                         .orElse(null))
                 .cards(items)
                 .build();
     }
 
-    private int computeCurrentDay(KnowledgeCardTask task, List<KnowledgeCard> cards) {
-        for (int day = 1; day <= task.getDays(); day++) {
-            final int targetDay = day;
-            boolean unfinished = cards.stream()
-                    .anyMatch(card -> card.getScheduledDay() <= targetDay && !"mastered".equals(card.getState()));
-            if (unfinished) {
-                return day;
-            }
-        }
-        return task.getDays();
+    private int resolveCurrentDay(KnowledgeCardTask task, List<KnowledgeCard> cards) {
+        return selectStudyQueue(task, cards).currentDay();
     }
 
-    private List<KnowledgeCard> selectDueCards(KnowledgeCardTask task, List<KnowledgeCard> cards) {
-        int currentDay = task.getCurrentDay() != null ? task.getCurrentDay() : 1;
-        List<KnowledgeCard> due = cards.stream()
-                .filter(card -> !"mastered".equals(card.getState()) && card.getScheduledDay() <= currentDay)
-                .sorted(Comparator
-                        .comparing((KnowledgeCard card) -> statePriority(card.getState()))
-                        .thenComparing(KnowledgeCard::getSortOrder))
-                .toList();
-        if (!due.isEmpty()) {
-            return due;
+    private StudyQueue selectStudyQueue(KnowledgeCardTask task, List<KnowledgeCard> cards) {
+        int totalDays = Math.max(1, task.getDays() == null ? 1 : task.getDays());
+        int currentDay = Math.max(1, Math.min(task.getCurrentDay() != null ? task.getCurrentDay() : 1, totalDays));
+        LocalDateTime now = LocalDateTime.now();
+
+        for (int day = currentDay; day <= totalDays; day++) {
+            final int targetDay = day;
+            List<KnowledgeCard> availableCards = cards.stream()
+                    .filter(card -> !"mastered".equals(card.getState()) && normalizeScheduledDay(card.getScheduledDay()) <= targetDay)
+                    .filter(card -> card.getNextReviewAt() == null || !card.getNextReviewAt().isAfter(now))
+                    .sorted(Comparator
+                            .comparing((KnowledgeCard card) -> statePriority(card.getState()))
+                            .thenComparing(KnowledgeCard::getSortOrder))
+                    .toList();
+            if (!availableCards.isEmpty()) {
+                return new StudyQueue(day, availableCards);
+            }
         }
-        return cards.stream()
+
+        Integer nextPendingDay = cards.stream()
                 .filter(card -> !"mastered".equals(card.getState()))
-                .sorted(Comparator.comparing(KnowledgeCard::getSortOrder))
-                .toList();
+                .map(KnowledgeCard::getScheduledDay)
+                .filter(Objects::nonNull)
+                .min(Integer::compareTo)
+                .orElse(null);
+
+        if (nextPendingDay != null) {
+            return new StudyQueue(Math.max(currentDay, Math.min(nextPendingDay, totalDays)), List.of());
+        }
+
+        return new StudyQueue(totalDays, List.of());
+    }
+
+    private int normalizeScheduledDay(Integer scheduledDay) {
+        return scheduledDay == null || scheduledDay < 1 ? 1 : scheduledDay;
     }
 
     private int statePriority(String state) {

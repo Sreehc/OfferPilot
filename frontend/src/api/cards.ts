@@ -7,7 +7,7 @@ export interface CardTaskCreatePayload {
 }
 
 export interface CardRatePayload {
-  cardId: number
+  cardId: string
   rating: 1 | 2 | 3 | 4
   responseTimeMs?: number
 }
@@ -20,18 +20,18 @@ export const fetchActiveCardTaskApi = () => {
   return request<KnowledgeCardTask | null>({ url: '/cards/active', method: 'get' })
 }
 
-export const fetchCardTaskApi = (taskId: number) => {
+export const fetchCardTaskApi = (taskId: string) => {
   return request<KnowledgeCardTask>({ url: `/cards/task/${taskId}`, method: 'get' })
 }
 
-export const startCardTaskApi = (taskId: number) => {
+export const startCardTaskApi = (taskId: string) => {
   return request<KnowledgeCardTask>({ url: `/cards/task/${taskId}/start`, method: 'post' })
 }
 
-export const submitCardRateApi = (taskId: number, payload: CardRatePayload) => {
+export const submitCardRateApi = (taskId: string, payload: CardRatePayload) => {
   return request<KnowledgeCardTask>({ url: `/cards/task/${taskId}/rate`, method: 'post', data: payload })
 }
 
-export const restartCardTaskApi = (taskId: number) => {
+export const restartCardTaskApi = (taskId: string) => {
   return request<KnowledgeCardTask>({ url: `/cards/task/${taskId}/restart`, method: 'post' })
 }

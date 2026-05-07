@@ -252,7 +252,7 @@ export interface ReviewStats {
 }
 
 export interface KnowledgeCardItem {
-  id: number
+  id: string
   question: string
   answer: string
   sortOrder: number
@@ -266,8 +266,8 @@ export interface KnowledgeCardItem {
 }
 
 export interface KnowledgeCardTask {
-  id: number
-  docId: number
+  id: string
+  docId: string
   docTitle: string
   status: 'draft' | 'active' | 'completed' | 'invalid'
   days: number

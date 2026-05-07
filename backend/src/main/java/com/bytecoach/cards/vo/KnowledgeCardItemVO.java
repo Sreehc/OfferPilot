@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 @Builder
 public class KnowledgeCardItemVO {
-    private Long id;
+    private String id;
     private String question;
     private String answer;
     private Integer sortOrder;
