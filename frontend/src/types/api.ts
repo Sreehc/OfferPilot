@@ -251,6 +251,40 @@ export interface ReviewStats {
   heatmap?: Record<string, number>
 }
 
+export interface KnowledgeCardItem {
+  id: number
+  question: string
+  answer: string
+  sortOrder: number
+  scheduledDay: number
+  state: 'new' | 'learning' | 'weak' | 'mastered'
+  reviewCount: number
+  lastRating?: number | null
+  easeFactor?: number
+  intervalDays?: number
+  streak?: number
+}
+
+export interface KnowledgeCardTask {
+  id: number
+  docId: number
+  docTitle: string
+  status: 'draft' | 'active' | 'completed' | 'invalid'
+  days: number
+  currentDay: number
+  dailyTarget: number
+  totalCards: number
+  masteredCards: number
+  reviewCount: number
+  invalidReason?: string
+  startedAt?: string
+  completedAt?: string
+  dueCount: number
+  reviewedTodayCount: number
+  currentCard?: KnowledgeCardItem | null
+  cards: KnowledgeCardItem[]
+}
+
 export interface CommunityQuestion {
   id: number
   userId: number

@@ -188,7 +188,10 @@
           </p>
 
           <div class="mt-4 flex flex-wrap gap-2">
-            <RouterLink :to="`/cards?docId=${doc.id}`" class="hard-button-secondary text-sm">
+            <RouterLink
+              :to="{ path: '/cards', query: { docId: String(doc.id), title: doc.title } }"
+              class="hard-button-secondary text-sm"
+            >
               生成知识卡片
             </RouterLink>
           </div>
