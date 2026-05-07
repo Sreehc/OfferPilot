@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.bytecoach.ai.service.EmbeddingGateway;
 import com.bytecoach.category.entity.Category;
 import com.bytecoach.category.service.CategoryService;
+import com.bytecoach.cards.service.KnowledgeCardService;
 import com.bytecoach.common.api.ResultCode;
 import com.bytecoach.common.dto.PageResult;
 import com.bytecoach.common.exception.BusinessException;
@@ -63,6 +64,7 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
     private final EmbeddingGateway embeddingGateway;
     private final VectorStoreService vectorStoreService;
     private final DocumentParserService documentParserService;
+    private final KnowledgeCardService knowledgeCardService;
 
     @Lazy
     @org.springframework.beans.factory.annotation.Autowired
@@ -237,6 +239,7 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
         if (!userId.equals(doc.getUserId())) {
             throw new BusinessException(ResultCode.FORBIDDEN.getCode(), "只能删除自己上传的文档");
         }
+        knowledgeCardService.invalidateByDocId(docId, "来源文档已删除");
         // Remove chunks from vector store and DB
         vectorStoreService.removeByDocId(docId);
         knowledgeChunkMapper.delete(new LambdaQueryWrapper<KnowledgeChunk>()

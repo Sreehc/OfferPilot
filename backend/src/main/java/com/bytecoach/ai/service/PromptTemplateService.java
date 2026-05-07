@@ -10,4 +10,6 @@ public interface PromptTemplateService {
     String interviewScorePrompt();
 
     String followUpPrompt();
+
+    String knowledgeCardPrompt();
 }
