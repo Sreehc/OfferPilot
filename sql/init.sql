@@ -67,6 +67,7 @@ CREATE TABLE IF NOT EXISTS chat_message (
     content TEXT NOT NULL,
     reference_json JSON DEFAULT NULL,
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     KEY idx_chat_message_session_id (session_id),
     KEY idx_chat_message_user_id (user_id)
 );
@@ -469,6 +470,7 @@ CREATE TABLE IF NOT EXISTS login_log (
     status TINYINT NOT NULL COMMENT '1=成功, 0=失败',
     fail_reason VARCHAR(128) DEFAULT NULL COMMENT '失败原因',
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     KEY idx_login_log_user (user_id),
     KEY idx_login_log_time (create_time)
 );
