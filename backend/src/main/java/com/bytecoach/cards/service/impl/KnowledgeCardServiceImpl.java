@@ -33,8 +33,7 @@ import com.bytecoach.question.mapper.QuestionMapper;
 import com.bytecoach.wrong.entity.WrongQuestion;
 import com.bytecoach.wrong.mapper.WrongQuestionMapper;
 import com.bytecoach.wrong.dto.ReviewScheduleResult;
-import com.bytecoach.wrong.service.SpacedRepetitionService;
-import com.bytecoach.wrong.service.impl.SpacedRepetitionServiceImpl;
+import com.bytecoach.wrong.support.ReviewSchedulingRules;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
@@ -104,7 +103,6 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
     private final PromptTemplateService promptTemplateService;
     private final LlmGateway llmGateway;
     private final ObjectMapper objectMapper;
-    private final SpacedRepetitionService spacedRepetitionService;
 
     @Override
     @Transactional
@@ -479,7 +477,7 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
         int intervalBefore = card.getIntervalDays() != null ? card.getIntervalDays() : 0;
         int rating = request.getRating();
 
-        ReviewScheduleResult schedule = spacedRepetitionService.schedule(efBefore, intervalBefore, card.getStreak(), rating);
+        ReviewScheduleResult schedule = ReviewSchedulingRules.schedule(efBefore, intervalBefore, card.getStreak(), rating);
 
         card.setEaseFactor(schedule.getEaseFactor());
         card.setIntervalDays(schedule.getIntervalDays());

@@ -21,7 +21,7 @@ import com.bytecoach.wrong.entity.ReviewLog;
 import com.bytecoach.wrong.entity.WrongQuestion;
 import com.bytecoach.wrong.mapper.ReviewLogMapper;
 import com.bytecoach.wrong.mapper.WrongQuestionMapper;
-import com.bytecoach.wrong.service.impl.SpacedRepetitionServiceImpl;
+import com.bytecoach.wrong.support.ReviewSchedulingRules;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
@@ -527,7 +527,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         if ("weak".equals(card.getState())) {
             return "not_started";
         }
-        return SpacedRepetitionServiceImpl.resolveMasteryLevel(card.getEaseFactor(), card.getStreak());
+        return ReviewSchedulingRules.resolveMasteryLevel(card.getEaseFactor(), card.getStreak());
     }
 
     private String resolveWrongContentType(Long userId, Long wrongQuestionId) {
