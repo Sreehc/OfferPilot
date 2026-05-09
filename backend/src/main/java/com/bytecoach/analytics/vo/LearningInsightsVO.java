@@ -13,6 +13,9 @@ public class LearningInsightsVO {
     private BigDecimal lastWeekAvgScore;
     private int thisWeekInterviewCount;
     private int lastWeekInterviewCount;
+    private String todayCompletionStatus;
+    private String reviewDebtStatus;
+    private String masteryGrowthStatus;
 
     /** Per-category week-over-week changes, sorted by |change| descending. */
     private List<CategoryChange> categoryChanges;

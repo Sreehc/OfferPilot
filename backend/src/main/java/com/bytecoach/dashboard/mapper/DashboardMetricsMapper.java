@@ -120,10 +120,24 @@ public interface DashboardMetricsMapper {
     Long countMasteredCards(@Param("taskId") Long taskId);
 
     @Select("""
-            SELECT COUNT(*)
-            FROM wrong_question
-            WHERE user_id = #{userId}
-              AND next_review_date < CURRENT_DATE
+            SELECT COALESCE(SUM(item_count), 0)
+            FROM (
+                SELECT COUNT(*) AS item_count
+                FROM wrong_question
+                WHERE user_id = #{userId}
+                  AND next_review_date < CURRENT_DATE
+
+                UNION ALL
+
+                SELECT COUNT(*) AS item_count
+                FROM knowledge_card kc
+                INNER JOIN knowledge_card_task kct ON kct.id = kc.task_id
+                WHERE kct.user_id = #{userId}
+                  AND kct.status <> 'invalid'
+                  AND kc.state <> 'mastered'
+                  AND kc.next_review_at IS NOT NULL
+                  AND kc.next_review_at < NOW()
+            ) debt
             """)
     Long countReviewDebt(@Param("userId") Long userId);
 }

@@ -4,7 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.bytecoach.adaptive.service.AdaptiveService;
 import com.bytecoach.adaptive.vo.AbilityProfileVO;
 import com.bytecoach.analytics.service.AnalyticsService;
+import com.bytecoach.analytics.vo.EfficiencyVO;
 import com.bytecoach.analytics.vo.LearningInsightsVO;
+import com.bytecoach.cards.entity.KnowledgeCard;
+import com.bytecoach.cards.mapper.KnowledgeCardMapper;
 import com.bytecoach.cards.entity.KnowledgeCardTask;
 import com.bytecoach.cards.mapper.KnowledgeCardTaskMapper;
 import com.bytecoach.common.api.ResultCode;
@@ -19,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +44,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final AnalyticsService analyticsService;
     private final ByteCoachProperties props;
     private final KnowledgeCardTaskMapper knowledgeCardTaskMapper;
+    private final KnowledgeCardMapper knowledgeCardMapper;
 
     @Override
     public DashboardOverviewVO overview() {
@@ -81,6 +86,7 @@ public class DashboardServiceImpl implements DashboardService {
                 .todayCardCompletionRate(memorySummary.todayCardCompletionRate())
                 .masteredCardCount(memorySummary.masteredCardCount())
                 .reviewDebtCount(memorySummary.reviewDebtCount())
+                .studyStreak(memorySummary.studyStreak())
                 .build();
 
         // Populate adaptive learning fields
@@ -98,11 +104,14 @@ public class DashboardServiceImpl implements DashboardService {
         // Populate analytics insights
         try {
             LearningInsightsVO insights = analyticsService.getLearningInsights(userId);
+            EfficiencyVO efficiency = analyticsService.getEfficiencyData(userId);
             result.setThisWeekAvgScore(insights.getThisWeekAvgScore());
             result.setLastWeekAvgScore(insights.getLastWeekAvgScore());
             result.setThisWeekInterviewCount(insights.getThisWeekInterviewCount());
             result.setCategoryChanges(insights.getCategoryChanges());
             result.setBestStudyHours(insights.getBestStudyHours());
+            result.setTodayCompletionStatus(insights.getTodayCompletionStatus());
+            result.setCategoryMasterySummary(efficiency.getCategoryMastery());
         } catch (Exception e) {
             log.warn("Failed to load analytics insights for dashboard: {}", e.getMessage());
         }
@@ -143,22 +152,36 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     private MemorySummary loadMemorySummary(Long userId) {
-        Long latestTaskId = dashboardMetricsMapper.selectLatestCardTaskId(userId);
         int reviewDebtCount = (int) defaultLong(dashboardMetricsMapper.countReviewDebt(userId));
-        if (latestTaskId == null) {
-            return new MemorySummary(0, 0, 0, BigDecimal.ZERO, 0, reviewDebtCount);
+        List<KnowledgeCardTask> tasks = knowledgeCardTaskMapper.selectList(new LambdaQueryWrapper<KnowledgeCardTask>()
+                .eq(KnowledgeCardTask::getUserId, userId)
+                .ne(KnowledgeCardTask::getStatus, "invalid"));
+        if (tasks.isEmpty()) {
+            return new MemorySummary(0, 0, 0, BigDecimal.ZERO, 0, reviewDebtCount, 0);
         }
 
-        KnowledgeCardTask task = knowledgeCardTaskMapper.selectById(latestTaskId);
-        if (task == null) {
-            return new MemorySummary(0, 0, 0, BigDecimal.ZERO, 0, reviewDebtCount);
-        }
+        List<Long> taskIds = tasks.stream().map(KnowledgeCardTask::getId).toList();
+        List<KnowledgeCard> cards = knowledgeCardMapper.selectList(new LambdaQueryWrapper<KnowledgeCard>()
+                .in(KnowledgeCard::getTaskId, taskIds));
+        Map<Long, Integer> currentDays = tasks.stream()
+                .collect(java.util.stream.Collectors.toMap(KnowledgeCardTask::getId, this::resolveCurrentDay));
 
-        int currentDay = resolveCurrentDay(task);
-        int todayLearnCards = (int) defaultLong(dashboardMetricsMapper.countTodayLearnCards(task.getId(), currentDay));
-        int todayReviewCards = (int) defaultLong(dashboardMetricsMapper.countTodayReviewCards(task.getId(), currentDay));
-        int todayCompletedCards = (int) defaultLong(dashboardMetricsMapper.countTodayCompletedCards(task.getId()));
-        int masteredCardCount = (int) defaultLong(dashboardMetricsMapper.countMasteredCards(task.getId()));
+        int todayLearnCards = (int) cards.stream()
+                .filter(card -> "new".equals(card.getState()))
+                .filter(card -> card.getScheduledDay() != null && card.getScheduledDay() <= currentDays.getOrDefault(card.getTaskId(), 1))
+                .count();
+        int todayReviewCards = (int) cards.stream()
+                .filter(card -> !"new".equals(card.getState()) && !"mastered".equals(card.getState()))
+                .filter(card -> card.getNextReviewAt() == null || !card.getNextReviewAt().isAfter(java.time.LocalDateTime.now()))
+                .count();
+        int todayCompletedCards = (int) cards.stream()
+                .filter(card -> card.getLastReviewTime() != null
+                        && card.getLastReviewTime().toLocalDate().equals(java.time.LocalDate.now()))
+                .count();
+        int masteredCardCount = (int) cards.stream()
+                .filter(card -> "mastered".equals(card.getState()))
+                .count();
+        int studyStreak = resolveStudyStreak(cards);
         int todayCardTotal = todayLearnCards + todayReviewCards;
         BigDecimal todayCardCompletionRate = todayCardTotal <= 0
                 ? BigDecimal.ZERO
@@ -172,7 +195,8 @@ public class DashboardServiceImpl implements DashboardService {
                 todayCompletedCards,
                 todayCardCompletionRate,
                 masteredCardCount,
-                reviewDebtCount
+                reviewDebtCount,
+                studyStreak
         );
     }
 
@@ -191,7 +215,26 @@ public class DashboardServiceImpl implements DashboardService {
             int todayCompletedCards,
             BigDecimal todayCardCompletionRate,
             int masteredCardCount,
-            int reviewDebtCount
+            int reviewDebtCount,
+            int studyStreak
     ) {
+    }
+
+    private int resolveStudyStreak(List<KnowledgeCard> cards) {
+        java.util.Set<java.time.LocalDate> reviewedDates = cards.stream()
+                .map(KnowledgeCard::getLastReviewTime)
+                .filter(java.util.Objects::nonNull)
+                .map(java.time.LocalDateTime::toLocalDate)
+                .collect(java.util.stream.Collectors.toSet());
+        if (reviewedDates.isEmpty()) {
+            return 0;
+        }
+        java.time.LocalDate cursor = java.time.LocalDate.now();
+        int streak = 0;
+        while (reviewedDates.contains(cursor)) {
+            streak++;
+            cursor = cursor.minusDays(1);
+        }
+        return streak;
     }
 }

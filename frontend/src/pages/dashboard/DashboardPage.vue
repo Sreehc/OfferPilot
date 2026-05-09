@@ -252,7 +252,7 @@
                       ? `最近 ${overview.recentInterviews.length} 场诊断`
                       : '暂无诊断记录'
                   }}
-                  · {{ overview.weakPoints?.length || 0 }} 个待补强知识点
+                  · {{ overview.categoryMasterySummary?.length || 0 }} 个分类已形成掌握度
                 </span>
               </div>
             </div>
@@ -261,70 +261,41 @@
           <div class="space-y-4 pt-2">
             <section class="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
               <DashboardInterviews :interviews="overview.recentInterviews" />
-              <DashboardWeakPoints :weak-points="overview.weakPoints" />
+              <DashboardWeakPoints :items="overview.categoryMasterySummary || []" />
             </section>
 
             <section class="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
               <article class="paper-panel p-4 sm:p-6">
-                <p class="section-kicker">本周变化</p>
-                <h3 class="mt-3 text-xl font-semibold tracking-[-0.03em] text-ink sm:text-2xl">本周表现</h3>
-                <div class="mt-4 flex items-end gap-6">
+                <p class="section-kicker">记忆成长摘要</p>
+                <h3 class="mt-3 text-xl font-semibold tracking-[-0.03em] text-ink sm:text-2xl">最近的记忆推进状态</h3>
+                <div class="mt-4 grid gap-4 sm:grid-cols-2">
                   <div>
-                    <p class="text-xs text-slate-500">本周平均分</p>
-                    <p class="mt-1 text-3xl font-bold" :class="weekComparisonClass">
-                      {{ overview.thisWeekAvgScore ?? '-' }}
+                    <p class="text-xs text-slate-500">今日完成状态</p>
+                    <p class="mt-1 text-xl font-semibold text-ink">
+                      {{ overview.todayCompletionStatus || '等待今日任务开始' }}
                     </p>
                   </div>
                   <div>
-                    <p class="text-xs text-slate-500">上周平均分</p>
-                    <p class="mt-1 text-2xl font-semibold text-slate-400">
-                      {{ overview.lastWeekAvgScore ?? '-' }}
+                    <p class="text-xs text-slate-500">连续学习</p>
+                    <p class="mt-1 text-3xl font-bold text-ink">
+                      {{ overview.studyStreak ?? reviewStats.currentStreak ?? 0 }} 天
                     </p>
-                  </div>
-                  <div v-if="weekDiff !== null" class="flex items-center gap-1 pb-1">
-                    <span class="text-sm font-medium" :class="weekDiff >= 0 ? 'text-green-600' : 'text-red-500'">
-                      {{ weekDiff >= 0 ? '+' : '' }}{{ weekDiff.toFixed(1) }}
-                    </span>
-                    <svg
-                      v-if="weekDiff >= 0"
-                      class="h-4 w-4 text-green-600"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                    </svg>
-                    <svg
-                      v-else
-                      class="h-4 w-4 text-red-500"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                    </svg>
                   </div>
                 </div>
                 <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
-                  本周已完成 {{ overview.thisWeekInterviewCount ?? 0 }} 场练习。
+                  今天优先看完成率、连续天数和分类掌握度，面试平均分留作辅助参考。
                 </p>
-                <div v-if="overview.categoryChanges && overview.categoryChanges.length > 0" class="mt-5">
-                  <p class="mb-2 text-xs font-medium text-slate-500">变化最大的分类</p>
-                  <div class="space-y-2">
-                    <div
-                      v-for="c in overview.categoryChanges.slice(0, 4)"
-                      :key="c.categoryId"
-                      class="flex items-center justify-between text-sm"
-                    >
-                      <span class="truncate text-slate-600 dark:text-slate-300">{{ c.categoryName }}</span>
-                      <div class="flex items-center gap-2">
-                        <span class="text-xs text-slate-400">{{ c.lastWeekScore }}→{{ c.thisWeekScore }}</span>
-                        <span class="text-xs font-medium" :class="c.change >= 0 ? 'text-green-600' : 'text-red-500'">
-                          {{ c.change >= 0 ? '+' : '' }}{{ c.change.toFixed(1) }}
-                        </span>
-                      </div>
+                <div v-if="overview.categoryMasterySummary && overview.categoryMasterySummary.length > 0" class="mt-5 space-y-2">
+                  <p class="mb-2 text-xs font-medium text-slate-500">当前最有压力的分类</p>
+                  <div
+                    v-for="c in overview.categoryMasterySummary.slice(0, 4)"
+                    :key="`${c.categoryName}-${c.categoryId ?? 'na'}`"
+                    class="flex items-center justify-between text-sm"
+                  >
+                    <span class="truncate text-slate-600 dark:text-slate-300">{{ c.categoryName }}</span>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-slate-400">待复习 {{ c.dueCount }}</span>
+                      <span class="text-xs font-medium text-accent">{{ Math.round(c.masteryRate) }}%</span>
                     </div>
                   </div>
                 </div>
@@ -340,8 +311,25 @@
               </article>
 
               <article class="paper-panel p-4 sm:p-6">
-                <p class="section-kicker">高效时间段</p>
-                <h3 class="mt-3 text-lg font-semibold text-ink">你更适合在哪些时间练习</h3>
+                <p class="section-kicker">辅助面试数据</p>
+                <h3 class="mt-3 text-lg font-semibold text-ink">面试诊断作为辅助参考</h3>
+                <div class="mt-4 flex items-end gap-6">
+                  <div>
+                    <p class="text-xs text-slate-500">本周平均分</p>
+                    <p class="mt-1 text-3xl font-bold" :class="weekComparisonClass">
+                      {{ overview.thisWeekAvgScore ?? '-' }}
+                    </p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-slate-500">上周平均分</p>
+                    <p class="mt-1 text-2xl font-semibold text-slate-400">
+                      {{ overview.lastWeekAvgScore ?? '-' }}
+                    </p>
+                  </div>
+                </div>
+                <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                  本周已完成 {{ overview.thisWeekInterviewCount ?? 0 }} 场诊断，面试表现用于辅助判断是否需要补充训练。
+                </p>
                 <div
                   v-if="overview.bestStudyHours && overview.bestStudyHours.length > 0"
                   class="mt-4 flex flex-wrap gap-4"
@@ -440,7 +428,9 @@ const overview = ref<DashboardOverview>({
   todayCompletedCards: 0,
   todayCardCompletionRate: 0,
   masteredCardCount: 0,
-  reviewDebtCount: 0
+  reviewDebtCount: 0,
+  studyStreak: 0,
+  categoryMasterySummary: []
 })
 
 const todayLearnCards = computed(() => overview.value.todayLearnCards ?? 0)
@@ -476,8 +466,8 @@ const metrics = computed(() => [
   },
   {
     label: '连续天数',
-    value: `${reviewStats.value.currentStreak} 天`,
-    desc: reviewStats.value.currentStreak > 0 ? '保持连续推进，比突击更容易形成长期记忆。' : '今天开始后就会重新累计。'
+    value: `${overview.value.studyStreak ?? reviewStats.value.currentStreak} 天`,
+    desc: (overview.value.studyStreak ?? reviewStats.value.currentStreak) > 0 ? '保持连续推进，比突击更容易形成长期记忆。' : '今天开始后就会重新累计。'
   },
   {
     label: '已掌握卡片',
@@ -533,11 +523,11 @@ const todaySignals = computed(() => [
   },
   {
     label: '连续学习天数',
-    value: `${reviewStats.value.currentStreak} 天`,
-    detail: reviewStats.value.currentStreak > 0 ? '保持连续节奏，比突击更容易留下长期记忆。' : '今天开始后就会重新累计。',
+    value: `${overview.value.studyStreak ?? reviewStats.value.currentStreak} 天`,
+    detail: (overview.value.studyStreak ?? reviewStats.value.currentStreak) > 0 ? '保持连续节奏，比突击更容易留下长期记忆。' : '今天开始后就会重新累计。',
     action: '查看复习中心',
     to: '/review',
-    dotClass: reviewStats.value.currentStreak > 0 ? 'bg-cyan' : 'bg-slate-400'
+    dotClass: (overview.value.studyStreak ?? reviewStats.value.currentStreak) > 0 ? 'bg-cyan' : 'bg-slate-400'
   },
   {
     label: '今日完成率',

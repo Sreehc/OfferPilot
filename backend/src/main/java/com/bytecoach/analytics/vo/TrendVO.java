@@ -12,7 +12,16 @@ public class TrendVO {
     /** Ordered week keys, e.g. ["2026-W15", "2026-W16", ...]. */
     private List<String> weeks;
 
-    /** Overall average score per week. */
+    /** Memory completion trend by week. */
+    private List<MemoryTrendPoint> completionRateTrend;
+
+    /** Review debt trend by week. */
+    private List<MemoryTrendPoint> reviewDebtTrend;
+
+    /** Mastered card growth trend by week. */
+    private List<MemoryTrendPoint> masteredGrowthTrend;
+
+    /** Overall average interview score per week, kept as supporting context. */
     private List<WeeklyPoint> overallTrend;
 
     /** Per-category weekly breakdown. */
@@ -32,5 +41,13 @@ public class TrendVO {
         private Long categoryId;
         private String categoryName;
         private List<WeeklyPoint> points;
+    }
+
+    @Data
+    @Builder
+    public static class MemoryTrendPoint {
+        private String week;
+        private BigDecimal value;
+        private int count;
     }
 }

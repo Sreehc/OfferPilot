@@ -22,17 +22,35 @@ public class EfficiencyVO {
     /** Forgetting rate per week (percentage of "Again" ratings). */
     private List<WeeklyForgettingRate> forgettingRateTrend;
 
+    /** Completion rate trend by day or week. */
+    private List<CompletionRatePoint> completionRateTrend;
+
+    /** Review debt trend by day or week. */
+    private List<DebtTrendPoint> reviewDebtTrend;
+
+    /** Mastered cards growth trend by day or week. */
+    private List<MasteredGrowthPoint> masteredGrowthTrend;
+
     /** Mastery distribution: {not_started: N, reviewing: N, mastered: N}. */
     private Map<String, Long> masteryDistribution;
 
     /** Review distribution by content type. */
     private Map<String, Long> contentTypeDistribution;
 
+    /** Category mastery summary. */
+    private List<CategoryMastery> categoryMastery;
+
     /** Total reviews completed. */
     private long totalReviews;
 
     /** Current streak in days. */
     private int currentStreak;
+
+    /** Current review completion rate. */
+    private BigDecimal reviewCompletionRate;
+
+    /** Current forgetting rate summary. */
+    private BigDecimal forgettingRate;
 
     @Data
     @Builder
@@ -49,5 +67,39 @@ public class EfficiencyVO {
         private double forgettingRate;  // 0.0 - 1.0
         private int totalRatings;
         private int againCount;
+    }
+
+    @Data
+    @Builder
+    public static class CompletionRatePoint {
+        private String label;
+        private BigDecimal completionRate;
+        private int plannedCount;
+        private int completedCount;
+    }
+
+    @Data
+    @Builder
+    public static class DebtTrendPoint {
+        private String label;
+        private int reviewDebtCount;
+    }
+
+    @Data
+    @Builder
+    public static class MasteredGrowthPoint {
+        private String label;
+        private int masteredCardCount;
+    }
+
+    @Data
+    @Builder
+    public static class CategoryMastery {
+        private Long categoryId;
+        private String categoryName;
+        private int totalCards;
+        private int masteredCards;
+        private int dueCount;
+        private BigDecimal masteryRate;
     }
 }

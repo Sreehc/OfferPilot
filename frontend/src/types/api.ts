@@ -56,6 +56,15 @@ export interface WeakPointItem {
   score: number
 }
 
+export interface CategoryMasteryItem {
+  categoryId?: number | null
+  categoryName: string
+  totalCards: number
+  masteredCards: number
+  dueCount: number
+  masteryRate: number
+}
+
 export interface DashboardOverview {
   learningCount: number
   averageScore: number
@@ -69,6 +78,10 @@ export interface DashboardOverview {
   todayCardCompletionRate?: number
   masteredCardCount?: number
   reviewDebtCount?: number
+  studyStreak?: number
+  todayCompletionStatus?: string
+  reviewDebtDelta?: number
+  categoryMasterySummary?: CategoryMasteryItem[]
   overallAbility?: number
   recommendedDifficulty?: string
   weakCategories?: string[]
@@ -496,6 +509,12 @@ export interface WeeklyPoint {
   count: number
 }
 
+export interface MemoryTrendPoint {
+  week: string
+  value: number
+  count: number
+}
+
 export interface CategoryTrend {
   categoryId: number
   categoryName: string
@@ -504,6 +523,9 @@ export interface CategoryTrend {
 
 export interface AbilityTrend {
   weeks: string[]
+  completionRateTrend: MemoryTrendPoint[]
+  reviewDebtTrend: MemoryTrendPoint[]
+  masteredGrowthTrend: MemoryTrendPoint[]
   overallTrend: WeeklyPoint[]
   categoryTrends: CategoryTrend[]
 }
@@ -526,10 +548,27 @@ export interface EfficiencyData {
   efTrend: WeeklyEF[]
   ratingDistribution: Record<number, number>
   forgettingRateTrend: WeeklyForgettingRate[]
+  completionRateTrend: Array<{
+    label: string
+    completionRate: number
+    plannedCount: number
+    completedCount: number
+  }>
+  reviewDebtTrend: Array<{
+    label: string
+    reviewDebtCount: number
+  }>
+  masteredGrowthTrend: Array<{
+    label: string
+    masteredCardCount: number
+  }>
   masteryDistribution: Record<string, number>
   contentTypeDistribution?: Record<string, number>
+  categoryMastery?: CategoryMasteryItem[]
   totalReviews: number
   currentStreak: number
+  reviewCompletionRate?: number
+  forgettingRate?: number
 }
 
 export interface CategoryChange {
@@ -551,6 +590,9 @@ export interface LearningInsights {
   lastWeekAvgScore: number
   thisWeekInterviewCount: number
   lastWeekInterviewCount: number
+  todayCompletionStatus?: string
+  reviewDebtStatus?: string
+  masteryGrowthStatus?: string
   categoryChanges: CategoryChange[]
   bestStudyHours: HourDistribution[]
 }

@@ -5,11 +5,11 @@
         <div class="min-w-0 max-w-3xl">
           <div class="flex items-center gap-3">
             <span class="state-pulse" aria-hidden="true"></span>
-            <p class="section-kicker">学习分析</p>
+            <p class="section-kicker">记忆成长看板</p>
           </div>
-          <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">查看最近的学习表现</h2>
+          <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">查看最近的记忆推进状态</h2>
           <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-            查看学习趋势、复习情况和当前需要关注的重点。
+            重点看今日完成、复习负债、掌握增长和遗忘风险，面试表现作为辅助参考保留在下方。
           </p>
         </div>
 
@@ -68,10 +68,10 @@
     <section class="cockpit-panel p-5 sm:p-6">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div class="min-w-0">
-          <p class="section-kicker">能力趋势</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">最近几周的面试表现变化</h3>
+          <p class="section-kicker">记忆趋势</p>
+          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">完成率、负债与掌握增长</h3>
           <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-            查看整体分数变化，也可按分类筛选。
+            第一主图优先展示记忆主线的推进情况，而不是面试分数变化。
           </p>
         </div>
       </div>
@@ -79,30 +79,13 @@
       <div v-if="trendLoading" class="mt-5 flex h-[380px] items-center justify-center">
         <div class="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
       </div>
-      <div v-else-if="!trendData.overallTrend?.length" class="mt-5 flex h-[380px] items-center justify-center">
-        <EmptyState icon="chart" title="暂无面试数据" description="完成面试后，这里会显示最近的表现趋势。" compact />
+      <div
+        v-else-if="!trendData.completionRateTrend?.length && !trendData.reviewDebtTrend?.length && !trendData.masteredGrowthTrend?.length"
+        class="mt-5 flex h-[380px] items-center justify-center"
+      >
+        <EmptyState icon="chart" title="暂无记忆趋势数据" description="开始卡片学习并完成复习后，这里会显示记忆成长趋势。" compact />
       </div>
       <div v-else class="mt-5">
-        <div v-if="trendData.categoryTrends?.length" class="mb-4 flex flex-wrap gap-2">
-          <button
-            type="button"
-            class="category-chip"
-            :class="{ 'category-chip-active': selectedCategories.length === 0 }"
-            @click="selectedCategories = []"
-          >
-            全部分类
-          </button>
-          <button
-            v-for="cat in trendData.categoryTrends"
-            :key="cat.categoryId"
-            type="button"
-            class="category-chip"
-            :class="{ 'category-chip-active': selectedCategories.includes(cat.categoryId) }"
-            @click="toggleCategory(cat.categoryId)"
-          >
-            {{ cat.categoryName }}
-          </button>
-        </div>
         <div ref="trendChartRef" class="chart-shell h-[380px] w-full"></div>
       </div>
     </section>
@@ -133,8 +116,8 @@
               <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ efficiencyData.avgEaseFactor }}</p>
             </article>
             <article class="data-slab border-l-[var(--bc-cyan)] p-4">
-              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">复习次数</p>
-              <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ efficiencyData.totalReviews }}</p>
+              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">复习完成率</p>
+              <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ formatPercent(efficiencyData.reviewCompletionRate) }}%</p>
             </article>
             <article class="data-slab border-l-[var(--bc-lime)] p-4">
               <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">连续天数</p>
@@ -176,11 +159,62 @@
       </article>
     </section>
 
+    <section class="cockpit-panel p-5 sm:p-6">
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p class="section-kicker">分类掌握度</p>
+          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">各分类的记忆压力</h3>
+          <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            看每个分类的总卡片数、已掌握数、待复习数和掌握率。
+          </p>
+        </div>
+      </div>
+
+      <div v-if="!efficiencyLoading && categoryMasteryItems.length" class="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div class="space-y-4">
+          <article
+            v-for="item in categoryMasteryItems"
+            :key="`${item.categoryName}-${item.categoryId ?? 'na'}`"
+            class="mastery-card"
+          >
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p class="text-lg font-semibold text-ink">{{ item.categoryName }}</p>
+                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  已掌握 {{ item.masteredCards }}/{{ item.totalCards }} · 待复习 {{ item.dueCount }}
+                </p>
+              </div>
+              <div class="text-right">
+                <p class="font-mono text-3xl font-semibold text-ink">{{ Math.round(item.masteryRate) }}%</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-accent">掌握率</p>
+              </div>
+            </div>
+            <div class="mastery-track mt-4">
+              <span class="mastery-track__fill mastery-fill-cyan" :style="{ width: `${Math.round(item.masteryRate)}%` }"></span>
+            </div>
+          </article>
+        </div>
+
+        <aside class="cockpit-panel p-5">
+          <p class="section-kicker">使用方式</p>
+          <h4 class="mt-3 text-xl font-semibold text-ink">如何理解这些分类</h4>
+          <div class="mt-4 space-y-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            <p>掌握率低、待复习高的分类，说明短期内更值得优先处理。</p>
+            <p>如果一个分类掌握率很高，可以减少额外重复训练，把精力转向新知识。</p>
+            <p>“未分类”代表当前卡片缺少可追溯分类来源。</p>
+          </div>
+        </aside>
+      </div>
+      <div v-else class="mt-5">
+        <EmptyState icon="chart" title="暂无分类掌握度" description="先生成并复习卡片，系统才会形成分类掌握度。" compact />
+      </div>
+    </section>
+
     <section v-if="!efficiencyLoading && hasMasteryData" class="cockpit-panel p-5 sm:p-6">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p class="section-kicker">掌握分布</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">掌握分布</h3>
+          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">掌握状态分布</h3>
           <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
             查看各掌握状态的数量和占比。
           </p>
@@ -190,12 +224,7 @@
 
       <div class="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div class="space-y-4">
-          <article
-            v-for="item in masteryItems"
-            :key="item.label"
-            class="mastery-card"
-            :class="item.toneClass"
-          >
+          <article v-for="item in masteryItems" :key="item.label" class="mastery-card" :class="item.toneClass">
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p class="text-lg font-semibold text-ink">{{ item.label }}</p>
@@ -223,6 +252,48 @@
         </aside>
       </div>
     </section>
+
+    <section class="cockpit-panel p-5 sm:p-6">
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div class="min-w-0">
+          <p class="section-kicker">辅助面试趋势</p>
+          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">最近几周的面试表现变化</h3>
+          <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+            保留面试平均分与分类趋势，作为辅助判断你是否还需要做额外诊断。
+          </p>
+        </div>
+      </div>
+
+      <div v-if="trendLoading" class="mt-5 flex h-[320px] items-center justify-center">
+        <div class="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+      </div>
+      <div v-else-if="!trendData.overallTrend?.length" class="mt-5 flex h-[320px] items-center justify-center">
+        <EmptyState icon="chart" title="暂无面试数据" description="完成面试后，这里会显示最近的表现趋势。" compact />
+      </div>
+      <div v-else class="mt-5">
+        <div v-if="trendData.categoryTrends?.length" class="mb-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            class="category-chip"
+            :class="{ 'category-chip-active': selectedCategories.length === 0 }"
+            @click="selectedCategories = []"
+          >
+            全部分类
+          </button>
+          <button
+            v-for="cat in trendData.categoryTrends"
+            :key="cat.categoryId"
+            type="button"
+            class="category-chip"
+            :class="{ 'category-chip-active': selectedCategories.includes(cat.categoryId) }"
+            @click="toggleCategory(cat.categoryId)"
+          >
+            {{ cat.categoryName }}
+          </button>
+        </div>
+        <div ref="interviewTrendChartRef" class="chart-shell h-[320px] w-full"></div>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -230,8 +301,8 @@
 import * as echarts from 'echarts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import EmptyState from '@/components/EmptyState.vue'
-import { fetchAbilityTrendApi, fetchEfficiencyApi } from '@/api/analytics'
-import type { AbilityTrend, EfficiencyData } from '@/types/api'
+import { fetchAbilityTrendApi, fetchEfficiencyApi, fetchLearningInsightsApi } from '@/api/analytics'
+import type { AbilityTrend, EfficiencyData, LearningInsights } from '@/types/api'
 
 const weekOptions = [
   { label: '4 周', value: 4 },
@@ -243,26 +314,53 @@ const selectedWeeks = ref(12)
 const selectedCategories = ref<number[]>([])
 const trendLoading = ref(true)
 const efficiencyLoading = ref(true)
-const trendData = ref<AbilityTrend>({ weeks: [], overallTrend: [], categoryTrends: [] })
+const trendData = ref<AbilityTrend>({
+  weeks: [],
+  completionRateTrend: [],
+  reviewDebtTrend: [],
+  masteredGrowthTrend: [],
+  overallTrend: [],
+  categoryTrends: []
+})
 const efficiencyData = ref<EfficiencyData>({
   avgEaseFactor: 2.5,
   efTrend: [],
   ratingDistribution: {},
   forgettingRateTrend: [],
+  completionRateTrend: [],
+  reviewDebtTrend: [],
+  masteredGrowthTrend: [],
   masteryDistribution: {},
+  contentTypeDistribution: {},
+  categoryMastery: [],
   totalReviews: 0,
   currentStreak: 0,
+  reviewCompletionRate: 0,
+  forgettingRate: 0
+})
+const learningInsights = ref<LearningInsights>({
+  thisWeekAvgScore: 0,
+  lastWeekAvgScore: 0,
+  thisWeekInterviewCount: 0,
+  lastWeekInterviewCount: 0,
+  todayCompletionStatus: '',
+  reviewDebtStatus: '',
+  masteryGrowthStatus: '',
+  categoryChanges: [],
+  bestStudyHours: []
 })
 
 const trendChartRef = ref<HTMLElement | null>(null)
+const interviewTrendChartRef = ref<HTMLElement | null>(null)
 const efChartRef = ref<HTMLElement | null>(null)
 const frChartRef = ref<HTMLElement | null>(null)
 let trendChart: echarts.ECharts | null = null
+let interviewTrendChart: echarts.ECharts | null = null
 let efChart: echarts.ECharts | null = null
 let frChart: echarts.ECharts | null = null
 
 const ratingLabels: Record<number, string> = { 1: '重来', 2: '困难', 3: '良好', 4: '轻松' }
-const chartColors = ['#ffb74d', '#55d6be', '#ff6b6b', '#9fe870', '#76b4ff', '#f59e0b', '#22c55e']
+const chartColors = ['#365ab0', '#55d6be', '#ff6b6b', '#9fe870', '#76b4ff', '#f59e0b', '#22c55e']
 
 const ratingColor = (key: number) => {
   const map: Record<number, string> = {
@@ -274,8 +372,6 @@ const ratingColor = (key: number) => {
   return map[key] || 'bg-slate-400'
 }
 
-const getChartPoint = <T extends { week: string }>(items: T[], dataIndex: number) => items[dataIndex] ?? null
-
 const hasMasteryData = computed(() => {
   const d = efficiencyData.value.masteryDistribution
   return d && Object.values(d).some((v) => v > 0)
@@ -286,10 +382,19 @@ const totalMasteryCount = computed(() => {
   return Object.values(d || {}).reduce((sum, value) => sum + value, 0)
 })
 
-const weeklyScoreDelta = computed(() => {
-  const overallTrend = trendData.value.overallTrend
-  if (overallTrend.length < 2) return null
-  return +(overallTrend[overallTrend.length - 1]!.score - overallTrend[0]!.score).toFixed(1)
+const latestCompletionRate = computed(() => {
+  const data = trendData.value.completionRateTrend
+  return data.length ? data[data.length - 1]!.value : null
+})
+
+const latestDebt = computed(() => {
+  const data = trendData.value.reviewDebtTrend
+  return data.length ? data[data.length - 1]!.value : null
+})
+
+const latestMasteredGrowth = computed(() => {
+  const data = trendData.value.masteredGrowthTrend
+  return data.length ? data[data.length - 1]!.value : null
 })
 
 const latestForgettingRate = computed(() => {
@@ -297,111 +402,6 @@ const latestForgettingRate = computed(() => {
   if (!data.length) return null
   return +(data[data.length - 1]!.forgettingRate * 100).toFixed(1)
 })
-
-const weakestMastery = computed(() => {
-  const dist = efficiencyData.value.masteryDistribution || {}
-  const entries = [
-    { key: 'not_started', label: '未开始', value: dist.not_started ?? 0 },
-    { key: 'reviewing', label: '复习中', value: dist.reviewing ?? 0 },
-    { key: 'mastered', label: '已掌握', value: dist.mastered ?? 0 },
-  ]
-  return entries.sort((a, b) => b.value - a.value)[0] ?? null
-})
-
-const headlineInsights = computed(() => [
-  {
-    label: '能力变化',
-    title: weeklyScoreDelta.value == null ? '等待数据' : `${weeklyScoreDelta.value >= 0 ? '+' : ''}${weeklyScoreDelta.value} 分`,
-    detail: weeklyScoreDelta.value == null
-      ? '完成更多面试后，这里会显示当前窗口内的能力变化。'
-      : weeklyScoreDelta.value >= 0
-        ? '本窗口内综合得分在上升，可以继续沿当前训练方向推进。'
-        : '综合得分出现回落，建议先回看近几周掉分最大的分类。',
-    badge: weeklyScoreDelta.value == null ? '待生成' : weeklyScoreDelta.value >= 0 ? '上升' : '风险',
-    cta: weeklyScoreDelta.value == null ? '先完成更多面试' : weeklyScoreDelta.value >= 0 ? '继续强化当前方向' : '优先修复掉分分类',
-    ctaClass: weeklyScoreDelta.value == null ? 'text-slate-400' : weeklyScoreDelta.value >= 0 ? 'text-[var(--bc-lime)]' : 'text-[var(--bc-coral)]',
-    toneClass: weeklyScoreDelta.value != null && weeklyScoreDelta.value < 0 ? 'insight-card-risk' : '',
-  },
-  {
-    label: '遗忘率',
-    title: latestForgettingRate.value == null ? '等待数据' : `${latestForgettingRate.value}%`,
-    detail: latestForgettingRate.value == null
-      ? '完成复习后，这里会生成最新遗忘率。'
-      : latestForgettingRate.value <= 20
-        ? '遗忘率处于较稳区间，当前复习节奏可以继续保持。'
-        : '“重来”比例偏高，需要降低新题输入或补齐旧题回顾。',
-    badge: latestForgettingRate.value == null ? '待生成' : latestForgettingRate.value <= 20 ? '稳定' : '偏高',
-    cta: latestForgettingRate.value == null ? '先完成复习' : latestForgettingRate.value <= 20 ? '维持复习节奏' : '优先安排记忆修复',
-    ctaClass: latestForgettingRate.value == null ? 'text-slate-400' : latestForgettingRate.value <= 20 ? 'text-[var(--bc-cyan)]' : 'text-[var(--bc-coral)]',
-    toneClass: latestForgettingRate.value != null && latestForgettingRate.value > 20 ? 'insight-card-risk' : 'insight-card-cyan',
-  },
-  {
-    label: '修复重点',
-    title: weakestMastery.value?.label || '等待数据',
-    detail: weakestMastery.value
-      ? `${weakestMastery.value.label} 当前数量最高，说明错题池的主要压力集中在这一状态。`
-      : '完成复习后，这里会显示最需要优先处理的掌握状态。'
-    ,
-    badge: weakestMastery.value ? '重点' : '待生成',
-    cta: weakestMastery.value?.label === '未开始' ? '先清空待启动错题' : weakestMastery.value?.label === '复习中' ? '维持复习节奏' : '转向新方向训练',
-    ctaClass: weakestMastery.value?.label === '已掌握' ? 'text-[var(--bc-lime)]' : 'text-[var(--bc-amber)]',
-    toneClass: weakestMastery.value?.label === '已掌握' ? 'insight-card-lime' : '',
-  },
-])
-
-const summarySignals = computed(() => [
-  {
-    label: '观察周数',
-    value: trendData.value.weeks.length,
-    detail: '当前趋势图覆盖的周数。',
-    toneClass: '',
-  },
-  {
-    label: '平均记忆系数',
-    value: efficiencyData.value.avgEaseFactor,
-    detail: '当前统一记忆池平均记忆强度。',
-    toneClass: 'summary-slab-cyan',
-  },
-  {
-    label: '总复习次数',
-    value: efficiencyData.value.totalReviews,
-    detail: '累计完成的复习次数。',
-    toneClass: 'summary-slab-lime',
-  },
-  {
-    label: '连续复习',
-    value: `${efficiencyData.value.currentStreak} 天`,
-    detail: '连续复习天数。',
-    toneClass: 'summary-slab-amber',
-  },
-])
-
-const signalLanes = computed(() => [
-  {
-    label: '趋势判断',
-    value: weeklyScoreDelta.value == null ? '待生成' : weeklyScoreDelta.value >= 0 ? '上升中' : '回落中',
-    detail: weeklyScoreDelta.value == null ? '等待更多面试数据。' : '根据窗口首尾分数估算整体走势。',
-    dotClass: weeklyScoreDelta.value == null ? 'bg-slate-400' : weeklyScoreDelta.value >= 0 ? 'bg-[var(--bc-lime)]' : 'bg-[var(--bc-coral)]',
-  },
-  {
-    label: '遗忘风险',
-    value: latestForgettingRate.value == null ? '待生成' : `${latestForgettingRate.value}%`,
-    detail: '最近一次遗忘率快照。',
-    dotClass: latestForgettingRate.value == null ? 'bg-slate-400' : latestForgettingRate.value <= 20 ? 'bg-[var(--bc-cyan)]' : 'bg-[var(--bc-coral)]',
-  },
-  {
-    label: '掌握压力',
-    value: weakestMastery.value?.label || '待生成',
-    detail: '当前最需要优先处理的掌握状态。',
-    dotClass: weakestMastery.value?.label === '已掌握' ? 'bg-[var(--bc-lime)]' : 'bg-[var(--bc-amber)]',
-  },
-  {
-    label: '内容结构',
-    value: dominantContentTypeLabel.value,
-    detail: '当前复习记录主要来自哪一类内容。',
-    dotClass: dominantContentTypeTone.value,
-  },
-])
 
 const masteryItems = computed(() => {
   const d = efficiencyData.value.masteryDistribution || {}
@@ -437,6 +437,8 @@ const masteryItems = computed(() => {
   ]
 })
 
+const categoryMasteryItems = computed(() => efficiencyData.value.categoryMastery || [])
+
 const dominantContentTypeLabel = computed(() => {
   const dist = efficiencyData.value.contentTypeDistribution || {}
   const sorted = Object.entries(dist).sort((a, b) => b[1] - a[1])
@@ -454,6 +456,100 @@ const dominantContentTypeTone = computed(() => {
   return 'bg-slate-400'
 })
 
+const headlineInsights = computed(() => [
+  {
+    label: '今日完成状态',
+    title: learningInsights.value.todayCompletionStatus || '等待数据',
+    detail: '今天优先看是否完成当前卡片任务，而不是先追求更多功能模块使用。',
+    badge: latestCompletionRate.value != null && latestCompletionRate.value >= 100 ? '完成' : '进行中',
+    cta: latestCompletionRate.value != null && latestCompletionRate.value >= 100 ? '保持今天的节奏' : '优先清空今日任务',
+    ctaClass: latestCompletionRate.value != null && latestCompletionRate.value >= 100 ? 'text-[var(--bc-lime)]' : 'text-[var(--bc-cyan)]',
+    toneClass: latestCompletionRate.value != null && latestCompletionRate.value >= 100 ? 'insight-card-lime' : '',
+  },
+  {
+    label: '复习负债',
+    title: latestDebt.value == null ? '等待数据' : `${Math.round(latestDebt.value)} 项`,
+    detail: learningInsights.value.reviewDebtStatus || '关注复习积压是否持续上升。',
+    badge: latestDebt.value != null && latestDebt.value > 0 ? '优先处理' : '无积压',
+    cta: latestDebt.value != null && latestDebt.value > 0 ? '先去复习中心' : '维持当前节奏',
+    ctaClass: latestDebt.value != null && latestDebt.value > 0 ? 'text-[var(--bc-coral)]' : 'text-[var(--bc-lime)]',
+    toneClass: latestDebt.value != null && latestDebt.value > 0 ? 'insight-card-risk' : '',
+  },
+  {
+    label: '掌握增长',
+    title: latestMasteredGrowth.value == null ? '等待数据' : `${Math.round(latestMasteredGrowth.value)} 张`,
+    detail: learningInsights.value.masteryGrowthStatus || '看掌握卡片数是否在稳定增长。',
+    badge: latestMasteredGrowth.value != null && latestMasteredGrowth.value > 0 ? '增长中' : '待积累',
+    cta: latestMasteredGrowth.value != null && latestMasteredGrowth.value > 0 ? '继续巩固高频分类' : '先推进今天的复习',
+    ctaClass: latestMasteredGrowth.value != null && latestMasteredGrowth.value > 0 ? 'text-[var(--bc-lime)]' : 'text-[var(--bc-amber)]',
+    toneClass: latestMasteredGrowth.value != null && latestMasteredGrowth.value > 0 ? 'insight-card-cyan' : '',
+  },
+])
+
+const summarySignals = computed(() => [
+  {
+    label: '观察周数',
+    value: trendData.value.weeks.length,
+    detail: '当前趋势图覆盖的周数。',
+    toneClass: '',
+  },
+  {
+    label: '当前完成率',
+    value: `${formatPercent(latestCompletionRate.value)}%`,
+    detail: '最近一个趋势窗口的完成率。',
+    toneClass: 'summary-slab-cyan',
+  },
+  {
+    label: '总复习次数',
+    value: efficiencyData.value.totalReviews,
+    detail: '累计完成的复习次数。',
+    toneClass: 'summary-slab-lime',
+  },
+  {
+    label: '连续复习',
+    value: `${efficiencyData.value.currentStreak} 天`,
+    detail: '连续复习天数。',
+    toneClass: 'summary-slab-amber',
+  },
+])
+
+const signalLanes = computed(() => [
+  {
+    label: '复习负债',
+    value: latestDebt.value == null ? '待生成' : `${Math.round(latestDebt.value)} 项`,
+    detail: '看积压是上升、下降还是归零。',
+    dotClass: latestDebt.value != null && latestDebt.value > 0 ? 'bg-[var(--bc-coral)]' : 'bg-[var(--bc-lime)]',
+  },
+  {
+    label: '遗忘风险',
+    value: latestForgettingRate.value == null ? '待生成' : `${latestForgettingRate.value}%`,
+    detail: '最近一次遗忘率快照。',
+    dotClass: latestForgettingRate.value == null ? 'bg-slate-400' : latestForgettingRate.value <= 20 ? 'bg-[var(--bc-cyan)]' : 'bg-[var(--bc-coral)]',
+  },
+  {
+    label: '内容结构',
+    value: dominantContentTypeLabel.value,
+    detail: '当前复习记录主要来自哪一类内容。',
+    dotClass: dominantContentTypeTone.value,
+  },
+  {
+    label: '面试辅助',
+    value: `${learningInsights.value.thisWeekInterviewCount || 0} 场`,
+    detail: '面试诊断作为辅助训练保留。',
+    dotClass: 'bg-[var(--bc-amber)]',
+  },
+])
+
+const formatPercent = (value?: number | null) => {
+  if (value == null || Number.isNaN(value)) return '0'
+  return Number.isInteger(value) ? String(value) : Number(value).toFixed(0)
+}
+
+const changeWeeks = (w: number) => {
+  selectedWeeks.value = w
+  void loadTrend()
+}
+
 const toggleCategory = (catId: number) => {
   const idx = selectedCategories.value.indexOf(catId)
   if (idx >= 0) {
@@ -461,11 +557,6 @@ const toggleCategory = (catId: number) => {
   } else {
     selectedCategories.value.push(catId)
   }
-}
-
-const changeWeeks = (w: number) => {
-  selectedWeeks.value = w
-  void loadTrend()
 }
 
 const loadTrend = async () => {
@@ -476,9 +567,10 @@ const loadTrend = async () => {
       selectedCategories.value.length > 0 ? selectedCategories.value : undefined
     )
     trendData.value = res.data
-    nextTick(renderTrendChart)
-  } catch {
-    // silently fail
+    nextTick(() => {
+      renderTrendChart()
+      renderInterviewTrendChart()
+    })
   } finally {
     trendLoading.value = false
   }
@@ -487,14 +579,16 @@ const loadTrend = async () => {
 const loadEfficiency = async () => {
   efficiencyLoading.value = true
   try {
-    const res = await fetchEfficiencyApi()
-    efficiencyData.value = res.data
+    const [efficiencyRes, insightsRes] = await Promise.all([
+      fetchEfficiencyApi(),
+      fetchLearningInsightsApi(),
+    ])
+    efficiencyData.value = efficiencyRes.data
+    learningInsights.value = insightsRes.data
     nextTick(() => {
       renderEFChart()
       renderFRChart()
     })
-  } catch {
-    // silently fail
   } finally {
     efficiencyLoading.value = false
   }
@@ -523,29 +617,100 @@ const buildChartBase = () => ({
 })
 
 const renderTrendChart = () => {
-  if (!trendChartRef.value || !trendData.value.overallTrend?.length) return
+  if (!trendChartRef.value) return
+  const weeks = trendData.value.weeks || []
+  const completion = trendData.value.completionRateTrend || []
+  const debts = trendData.value.reviewDebtTrend || []
+  const mastered = trendData.value.masteredGrowthTrend || []
+  if (!weeks.length && !completion.length && !debts.length && !mastered.length) return
 
   if (!trendChart) {
     trendChart = echarts.init(trendChartRef.value)
   }
 
+  const xAxisData = weeks.length ? weeks : completion.map((item) => item.week)
+  trendChart.setOption({
+    ...buildChartBase(),
+    legend: {
+      data: ['完成率', '复习负债', '已掌握卡片'],
+      bottom: 0,
+      textStyle: { fontSize: 11, color: chartTextColor },
+    },
+    xAxis: {
+      ...(buildChartBase().xAxis as object),
+      type: 'category',
+      data: xAxisData,
+    },
+    yAxis: [
+      {
+        ...(buildChartBase().yAxis as object),
+        type: 'value',
+        min: 0,
+        max: 100,
+        axisLabel: { color: chartTextColor, fontSize: 11, formatter: '{value}%' },
+      },
+      {
+        ...(buildChartBase().yAxis as object),
+        type: 'value',
+        min: 0,
+        splitLine: { show: false },
+      },
+    ],
+    series: [
+      {
+        name: '完成率',
+        type: 'line',
+        smooth: true,
+        symbol: 'circle',
+        data: xAxisData.map((week) => completion.find((item) => item.week === week)?.value ?? null),
+        lineStyle: { width: 3, color: '#55d6be' },
+        itemStyle: { color: '#55d6be' },
+      },
+      {
+        name: '复习负债',
+        type: 'bar',
+        yAxisIndex: 1,
+        data: xAxisData.map((week) => debts.find((item) => item.week === week)?.value ?? null),
+        itemStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: '#ff6b6b' },
+            { offset: 1, color: 'rgba(255,107,107,0.4)' },
+          ]),
+          borderRadius: [8, 8, 0, 0]
+        }
+      },
+      {
+        name: '已掌握卡片',
+        type: 'line',
+        yAxisIndex: 1,
+        smooth: true,
+        symbol: 'circle',
+        data: xAxisData.map((week) => mastered.find((item) => item.week === week)?.value ?? null),
+        lineStyle: { width: 2, color: '#365ab0' },
+        itemStyle: { color: '#365ab0' },
+      }
+    ]
+  }, true)
+}
+
+const renderInterviewTrendChart = () => {
+  if (!interviewTrendChartRef.value || !trendData.value.overallTrend?.length) return
+
+  if (!interviewTrendChart) {
+    interviewTrendChart = echarts.init(interviewTrendChartRef.value)
+  }
+
   const weeks = trendData.value.weeks || []
   const series: echarts.SeriesOption[] = [
     {
-      name: '综合',
+      name: '综合分数',
       type: 'line',
       data: weeks.map((w) => trendData.value.overallTrend.find((p) => p.week === w)?.score ?? null),
       smooth: true,
       symbol: 'circle',
-      symbolSize: 7,
+      symbolSize: 6,
       lineStyle: { width: 3, color: chartColors[0] },
       itemStyle: { color: chartColors[0] },
-      areaStyle: {
-        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-          { offset: 0, color: 'rgba(255,183,77,0.24)' },
-          { offset: 1, color: 'rgba(255,183,77,0.02)' },
-        ]),
-      },
     },
   ]
 
@@ -560,20 +725,18 @@ const renderTrendChart = () => {
       data: weeks.map((w) => cat.points.find((p) => p.week === w)?.score ?? null),
       smooth: true,
       symbol: 'circle',
-      symbolSize: 5,
+      symbolSize: 4,
       lineStyle: { width: 2, color: chartColors[(idx + 1) % chartColors.length] },
       itemStyle: { color: chartColors[(idx + 1) % chartColors.length] },
     })
   })
 
-  trendChart.setOption({
+  interviewTrendChart.setOption({
     ...buildChartBase(),
     legend: {
-      data: series.map((s) => s.name as string),
+      data: series.map((item) => item.name as string),
       bottom: 0,
       textStyle: { fontSize: 11, color: chartTextColor },
-      itemWidth: 12,
-      itemHeight: 12,
     },
     xAxis: {
       ...(buildChartBase().xAxis as object),
@@ -592,7 +755,6 @@ const renderTrendChart = () => {
 
 const renderEFChart = () => {
   if (!efChartRef.value || !efficiencyData.value.efTrend?.length) return
-
   if (!efChart) {
     efChart = echarts.init(efChartRef.value)
   }
@@ -600,16 +762,6 @@ const renderEFChart = () => {
   const data = efficiencyData.value.efTrend
   efChart.setOption({
     ...buildChartBase(),
-    tooltip: {
-      ...(buildChartBase().tooltip as object),
-      formatter: (params: { dataIndex: number }[]) => {
-        const first = params[0]
-        if (!first) return ''
-        const item = getChartPoint(data, first.dataIndex)
-        if (!item) return ''
-        return `${item.week}<br/>记忆系数: <strong>${item.avgEF}</strong><br/>复习: ${item.reviewCount} 次`
-      },
-    },
     xAxis: {
       ...(buildChartBase().xAxis as object),
       type: 'category',
@@ -621,7 +773,6 @@ const renderEFChart = () => {
       type: 'value',
       min: 1.3,
       max: 3.2,
-      markLine: undefined,
     },
     series: [
       {
@@ -632,12 +783,6 @@ const renderEFChart = () => {
         symbolSize: 6,
         lineStyle: { color: '#55d6be', width: 3 },
         itemStyle: { color: '#55d6be' },
-        areaStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(85,214,190,0.22)' },
-            { offset: 1, color: 'rgba(85,214,190,0.02)' },
-          ]),
-        },
         markLine: {
           symbol: 'none',
           lineStyle: { type: 'dashed', color: 'rgba(255, 183, 77, 0.55)' },
@@ -653,7 +798,6 @@ const renderEFChart = () => {
 
 const renderFRChart = () => {
   if (!frChartRef.value || !efficiencyData.value.forgettingRateTrend?.length) return
-
   if (!frChart) {
     frChart = echarts.init(frChartRef.value)
   }
@@ -661,16 +805,6 @@ const renderFRChart = () => {
   const data = efficiencyData.value.forgettingRateTrend
   frChart.setOption({
     ...buildChartBase(),
-    tooltip: {
-      ...(buildChartBase().tooltip as object),
-      formatter: (params: { dataIndex: number }[]) => {
-        const first = params[0]
-        if (!first) return ''
-        const item = getChartPoint(data, first.dataIndex)
-        if (!item) return ''
-        return `${item.week}<br/>遗忘率: <strong>${(item.forgettingRate * 100).toFixed(1)}%</strong><br/>重来: ${item.againCount}/${item.totalRatings}`
-      },
-    },
     xAxis: {
       ...(buildChartBase().xAxis as object),
       type: 'category',
@@ -701,7 +835,6 @@ const renderFRChart = () => {
       {
         name: '重来次数',
         type: 'line',
-        yAxisIndex: 0,
         data: data.map((d) => d.againCount),
         smooth: true,
         symbol: 'circle',
@@ -715,6 +848,7 @@ const renderFRChart = () => {
 
 const handleResize = () => {
   trendChart?.resize()
+  interviewTrendChart?.resize()
   efChart?.resize()
   frChart?.resize()
 }
@@ -728,9 +862,11 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
   trendChart?.dispose()
+  interviewTrendChart?.dispose()
   efChart?.dispose()
   frChart?.dispose()
   trendChart = null
+  interviewTrendChart = null
   efChart = null
   frChart = null
 })
@@ -758,131 +894,142 @@ watch(selectedCategories, () => {
   border-radius: calc(var(--radius-sm) + 2px);
   background: transparent;
   color: var(--bc-ink-secondary);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  transition:
-    background-color var(--motion-base) var(--ease-hard),
-    color var(--motion-base) var(--ease-hard),
-    box-shadow var(--motion-base) var(--ease-hard);
+  letter-spacing: 0.04em;
+  transition: all 180ms ease;
+}
+
+.mode-switch__item:hover {
+  background: rgba(54, 90, 176, 0.08);
+  color: var(--bc-ink);
 }
 
 .mode-switch__item-active {
-  background: linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.18), rgba(var(--bc-accent-rgb), 0.08));
+  background: linear-gradient(135deg, rgba(54, 90, 176, 0.18), rgba(85, 214, 190, 0.18));
   color: var(--bc-ink);
-  box-shadow: inset 0 0 0 1px rgba(var(--bc-accent-rgb), 0.2);
 }
 
-.insight-card,
-.signal-lane,
-.mastery-card {
-  border-radius: 24px;
+.insight-card {
+  border-radius: calc(var(--radius-md) + 2px);
   border: 1px solid var(--bc-line);
-  background: rgba(255, 255, 255, 0.34);
-  padding: 16px;
-}
-
-.dark .insight-card,
-.dark .signal-lane,
-.dark .mastery-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.45);
+  padding: 20px;
 }
 
 .insight-card-risk {
-  border-color: rgba(255, 107, 107, 0.28);
+  border-color: rgba(255, 107, 107, 0.35);
 }
 
 .insight-card-cyan {
-  border-color: rgba(85, 214, 190, 0.26);
+  border-color: rgba(85, 214, 190, 0.35);
 }
 
 .insight-card-lime {
-  border-color: rgba(159, 232, 112, 0.26);
+  border-color: rgba(159, 232, 112, 0.45);
+}
+
+.signal-lane {
+  border-radius: calc(var(--radius-sm) + 2px);
+  border: 1px solid var(--bc-line);
+  background: rgba(255, 255, 255, 0.26);
+  padding: 14px 16px;
 }
 
 .summary-slab-cyan {
-  border-left-color: var(--bc-cyan);
+  border-left: 3px solid var(--bc-cyan);
 }
 
 .summary-slab-lime {
-  border-left-color: var(--bc-lime);
+  border-left: 3px solid var(--bc-lime);
 }
 
 .summary-slab-amber {
-  border-left-color: var(--bc-amber);
+  border-left: 3px solid var(--bc-amber);
 }
 
 .chart-shell {
-  border-radius: 24px;
-  border: 1px solid var(--bc-line);
+  border-radius: calc(var(--radius-md) + 2px);
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.03), transparent 36%),
-    rgba(6, 16, 29, 0.52);
+    radial-gradient(circle at top left, rgba(54, 90, 176, 0.12), transparent 30%),
+    rgba(7, 17, 31, 0.98);
 }
 
-.category-chip,
-.detail-pill,
-.rating-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 38px;
+.category-chip {
+  min-height: 36px;
   border-radius: 999px;
   border: 1px solid var(--bc-line);
-  background: rgba(255, 255, 255, 0.3);
-  padding: 0 12px;
+  background: rgba(255, 255, 255, 0.4);
+  padding: 0 14px;
   font-size: 12px;
+  font-weight: 700;
   color: var(--bc-ink-secondary);
 }
 
-.dark .category-chip,
-.dark .detail-pill,
-.dark .rating-chip {
-  background: rgba(255, 255, 255, 0.04);
-}
-
 .category-chip-active {
-  border-color: rgba(var(--bc-accent-rgb), 0.24);
-  background: rgba(var(--bc-accent-rgb), 0.12);
+  border-color: rgba(54, 90, 176, 0.35);
+  background: rgba(54, 90, 176, 0.12);
   color: var(--bc-ink);
 }
 
+.rating-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  border: 1px solid var(--bc-line);
+  background: rgba(255, 255, 255, 0.38);
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--bc-ink-secondary);
+}
+
+.mastery-card {
+  border-radius: calc(var(--radius-md) + 2px);
+  border: 1px solid var(--bc-line);
+  background: rgba(255, 255, 255, 0.38);
+  padding: 18px;
+}
+
 .mastery-card-coral {
-  border-color: rgba(255, 107, 107, 0.24);
+  border-color: rgba(255, 107, 107, 0.25);
 }
 
 .mastery-card-amber {
-  border-color: rgba(255, 183, 77, 0.26);
+  border-color: rgba(255, 183, 77, 0.25);
 }
 
 .mastery-card-lime {
-  border-color: rgba(159, 232, 112, 0.24);
+  border-color: rgba(159, 232, 112, 0.28);
 }
 
 .mastery-track {
   height: 10px;
   overflow: hidden;
   border-radius: 999px;
-  background: rgba(140, 166, 191, 0.18);
+  background: rgba(148, 163, 184, 0.16);
 }
 
 .mastery-track__fill {
   display: block;
   height: 100%;
-  border-radius: inherit;
+  border-radius: 999px;
 }
 
 .mastery-fill-coral {
-  background: linear-gradient(90deg, rgba(255,107,107,0.48), var(--bc-coral));
+  background: linear-gradient(90deg, rgba(255, 107, 107, 0.68), rgba(255, 107, 107, 0.95));
 }
 
 .mastery-fill-amber {
-  background: linear-gradient(90deg, rgba(255,183,77,0.48), var(--bc-amber));
+  background: linear-gradient(90deg, rgba(255, 183, 77, 0.68), rgba(255, 183, 77, 0.95));
 }
 
 .mastery-fill-lime {
-  background: linear-gradient(90deg, rgba(159,232,112,0.48), var(--bc-lime));
+  background: linear-gradient(90deg, rgba(159, 232, 112, 0.68), rgba(159, 232, 112, 0.95));
+}
+
+.mastery-fill-cyan {
+  background: linear-gradient(90deg, rgba(54, 90, 176, 0.78), rgba(85, 214, 190, 0.95));
 }
 </style>

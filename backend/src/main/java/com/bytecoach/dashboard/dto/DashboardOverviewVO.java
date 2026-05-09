@@ -2,6 +2,7 @@ package com.bytecoach.dashboard.dto;
 
 import com.bytecoach.adaptive.vo.CategoryAbilityVO;
 import com.bytecoach.analytics.vo.LearningInsightsVO;
+import com.bytecoach.analytics.vo.EfficiencyVO;
 import java.math.BigDecimal;
 import java.util.List;
 import lombok.Builder;
@@ -31,6 +32,10 @@ public class DashboardOverviewVO {
     private BigDecimal todayCardCompletionRate;
     private Integer masteredCardCount;
     private Integer reviewDebtCount;
+    private Integer studyStreak;
+    private String todayCompletionStatus;
+    private Integer reviewDebtDelta;
+    private List<EfficiencyVO.CategoryMastery> categoryMasterySummary;
 
     // Analytics insights summary
     private BigDecimal thisWeekAvgScore;
