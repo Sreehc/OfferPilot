@@ -4,6 +4,7 @@ import com.bytecoach.common.api.Result;
 import com.bytecoach.common.api.ResultCode;
 import com.bytecoach.common.dto.PageResult;
 import com.bytecoach.common.exception.BusinessException;
+import com.bytecoach.cards.vo.TodayCardsTaskVO;
 import com.bytecoach.interview.dto.InterviewAnswerRequest;
 import com.bytecoach.interview.dto.InterviewStartRequest;
 import com.bytecoach.interview.dto.VoiceStartRequest;
@@ -78,6 +79,20 @@ public class InterviewController {
     public Result<List<InterviewHistoryVO>> trend(
             @Parameter(description = "数量限制") @RequestParam(defaultValue = "20") int limit) {
         return Result.success(interviewService.trendData(currentUserId(), limit));
+    }
+
+    @Operation(summary = "补生成面试复习卡片", description = "为指定已完成面试会话补生成面试诊断卡片")
+    @PostMapping("/{sessionId}/cards/generate")
+    public Result<InterviewDetailVO> generateCards(
+            @Parameter(description = "会话 ID") @PathVariable Long sessionId) {
+        return Result.success(interviewService.generateCards(currentUserId(), sessionId));
+    }
+
+    @Operation(summary = "加入今日卡片", description = "将面试诊断卡片 deck 设为当前 deck")
+    @PostMapping("/{sessionId}/cards/activate")
+    public Result<TodayCardsTaskVO> activateCards(
+            @Parameter(description = "会话 ID") @PathVariable Long sessionId) {
+        return Result.success(interviewService.activateCards(currentUserId(), sessionId));
     }
 
     // ── Voice Interview Endpoints ──────────────────────────

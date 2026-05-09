@@ -1,6 +1,7 @@
 package com.bytecoach.interview.service;
 
 import com.bytecoach.common.dto.PageResult;
+import com.bytecoach.cards.vo.TodayCardsTaskVO;
 import com.bytecoach.interview.dto.InterviewAnswerRequest;
 import com.bytecoach.interview.dto.InterviewStartRequest;
 import com.bytecoach.interview.vo.InterviewAnswerVO;
@@ -22,4 +23,8 @@ public interface InterviewService {
     PageResult<InterviewHistoryVO> history(Long userId, String direction, int pageNum, int pageSize);
 
     List<InterviewHistoryVO> trendData(Long userId, int limit);
+
+    InterviewDetailVO generateCards(Long userId, Long sessionId);
+
+    TodayCardsTaskVO activateCards(Long userId, Long sessionId);
 }

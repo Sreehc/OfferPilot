@@ -1,8 +1,11 @@
 <template>
   <div class="space-y-6">
-    <!-- Back Link -->
     <div>
-      <button type="button" class="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 transition hover:text-accent" @click="router.back()">
+      <button
+        type="button"
+        class="flex items-center gap-1 text-sm text-slate-500 transition hover:text-accent dark:text-slate-400"
+        @click="router.back()"
+      >
         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
@@ -10,13 +13,11 @@
       </button>
     </div>
 
-    <!-- Loading -->
     <section v-if="loading" class="paper-panel p-8 text-center">
       <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
       <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">加载面试详情...</p>
     </section>
 
-    <!-- Not Found -->
     <section v-else-if="!detail" class="paper-panel p-8 text-center">
       <p class="text-lg font-semibold text-ink">面试记录未找到</p>
       <RouterLink to="/interview/history" class="hard-button-primary mt-4 inline-flex">返回历史</RouterLink>
@@ -27,23 +28,64 @@
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p class="section-kicker">总览</p>
-            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
-              {{ detail.direction }} 方向面试
-              <span v-if="detail.mode === 'voice'" class="ml-2 inline-flex items-center rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-semibold text-accent">语音</span>
-            </h3>
-            <div class="mt-2 flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
+            <div class="mt-3 flex flex-wrap items-center gap-3">
+              <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">
+                {{ detail.direction }} 方向面试诊断
+              </h3>
+              <span
+                v-if="detail.mode === 'voice'"
+                class="inline-flex items-center rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-semibold text-accent"
+              >
+                语音
+              </span>
+              <span
+                class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                :class="detail.cardsGenerated ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'"
+              >
+                {{ detail.cardsGenerated ? `已生成 ${detail.generatedCardCount || 0} 张复习卡片` : '未生成复习卡片' }}
+              </span>
+            </div>
+            <div class="mt-2 flex flex-wrap items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
               <span>{{ detail.questionCount }} 题</span>
               <span v-if="detail.startTime">{{ formatTime(detail.startTime) }}</span>
               <span v-if="detail.endTime">~ {{ formatTime(detail.endTime) }}</span>
             </div>
+            <p class="mt-4 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+              本页会把低分题整理为推荐复习卡片。生成后不会抢占你当前的 deck，只有手动加入今日卡片时才会切换。
+            </p>
           </div>
-          <div
-            class="p-6 text-white shadow-[0_16px_36px_rgba(47,79,157,0.18)]"
-            style="border-radius: var(--radius-lg); background: linear-gradient(135deg, #365ab0 0%, #233d79 100%);"
-          >
-            <div class="text-xs uppercase tracking-[0.24em] text-white/60">总分</div>
-            <div class="mt-2 text-5xl font-semibold tracking-[-0.03em]">
-              {{ formatScore(detail.totalScore) }}
+          <div class="flex flex-col gap-3 lg:items-end">
+            <div
+              class="p-6 text-white shadow-[0_16px_36px_rgba(47,79,157,0.18)]"
+              style="border-radius: var(--radius-lg); background: linear-gradient(135deg, #365ab0 0%, #233d79 100%);"
+            >
+              <div class="text-xs uppercase tracking-[0.24em] text-white/60">总分</div>
+              <div class="mt-2 text-5xl font-semibold tracking-[-0.03em]">
+                {{ formatScore(detail.totalScore) }}
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-3">
+              <el-button
+                v-if="!detail.cardsGenerated"
+                :loading="generating"
+                size="large"
+                class="hard-button-primary"
+                @click="handleGenerateCards"
+              >
+                生成复习卡片
+              </el-button>
+              <el-button
+                v-else
+                :loading="activating"
+                size="large"
+                class="hard-button-primary"
+                @click="handleActivateCards"
+              >
+                加入今日卡片
+              </el-button>
+              <RouterLink to="/cards" class="hard-button-secondary inline-flex items-center justify-center px-4">
+                查看卡片工作台
+              </RouterLink>
             </div>
           </div>
         </div>
@@ -52,14 +94,14 @@
       <section class="paper-panel p-6">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p class="section-kicker">逐题复盘</p>
-            <h4 class="mt-2 text-xl font-semibold text-ink">按题目对比你的回答与标准答案</h4>
+            <p class="section-kicker">推荐复习卡片</p>
+            <h4 class="mt-2 text-xl font-semibold text-ink">优先处理本场低分题</h4>
             <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              每题都按“题目、点评、我的回答、标准答案、追问”的固定顺序展示，方便快速扫读。
+              每道低分题都预先整理成“正面问题、背面答案、解释说明、追问点”的卡片结构，方便直接进入记忆主线。
             </p>
           </div>
           <RouterLink to="/interview" class="text-sm font-semibold text-accent hover:underline">
-            再来一场类似练习
+            再做一次诊断
           </RouterLink>
         </div>
       </section>
@@ -69,12 +111,31 @@
         :key="record.questionId"
         class="paper-panel overflow-hidden"
       >
-        <div class="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 px-6 py-4">
-          <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/60 px-6 py-4 dark:border-slate-700/60">
+          <div class="flex min-w-0 items-center gap-3">
             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-bold text-white">
               {{ index + 1 }}
             </span>
-            <span class="font-semibold text-ink">{{ record.questionTitle }}</span>
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="font-semibold text-ink">{{ record.questionTitle }}</span>
+                <span
+                  v-if="record.isLowScore"
+                  class="inline-flex items-center rounded-full bg-coral/10 px-2 py-0.5 text-xs font-semibold text-coral"
+                >
+                  低分题
+                </span>
+                <span
+                  v-if="record.generatedCardId"
+                  class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700"
+                >
+                  已沉淀为卡片
+                </span>
+              </div>
+              <p v-if="record.isLowScore" class="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                这道题会优先进入面试诊断卡片 deck，适合后续反复复盘。
+              </p>
+            </div>
           </div>
           <span
             class="text-2xl font-semibold tracking-[-0.03em]"
@@ -106,7 +167,9 @@
           <div class="surface-card p-4">
             <div class="flex items-center gap-2">
               <div class="h-2 w-2 rounded-full bg-amber-400"></div>
-              <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{{ record.voiceTranscript ? '转录文本' : '我的回答' }}</span>
+              <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                {{ record.voiceTranscript ? '转录文本' : '我的回答' }}
+              </span>
             </div>
             <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">
               {{ record.userAnswer || '未作答' }}
@@ -124,7 +187,50 @@
           </div>
         </div>
 
-        <div v-if="record.followUp" class="border-t border-slate-200/60 dark:border-slate-700/60 px-6 py-4">
+        <div v-if="record.isLowScore" class="mx-6 mb-5 rounded-2xl border border-coral/20 bg-coral/5 p-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-coral">推荐复习卡片</div>
+              <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                这张卡片会进入 {{ detail.interviewDeckTitle || '面试诊断卡片' }}，后续可在今日任务中继续复习。
+              </p>
+            </div>
+            <span
+              class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"
+              :class="record.generatedCardId ? 'bg-emerald-100 text-emerald-700' : 'bg-white text-coral'"
+            >
+              {{ record.generatedCardId ? '已生成' : '待生成' }}
+            </span>
+          </div>
+          <div class="mt-4 grid gap-3 md:grid-cols-2">
+            <div class="surface-card p-4">
+              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">正面问题</div>
+              <p class="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                {{ record.recommendedCardFront || record.questionTitle }}
+              </p>
+            </div>
+            <div class="surface-card p-4">
+              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">背面答案</div>
+              <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">
+                {{ record.recommendedCardBack || '暂无标准答案' }}
+              </p>
+            </div>
+            <div class="surface-card p-4 md:col-span-2">
+              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">解释说明</div>
+              <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">
+                {{ record.recommendedCardExplanation || '暂无说明' }}
+              </p>
+            </div>
+            <div v-if="record.recommendedCardFollowUp" class="surface-card p-4 md:col-span-2">
+              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">追问点</div>
+              <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">
+                {{ record.recommendedCardFollowUp }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div v-else-if="record.followUp" class="border-t border-slate-200/60 px-6 py-4 dark:border-slate-700/60">
           <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">追问</div>
           <p class="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ record.followUp }}</p>
         </div>
@@ -132,9 +238,9 @@
 
       <section class="paper-panel p-6">
         <p class="section-kicker">下一步</p>
-        <h4 class="mt-2 text-xl font-semibold text-ink">继续练习，或先回到错题与历史记录</h4>
+        <h4 class="mt-2 text-xl font-semibold text-ink">把低分题沉淀进记忆主线</h4>
         <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-          如果某几题得分明显偏低，建议先去错题本和复习页处理，再开始下一场。
+          先生成复习卡片，再手动加入今日卡片，不会打断你当前正在推进的其他 deck。
         </p>
       </section>
 
@@ -154,7 +260,7 @@
 import { ElMessage } from 'element-plus'
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { interviewDetailApi } from '@/api/interview'
+import { activateInterviewCardsApi, generateInterviewCardsApi, interviewDetailApi } from '@/api/interview'
 import type { InterviewDetail } from '@/types/api'
 
 const route = useRoute()
@@ -162,6 +268,8 @@ const router = useRouter()
 
 const detail = ref<InterviewDetail | null>(null)
 const loading = ref(true)
+const generating = ref(false)
+const activating = ref(false)
 
 const formatScore = (score: number | undefined | null): string => {
   if (score == null) return '-'
@@ -174,19 +282,51 @@ const formatTime = (time: string): string => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
+const sessionId = () => String(route.params.id || '')
+
 const loadData = async () => {
-  const sessionId = String(route.params.id || '')
-  if (!sessionId) {
+  const id = sessionId()
+  if (!id) {
     loading.value = false
     return
   }
   try {
-    const response = await interviewDetailApi(sessionId)
+    const response = await interviewDetailApi(id)
     detail.value = response.data
   } catch {
     ElMessage.error('加载面试详情失败')
   } finally {
     loading.value = false
+  }
+}
+
+const handleGenerateCards = async () => {
+  const id = sessionId()
+  if (!id) return
+  generating.value = true
+  try {
+    const response = await generateInterviewCardsApi(id)
+    detail.value = response.data
+    ElMessage.success('已生成面试复习卡片')
+  } catch {
+    ElMessage.error('生成复习卡片失败')
+  } finally {
+    generating.value = false
+  }
+}
+
+const handleActivateCards = async () => {
+  const id = sessionId()
+  if (!id) return
+  activating.value = true
+  try {
+    await activateInterviewCardsApi(id)
+    ElMessage.success('已加入今日卡片')
+    await router.push('/cards')
+  } catch {
+    ElMessage.error('加入今日卡片失败')
+  } finally {
+    activating.value = false
   }
 }
 

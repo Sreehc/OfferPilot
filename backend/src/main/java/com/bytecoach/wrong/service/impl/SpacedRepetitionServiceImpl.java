@@ -50,7 +50,9 @@ public class SpacedRepetitionServiceImpl implements SpacedRepetitionService {
     private static final String CONTENT_KNOWLEDGE_CARD = "knowledge_card";
     private static final String CONTENT_WRONG_CARD = "wrong_card";
     private static final String CONTENT_INTERVIEW_CARD = "interview_card";
+    private static final String SOURCE_INTERVIEW_AUTO = "interview_auto";
     private static final String SOURCE_REF_WRONG_QUESTION = "wrong_question";
+    private static final String SOURCE_REF_INTERVIEW_RECORD = "interview_record";
     private static final String SOURCE_WRONG_AUTO = "wrong_auto";
 
     private final WrongQuestionMapper wrongQuestionMapper;
@@ -218,9 +220,10 @@ public class SpacedRepetitionServiceImpl implements SpacedRepetitionService {
                     LocalDateTime dueAt = card.getNextReviewAt();
                     LocalDate dueDate = dueAt == null ? today : dueAt.toLocalDate();
                     long overdueDays = ChronoUnit.DAYS.between(dueDate, today);
+                    String contentType = resolveKnowledgeContentType(task, card);
                     return ReviewTodayItemVO.builder()
                             .reviewItemId(String.valueOf(card.getId()))
-                            .contentType(CONTENT_KNOWLEDGE_CARD)
+                            .contentType(contentType)
                             .sourceType(task == null ? null : task.getSourceType())
                             .title(card.getQuestion())
                             .answer(card.getAnswer())
@@ -422,6 +425,16 @@ public class SpacedRepetitionServiceImpl implements SpacedRepetitionService {
             return null;
         }
         return task.getDeckTitle() != null && !task.getDeckTitle().isBlank() ? task.getDeckTitle() : task.getDocTitle();
+    }
+
+    private String resolveKnowledgeContentType(KnowledgeCardTask task, KnowledgeCard card) {
+        if (task != null && SOURCE_INTERVIEW_AUTO.equals(task.getSourceType())) {
+            return CONTENT_INTERVIEW_CARD;
+        }
+        if (SOURCE_REF_INTERVIEW_RECORD.equals(card.getSourceRefType())) {
+            return CONTENT_INTERVIEW_CARD;
+        }
+        return CONTENT_KNOWLEDGE_CARD;
     }
 
     public static String resolveMasteryLevel(BigDecimal easeFactor, Integer streak) {

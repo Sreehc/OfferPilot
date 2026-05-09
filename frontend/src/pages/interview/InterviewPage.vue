@@ -165,9 +165,9 @@
               <div class="font-mono text-5xl font-semibold text-ink">3-5</div>
             </div>
             <p class="section-kicker mt-8">开始前说明</p>
-            <h4 class="mt-3 font-display text-4xl font-semibold leading-none text-ink">像真实面试一样回答</h4>
+            <h4 class="mt-3 font-display text-4xl font-semibold leading-none text-ink">先做一次面试诊断</h4>
             <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
-              每题限时作答，提交后可查看评分、点评和标准答案。
+              诊断会帮助你发现薄弱点，低分题会自动沉淀为可复习卡片，后续可直接加入今日卡片工作台。
             </p>
           </div>
         </div>

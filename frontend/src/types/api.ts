@@ -187,6 +187,12 @@ export interface InterviewRecordItem {
   comment: string
   standardAnswer: string
   followUp: string
+  isLowScore?: boolean
+  recommendedCardFront?: string
+  recommendedCardBack?: string
+  recommendedCardExplanation?: string
+  recommendedCardFollowUp?: string
+  generatedCardId?: string
   voiceTranscript?: string
   voiceConfidence?: number
 }
@@ -200,6 +206,10 @@ export interface InterviewDetail {
   questionCount: number
   startTime?: string
   endTime?: string
+  cardsGenerated?: boolean
+  generatedCardCount?: number
+  interviewDeckId?: string
+  interviewDeckTitle?: string
   records: InterviewRecordItem[]
 }
 
@@ -224,6 +234,9 @@ export interface InterviewHistoryItem {
   questionCount: number
   startTime?: string
   endTime?: string
+  cardsGenerated?: boolean
+  generatedCardCount?: number
+  interviewDeckId?: string
 }
 
 export interface WrongQuestionItem {

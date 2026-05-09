@@ -1,5 +1,12 @@
 import { request } from '@/utils/http'
-import type { InterviewAnswerResult, InterviewCurrentQuestion, InterviewDetail, InterviewHistoryItem, VoiceSubmitResult } from '@/types/api'
+import type {
+  InterviewAnswerResult,
+  InterviewCurrentQuestion,
+  InterviewDetail,
+  InterviewHistoryItem,
+  TodayCardsTask,
+  VoiceSubmitResult
+} from '@/types/api'
 import type { PageResult } from '@/types/api'
 
 export interface InterviewStartPayload {
@@ -44,6 +51,14 @@ export const fetchInterviewHistoryApi = (direction?: string, pageNum = 1, pageSi
 
 export const fetchInterviewTrendApi = (limit = 20) => {
   return request<InterviewHistoryItem[]>({ url: '/interview/trend', method: 'get', params: { limit } })
+}
+
+export const generateInterviewCardsApi = (sessionId: string) => {
+  return request<InterviewDetail>({ url: `/interview/${sessionId}/cards/generate`, method: 'post' })
+}
+
+export const activateInterviewCardsApi = (sessionId: string) => {
+  return request<TodayCardsTask>({ url: `/interview/${sessionId}/cards/activate`, method: 'post' })
 }
 
 // ── Voice Interview APIs ──────────────────────────

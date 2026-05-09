@@ -28,6 +28,10 @@ import com.bytecoach.knowledge.entity.KnowledgeChunk;
 import com.bytecoach.knowledge.entity.KnowledgeDoc;
 import com.bytecoach.knowledge.mapper.KnowledgeChunkMapper;
 import com.bytecoach.knowledge.mapper.KnowledgeDocMapper;
+import com.bytecoach.interview.entity.InterviewRecord;
+import com.bytecoach.interview.entity.InterviewSession;
+import com.bytecoach.interview.mapper.InterviewRecordMapper;
+import com.bytecoach.interview.mapper.InterviewSessionMapper;
 import com.bytecoach.question.entity.Question;
 import com.bytecoach.question.mapper.QuestionMapper;
 import com.bytecoach.wrong.entity.WrongQuestion;
@@ -68,10 +72,14 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
     private static final BigDecimal DEFAULT_EASE_FACTOR = new BigDecimal("2.50");
     private static final String SOURCE_KNOWLEDGE_DOC = "knowledge_doc";
     private static final String SOURCE_WRONG_AUTO = "wrong_auto";
+    private static final String SOURCE_INTERVIEW_AUTO = "interview_auto";
     private static final String SOURCE_REF_KNOWLEDGE_CHUNK = "knowledge_chunk";
     private static final String SOURCE_REF_WRONG_QUESTION = "wrong_question";
+    private static final String SOURCE_REF_INTERVIEW_RECORD = "interview_record";
     private static final String WRONG_DECK_TITLE = "错题复习";
+    private static final String INTERVIEW_DECK_TITLE = "面试诊断卡片";
     private static final long WRONG_DECK_DOC_ID = -1L;
+    private static final long INTERVIEW_DECK_DOC_ID = -2L;
     private static final List<String> DEFAULT_CARD_TYPES = List.of("concept", "qa", "scenario", "compare");
     private static final Set<String> ALLOWED_CARD_TYPES = Set.copyOf(DEFAULT_CARD_TYPES);
     private static final Set<String> ALLOWED_DIFFICULTIES = Set.of("auto", "easy", "medium", "hard");
@@ -99,6 +107,8 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
     private final KnowledgeDocMapper knowledgeDocMapper;
     private final KnowledgeChunkMapper knowledgeChunkMapper;
     private final WrongQuestionMapper wrongQuestionMapper;
+    private final InterviewSessionMapper interviewSessionMapper;
+    private final InterviewRecordMapper interviewRecordMapper;
     private final QuestionMapper questionMapper;
     private final PromptTemplateService promptTemplateService;
     private final LlmGateway llmGateway;
@@ -263,6 +273,38 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
     }
 
     @Override
+    public KnowledgeCardTaskVO getInterviewDeck(Long userId) {
+        KnowledgeCardTask deck = findInterviewDeck(userId);
+        return deck == null ? null : buildTaskVO(deck, loadCards(deck.getId()));
+    }
+
+    @Override
+    @Transactional
+    public KnowledgeCardTaskVO syncInterviewDeckBySession(Long userId, Long sessionId) {
+        InterviewSession session = interviewSessionMapper.selectById(sessionId);
+        if (session == null || !userId.equals(session.getUserId())) {
+            throw new BusinessException(ResultCode.NOT_FOUND.getCode(), "interview session not found");
+        }
+        List<InterviewRecord> records = interviewRecordMapper.selectList(new LambdaQueryWrapper<InterviewRecord>()
+                .eq(InterviewRecord::getSessionId, sessionId)
+                .eq(InterviewRecord::getUserId, userId)
+                .orderByAsc(InterviewRecord::getId));
+        syncInterviewDeck(userId, records);
+        KnowledgeCardTask deck = findInterviewDeck(userId);
+        return deck == null ? null : buildTaskVO(deck, loadCards(deck.getId()));
+    }
+
+    @Override
+    @Transactional
+    public TodayCardsTaskVO activateInterviewDeck(Long userId) {
+        KnowledgeCardTask deck = findInterviewDeck(userId);
+        if (deck == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND.getCode(), "interview deck not found");
+        }
+        return activateDeck(userId, deck.getId());
+    }
+
+    @Override
     @Transactional
     public void syncWrongDeck(Long userId) {
         List<WrongQuestion> wrongs = wrongQuestionMapper.selectList(new LambdaQueryWrapper<WrongQuestion>()
@@ -368,6 +410,106 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
         taskMapper.updateById(deck);
 
         updateTodaySnapshot(userId, deck, refreshed);
+    }
+
+    @Transactional
+    protected void syncInterviewDeck(Long userId, List<InterviewRecord> records) {
+        if (records.isEmpty()) {
+            return;
+        }
+        List<InterviewRecord> lowScoreRecords = records.stream()
+                .filter(record -> Integer.valueOf(1).equals(record.getIsWrong()))
+                .toList();
+        Set<Long> sessionRecordIds = records.stream().map(InterviewRecord::getId).collect(Collectors.toSet());
+
+        KnowledgeCardTask deck = findInterviewDeck(userId);
+        if (lowScoreRecords.isEmpty()) {
+            if (deck != null) {
+                List<KnowledgeCard> existingCards = loadCards(deck.getId());
+                for (KnowledgeCard existingCard : existingCards) {
+                    if (SOURCE_REF_INTERVIEW_RECORD.equals(existingCard.getSourceRefType())
+                            && existingCard.getSourceRefId() != null
+                            && sessionRecordIds.contains(existingCard.getSourceRefId())) {
+                        cardMapper.deleteById(existingCard.getId());
+                    }
+                }
+                refreshInterviewDeck(deck, userId);
+            }
+            return;
+        }
+
+        if (deck == null) {
+            deck = new KnowledgeCardTask();
+            deck.setUserId(userId);
+            deck.setDocId(INTERVIEW_DECK_DOC_ID);
+            deck.setDocTitle(INTERVIEW_DECK_TITLE);
+            deck.setDeckTitle(INTERVIEW_DECK_TITLE);
+            deck.setSourceType(SOURCE_INTERVIEW_AUTO);
+            deck.setStatus("active");
+            deck.setIsCurrent(0);
+            deck.setDays(1);
+            deck.setCurrentDay(1);
+            deck.setDailyTarget(0);
+            deck.setTotalCards(0);
+            deck.setMasteredCards(0);
+            deck.setReviewCount(0);
+            deck.setEstimatedMinutes(0);
+            taskMapper.insert(deck);
+        }
+
+        Map<Long, Question> questionMap = questionMapper.selectBatchIds(lowScoreRecords.stream()
+                        .map(InterviewRecord::getQuestionId)
+                        .collect(Collectors.toSet()))
+                .stream()
+                .collect(Collectors.toMap(Question::getId, Function.identity(), (a, b) -> a));
+
+        List<KnowledgeCard> existingCards = loadCards(deck.getId());
+        Map<Long, KnowledgeCard> existingByRecordId = existingCards.stream()
+                .filter(card -> SOURCE_REF_INTERVIEW_RECORD.equals(card.getSourceRefType()) && card.getSourceRefId() != null)
+                .collect(Collectors.toMap(KnowledgeCard::getSourceRefId, Function.identity(), (a, b) -> a));
+
+        Set<Long> activeRecordIds = lowScoreRecords.stream().map(InterviewRecord::getId).collect(Collectors.toSet());
+        for (KnowledgeCard existingCard : existingCards) {
+            if (SOURCE_REF_INTERVIEW_RECORD.equals(existingCard.getSourceRefType())
+                    && existingCard.getSourceRefId() != null
+                    && sessionRecordIds.contains(existingCard.getSourceRefId())
+                    && !activeRecordIds.contains(existingCard.getSourceRefId())) {
+                cardMapper.deleteById(existingCard.getId());
+            }
+        }
+
+        int sortOrder = 1;
+        for (InterviewRecord record : lowScoreRecords) {
+            Question question = questionMap.get(record.getQuestionId());
+            KnowledgeCard card = existingByRecordId.get(record.getId());
+            if (card == null) {
+                card = new KnowledgeCard();
+                card.setTaskId(deck.getId());
+                card.setReviewCount(0);
+                card.setEaseFactor(DEFAULT_EASE_FACTOR);
+                card.setIntervalDays(0);
+                card.setStreak(0);
+                card.setState("new");
+            }
+            card.setQuestion(question != null ? question.getTitle() : "Unknown");
+            card.setAnswer(question != null ? question.getStandardAnswer() : "暂无标准答案");
+            card.setExplanation(buildInterviewExplanation(record));
+            card.setCardType("qa");
+            card.setDifficulty(resolveInterviewDifficulty(record));
+            card.setTags("interview,diagnosis");
+            card.setSourceQuote(record.getFollowUp());
+            card.setSortOrder(sortOrder++);
+            card.setScheduledDay(1);
+            card.setSourceRefId(record.getId());
+            card.setSourceRefType(SOURCE_REF_INTERVIEW_RECORD);
+            if (card.getId() == null) {
+                cardMapper.insert(card);
+            } else {
+                cardMapper.updateById(card);
+            }
+        }
+
+        refreshInterviewDeck(deck, userId);
     }
 
     @Override
@@ -788,6 +930,13 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
                 .last("LIMIT 1"));
     }
 
+    private KnowledgeCardTask findInterviewDeck(Long userId) {
+        return taskMapper.selectOne(new LambdaQueryWrapper<KnowledgeCardTask>()
+                .eq(KnowledgeCardTask::getUserId, userId)
+                .eq(KnowledgeCardTask::getSourceType, SOURCE_INTERVIEW_AUTO)
+                .last("LIMIT 1"));
+    }
+
     private KnowledgeCardTask getOwnedTask(Long userId, Long taskId) {
         KnowledgeCardTask task = taskMapper.selectById(taskId);
         if (task == null || !userId.equals(task.getUserId())) {
@@ -851,6 +1000,45 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
             return "learning";
         }
         return "weak";
+    }
+
+    private String buildInterviewExplanation(InterviewRecord record) {
+        String comment = StringUtils.hasText(record.getComment()) ? record.getComment() : "本题建议回到标准答案，重点补齐薄弱点。";
+        String userAnswer = StringUtils.hasText(record.getUserAnswer()) ? record.getUserAnswer() : "未作答";
+        return comment + "\n\n回答问题点：\n" + userAnswer;
+    }
+
+    private String resolveInterviewDifficulty(InterviewRecord record) {
+        if (record.getScore() == null) {
+            return "medium";
+        }
+        if (record.getScore().compareTo(new BigDecimal("40")) < 0) {
+            return "hard";
+        }
+        if (record.getScore().compareTo(new BigDecimal("70")) < 0) {
+            return "medium";
+        }
+        return "easy";
+    }
+
+    private void refreshInterviewDeck(KnowledgeCardTask deck, Long userId) {
+        List<KnowledgeCard> refreshed = loadCards(deck.getId());
+        deck.setDeckTitle(INTERVIEW_DECK_TITLE);
+        deck.setDocTitle(INTERVIEW_DECK_TITLE);
+        deck.setSourceType(SOURCE_INTERVIEW_AUTO);
+        deck.setStatus(refreshed.isEmpty() ? "completed" : "active");
+        deck.setCurrentDay(1);
+        deck.setDays(1);
+        deck.setTotalCards(refreshed.size());
+        deck.setMasteredCards((int) refreshed.stream().filter(item -> "mastered".equals(item.getState())).count());
+        deck.setDailyTarget(refreshed.size());
+        deck.setEstimatedMinutes(estimateMinutes(Math.max(1, refreshed.size())));
+        taskMapper.updateById(deck);
+        if (refreshed.isEmpty()) {
+            deleteTodaySnapshot(userId, deck.getId());
+        } else {
+            updateTodaySnapshot(userId, deck, refreshed);
+        }
     }
 
     private String resolveCardState(String masteryLevel, Integer rating) {

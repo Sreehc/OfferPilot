@@ -1,6 +1,5 @@
 <template>
   <div class="space-y-6">
-    <!-- Header -->
     <section class="paper-panel p-6">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
@@ -9,7 +8,7 @@
             最近完成的面试诊断
           </h3>
           <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-            按方向快速筛选，先看题量、得分和时间，再进入详情复盘。
+            每场记录都会标记是否已沉淀为复习卡片，方便你补生成后再加入今日卡片主线。
           </p>
         </div>
         <div class="flex gap-3">
@@ -18,13 +17,12 @@
           </el-select>
           <el-button size="large" class="hard-button-secondary" @click="loadData">刷新</el-button>
           <RouterLink to="/interview">
-            <el-button size="large" class="hard-button-primary">开始诊断</el-button>
+            <el-button size="large" class="hard-button-primary">做一次诊断</el-button>
           </RouterLink>
         </div>
       </div>
     </section>
 
-    <!-- Loading -->
     <section v-if="loading" class="space-y-3">
       <article v-for="n in 3" :key="n" class="paper-panel p-5">
         <div class="h-4 w-32 animate-pulse rounded bg-slate-200 dark:bg-slate-700"></div>
@@ -32,7 +30,6 @@
       </article>
     </section>
 
-    <!-- Empty State -->
     <section v-else-if="!items.length" class="paper-panel p-6">
       <EmptyState
         icon="chart"
@@ -47,44 +44,72 @@
       </EmptyState>
     </section>
 
-    <!-- History List -->
     <section v-else>
       <div class="space-y-3">
         <div
           v-for="item in items"
           :key="item.sessionId"
-          class="paper-panel cursor-pointer p-5 transition hover:ring-2 hover:ring-accent/20"
-          @click="goToDetail(item.sessionId)"
+          class="paper-panel p-5 transition hover:ring-2 hover:ring-accent/20"
         >
           <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div class="min-w-0">
+            <div class="min-w-0 cursor-pointer" @click="goToDetail(item.sessionId)">
               <div class="flex flex-wrap items-center gap-2">
                 <span class="hard-chip !bg-blue-100 !text-blue-700 text-xs">{{ item.direction }}</span>
                 <span class="text-xs text-slate-400 dark:text-slate-500">{{ item.questionCount }} 题</span>
+                <span
+                  class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"
+                  :class="item.cardsGenerated ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'"
+                >
+                  {{ item.cardsGenerated ? `已生成 ${item.generatedCardCount || 0} 张` : '未生成卡片' }}
+                </span>
               </div>
-              <div class="mt-3 text-lg font-semibold text-ink">完成一次 {{ item.direction }} 方向练习</div>
+              <div class="mt-3 text-lg font-semibold text-ink">完成一次 {{ item.direction }} 方向诊断</div>
               <div class="mt-2 flex flex-wrap items-center gap-4 text-xs text-slate-400 dark:text-slate-500">
                 <span v-if="item.startTime">{{ formatTime(item.startTime) }}</span>
                 <span v-if="item.endTime">结束于 {{ formatTime(item.endTime) }}</span>
               </div>
             </div>
-            <div class="flex shrink-0 items-center gap-6">
-              <div class="text-right">
-                <div class="text-xs text-slate-400 dark:text-slate-500">得分</div>
-                <span
-                  class="text-2xl font-semibold tracking-[-0.03em]"
-                  :class="item.totalScore >= 60 ? 'text-accent' : 'text-red-500'"
-                >
-                  {{ formatScore(item.totalScore) }}
-                </span>
+
+            <div class="flex shrink-0 flex-col items-end gap-3">
+              <div class="flex items-center gap-6">
+                <div class="text-right">
+                  <div class="text-xs text-slate-400 dark:text-slate-500">得分</div>
+                  <span
+                    class="text-2xl font-semibold tracking-[-0.03em]"
+                    :class="item.totalScore >= 60 ? 'text-accent' : 'text-red-500'"
+                  >
+                    {{ formatScore(item.totalScore) }}
+                  </span>
+                </div>
               </div>
-              <div class="text-sm font-semibold text-accent">查看详情</div>
+              <div class="flex flex-wrap justify-end gap-2">
+                <el-button
+                  v-if="!item.cardsGenerated"
+                  :loading="sessionActionLoading[item.sessionId] === 'generate'"
+                  size="small"
+                  class="hard-button-secondary"
+                  @click="handleGenerate(item.sessionId)"
+                >
+                  补生成卡片
+                </el-button>
+                <el-button
+                  v-else
+                  :loading="sessionActionLoading[item.sessionId] === 'activate'"
+                  size="small"
+                  class="hard-button-primary"
+                  @click="handleActivate(item.sessionId)"
+                >
+                  加入今日卡片
+                </el-button>
+                <el-button size="small" text type="primary" @click="goToDetail(item.sessionId)">
+                  查看详情
+                </el-button>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Pagination -->
       <div v-if="totalPages > 1" class="mt-6 flex justify-center">
         <el-pagination
           v-model:current-page="currentPage"
@@ -100,10 +125,10 @@
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { useRouter } from 'vue-router'
-import { fetchInterviewHistoryApi } from '@/api/interview'
+import { activateInterviewCardsApi, fetchInterviewHistoryApi, generateInterviewCardsApi } from '@/api/interview'
 import type { InterviewHistoryItem } from '@/types/api'
 
 const router = useRouter()
@@ -116,6 +141,7 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 const totalPages = ref(0)
+const sessionActionLoading = reactive<Record<string, '' | 'generate' | 'activate'>>({})
 
 const formatScore = (score: number): string => {
   return Number.isInteger(score) ? String(score) : score.toFixed(2)
@@ -152,6 +178,32 @@ const handlePageChange = (page: number) => {
 
 const goToDetail = (sessionId: string) => {
   router.push(`/interview/detail/${sessionId}`)
+}
+
+const handleGenerate = async (sessionId: string) => {
+  sessionActionLoading[sessionId] = 'generate'
+  try {
+    await generateInterviewCardsApi(sessionId)
+    ElMessage.success('已补生成面试复习卡片')
+    await loadData()
+  } catch {
+    ElMessage.error('补生成卡片失败')
+  } finally {
+    sessionActionLoading[sessionId] = ''
+  }
+}
+
+const handleActivate = async (sessionId: string) => {
+  sessionActionLoading[sessionId] = 'activate'
+  try {
+    await activateInterviewCardsApi(sessionId)
+    ElMessage.success('已加入今日卡片')
+    await router.push('/cards')
+  } catch {
+    ElMessage.error('加入今日卡片失败')
+  } finally {
+    sessionActionLoading[sessionId] = ''
+  }
 }
 
 watch(filterDirection, () => {

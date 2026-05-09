@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.bytecoach.ai.service.AiOrchestratorService;
 import com.bytecoach.cards.service.KnowledgeCardService;
+import com.bytecoach.cards.vo.KnowledgeCardTaskVO;
+import com.bytecoach.cards.vo.TodayCardsTaskVO;
 import com.bytecoach.category.entity.Category;
 import com.bytecoach.category.service.CategoryService;
 import com.bytecoach.common.api.ResultCode;
@@ -53,6 +55,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class InterviewServiceImpl implements InterviewService {
 
     private static final BigDecimal DEFAULT_EASE_FACTOR = new BigDecimal("2.50");
+    private static final String INTERVIEW_DECK_TITLE = "面试诊断卡片";
+    private static final String SOURCE_REF_INTERVIEW_RECORD = "interview_record";
 
     private final InterviewSessionMapper sessionMapper;
     private final InterviewRecordMapper recordMapper;
@@ -242,10 +246,14 @@ public class InterviewServiceImpl implements InterviewService {
             voiceRecordMap = Map.of();
         }
 
+        KnowledgeCardTaskVO interviewDeck = knowledgeCardService.getInterviewDeck(userId);
+        InterviewDeckSnapshot deckSnapshot = buildInterviewDeckSnapshot(records, interviewDeck);
+
         List<InterviewDetailVO.InterviewRecordVO> recordVOs = records.stream()
                 .map(record -> {
                     Question q = questionMap.get(record.getQuestionId());
                     VoiceRecord vr = voiceRecordMap.get(record.getId());
+                    String generatedCardId = deckSnapshot.generatedCardIdsByRecordId.get(record.getId());
                     return InterviewDetailVO.InterviewRecordVO.builder()
                             .questionId(record.getQuestionId())
                             .questionTitle(q != null ? q.getTitle() : "Unknown")
@@ -254,6 +262,12 @@ public class InterviewServiceImpl implements InterviewService {
                             .comment(record.getComment())
                             .standardAnswer(q != null ? q.getStandardAnswer() : null)
                             .followUp(record.getFollowUp())
+                            .isLowScore(Integer.valueOf(1).equals(record.getIsWrong()))
+                            .recommendedCardFront(q != null ? q.getTitle() : "Unknown")
+                            .recommendedCardBack(q != null ? q.getStandardAnswer() : null)
+                            .recommendedCardExplanation(buildInterviewCardExplanation(record))
+                            .recommendedCardFollowUp(record.getFollowUp())
+                            .generatedCardId(generatedCardId)
                             .voiceTranscript(vr != null ? vr.getTranscript() : null)
                             .voiceConfidence(vr != null ? vr.getTranscriptConfidence() : null)
                             .build();
@@ -269,6 +283,10 @@ public class InterviewServiceImpl implements InterviewService {
                 .questionCount(session.getQuestionCount())
                 .startTime(session.getStartTime())
                 .endTime(session.getEndTime())
+                .cardsGenerated(deckSnapshot.generatedCardCount > 0)
+                .generatedCardCount(deckSnapshot.generatedCardCount)
+                .interviewDeckId(deckSnapshot.deckId)
+                .interviewDeckTitle(deckSnapshot.deckTitle)
                 .records(recordVOs)
                 .build();
     }
@@ -282,18 +300,26 @@ public class InterviewServiceImpl implements InterviewService {
                 .orderByDesc(InterviewSession::getCreateTime);
 
         Page<InterviewSession> page = sessionMapper.selectPage(new Page<>(pageNum, pageSize), wrapper);
+        KnowledgeCardTaskVO interviewDeck = knowledgeCardService.getInterviewDeck(userId);
+        Map<Long, InterviewDeckSnapshot> deckSnapshots = buildInterviewDeckSnapshots(userId, page.getRecords(), interviewDeck);
 
         List<InterviewHistoryVO> records = page.getRecords().stream()
-                .map(s -> InterviewHistoryVO.builder()
-                        .sessionId(s.getId())
-                        .direction(s.getDirection())
-                        .status(s.getStatus())
-                        .mode(s.getMode())
-                        .totalScore(s.getTotalScore())
-                        .questionCount(s.getQuestionCount())
-                        .startTime(s.getStartTime())
-                        .endTime(s.getEndTime())
-                        .build())
+                .map(s -> {
+                    InterviewDeckSnapshot snapshot = deckSnapshots.getOrDefault(s.getId(), InterviewDeckSnapshot.empty());
+                    return InterviewHistoryVO.builder()
+                            .sessionId(s.getId())
+                            .direction(s.getDirection())
+                            .status(s.getStatus())
+                            .mode(s.getMode())
+                            .totalScore(s.getTotalScore())
+                            .questionCount(s.getQuestionCount())
+                            .startTime(s.getStartTime())
+                            .endTime(s.getEndTime())
+                            .cardsGenerated(snapshot.generatedCardCount > 0)
+                            .generatedCardCount(snapshot.generatedCardCount)
+                            .interviewDeckId(snapshot.deckId)
+                            .build();
+                })
                 .toList();
 
         return PageResult.<InterviewHistoryVO>builder()
@@ -326,6 +352,28 @@ public class InterviewServiceImpl implements InterviewService {
                         .endTime(s.getEndTime())
                         .build())
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public InterviewDetailVO generateCards(Long userId, Long sessionId) {
+        InterviewSession session = getOwnedSession(userId, sessionId);
+        if (!"finished".equals(session.getStatus())) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "只有已完成的面试诊断才能生成复习卡片");
+        }
+        knowledgeCardService.syncInterviewDeckBySession(userId, sessionId);
+        return detail(userId, sessionId);
+    }
+
+    @Override
+    @Transactional
+    public TodayCardsTaskVO activateCards(Long userId, Long sessionId) {
+        InterviewSession session = getOwnedSession(userId, sessionId);
+        if (!"finished".equals(session.getStatus())) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "只有已完成的面试诊断才能加入今日卡片");
+        }
+        knowledgeCardService.syncInterviewDeckBySession(userId, sessionId);
+        return knowledgeCardService.activateInterviewDeck(userId);
     }
 
     // ──────────────────────────────────────────────
@@ -454,6 +502,8 @@ public class InterviewServiceImpl implements InterviewService {
         session.setEndTime(LocalDateTime.now());
         sessionMapper.updateById(session);
 
+        knowledgeCardService.syncInterviewDeckBySession(session.getUserId(), session.getId());
+
         log.info("Interview session {} finished with avg score {}", session.getId(), avgScore);
 
         // Send interview completion notification
@@ -465,6 +515,66 @@ public class InterviewServiceImpl implements InterviewService {
                     "/interview/detail/" + session.getId());
         } catch (Exception e) {
             log.warn("Failed to send interview completion notification: {}", e.getMessage());
+        }
+    }
+
+    private InterviewDeckSnapshot buildInterviewDeckSnapshot(List<InterviewRecord> records, KnowledgeCardTaskVO interviewDeck) {
+        if (interviewDeck == null || interviewDeck.getCards() == null || interviewDeck.getCards().isEmpty()) {
+            return InterviewDeckSnapshot.empty();
+        }
+        Map<Long, String> generatedCardIdsByRecordId = interviewDeck.getCards().stream()
+                .filter(card -> SOURCE_REF_INTERVIEW_RECORD.equals(card.getSourceRefType()) && card.getSourceRefId() != null)
+                .collect(Collectors.toMap(
+                        card -> Long.valueOf(card.getSourceRefId()),
+                        card -> card.getId(),
+                        (a, b) -> a));
+
+        int generatedCardCount = (int) records.stream()
+                .filter(record -> Integer.valueOf(1).equals(record.getIsWrong()))
+                .filter(record -> generatedCardIdsByRecordId.containsKey(record.getId()))
+                .count();
+        return new InterviewDeckSnapshot(
+                interviewDeck.getId(),
+                interviewDeck.getDeckTitle() == null ? INTERVIEW_DECK_TITLE : interviewDeck.getDeckTitle(),
+                generatedCardCount,
+                generatedCardIdsByRecordId);
+    }
+
+    private Map<Long, InterviewDeckSnapshot> buildInterviewDeckSnapshots(Long userId, List<InterviewSession> sessions, KnowledgeCardTaskVO interviewDeck) {
+        if (sessions.isEmpty()) {
+            return Map.of();
+        }
+        List<Long> sessionIds = sessions.stream().map(InterviewSession::getId).toList();
+        List<InterviewRecord> records = recordMapper.selectList(new LambdaQueryWrapper<InterviewRecord>()
+                .eq(InterviewRecord::getUserId, userId)
+                .in(InterviewRecord::getSessionId, sessionIds)
+                .orderByAsc(InterviewRecord::getId));
+        Map<Long, List<InterviewRecord>> recordsBySessionId = records.stream()
+                .collect(Collectors.groupingBy(InterviewRecord::getSessionId));
+        Map<Long, InterviewDeckSnapshot> snapshots = new LinkedHashMap<>();
+        for (InterviewSession session : sessions) {
+            snapshots.put(session.getId(), buildInterviewDeckSnapshot(recordsBySessionId.getOrDefault(session.getId(), List.of()), interviewDeck));
+        }
+        return snapshots;
+    }
+
+    private String buildInterviewCardExplanation(InterviewRecord record) {
+        String comment = record.getComment() == null || record.getComment().isBlank()
+                ? "这题需要回到标准答案，补齐关键知识点。"
+                : record.getComment();
+        String userAnswer = record.getUserAnswer() == null || record.getUserAnswer().isBlank()
+                ? "未作答"
+                : record.getUserAnswer();
+        return comment + "\n\n回答问题点：\n" + userAnswer;
+    }
+
+    private record InterviewDeckSnapshot(
+            String deckId,
+            String deckTitle,
+            int generatedCardCount,
+            Map<Long, String> generatedCardIdsByRecordId) {
+        private static InterviewDeckSnapshot empty() {
+            return new InterviewDeckSnapshot(null, null, 0, Map.of());
         }
     }
 }

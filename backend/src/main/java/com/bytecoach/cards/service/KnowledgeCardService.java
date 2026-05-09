@@ -34,6 +34,12 @@ public interface KnowledgeCardService {
 
     CardStatsSummaryVO getStats(Long userId);
 
+    KnowledgeCardTaskVO getInterviewDeck(Long userId);
+
+    KnowledgeCardTaskVO syncInterviewDeckBySession(Long userId, Long sessionId);
+
+    TodayCardsTaskVO activateInterviewDeck(Long userId);
+
     void syncWrongDeck(Long userId);
 
     void invalidateByDocId(Long docId, String reason);
