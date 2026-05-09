@@ -1,9 +1,24 @@
 import { request } from '@/utils/http'
-import type { CardDeckSummary, CardStatsSummary, KnowledgeCardTask, TodayCardsTask } from '@/types/api'
+import type {
+  CardDeckSummary,
+  CardGenerateDifficulty,
+  CardGenerateType,
+  CardStatsSummary,
+  KnowledgeCardTask,
+  TodayCardsTask
+} from '@/types/api'
 
 export interface CardTaskCreatePayload {
   docId: number
   days: number
+}
+
+export interface CardDeckGeneratePayload {
+  docId: number
+  days: number
+  cardTypes: CardGenerateType[]
+  cardCount: number
+  difficulty: CardGenerateDifficulty
 }
 
 export interface CardRatePayload {
@@ -16,7 +31,7 @@ export const createCardTaskApi = (payload: CardTaskCreatePayload) => {
   return request<KnowledgeCardTask>({ url: '/cards/task', method: 'post', data: payload })
 }
 
-export const generateCardDeckApi = (payload: CardTaskCreatePayload) => {
+export const generateCardDeckApi = (payload: CardDeckGeneratePayload) => {
   return request<KnowledgeCardTask>({ url: '/cards/generate', method: 'post', data: payload })
 }
 

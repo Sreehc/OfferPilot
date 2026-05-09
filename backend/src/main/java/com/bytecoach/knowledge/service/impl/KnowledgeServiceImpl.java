@@ -18,6 +18,10 @@ import com.bytecoach.knowledge.entity.KnowledgeChunk;
 import com.bytecoach.knowledge.entity.KnowledgeDoc;
 import com.bytecoach.knowledge.mapper.KnowledgeChunkMapper;
 import com.bytecoach.knowledge.mapper.KnowledgeDocMapper;
+import com.bytecoach.cards.entity.KnowledgeCard;
+import com.bytecoach.cards.entity.KnowledgeCardTask;
+import com.bytecoach.cards.mapper.KnowledgeCardMapper;
+import com.bytecoach.cards.mapper.KnowledgeCardTaskMapper;
 import com.bytecoach.knowledge.service.DocumentParserService;
 import com.bytecoach.knowledge.service.KnowledgeRetrievalService;
 import com.bytecoach.knowledge.service.KnowledgeService;
@@ -65,6 +69,8 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
     private final VectorStoreService vectorStoreService;
     private final DocumentParserService documentParserService;
     private final KnowledgeCardService knowledgeCardService;
+    private final KnowledgeCardTaskMapper knowledgeCardTaskMapper;
+    private final KnowledgeCardMapper knowledgeCardMapper;
 
     @Lazy
     @org.springframework.beans.factory.annotation.Autowired
@@ -274,9 +280,30 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
                                 .in(KnowledgeChunk::getDocId, docs.stream().map(KnowledgeDoc::getId).toList()))
                 .stream()
                 .collect(Collectors.groupingBy(KnowledgeChunk::getDocId, Collectors.counting()));
+        Map<Long, KnowledgeCardTask> deckMap = knowledgeCardTaskMapper.selectList(
+                        new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<KnowledgeCardTask>()
+                                .in(KnowledgeCardTask::getDocId, docs.stream().map(KnowledgeDoc::getId).toList())
+                                .eq(KnowledgeCardTask::getSourceType, "knowledge_doc")
+                                .ne(KnowledgeCardTask::getStatus, "invalid")
+                                .orderByDesc(KnowledgeCardTask::getUpdateTime))
+                .stream()
+                .collect(Collectors.toMap(KnowledgeCardTask::getDocId, Function.identity(), (left, right) -> left));
+        Map<Long, List<KnowledgeCard>> cardsByTaskId = deckMap.isEmpty()
+                ? Map.of()
+                : knowledgeCardMapper.selectList(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<KnowledgeCard>()
+                                .in(KnowledgeCard::getTaskId, deckMap.values().stream().map(KnowledgeCardTask::getId).toList()))
+                        .stream()
+                        .collect(Collectors.groupingBy(KnowledgeCard::getTaskId));
         return docs.stream()
                 .map(doc -> {
                     Category category = categoryMap.get(doc.getCategoryId());
+                    KnowledgeCardTask deck = deckMap.get(doc.getId());
+                    List<KnowledgeCard> cards = deck == null ? List.of() : cardsByTaskId.getOrDefault(deck.getId(), List.of());
+                    String cardTypes = cards.stream()
+                            .map(KnowledgeCard::getCardType)
+                            .filter(StringUtils::hasText)
+                            .distinct()
+                            .collect(Collectors.joining(","));
                     return KnowledgeDocVO.builder()
                             .id(doc.getId())
                             .title(doc.getTitle())
@@ -287,6 +314,11 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
                             .status(doc.getStatus())
                             .summary(doc.getSummary())
                             .chunkCount(chunkCountMap.getOrDefault(doc.getId(), 0L).intValue())
+                            .cardDeckId(deck == null ? null : deck.getId())
+                            .cardDeckTitle(deck == null ? null : deck.getDeckTitle())
+                            .cardCount(cards.size())
+                            .cardGeneratedAt(deck == null ? null : deck.getUpdateTime())
+                            .cardTypes(StringUtils.hasText(cardTypes) ? cardTypes : null)
                             .updateTime(doc.getUpdateTime())
                             .build();
                 })

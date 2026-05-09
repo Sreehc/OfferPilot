@@ -117,6 +117,11 @@ export interface KnowledgeDocItem {
   status: 'draft' | 'parsed' | 'indexed'
   summary?: string
   chunkCount?: number
+  cardDeckId?: number
+  cardDeckTitle?: string
+  cardCount?: number
+  cardGeneratedAt?: string
+  cardTypes?: string
   updateTime?: string
 }
 
@@ -262,6 +267,10 @@ export interface KnowledgeCardItem {
   question: string
   answer: string
   explanation?: string
+  cardType?: 'concept' | 'qa' | 'scenario' | 'compare' | string
+  difficulty?: 'easy' | 'medium' | 'hard' | 'auto' | string
+  tags?: string
+  sourceQuote?: string
   sortOrder: number
   scheduledDay: number
   state: 'new' | 'learning' | 'weak' | 'mastered'
@@ -340,6 +349,9 @@ export interface CardStatsSummary {
   streak: number
   completionRate: number
 }
+
+export type CardGenerateType = 'concept' | 'qa' | 'scenario' | 'compare'
+export type CardGenerateDifficulty = 'auto' | 'easy' | 'medium' | 'hard'
 
 export interface CommunityQuestion {
   id: number

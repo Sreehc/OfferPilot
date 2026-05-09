@@ -179,6 +179,9 @@
               {{ doc.chunkCount ?? 0 }} 个片段
             </span>
             <span class="rounded-full border border-[var(--bc-line)] px-2.5 py-1 text-slate-500 dark:text-slate-300">
+              {{ doc.cardCount ?? 0 }} 张卡片
+            </span>
+            <span class="rounded-full border border-[var(--bc-line)] px-2.5 py-1 text-slate-500 dark:text-slate-300">
               {{ formatDate(doc.updateTime) }}
             </span>
           </div>
@@ -187,13 +190,37 @@
             {{ doc.summary || '暂无摘要。' }}
           </p>
 
-          <div class="mt-4 flex flex-wrap gap-2">
-            <RouterLink
-              :to="{ path: '/cards', query: { docId: String(doc.id), title: doc.title } }"
-              class="hard-button-secondary text-sm"
-            >
-              生成今日卡片
-            </RouterLink>
+          <div class="doc-card__memory mt-4">
+            <div class="doc-card__memory-meta">
+              <p class="doc-card__memory-kicker">卡片生成</p>
+              <template v-if="doc.cardDeckId">
+                <strong>{{ doc.cardDeckTitle || doc.title }}</strong>
+                <span>
+                  已生成 {{ doc.cardCount ?? 0 }} 张 · 类型 {{ formatCardTypes(doc.cardTypes) }} · 最近
+                  {{ formatDate(doc.cardGeneratedAt || doc.updateTime) }}
+                </span>
+              </template>
+              <template v-else>
+                <strong>还没有生成卡片</strong>
+                <span>选择类型、数量、难度和复习天数后，直接进入记忆工作台。</span>
+              </template>
+            </div>
+
+            <div class="doc-card__memory-actions">
+              <RouterLink
+                :to="{ path: '/cards', query: { docId: String(doc.id), title: doc.title } }"
+                class="hard-button-primary text-sm"
+              >
+                {{ doc.cardDeckId ? '进入今日卡片' : '生成卡片' }}
+              </RouterLink>
+              <RouterLink
+                v-if="doc.cardDeckId"
+                :to="{ path: '/cards', query: { docId: String(doc.id), title: doc.title } }"
+                class="hard-button-secondary text-sm"
+              >
+                查看生成配置
+              </RouterLink>
+            </div>
           </div>
         </article>
       </div>
@@ -511,6 +538,20 @@ const formatDate = (value?: string) => {
   }).format(new Date(value))
 }
 
+const formatCardTypes = (value?: string) => {
+  if (!value) return '默认'
+  const labelMap: Record<string, string> = {
+    concept: '概念卡',
+    qa: '问答卡',
+    scenario: '场景题卡',
+    compare: '易混淆点卡'
+  }
+  return value
+    .split(',')
+    .map((item) => labelMap[item] || item)
+    .join(' / ')
+}
+
 onMounted(async () => {
   await loadCategories()
   await loadDocs()
@@ -765,6 +806,54 @@ onMounted(async () => {
   color: var(--bc-coral);
   font-size: 12px;
   font-weight: 700;
+}
+
+.doc-card__memory {
+  border: 1px solid rgba(var(--bc-accent-rgb), 0.16);
+  border-radius: 20px;
+  background:
+    linear-gradient(135deg, rgba(var(--bc-accent-rgb), 0.1), transparent 62%),
+    rgba(255, 255, 255, 0.24);
+  padding: 14px;
+}
+
+.dark .doc-card__memory {
+  background:
+    linear-gradient(135deg, rgba(var(--bc-accent-rgb), 0.11), transparent 62%),
+    rgba(255, 255, 255, 0.04);
+}
+
+.doc-card__memory-meta {
+  display: grid;
+  gap: 6px;
+}
+
+.doc-card__memory-kicker {
+  color: var(--bc-ink-secondary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.doc-card__memory-meta strong {
+  color: var(--bc-ink);
+  font-size: 1rem;
+  font-weight: 780;
+  letter-spacing: -0.03em;
+}
+
+.doc-card__memory-meta span {
+  color: rgb(100 116 139);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.doc-card__memory-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
 }
 
 .reference-card {

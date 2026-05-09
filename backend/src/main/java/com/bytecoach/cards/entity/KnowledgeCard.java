@@ -15,6 +15,10 @@ public class KnowledgeCard extends BaseEntity {
     private String question;
     private String answer;
     private String explanation;
+    private String cardType;
+    private String difficulty;
+    private String tags;
+    private String sourceQuote;
     private Integer sortOrder;
     private Integer scheduledDay;
     private String state;

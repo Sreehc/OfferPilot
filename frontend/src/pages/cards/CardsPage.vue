@@ -22,22 +22,108 @@
         <div>
           <p class="generate-panel__kicker">从知识库生成</p>
           <h3>{{ docTitle || `文档 #${docId}` }}</h3>
-          <p>生成后会创建一个知识库 deck，并直接切换为当前今日任务。</p>
+          <p>把资料提炼成可执行的记忆任务。系统会按你选择的类型、数量、难度和复习天数生成一组卡片。</p>
         </div>
-        <div class="generate-panel__control">
-          <label for="days">计划天数</label>
-          <el-input-number
-            id="days"
-            v-model="days"
-            :min="1"
-            :max="30"
-            :step="1"
-            size="large"
-            controls-position="right"
-          />
-          <button type="button" class="hard-button-primary" :disabled="generating" @click="generateDeck">
-            {{ generating ? '生成中...' : '生成并设为当前 deck' }}
-          </button>
+
+        <div v-if="matchedDocDeck" class="generate-panel__existing">
+          <strong>这份资料已经生成过 deck：{{ matchedDocDeck.deckTitle }}</strong>
+          <p>
+            当前已有 {{ matchedDocDeck.totalCards }} 张卡片，已掌握 {{ matchedDocDeck.masteredCards }} 张。
+            按本次方向三规则，不会重复生成或追加新卡片。
+          </p>
+          <div class="generate-panel__existing-actions">
+            <button
+              type="button"
+              class="hard-button-primary"
+              :disabled="activatingDeckId === matchedDocDeck.deckId"
+              @click="activateDeck(matchedDocDeck.deckId)"
+            >
+              {{ activatingDeckId === matchedDocDeck.deckId ? '切换中...' : '设为当前 deck' }}
+            </button>
+            <button type="button" class="hard-button-secondary" @click="router.replace({ path: '/cards' })">
+              返回工作台
+            </button>
+          </div>
+        </div>
+
+        <div v-else class="generate-panel__control">
+          <div class="generate-panel__summary">
+            <article class="generate-panel__metric">
+              <span>卡片类型</span>
+              <strong>{{ selectedCardTypes.length }} 种</strong>
+            </article>
+            <article class="generate-panel__metric">
+              <span>目标数量</span>
+              <strong>{{ cardCount }} 张</strong>
+            </article>
+            <article class="generate-panel__metric">
+              <span>难度</span>
+              <strong>{{ difficultyOptions.find((item) => item.value === difficulty)?.label }}</strong>
+            </article>
+            <article class="generate-panel__metric">
+              <span>复习天数</span>
+              <strong>{{ days }} 天</strong>
+            </article>
+          </div>
+
+          <div class="generate-panel__form">
+            <div class="generate-panel__field generate-panel__field-wide">
+              <label>生成类型</label>
+              <el-checkbox-group v-model="selectedCardTypes" class="generate-panel__types">
+                <el-checkbox
+                  v-for="option in cardTypeOptions"
+                  :key="option.value"
+                  :label="option.value"
+                  class="generate-type-chip"
+                >
+                  <span>{{ option.label }}</span>
+                  <small>{{ option.hint }}</small>
+                </el-checkbox>
+              </el-checkbox-group>
+            </div>
+
+            <div class="generate-panel__field">
+              <label for="cardCount">生成数量</label>
+              <el-input-number
+                id="cardCount"
+                v-model="cardCount"
+                :min="4"
+                :max="30"
+                :step="2"
+                size="large"
+                controls-position="right"
+              />
+            </div>
+
+            <div class="generate-panel__field">
+              <label for="difficulty">难度</label>
+              <el-select id="difficulty" v-model="difficulty" size="large">
+                <el-option v-for="item in difficultyOptions" :key="item.value" :label="item.label" :value="item.value" />
+              </el-select>
+            </div>
+
+            <div class="generate-panel__field">
+              <label for="days">复习天数</label>
+              <el-input-number
+                id="days"
+                v-model="days"
+                :min="1"
+                :max="30"
+                :step="1"
+                size="large"
+                controls-position="right"
+              />
+            </div>
+          </div>
+
+          <div class="generate-panel__actions">
+            <button type="button" class="hard-button-primary" :disabled="generating" @click="generateDeck">
+              {{ generating ? '生成中...' : '生成并设为当前 deck' }}
+            </button>
+            <button type="button" class="hard-button-secondary" @click="router.replace({ path: '/cards' })">
+              暂不生成
+            </button>
+          </div>
         </div>
       </section>
 
@@ -87,7 +173,7 @@ import CardDeckList from './CardDeckList.vue'
 import CardProgressSummary from './CardProgressSummary.vue'
 import CardStudySession from './CardStudySession.vue'
 import TodayCardsPanel from './TodayCardsPanel.vue'
-import type { CardDeckSummary, CardStatsSummary, TodayCardsTask } from '@/types/api'
+import type { CardDeckSummary, CardGenerateDifficulty, CardGenerateType, CardStatsSummary, TodayCardsTask } from '@/types/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -100,6 +186,23 @@ const todayTask = ref<TodayCardsTask | null>(null)
 const decks = ref<CardDeckSummary[]>([])
 const stats = ref<CardStatsSummary | null>(null)
 const days = ref(7)
+const cardCount = ref(12)
+const difficulty = ref<CardGenerateDifficulty>('auto')
+const selectedCardTypes = ref<CardGenerateType[]>(['concept', 'qa', 'scenario', 'compare'])
+
+const cardTypeOptions: Array<{ label: string; value: CardGenerateType; hint: string }> = [
+  { label: '概念卡', value: 'concept', hint: '定义、原理、关键点' },
+  { label: '问答卡', value: 'qa', hint: '高频面试问答' },
+  { label: '场景题卡', value: 'scenario', hint: '案例、排查、设计场景' },
+  { label: '易混淆点卡', value: 'compare', hint: '对比、边界、差异' }
+]
+
+const difficultyOptions: Array<{ label: string; value: CardGenerateDifficulty }> = [
+  { label: '系统自动', value: 'auto' },
+  { label: '基础', value: 'easy' },
+  { label: '标准', value: 'medium' },
+  { label: '进阶', value: 'hard' }
+]
 
 const docId = computed(() => {
   const raw = route.query.docId
@@ -113,6 +216,17 @@ const docTitle = computed(() => {
 })
 
 const studyMode = computed(() => route.query.view === 'study')
+const matchedDocDeck = computed(() => {
+  if (!docId.value) return null
+  const expectedTitle = docTitle.value.trim()
+  return (
+    decks.value.find(
+      (deck) =>
+        deck.sourceType === 'knowledge_doc' &&
+        (deck.deckTitle === expectedTitle || (!expectedTitle && deck.deckId === todayTask.value?.deckId))
+    ) ?? null
+  )
+})
 
 const loadWorkbench = async () => {
   loading.value = true
@@ -153,9 +267,19 @@ const generateDeck = async () => {
     ElMessage.error('文档 ID 无效')
     return
   }
+  if (selectedCardTypes.value.length === 0) {
+    ElMessage.warning('至少选择一种卡片类型')
+    return
+  }
   generating.value = true
   try {
-    await generateCardDeckApi({ docId: numericDocId, days: days.value })
+    await generateCardDeckApi({
+      docId: numericDocId,
+      days: days.value,
+      cardTypes: selectedCardTypes.value,
+      cardCount: cardCount.value,
+      difficulty: difficulty.value
+    })
     await refreshWorkbench()
     await router.replace({ path: '/cards' })
     ElMessage.success('已生成并切换为当前 deck')
@@ -278,9 +402,7 @@ watch(
 
 .generate-panel {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 18px;
-  align-items: center;
+  gap: 20px;
 }
 
 .generate-panel h3,
@@ -300,11 +422,55 @@ watch(
 }
 
 .generate-panel__control {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
+  display: grid;
+  gap: 18px;
+}
+
+.generate-panel__summary {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.generate-panel__metric {
+  border: 1px solid var(--bc-line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.24);
+  padding: 14px;
+}
+
+.dark .generate-panel__metric {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.generate-panel__metric span {
+  display: block;
+  color: var(--bc-ink-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.generate-panel__metric strong {
+  display: block;
+  margin-top: 10px;
+  color: var(--bc-ink);
+  font-size: 1.2rem;
+  font-weight: 780;
+}
+
+.generate-panel__form {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.generate-panel__field {
+  display: grid;
+  gap: 10px;
+}
+
+.generate-panel__field-wide {
+  grid-column: 1 / -1;
 }
 
 .generate-panel__control label {
@@ -313,8 +479,66 @@ watch(
   font-weight: 700;
 }
 
-.generate-panel__control :deep(.el-input-number) {
-  width: 150px;
+.generate-panel__types {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.generate-type-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  border: 1px solid var(--bc-line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.22);
+  padding: 12px 14px;
+}
+
+.generate-type-chip span {
+  color: var(--bc-ink);
+  font-size: 14px;
+  font-weight: 760;
+}
+
+.generate-type-chip small {
+  color: var(--bc-ink-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.generate-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.generate-panel__existing {
+  border: 1px dashed rgba(var(--bc-accent-rgb), 0.28);
+  border-radius: 20px;
+  background: rgba(var(--bc-accent-rgb), 0.07);
+  padding: 16px 18px;
+}
+
+.generate-panel__existing strong {
+  display: block;
+  color: var(--bc-ink);
+  font-size: 1rem;
+  font-weight: 760;
+}
+
+.generate-panel__existing p {
+  margin-top: 8px;
+  color: rgb(100 116 139);
+  line-height: 1.7;
+}
+
+.generate-panel__existing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
 }
 
 .cards-workbench__grid {
@@ -336,12 +560,9 @@ watch(
 
 @media (max-width: 980px) {
   .cards-workbench__grid,
-  .generate-panel {
+  .generate-panel__form,
+  .generate-panel__summary {
     grid-template-columns: 1fr;
-  }
-
-  .generate-panel__control {
-    justify-content: flex-start;
   }
 }
 </style>

@@ -7,6 +7,10 @@ ALTER TABLE knowledge_card_task
 
 ALTER TABLE knowledge_card
     ADD COLUMN IF NOT EXISTS explanation TEXT DEFAULT NULL AFTER answer,
+    ADD COLUMN IF NOT EXISTS card_type VARCHAR(32) DEFAULT NULL COMMENT 'concept / qa / scenario / compare' AFTER explanation,
+    ADD COLUMN IF NOT EXISTS difficulty VARCHAR(16) DEFAULT NULL COMMENT 'easy / medium / hard / auto' AFTER card_type,
+    ADD COLUMN IF NOT EXISTS tags VARCHAR(255) DEFAULT NULL COMMENT 'comma separated tags' AFTER difficulty,
+    ADD COLUMN IF NOT EXISTS source_quote TEXT DEFAULT NULL AFTER tags,
     ADD COLUMN IF NOT EXISTS source_ref_id BIGINT DEFAULT NULL AFTER review_count,
     ADD COLUMN IF NOT EXISTS source_ref_type VARCHAR(32) DEFAULT NULL COMMENT 'knowledge_chunk / wrong_question' AFTER source_ref_id;
 

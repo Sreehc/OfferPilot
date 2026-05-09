@@ -16,5 +16,10 @@ public class KnowledgeDocVO {
     private String status;
     private String summary;
     private Integer chunkCount;
+    private Long cardDeckId;
+    private String cardDeckTitle;
+    private Integer cardCount;
+    private LocalDateTime cardGeneratedAt;
+    private String cardTypes;
     private LocalDateTime updateTime;
 }

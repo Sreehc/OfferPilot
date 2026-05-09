@@ -71,6 +71,9 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
     private static final String SOURCE_REF_WRONG_QUESTION = "wrong_question";
     private static final String WRONG_DECK_TITLE = "错题复习";
     private static final long WRONG_DECK_DOC_ID = -1L;
+    private static final List<String> DEFAULT_CARD_TYPES = List.of("concept", "qa", "scenario", "compare");
+    private static final Set<String> ALLOWED_CARD_TYPES = Set.copyOf(DEFAULT_CARD_TYPES);
+    private static final Set<String> ALLOWED_DIFFICULTIES = Set.of("auto", "easy", "medium", "hard");
 
     private static final class StudyQueue {
         private final int currentDay;
@@ -103,13 +106,16 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
     @Override
     @Transactional
     public KnowledgeCardTaskVO createTask(Long userId, CardTaskCreateRequest request) {
-        return generateKnowledgeDeck(userId, request.getDocId(), request.getDays(), false);
+        CardGenerateRequest generateRequest = new CardGenerateRequest();
+        generateRequest.setDocId(request.getDocId());
+        generateRequest.setDays(request.getDays());
+        return generateKnowledgeDeck(userId, generateRequest, false);
     }
 
     @Override
     @Transactional
     public KnowledgeCardTaskVO generateDeck(Long userId, CardGenerateRequest request) {
-        return generateKnowledgeDeck(userId, request.getDocId(), request.getDays(), true);
+        return generateKnowledgeDeck(userId, request, true);
     }
 
     @Override
@@ -376,7 +382,9 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
         }
     }
 
-    private KnowledgeCardTaskVO generateKnowledgeDeck(Long userId, Long docId, Integer days, boolean setCurrent) {
+    private KnowledgeCardTaskVO generateKnowledgeDeck(Long userId, CardGenerateRequest request, boolean setCurrent) {
+        validateGenerateRequest(request);
+        Long docId = request.getDocId();
         KnowledgeDoc doc = getAllowedDoc(userId, docId);
         List<KnowledgeChunk> chunks = loadChunks(doc.getId());
         if (chunks.isEmpty()) {
@@ -391,13 +399,13 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
             return buildTaskVO(existing, loadCards(existing.getId()));
         }
 
-        List<GeneratedCard> generatedCards = generateCards(doc, chunks);
+        List<GeneratedCard> generatedCards = generateCards(doc, chunks, request);
         if (generatedCards.isEmpty()) {
             throw new BusinessException(ResultCode.SERVER_ERROR.getCode(), "知识卡片生成失败");
         }
 
         int totalCards = generatedCards.size();
-        int safeDays = days == null ? 7 : days;
+        int safeDays = request.getDays() == null ? 7 : request.getDays();
         int dailyTarget = Math.max(1, (int) Math.ceil((double) totalCards / safeDays));
 
         if (setCurrent) {
@@ -428,11 +436,16 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
             card.setQuestion(generated.question());
             card.setAnswer(generated.answer());
             card.setExplanation(generated.explanation());
+            card.setCardType(generated.cardType());
+            card.setDifficulty(generated.difficulty());
+            card.setTags(generated.tags());
+            card.setSourceQuote(generated.sourceQuote());
             card.setSortOrder(i + 1);
             card.setScheduledDay(Math.min(safeDays, i / dailyTarget + 1));
             card.setState("new");
             card.setReviewCount(0);
             card.setSourceRefType(SOURCE_REF_KNOWLEDGE_CHUNK);
+            card.setSourceRefId(resolveChunkId(generated.sourceChunkId(), generated.sourceQuote(), chunks));
             card.setEaseFactor(DEFAULT_EASE_FACTOR);
             card.setIntervalDays(0);
             card.setStreak(0);
@@ -621,6 +634,10 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
                 .question(card.getQuestion())
                 .answer(card.getAnswer())
                 .explanation(card.getExplanation())
+                .cardType(card.getCardType())
+                .difficulty(card.getDifficulty())
+                .tags(card.getTags())
+                .sourceQuote(card.getSourceQuote())
                 .sortOrder(card.getSortOrder())
                 .scheduledDay(card.getScheduledDay())
                 .state(card.getState())
@@ -881,24 +898,40 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
         };
     }
 
-    private List<GeneratedCard> generateCards(KnowledgeDoc doc, List<KnowledgeChunk> chunks) {
-        List<GeneratedCard> cards = generateByLlm(doc, chunks);
+    private List<GeneratedCard> generateCards(KnowledgeDoc doc, List<KnowledgeChunk> chunks, CardGenerateRequest request) {
+        List<GeneratedCard> cards = generateByLlm(doc, chunks, request);
         if (!cards.isEmpty()) {
             return cards;
         }
-        return generateFallbackCards(doc, chunks);
+        return generateFallbackCards(doc, chunks, request);
     }
 
-    private List<GeneratedCard> generateByLlm(KnowledgeDoc doc, List<KnowledgeChunk> chunks) {
+    private List<GeneratedCard> generateByLlm(KnowledgeDoc doc, List<KnowledgeChunk> chunks, CardGenerateRequest request) {
         try {
             String excerpt = chunks.stream()
                     .limit(8)
-                    .map(KnowledgeChunk::getContent)
+                    .map(chunk -> "[chunkId=" + chunk.getId() + "]\n" + chunk.getContent())
                     .reduce((left, right) -> left + "\n\n---\n\n" + right)
                     .orElse("");
+            String prompt = """
+                    文档标题：%s
+
+                    生成要求：
+                    - 卡片类型：%s
+                    - 期望数量：%d
+                    - 难度：%s
+
+                    文档内容：
+                    %s
+                    """.formatted(
+                    doc.getTitle(),
+                    String.join(", ", normalizeCardTypes(request.getCardTypes())),
+                    resolveCardCount(request.getCardCount()),
+                    normalizeDifficulty(request.getDifficulty()),
+                    excerpt);
             AiChatResponse response = llmGateway.chatCompletion(AiChatRequest.builder()
                     .systemPrompt(promptTemplateService.knowledgeCardPrompt())
-                    .userPrompt("文档标题：" + doc.getTitle() + "\n\n文档内容：\n" + excerpt)
+                    .userPrompt(prompt)
                     .references(List.of())
                     .build());
             String content = normalizeJson(response.getContent());
@@ -907,15 +940,23 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
             List<GeneratedCard> result = new ArrayList<>();
             Set<String> dedupe = new LinkedHashSet<>();
             for (GeneratedCardPayload payload : payloads) {
-                if (payload == null || !StringUtils.hasText(payload.getQuestion()) || !StringUtils.hasText(payload.getAnswer())) {
+                if (payload == null || !StringUtils.hasText(payload.getFront()) || !StringUtils.hasText(payload.getBack())) {
                     continue;
                 }
-                String key = payload.getQuestion().trim().toLowerCase(Locale.ROOT);
+                String key = payload.getFront().trim().toLowerCase(Locale.ROOT);
                 if (dedupe.add(key)) {
                     result.add(new GeneratedCard(
-                            cleanText(payload.getQuestion()),
-                            cleanText(payload.getAnswer()),
-                            cleanText(payload.getExplanation())));
+                            cleanText(payload.getFront()),
+                            cleanText(payload.getBack()),
+                            cleanText(payload.getExplanation()),
+                            normalizeCardType(payload.getCardType(), request.getCardTypes()),
+                            normalizeGeneratedDifficulty(payload.getDifficulty(), request.getDifficulty()),
+                            joinTags(payload.getTags()),
+                            cleanText(payload.getSourceQuote()),
+                            payload.getSourceChunkId()));
+                }
+                if (result.size() >= resolveCardCount(request.getCardCount())) {
+                    break;
                 }
             }
             return result;
@@ -925,9 +966,11 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
         }
     }
 
-    private List<GeneratedCard> generateFallbackCards(KnowledgeDoc doc, List<KnowledgeChunk> chunks) {
+    private List<GeneratedCard> generateFallbackCards(KnowledgeDoc doc, List<KnowledgeChunk> chunks, CardGenerateRequest request) {
         List<GeneratedCard> result = new ArrayList<>();
         Set<String> dedupe = new LinkedHashSet<>();
+        String fallbackType = normalizeCardTypes(request.getCardTypes()).get(0);
+        String fallbackDifficulty = normalizeDifficulty(request.getDifficulty());
         for (KnowledgeChunk chunk : chunks) {
             List<String> lines = chunk.getContent().lines()
                     .map(String::trim)
@@ -944,9 +987,17 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
             String answer = buildFallbackAnswer(first, second, lines);
             String key = question.toLowerCase(Locale.ROOT);
             if (dedupe.add(key)) {
-                result.add(new GeneratedCard(question, answer, second));
+                result.add(new GeneratedCard(
+                        question,
+                        answer,
+                        second,
+                        fallbackType,
+                        "auto".equals(fallbackDifficulty) ? "medium" : fallbackDifficulty,
+                        deriveFallbackTags(doc.getTitle(), first),
+                        cleanText(first),
+                        chunk.getId()));
             }
-            if (result.size() >= 12) {
+            if (result.size() >= resolveCardCount(request.getCardCount())) {
                 break;
             }
         }
@@ -991,15 +1042,121 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
         return text == null ? "" : text.trim().replaceAll("\\s+", " ");
     }
 
-    private record GeneratedCard(String question, String answer, String explanation) {
+    private void validateGenerateRequest(CardGenerateRequest request) {
+        if (!ALLOWED_DIFFICULTIES.contains(normalizeDifficulty(request.getDifficulty()))) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "difficulty must be auto, easy, medium or hard");
+        }
+        if (normalizeCardTypes(request.getCardTypes()).isEmpty()) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "cardTypes must contain at least one valid type");
+        }
+    }
+
+    private List<String> normalizeCardTypes(List<String> cardTypes) {
+        if (cardTypes == null || cardTypes.isEmpty()) {
+            return DEFAULT_CARD_TYPES;
+        }
+        return cardTypes.stream()
+                .filter(StringUtils::hasText)
+                .map(type -> type.trim().toLowerCase(Locale.ROOT))
+                .filter(ALLOWED_CARD_TYPES::contains)
+                .distinct()
+                .toList();
+    }
+
+    private String normalizeDifficulty(String difficulty) {
+        if (!StringUtils.hasText(difficulty)) {
+            return "auto";
+        }
+        return difficulty.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private int resolveCardCount(Integer cardCount) {
+        if (cardCount == null) {
+            return 12;
+        }
+        return Math.max(4, Math.min(30, cardCount));
+    }
+
+    private String normalizeCardType(String value, List<String> requestedTypes) {
+        String normalized = StringUtils.hasText(value) ? value.trim().toLowerCase(Locale.ROOT) : "";
+        if (ALLOWED_CARD_TYPES.contains(normalized)) {
+            return normalized;
+        }
+        return normalizeCardTypes(requestedTypes).get(0);
+    }
+
+    private String normalizeGeneratedDifficulty(String value, String requestedDifficulty) {
+        String normalized = StringUtils.hasText(value) ? value.trim().toLowerCase(Locale.ROOT) : "";
+        if (Set.of("easy", "medium", "hard").contains(normalized)) {
+            return normalized;
+        }
+        String fallback = normalizeDifficulty(requestedDifficulty);
+        return "auto".equals(fallback) ? "medium" : fallback;
+    }
+
+    private String joinTags(List<String> tags) {
+        if (tags == null || tags.isEmpty()) {
+            return null;
+        }
+        return tags.stream()
+                .filter(StringUtils::hasText)
+                .map(this::cleanText)
+                .distinct()
+                .limit(3)
+                .collect(Collectors.joining(","));
+    }
+
+    private String deriveFallbackTags(String title, String firstLine) {
+        List<String> tags = new ArrayList<>();
+        if (StringUtils.hasText(title)) {
+            tags.add(cleanText(title));
+        }
+        if (StringUtils.hasText(firstLine)) {
+            String seed = cleanText(firstLine);
+            if (seed.length() > 18) {
+                seed = seed.substring(0, 18).trim();
+            }
+            tags.add(seed);
+        }
+        return String.join(",", tags.stream().distinct().limit(2).toList());
+    }
+
+    private Long resolveChunkId(Long sourceChunkId, String sourceQuote, List<KnowledgeChunk> chunks) {
+        if (sourceChunkId != null && chunks.stream().anyMatch(chunk -> chunk.getId().equals(sourceChunkId))) {
+            return sourceChunkId;
+        }
+        if (StringUtils.hasText(sourceQuote)) {
+            for (KnowledgeChunk chunk : chunks) {
+                if (chunk.getContent() != null && chunk.getContent().contains(sourceQuote)) {
+                    return chunk.getId();
+                }
+            }
+        }
+        return chunks.isEmpty() ? null : chunks.get(0).getId();
+    }
+
+    private record GeneratedCard(
+            String question,
+            String answer,
+            String explanation,
+            String cardType,
+            String difficulty,
+            String tags,
+            String sourceQuote,
+            Long sourceChunkId) {
     }
 
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     private static class GeneratedCardPayload {
-        private String question;
-        private String answer;
+        private String front;
+        private String back;
         private String explanation;
+        private List<String> tags;
+        private String difficulty;
+        private String cardType;
+        private String sourceQuote;
+        private Long sourceChunkId;
     }
 }

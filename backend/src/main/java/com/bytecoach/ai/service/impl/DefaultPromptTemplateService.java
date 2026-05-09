@@ -50,16 +50,16 @@ public class DefaultPromptTemplateService implements PromptTemplateService {
     @Override
     public String knowledgeCardPrompt() {
         return """
-                你是 ByteCoach 的知识卡片生成器。请根据给定文档内容，输出适合记忆复习的问答卡片。
+                你是 ByteCoach 的知识卡片生成器。请根据给定文档内容，输出适合记忆复习的结构化卡片。
 
                 输出要求：
                 1. 只返回 JSON 数组，不要输出 markdown，不要解释。
                 2. 每个元素格式必须为：
-                   {"question":"...","answer":"..."}
-                3. question 必须清晰、可直接回忆；answer 必须简洁、准确、适合翻牌后快速核对。
-                4. 优先提炼 Java、后端、系统设计、工程实践中的核心概念、区别、流程、注意点。
-                5. 不要生成重复问题，不要输出空字段。
-                6. 卡片数量控制在 8 到 16 张之间，覆盖文档最值得记忆的内容。
+                   {"front":"...","back":"...","explanation":"...","tags":["..."],"difficulty":"easy|medium|hard","cardType":"concept|qa|scenario|compare","sourceQuote":"...","sourceChunkId":123}
+                3. front 必须清晰、可直接回忆；back 必须简洁、准确、适合翻牌后快速核对。
+                4. explanation 用于补充理解；tags 只保留 1-3 个高价值标签；sourceQuote 必须摘自原文且不宜过长。
+                5. 优先提炼 Java、后端、系统设计、工程实践中的核心概念、区别、流程、注意点。
+                6. 不要生成重复问题，不要输出空字段；difficulty 和 cardType 必须使用枚举值。
                 """;
     }
 }
