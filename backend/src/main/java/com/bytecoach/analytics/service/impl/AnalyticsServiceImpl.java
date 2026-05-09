@@ -1,6 +1,10 @@
 package com.bytecoach.analytics.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.bytecoach.cards.entity.KnowledgeCard;
+import com.bytecoach.cards.entity.KnowledgeCardLog;
+import com.bytecoach.cards.mapper.KnowledgeCardLogMapper;
+import com.bytecoach.cards.mapper.KnowledgeCardMapper;
 import com.bytecoach.analytics.service.AnalyticsService;
 import com.bytecoach.analytics.vo.EfficiencyVO;
 import com.bytecoach.analytics.vo.LearningInsightsVO;
@@ -17,6 +21,7 @@ import com.bytecoach.wrong.entity.ReviewLog;
 import com.bytecoach.wrong.entity.WrongQuestion;
 import com.bytecoach.wrong.mapper.ReviewLogMapper;
 import com.bytecoach.wrong.mapper.WrongQuestionMapper;
+import com.bytecoach.wrong.service.impl.SpacedRepetitionServiceImpl;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
@@ -50,6 +55,8 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     private final CategoryService categoryService;
     private final WrongQuestionMapper wrongQuestionMapper;
     private final ReviewLogMapper reviewLogMapper;
+    private final KnowledgeCardMapper knowledgeCardMapper;
+    private final KnowledgeCardLogMapper knowledgeCardLogMapper;
 
     @Override
     public TrendVO getAbilityTrend(Long userId, int weeks, List<Long> categoryIds) {
@@ -174,42 +181,71 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
     @Override
     public EfficiencyVO getEfficiencyData(Long userId) {
-        // Mastery distribution from WrongQuestion
         List<WrongQuestion> wrongs = wrongQuestionMapper.selectList(
                 new LambdaQueryWrapper<WrongQuestion>()
                         .eq(WrongQuestion::getUserId, userId));
+        List<KnowledgeCard> cards = knowledgeCardMapper.selectList(
+                new LambdaQueryWrapper<KnowledgeCard>()
+                        .inSql(KnowledgeCard::getTaskId,
+                                "SELECT id FROM knowledge_card_task WHERE user_id = " + userId + " AND status <> 'invalid'"));
 
-        Map<String, Long> masteryDist = wrongs.stream()
-                .collect(Collectors.groupingBy(
-                        w -> w.getMasteryLevel() != null ? w.getMasteryLevel() : "not_started",
-                        Collectors.counting()));
+        Map<String, Long> masteryDist = new HashMap<>();
+        wrongs.forEach(w -> masteryDist.merge(
+                w.getMasteryLevel() != null ? w.getMasteryLevel() : "not_started",
+                1L,
+                Long::sum));
+        cards.forEach(card -> masteryDist.merge(normalizeKnowledgeMastery(card), 1L, Long::sum));
 
-        // Average ease factor
-        BigDecimal avgEF = wrongs.stream()
+        BigDecimal wrongEfSum = wrongs.stream()
                 .map(WrongQuestion::getEaseFactor)
+                .filter(ef -> ef != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal cardEfSum = cards.stream()
+                .map(KnowledgeCard::getEaseFactor)
                 .filter(ef -> ef != null)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         long efCount = wrongs.stream()
                 .filter(w -> w.getEaseFactor() != null)
+                .count()
+                + cards.stream()
+                .filter(card -> card.getEaseFactor() != null)
                 .count();
         BigDecimal avgEaseFactor = efCount > 0
-                ? avgEF.divide(BigDecimal.valueOf(efCount), 2, RoundingMode.HALF_UP)
+                ? wrongEfSum.add(cardEfSum).divide(BigDecimal.valueOf(efCount), 2, RoundingMode.HALF_UP)
                 : new BigDecimal("2.50");
 
-        // Review logs
         List<ReviewLog> allLogs = reviewLogMapper.selectList(
                 new LambdaQueryWrapper<ReviewLog>()
                         .eq(ReviewLog::getUserId, userId)
                         .orderByAsc(ReviewLog::getCreateTime));
+        List<KnowledgeCardLog> allCardLogs = knowledgeCardLogMapper.selectList(
+                new LambdaQueryWrapper<KnowledgeCardLog>()
+                        .eq(KnowledgeCardLog::getUserId, userId)
+                        .orderByAsc(KnowledgeCardLog::getCreateTime));
 
-        // Rating distribution
-        Map<Integer, Long> ratingDist = allLogs.stream()
-                .collect(Collectors.groupingBy(ReviewLog::getRating, Collectors.counting()));
+        Map<Integer, Long> ratingDist = new HashMap<>();
+        allLogs.forEach(logItem -> ratingDist.merge(logItem.getRating(), 1L, Long::sum));
+        allCardLogs.forEach(logItem -> ratingDist.merge(logItem.getRating(), 1L, Long::sum));
 
-        // EF trend and forgetting rate by week
-        Map<String, List<ReviewLog>> logsByWeek = allLogs.stream()
+        record WeeklyLogPoint(String week, BigDecimal easeFactorAfter, Integer rating, String contentType, LocalDateTime createTime) {}
+        List<WeeklyLogPoint> mergedLogs = new ArrayList<>();
+        allLogs.forEach(logItem -> mergedLogs.add(new WeeklyLogPoint(
+                formatWeek(logItem.getCreateTime().toLocalDate()),
+                logItem.getEaseFactorAfter(),
+                logItem.getRating(),
+                resolveWrongContentType(userId, logItem.getWrongQuestionId()),
+                logItem.getCreateTime())));
+        allCardLogs.forEach(logItem -> mergedLogs.add(new WeeklyLogPoint(
+                formatWeek(logItem.getCreateTime().toLocalDate()),
+                logItem.getEaseFactorAfter(),
+                logItem.getRating(),
+                "knowledge_card",
+                logItem.getCreateTime())));
+        mergedLogs.sort(Comparator.comparing(WeeklyLogPoint::createTime));
+
+        Map<String, List<WeeklyLogPoint>> logsByWeek = mergedLogs.stream()
                 .collect(Collectors.groupingBy(
-                        l -> formatWeek(l.getCreateTime().toLocalDate()),
+                        WeeklyLogPoint::week,
                         LinkedHashMap::new,
                         Collectors.toList()));
 
@@ -217,13 +253,12 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         List<EfficiencyVO.WeeklyForgettingRate> frTrend = new ArrayList<>();
 
         for (var entry : logsByWeek.entrySet()) {
-            List<ReviewLog> weekLogs = entry.getValue();
+            List<WeeklyLogPoint> weekLogs = entry.getValue();
 
-            // EF trend: use the last EF_after in the week as representative
             BigDecimal lastEF = weekLogs.stream()
-                    .map(ReviewLog::getEaseFactorAfter)
+                    .map(WeeklyLogPoint::easeFactorAfter)
                     .filter(ef -> ef != null)
-                    .reduce((a, b) -> b)  // last element
+                    .reduce((a, b) -> b)
                     .orElse(new BigDecimal("2.50"));
             efTrend.add(EfficiencyVO.WeeklyEF.builder()
                     .week(entry.getKey())
@@ -231,9 +266,8 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                     .reviewCount(weekLogs.size())
                     .build());
 
-            // Forgetting rate: ratio of rating == 1
             long againCount = weekLogs.stream()
-                    .filter(l -> l.getRating() == 1)
+                    .filter(l -> l.rating() == 1)
                     .count();
             double fr = weekLogs.isEmpty() ? 0.0
                     : (double) againCount / weekLogs.size();
@@ -245,11 +279,10 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                     .build());
         }
 
-        // Current streak: count consecutive days with reviews from today
         int streak = 0;
         LocalDate check = LocalDate.now();
-        Set<LocalDate> reviewDays = allLogs.stream()
-                .map(l -> l.getCreateTime().toLocalDate())
+        Set<LocalDate> reviewDays = mergedLogs.stream()
+                .map(l -> l.createTime().toLocalDate())
                 .collect(Collectors.toSet());
         if (!reviewDays.contains(check)) {
             check = check.minusDays(1);
@@ -259,13 +292,17 @@ public class AnalyticsServiceImpl implements AnalyticsService {
             check = check.minusDays(1);
         }
 
+        Map<String, Long> contentTypeDistribution = mergedLogs.stream()
+                .collect(Collectors.groupingBy(WeeklyLogPoint::contentType, Collectors.counting()));
+
         return EfficiencyVO.builder()
                 .avgEaseFactor(avgEaseFactor)
                 .efTrend(efTrend)
                 .ratingDistribution(ratingDist)
                 .forgettingRateTrend(frTrend)
                 .masteryDistribution(masteryDist)
-                .totalReviews(allLogs.size())
+                .contentTypeDistribution(contentTypeDistribution)
+                .totalReviews(mergedLogs.size())
                 .currentStreak(streak)
                 .build();
     }
@@ -478,5 +515,26 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         BigDecimal sum = values.stream()
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         return sum.divide(BigDecimal.valueOf(values.size()), 2, RoundingMode.HALF_UP);
+    }
+
+    private String normalizeKnowledgeMastery(KnowledgeCard card) {
+        if ("mastered".equals(card.getState())) {
+            return "mastered";
+        }
+        if ("learning".equals(card.getState())) {
+            return "reviewing";
+        }
+        if ("weak".equals(card.getState())) {
+            return "not_started";
+        }
+        return SpacedRepetitionServiceImpl.resolveMasteryLevel(card.getEaseFactor(), card.getStreak());
+    }
+
+    private String resolveWrongContentType(Long userId, Long wrongQuestionId) {
+        WrongQuestion wrongQuestion = wrongQuestionMapper.selectById(wrongQuestionId);
+        if (wrongQuestion == null || !userId.equals(wrongQuestion.getUserId())) {
+            return "wrong_card";
+        }
+        return "interview".equalsIgnoreCase(wrongQuestion.getSourceType()) ? "interview_card" : "wrong_card";
     }
 }

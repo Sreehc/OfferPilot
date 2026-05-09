@@ -25,6 +25,9 @@ public class EfficiencyVO {
     /** Mastery distribution: {not_started: N, reviewing: N, mastered: N}. */
     private Map<String, Long> masteryDistribution;
 
+    /** Review distribution by content type. */
+    private Map<String, Long> contentTypeDistribution;
+
     /** Total reviews completed. */
     private long totalReviews;
 

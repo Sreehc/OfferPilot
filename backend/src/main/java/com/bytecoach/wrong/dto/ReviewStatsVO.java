@@ -19,6 +19,12 @@ public class ReviewStatsVO {
     /** Today's completed review count. */
     private int todayCompleted;
 
+    /** Overdue review count. */
+    private int overdueCount;
+
+    /** Review count distribution by content type. */
+    private Map<String, Integer> contentTypeDistribution;
+
     /**
      * Review activity heatmap: date string (yyyy-MM-dd) -> review count.
      * Covers the last 90 days.

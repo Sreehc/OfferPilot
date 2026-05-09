@@ -9,6 +9,12 @@ import lombok.Data;
 public class ReviewRateRequest {
 
     /**
+     * Review item content type: knowledge_card | wrong_card | interview_card.
+     * Old wrong-question callers may omit this field.
+     */
+    private String contentType;
+
+    /**
      * User's self-rating: 1=Again, 2=Hard, 3=Good, 4=Easy.
      */
     @NotNull(message = "rating is required")

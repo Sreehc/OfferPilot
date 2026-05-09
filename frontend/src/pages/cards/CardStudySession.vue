@@ -12,7 +12,7 @@
       <div :style="{ width: `${task.completionRate}%` }"></div>
     </div>
 
-    <p class="study-session__mobile-hint">左滑重来 · 右滑轻松 · 点击翻牌</p>
+    <p class="study-session__mobile-hint">左滑重来 · 右滑良好 · 点击翻牌</p>
 
     <div
       class="flashcard-wrapper"

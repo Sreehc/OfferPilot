@@ -254,11 +254,46 @@ export interface ReviewTodayItem {
   masteryLevel: string
 }
 
+export type ReviewContentType = 'all' | 'knowledge_card' | 'wrong_card' | 'interview_card'
+
+export interface UnifiedReviewItem {
+  reviewItemId: string
+  contentType: ReviewContentType | string
+  sourceType?: string
+  title: string
+  answer?: string
+  explanation?: string
+  easeFactor?: number
+  intervalDays?: number
+  streak?: number
+  nextReviewDate?: string
+  nextReviewAt?: string
+  overdueDays: number
+  masteryLevel: string
+  wrongQuestionId?: string
+  cardId?: string
+  deckId?: string
+  deckTitle?: string
+  sourceQuote?: string
+}
+
+export interface ReviewTodayData {
+  selectedContentType: ReviewContentType | string
+  totalPending: number
+  overdueCount: number
+  todayCompleted: number
+  currentStreak: number
+  countsByContentType: Record<string, number>
+  items: UnifiedReviewItem[]
+}
+
 export interface ReviewStats {
   totalReviews: number
   currentStreak: number
   todayPending: number
   todayCompleted?: number
+  overdueCount?: number
+  contentTypeDistribution?: Record<string, number>
   heatmap?: Record<string, number>
 }
 
@@ -479,6 +514,7 @@ export interface EfficiencyData {
   ratingDistribution: Record<number, number>
   forgettingRateTrend: WeeklyForgettingRate[]
   masteryDistribution: Record<string, number>
+  contentTypeDistribution?: Record<string, number>
   totalReviews: number
   currentStreak: number
 }

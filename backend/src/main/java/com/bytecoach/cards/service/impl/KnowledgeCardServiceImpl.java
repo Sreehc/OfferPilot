@@ -32,6 +32,8 @@ import com.bytecoach.question.entity.Question;
 import com.bytecoach.question.mapper.QuestionMapper;
 import com.bytecoach.wrong.entity.WrongQuestion;
 import com.bytecoach.wrong.mapper.WrongQuestionMapper;
+import com.bytecoach.wrong.dto.ReviewScheduleResult;
+import com.bytecoach.wrong.service.SpacedRepetitionService;
 import com.bytecoach.wrong.service.impl.SpacedRepetitionServiceImpl;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -102,6 +104,7 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
     private final PromptTemplateService promptTemplateService;
     private final LlmGateway llmGateway;
     private final ObjectMapper objectMapper;
+    private final SpacedRepetitionService spacedRepetitionService;
 
     @Override
     @Transactional
@@ -476,49 +479,16 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
         int intervalBefore = card.getIntervalDays() != null ? card.getIntervalDays() : 0;
         int rating = request.getRating();
 
-        BigDecimal efAfter;
-        int intervalAfter;
-        int newStreak;
-        String nextState;
+        ReviewScheduleResult schedule = spacedRepetitionService.schedule(efBefore, intervalBefore, card.getStreak(), rating);
 
-        if (rating < 3) {
-            intervalAfter = 1;
-            newStreak = 0;
-            BigDecimal penalty = rating == 1 ? new BigDecimal("0.20") : new BigDecimal("0.15");
-            efAfter = efBefore.subtract(penalty).max(MIN_EASE_FACTOR);
-            nextState = rating == 1 ? "weak" : "learning";
-        } else {
-            newStreak = (card.getStreak() != null ? card.getStreak() : 0) + 1;
-            if (newStreak == 1) {
-                intervalAfter = 1;
-            } else if (newStreak == 2) {
-                intervalAfter = 3;
-            } else {
-                int baseInterval = Math.max(1, intervalBefore);
-                intervalAfter = BigDecimal.valueOf(baseInterval)
-                        .multiply(efBefore)
-                        .setScale(0, RoundingMode.HALF_UP)
-                        .intValue();
-            }
-            int quality = rating == 4 ? 5 : 3;
-            BigDecimal efDelta = new BigDecimal("0.1")
-                    .subtract(BigDecimal.valueOf(5 - quality)
-                            .multiply(new BigDecimal("0.08")
-                                    .add(BigDecimal.valueOf(5 - quality).multiply(new BigDecimal("0.02")))));
-            efAfter = efBefore.add(efDelta).max(MIN_EASE_FACTOR);
-            nextState = "mastered".equals(SpacedRepetitionServiceImpl.computeMasteryLevel(efAfter, newStreak))
-                    ? "mastered"
-                    : "learning";
-        }
-
-        card.setEaseFactor(efAfter);
-        card.setIntervalDays(intervalAfter);
-        card.setStreak(newStreak);
-        card.setState(nextState);
+        card.setEaseFactor(schedule.getEaseFactor());
+        card.setIntervalDays(schedule.getIntervalDays());
+        card.setStreak(schedule.getStreak());
+        card.setState(resolveCardState(schedule.getMasteryLevel(), rating));
         card.setReviewCount((card.getReviewCount() != null ? card.getReviewCount() : 0) + 1);
         card.setLastRating(rating);
         card.setLastReviewTime(LocalDateTime.now());
-        card.setNextReviewAt(LocalDateTime.now().plusDays(intervalAfter));
+        card.setNextReviewAt(schedule.getNextReviewDate().atStartOfDay());
         cardMapper.updateById(card);
 
         KnowledgeCardLog logItem = new KnowledgeCardLog();
@@ -529,8 +499,8 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
         logItem.setResponseTimeMs(request.getResponseTimeMs());
         logItem.setEaseFactorBefore(efBefore);
         logItem.setIntervalBefore(intervalBefore);
-        logItem.setEaseFactorAfter(efAfter);
-        logItem.setIntervalAfter(intervalAfter);
+        logItem.setEaseFactorAfter(schedule.getEaseFactor());
+        logItem.setIntervalAfter(schedule.getIntervalDays());
         logMapper.insert(logItem);
 
         List<KnowledgeCard> cards = loadCards(task.getId());
@@ -883,6 +853,13 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
             return "learning";
         }
         return "weak";
+    }
+
+    private String resolveCardState(String masteryLevel, Integer rating) {
+        if ("mastered".equals(masteryLevel)) {
+            return "mastered";
+        }
+        return rating != null && rating <= 1 ? "weak" : "learning";
     }
 
     private int normalizeScheduledDay(Integer scheduledDay) {

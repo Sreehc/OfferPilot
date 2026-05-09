@@ -1,35 +1,20 @@
 package com.bytecoach.wrong.service;
 
 import com.bytecoach.wrong.dto.ReviewRateRequest;
+import com.bytecoach.wrong.dto.ReviewScheduleResult;
+import com.bytecoach.wrong.dto.ReviewStatsVO;
 import com.bytecoach.wrong.dto.ReviewTodayVO;
-import java.util.List;
+import java.math.BigDecimal;
 
 public interface SpacedRepetitionService {
 
-    /**
-     * Get today's due review items for the user, sorted by priority.
-     * Priority: overdue first (by days overdue desc), then new items.
-     */
-    List<ReviewTodayVO> getTodayReviews(Long userId);
+    ReviewTodayVO getTodayReviews(Long userId, String contentType);
 
-    /**
-     * Get the count of today's pending reviews.
-     */
-    int getTodayReviewCount(Long userId);
+    ReviewTodayVO rate(Long userId, Long reviewItemId, ReviewRateRequest request);
 
-    /**
-     * Submit a review rating for a wrong question.
-     * Applies SM-2 algorithm to calculate next review date.
-     */
-    void rate(Long userId, Long wrongQuestionId, ReviewRateRequest request);
+    ReviewStatsVO getReviewStats(Long userId);
 
-    /**
-     * Get total review count for the user.
-     */
-    int getTotalReviewCount(Long userId);
+    ReviewScheduleResult schedule(BigDecimal easeFactor, Integer intervalDays, Integer streak, Integer rating);
 
-    /**
-     * Get current streak (consecutive days with at least one review).
-     */
-    int getReviewStreak(Long userId);
+    String computeMasteryLevel(BigDecimal easeFactor, Integer streak);
 }

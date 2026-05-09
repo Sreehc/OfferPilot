@@ -359,7 +359,7 @@ const summarySignals = computed(() => [
   {
     label: '平均记忆系数',
     value: efficiencyData.value.avgEaseFactor,
-    detail: '当前错题池平均记忆强度。',
+    detail: '当前统一记忆池平均记忆强度。',
     toneClass: 'summary-slab-cyan',
   },
   {
@@ -395,6 +395,12 @@ const signalLanes = computed(() => [
     detail: '当前最需要优先处理的掌握状态。',
     dotClass: weakestMastery.value?.label === '已掌握' ? 'bg-[var(--bc-lime)]' : 'bg-[var(--bc-amber)]',
   },
+  {
+    label: '内容结构',
+    value: dominantContentTypeLabel.value,
+    detail: '当前复习记录主要来自哪一类内容。',
+    dotClass: dominantContentTypeTone.value,
+  },
 ])
 
 const masteryItems = computed(() => {
@@ -405,7 +411,7 @@ const masteryItems = computed(() => {
       label: '未开始',
       count: d.not_started ?? 0,
       percent: Math.round(((d.not_started ?? 0) / total) * 100),
-      description: '进入错题池后还没开始复习的题目。',
+      description: '已经进入统一记忆池，但还没开始复习的内容。',
       toneClass: 'mastery-card-coral',
       textClass: 'text-[var(--bc-coral)]',
       fillClass: 'mastery-fill-coral',
@@ -423,12 +429,29 @@ const masteryItems = computed(() => {
       label: '已掌握',
       count: d.mastered ?? 0,
       percent: Math.round(((d.mastered ?? 0) / total) * 100),
-      description: '已经进入稳定掌握区间的题目。',
+      description: '已经进入稳定掌握区间的内容。',
       toneClass: 'mastery-card-lime',
       textClass: 'text-[var(--bc-lime)]',
       fillClass: 'mastery-fill-lime',
     },
   ]
+})
+
+const dominantContentTypeLabel = computed(() => {
+  const dist = efficiencyData.value.contentTypeDistribution || {}
+  const sorted = Object.entries(dist).sort((a, b) => b[1] - a[1])
+  const top = sorted[0]?.[0]
+  if (top === 'knowledge_card') return '知识卡片为主'
+  if (top === 'interview_card') return '面试卡片为主'
+  if (top === 'wrong_card') return '错题卡片为主'
+  return '等待数据'
+})
+
+const dominantContentTypeTone = computed(() => {
+  if (dominantContentTypeLabel.value.includes('知识')) return 'bg-[var(--bc-cyan)]'
+  if (dominantContentTypeLabel.value.includes('面试')) return 'bg-[var(--bc-coral)]'
+  if (dominantContentTypeLabel.value.includes('错题')) return 'bg-[var(--bc-amber)]'
+  return 'bg-slate-400'
 })
 
 const toggleCategory = (catId: number) => {

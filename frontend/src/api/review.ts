@@ -1,17 +1,22 @@
 import { request } from '@/utils/http'
-import type { ReviewTodayItem, ReviewStats } from '@/types/api'
+import type { ReviewContentType, ReviewStats, ReviewTodayData } from '@/types/api'
 
 export interface ReviewRatePayload {
+  contentType?: ReviewContentType | string
   rating: 1 | 2 | 3 | 4
   responseTimeMs?: number
 }
 
-export const fetchReviewTodayApi = () => {
-  return request<ReviewTodayItem[]>({ url: '/review/today', method: 'get' })
+export const fetchReviewTodayApi = (contentType: ReviewContentType = 'all') => {
+  return request<ReviewTodayData>({
+    url: '/review/today',
+    method: 'get',
+    params: { contentType }
+  })
 }
 
-export const submitReviewRateApi = (wrongQuestionId: number, payload: ReviewRatePayload) => {
-  return request<null>({ url: `/review/${wrongQuestionId}/rate`, method: 'post', data: payload })
+export const submitReviewRateApi = (reviewItemId: string, payload: ReviewRatePayload) => {
+  return request<ReviewTodayData>({ url: `/review/${reviewItemId}/rate`, method: 'post', data: payload })
 }
 
 export const fetchReviewStatsApi = () => {
