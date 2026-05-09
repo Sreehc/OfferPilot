@@ -3,34 +3,34 @@ import { useAuthStore } from '@/stores/auth'
 
 const pageMeta = {
   dashboard: {
-    kicker: '学习概览',
-    title: '今日学习概览',
-    subtitle: '查看今天的学习任务和最新进展。'
+    kicker: '今日记忆任务',
+    title: '今天先完成你的卡片复习进度',
+    subtitle: '先处理今日卡片，再用问答、面试诊断和分析继续补强。'
   },
   chat: {
-    kicker: '智能问答',
-    title: '带着资料上下文来提问',
-    subtitle: '直接提问，或结合资料获得带来源的回答。'
+    kicker: '辅助问答',
+    title: '用资料问答补齐卡片后的疑问',
+    subtitle: '带着知识库上下文提问，快速澄清卡片里还没吃透的点。'
   },
   knowledge: {
     kicker: '知识库',
-    title: '集中管理你的学习资料',
-    subtitle: '上传、查看和筛选资料，确认哪些文档已可用于问答。'
+    title: '管理会进入卡片系统的学习资料',
+    subtitle: '上传、筛选和整理资料，为今日卡片与问答提供内容来源。'
   },
   cards: {
-    kicker: '知识卡片',
-    title: '把资料变成每天能推进的记忆任务',
-    subtitle: '从知识库生成卡片，用翻牌和会/不会持续推进掌握度。'
+    kicker: '今日卡片',
+    title: '记忆工作台',
+    subtitle: '处理今天该学和该复习的卡片，持续推进掌握度。'
   },
   interview: {
-    kicker: '模拟面试',
-    title: '先把真实面试前的压力练熟',
-    subtitle: '完成一场限时练习，并查看评分、点评和追问。'
+    kicker: '面试诊断',
+    title: '在卡片之外做一次进阶诊断',
+    subtitle: '完成限时练习，查看评分、点评和追问，验证是否真正理解。'
   },
   review: {
-    kicker: '错题复习',
-    title: '处理今天该复习的题，也管理全部错题',
-    subtitle: '在一个工作台里完成今日复习和错题回看。'
+    kicker: '复习中心',
+    title: '处理到期复习与积压问题',
+    subtitle: '统一完成今日复习、查看积压项，并回看所有需要巩固的题目。'
   },
   community: {
     kicker: '学习社区',
@@ -92,7 +92,7 @@ const router = createRouter({
           path: 'interview/history',
           name: 'interview-history',
           component: () => import('@/pages/interview/InterviewHistoryPage.vue'),
-          meta: { kicker: '面试历史', title: '面试历史记录', subtitle: '查看所有已完成的面试记录。' }
+          meta: { kicker: '面试历史', title: '面试诊断历史', subtitle: '查看所有已完成的诊断记录与复盘。' }
         },
         {
           path: 'interview/detail/:id',

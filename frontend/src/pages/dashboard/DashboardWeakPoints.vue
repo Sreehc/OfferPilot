@@ -28,7 +28,7 @@
       v-else
       icon="chart"
       title="还没有可计算的薄弱点"
-      description="先进入问答、面试或错题练习，系统才会根据真实学习记录生成重点复习方向。"
+      description="先开始卡片学习，再配合问答或面试诊断，系统才会根据真实记录生成重点复习方向。"
       compact
       class="mt-5"
     />

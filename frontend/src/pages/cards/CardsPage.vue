@@ -4,7 +4,7 @@
       <div class="module-topbar">
         <div class="module-topbar__title">
           <span class="state-pulse" aria-hidden="true"></span>
-          <h2 class="module-topbar__heading">知识卡片</h2>
+          <h2 class="module-topbar__heading">今日卡片</h2>
         </div>
 
         <div v-if="task" class="module-topbar__center">
@@ -23,13 +23,13 @@
 
     <section v-if="loading" class="cockpit-panel p-8 text-center">
       <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-      <p class="mt-4 text-sm text-slate-500">加载知识卡片任务...</p>
+      <p class="mt-4 text-sm text-slate-500">加载今日卡片任务...</p>
     </section>
 
     <template v-else>
       <section v-if="!task && !docId" class="cockpit-panel cards-empty p-8 sm:p-10">
         <div class="cards-empty__box">
-          <h3 class="cards-empty__title">还没有知识卡片任务</h3>
+          <h3 class="cards-empty__title">还没有今日卡片任务</h3>
           <p class="cards-empty__text">从知识库选择一份资料，生成一轮按天推进的记忆任务。</p>
           <RouterLink to="/knowledge" class="hard-button-primary mt-6">从知识库选择资料</RouterLink>
         </div>
@@ -85,7 +85,7 @@
 
               <div class="cards-setup__actions">
                 <button type="button" class="hard-button-primary" :disabled="creatingTask" @click="createTask">
-                  {{ creatingTask ? '生成中...' : '生成知识卡片' }}
+                  {{ creatingTask ? '生成中...' : '生成今日卡片' }}
                 </button>
                 <RouterLink to="/knowledge" class="hard-button-secondary">返回知识库</RouterLink>
               </div>
@@ -443,9 +443,9 @@ const createTask = async () => {
     task.value = data
     showAnswer.value = false
     syncRouteToTask()
-    ElMessage.success('知识卡片已生成')
+    ElMessage.success('今日卡片已生成')
   } catch (error: any) {
-    ElMessage.error(error?.message || '生成知识卡片失败')
+    ElMessage.error(error?.message || '生成今日卡片失败')
   } finally {
     creatingTask.value = false
   }

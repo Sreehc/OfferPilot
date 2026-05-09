@@ -38,9 +38,9 @@
           ></div>
           <div class="relative flex h-full flex-col gap-8">
             <div class="flex flex-wrap items-center gap-2">
-              <p class="section-kicker">今日主任务</p>
+              <p class="section-kicker">今日记忆任务</p>
               <span class="hard-chip">连续 {{ reviewStats.currentStreak }} 天</span>
-              <span class="hard-chip">待复习 {{ reviewStats.todayPending }} 题</span>
+              <span class="hard-chip">待复习 {{ todayReviewCards }} 张</span>
             </div>
 
             <div class="max-w-3xl">
@@ -59,7 +59,7 @@
               <RouterLink :to="primaryMission.to" class="hard-button-primary">
                 {{ primaryMission.cta }}
               </RouterLink>
-              <RouterLink to="/analytics" class="hard-button-secondary"> 查看全局趋势 </RouterLink>
+              <RouterLink to="/review" class="hard-button-secondary"> 查看复习中心 </RouterLink>
             </div>
 
             <div class="grid gap-3 sm:grid-cols-3">
@@ -94,7 +94,7 @@
           <div class="flex items-start justify-between gap-3">
             <div>
               <p class="section-kicker">今天先看</p>
-              <h3 class="mt-3 text-xl font-semibold text-ink">2 个关键信号</h3>
+              <h3 class="mt-3 text-xl font-semibold text-ink">4 个关键信号</h3>
             </div>
             <RouterLink to="/analytics" class="text-xs font-semibold text-accent hover:underline">
               详细分析
@@ -127,11 +127,14 @@
           </div>
 
           <div class="mt-4 rounded-[var(--radius-md)] border border-[var(--bc-line)] bg-white/45 p-4 dark:bg-white/5">
-            <p class="section-kicker">下一步</p>
-            <p class="mt-3 text-lg font-semibold text-ink">{{ primaryMission.cta }}</p>
+            <p class="section-kicker">辅助建议</p>
+            <p class="mt-3 text-lg font-semibold text-ink">{{ supportingMission.title }}</p>
             <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-              {{ primaryMission.supporting }}
+              {{ supportingMission.desc }}
             </p>
+            <RouterLink :to="supportingMission.to" class="mt-3 inline-flex text-sm font-semibold text-accent hover:underline">
+              {{ supportingMission.action }}
+            </RouterLink>
           </div>
         </aside>
       </section>
@@ -184,7 +187,7 @@
                 class="hard-button-secondary !min-h-10 !px-4 text-sm"
                 @click="toggleSection('analysis')"
               >
-                {{ activeCollapse.includes('analysis') ? '收起学习分析' : '展开学习分析' }}
+                {{ activeCollapse.includes('analysis') ? '收起进阶分析' : '展开进阶分析' }}
               </button>
               <button
                 type="button"
@@ -242,12 +245,12 @@
                 </svg>
               </div>
               <div>
-                <span class="text-lg font-semibold text-ink">学习分析</span>
+                <span class="text-lg font-semibold text-ink">进阶分析</span>
                 <span class="ml-2 text-sm text-slate-400">
                   {{
                     overview.recentInterviews?.length
-                      ? `最近 ${overview.recentInterviews.length} 场练习`
-                      : '暂无练习记录'
+                      ? `最近 ${overview.recentInterviews.length} 场诊断`
+                      : '暂无诊断记录'
                   }}
                   · {{ overview.weakPoints?.length || 0 }} 个待补强知识点
                 </span>
@@ -413,14 +416,14 @@ import { fetchDashboardOverviewApi } from '@/api/dashboard'
 import { fetchInterviewTrendApi } from '@/api/interview'
 import { fetchReviewStatsApi } from '@/api/review'
 import { fetchRecommendInterviewApi } from '@/api/adaptive'
-import type { DashboardOverview, InterviewHistoryItem, ReviewStats, RecommendInterview } from '@/types/api'
+import type { DashboardOverview, ReviewStats, RecommendInterview } from '@/types/api'
 import { useAuthStore } from '@/stores/auth'
 import { storage } from '@/utils/storage'
 
 const authStore = useAuthStore()
 const loading = ref(true)
 const trendLoading = ref(true)
-const trendData = ref<InterviewHistoryItem[]>([])
+const trendData = ref<Array<{ sessionId: string; direction: string; totalScore: number; startTime?: string }>>([])
 const reviewStats = ref<ReviewStats>({ totalReviews: 0, currentStreak: 0, todayPending: 0 })
 const guideDismissed = ref(false)
 const recommendInterview = ref<RecommendInterview | null>(null)
@@ -431,8 +434,22 @@ const overview = ref<DashboardOverview>({
   wrongCount: 0,
   recentInterviews: [],
   weakPoints: [],
-  firstVisit: true
+  firstVisit: true,
+  todayLearnCards: 0,
+  todayReviewCards: 0,
+  todayCompletedCards: 0,
+  todayCardCompletionRate: 0,
+  masteredCardCount: 0,
+  reviewDebtCount: 0
 })
+
+const todayLearnCards = computed(() => overview.value.todayLearnCards ?? 0)
+const todayReviewCards = computed(() => overview.value.todayReviewCards ?? 0)
+const todayCompletedCards = computed(() => overview.value.todayCompletedCards ?? 0)
+const todayCardCompletionRate = computed(() => overview.value.todayCardCompletionRate ?? 0)
+const masteredCardCount = computed(() => overview.value.masteredCardCount ?? 0)
+const reviewDebtCount = computed(() => overview.value.reviewDebtCount ?? 0)
+const todayCardTotal = computed(() => todayLearnCards.value + todayReviewCards.value)
 
 const weekDiff = computed(() => {
   const tw = overview.value.thisWeekAvgScore
@@ -448,99 +465,145 @@ const weekComparisonClass = computed(() => {
 
 const metrics = computed(() => [
   {
-    label: '累计练习',
-    value: `${overview.value.learningCount} 次`,
-    desc: overview.value.learningCount > 0 ? '这里会显示你的累计练习次数。' : '完成一次练习后会显示在这里。'
+    label: '今日卡片',
+    value: todayCardTotal.value > 0 ? `${todayCardTotal.value} 张` : '待开始',
+    desc: todayCardTotal.value > 0 ? `今日待学 ${todayLearnCards.value} 张，待复习 ${todayReviewCards.value} 张。` : '先从知识库生成一轮卡片任务。'
   },
   {
-    label: '平均面试分',
-    value: overview.value.averageScore > 0 ? formatScore(overview.value.averageScore) : '暂无',
-    desc: overview.value.averageScore > 0 ? '按所有面试结果计算。' : '完成面试后开始统计。'
+    label: '今日完成率',
+    value: `${formatPercent(todayCardCompletionRate.value)}%`,
+    desc: todayCardTotal.value > 0 ? `今天已完成 ${todayCompletedCards.value} / ${todayCardTotal.value} 张卡片。` : '今天还没有需要处理的卡片。'
   },
   {
-    label: '错题待处理',
-    value: overview.value.wrongCount > 0 ? `${overview.value.wrongCount} 题` : '已清空',
-    desc: overview.value.wrongCount > 0 ? '低分题可在错题复习中继续处理。' : '当前没有待处理题目。'
+    label: '连续天数',
+    value: `${reviewStats.value.currentStreak} 天`,
+    desc: reviewStats.value.currentStreak > 0 ? '保持连续推进，比突击更容易形成长期记忆。' : '今天开始后就会重新累计。'
+  },
+  {
+    label: '已掌握卡片',
+    value: `${masteredCardCount.value} 张`,
+    desc: masteredCardCount.value > 0 ? '已经进入 mastered 状态的卡片总量。' : '持续评分推进后会在这里累计。'
+  },
+  {
+    label: '复习负债',
+    value: reviewDebtCount.value > 0 ? `${reviewDebtCount.value} 项` : '无积压',
+    desc: reviewDebtCount.value > 0 ? '当前存在逾期未处理的复习项，建议先清掉。' : '当前没有逾期复习积压。'
   }
 ])
 
 const primaryMission = computed(() => {
-  if (reviewStats.value.todayPending > 0) {
+  if (todayCardTotal.value > 0) {
     return {
-      to: '/review',
-      title: `先完成今天的 ${reviewStats.value.todayPending} 道复习题`,
-      description: `这些题今天需要复习，完成后可继续问答或面试。`,
-      supporting: '完成后可继续练习或追问薄弱点。',
-      cta: '开始复习',
-      urgent: true
-    }
-  }
-
-  if (recommendInterview.value?.direction) {
-    return {
-      to: '/interview',
-      title: `开始一场 ${recommendInterview.value.direction} 面试`,
-      description: recommendInterview.value.reason || '系统根据最近表现，给出了当前最值得练的方向。',
-      supporting: '完成后可查看错题复习安排。',
-      cta: '开始面试',
-      urgent: false
+      to: '/cards',
+      title: '今天先完成你的记忆任务',
+      description: `今天共有 ${todayCardTotal.value} 张卡片需要处理，其中待学 ${todayLearnCards.value} 张、待复习 ${todayReviewCards.value} 张。`,
+      supporting: `当前完成率 ${formatPercent(todayCardCompletionRate.value)}%，先把今天的卡片做完，再进入其他模块。`,
+      cta: '开始今日卡片',
+      urgent: todayReviewCards.value > 0 || reviewDebtCount.value > 0
     }
   }
 
   return {
-    to: '/chat',
-    title: '先从一个 Java 问题开始',
-    description: '如果今天还没开始，可以先提一个问题热身。',
-    supporting: '从最近最容易卡住的知识点开始。',
-    cta: '去提问',
+    to: '/cards',
+    title: '今天先完成你的记忆任务',
+    description: '你还没有正在推进的卡片任务。先从知识库生成一轮卡片，再按天开始记忆。',
+    supporting: '首页会在你开始卡片学习后，持续追踪待学、待复习和完成率。',
+    cta: '开始今日卡片',
     urgent: false
   }
 })
 
 const todaySignals = computed(() => [
   {
-    label: '今日待复习',
-    value: `${reviewStats.value.todayPending} 题`,
-    detail: reviewStats.value.todayPending > 0 ? '今天有待处理的复习题目。' : '今天的复习任务已完成。',
-    action: reviewStats.value.todayPending > 0 ? '去复习' : '查看记录',
-    to: '/review',
+    label: '今日待学',
+    value: `${todayLearnCards.value} 张`,
+    detail: todayLearnCards.value > 0 ? '这些是今天首次进入学习流程的新卡片。' : '当前没有新的待学卡片。',
+    action: '去做卡片',
+    to: '/cards',
     dotClass:
-      reviewStats.value.todayPending > 0 ? 'bg-amber shadow-[0_0_16px_rgba(var(--bc-accent-rgb),0.5)]' : 'bg-lime'
+      todayLearnCards.value > 0 ? 'bg-cyan shadow-[0_0_16px_rgba(var(--bc-accent-rgb),0.5)]' : 'bg-lime'
   },
   {
-    label: '连续学习',
+    label: '今日待复习',
+    value: `${todayReviewCards.value} 张`,
+    detail: todayReviewCards.value > 0 ? '这些卡片已经到期，今天优先把它们清掉。' : '今天没有到期的卡片复习任务。',
+    action: '去复习',
+    to: '/cards',
+    dotClass: todayReviewCards.value > 0 ? 'bg-amber shadow-[0_0_16px_rgba(var(--bc-accent-rgb),0.5)]' : 'bg-lime'
+  },
+  {
+    label: '连续学习天数',
     value: `${reviewStats.value.currentStreak} 天`,
-    detail: reviewStats.value.currentStreak > 0 ? '保持连续节奏，比突击更有用。' : '今天开始后就会重新累计。',
-    action: '查看错题复习',
+    detail: reviewStats.value.currentStreak > 0 ? '保持连续节奏，比突击更容易留下长期记忆。' : '今天开始后就会重新累计。',
+    action: '查看复习中心',
     to: '/review',
     dotClass: reviewStats.value.currentStreak > 0 ? 'bg-cyan' : 'bg-slate-400'
+  },
+  {
+    label: '今日完成率',
+    value: `${formatPercent(todayCardCompletionRate.value)}%`,
+    detail: todayCardTotal.value > 0 ? `今天已经完成 ${todayCompletedCards.value} 张卡片。` : '开始卡片任务后会在这里持续更新。',
+    action: '查看进度',
+    to: '/cards',
+    dotClass: todayCardCompletionRate.value >= 100 ? 'bg-lime' : 'bg-accent'
   }
 ])
 
 const quickActions = computed(() => [
-  { to: '/chat', label: '智能问答', title: '提一个问题', badge: '提问', desc: '适合热身或快速定位知识盲点。' },
   {
-    to: '/interview',
-    label: '模拟面试',
-    title: recommendInterview.value?.direction ? `练习 ${recommendInterview.value.direction}` : '开始一场模拟面试',
-    badge: '练习',
-    desc: '用限时问答验证你是否真的理解。'
+    to: '/cards',
+    label: '今日卡片',
+    title: todayCardTotal.value > 0 ? `处理今天的 ${todayCardTotal.value} 张卡片` : '开始一轮卡片任务',
+    badge: '主线',
+    desc: '先完成今天的记忆任务，再进入其他辅助模块。'
   },
   {
     to: '/review?tab=all',
-    label: '错题复习',
-    title: overview.value.wrongCount > 0 ? `处理 ${overview.value.wrongCount} 道错题` : '查看错题与复习记录',
-    badge: '修复',
-    desc: '处理低分题，减少同类错误重复出现。'
+    label: '复习中心',
+    title: reviewDebtCount.value > 0 ? `清理 ${reviewDebtCount.value} 项复习积压` : '查看到期复习与错题记录',
+    badge: '复习',
+    desc: '处理到期复习，减少积压项继续扩散。'
   },
   {
     to: '/knowledge',
     label: '知识库',
     title: '上传或查找资料',
     badge: '资料',
-    desc: '管理你的文档，并为问答提供可引用内容。'
+    desc: '卡片和问答都从这里拿到可靠的内容来源。'
+  },
+  {
+    to: '/chat',
+    label: '问答',
+    title: '带着资料上下文提问',
+    badge: '辅助',
+    desc: '适合在卡片学习后，快速澄清还没吃透的问题。'
+  },
+  {
+    to: '/interview',
+    label: '面试诊断',
+    title: recommendInterview.value?.direction ? `诊断 ${recommendInterview.value.direction}` : '做一次进阶诊断',
+    badge: '进阶',
+    desc: '用限时问答验证你是否真的理解。'
   }
 ])
+
+const supportingMission = computed(() => {
+  if (recommendInterview.value?.direction) {
+    return {
+      title: `之后可以做一次 ${recommendInterview.value.direction} 面试诊断`,
+      desc: recommendInterview.value.reason || '系统根据最近表现，给出了当前更值得验证的方向。',
+      action: '去做诊断',
+      to: '/interview'
+    }
+  }
+
+  return {
+    title: '卡片后用问答快速补盲',
+    desc: '如果卡片中有没完全理解的概念，可以立刻带着资料上下文发问。',
+    action: '去问答',
+    to: '/chat'
+  }
+})
 
 const toggleSection = (name: string) => {
   activeCollapse.value = activeCollapse.value.includes(name)
@@ -577,7 +640,12 @@ const loadTrend = async () => {
   trendLoading.value = true
   try {
     const response = await fetchInterviewTrendApi(20)
-    trendData.value = response.data || []
+    trendData.value = (response.data || []).map((item) => ({
+      sessionId: item.sessionId,
+      direction: item.direction,
+      totalScore: item.totalScore,
+      startTime: item.startTime
+    }))
   } catch {
     // Silently fail — trend is supplementary
   } finally {
@@ -603,8 +671,8 @@ const loadRecommendInterview = async () => {
   }
 }
 
-const formatScore = (score: number): string => {
-  return Number.isInteger(score) ? String(score) : score.toFixed(2)
+const formatPercent = (value: number): string => {
+  return Number.isInteger(value) ? String(value) : value.toFixed(0)
 }
 
 onMounted(() => {

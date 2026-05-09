@@ -24,6 +24,14 @@ public class DashboardOverviewVO {
     private String suggestedFocus;
     private List<CategoryAbilityVO> categoryAbilities;
 
+    // Memory workflow summary
+    private Integer todayLearnCards;
+    private Integer todayReviewCards;
+    private Integer todayCompletedCards;
+    private BigDecimal todayCardCompletionRate;
+    private Integer masteredCardCount;
+    private Integer reviewDebtCount;
+
     // Analytics insights summary
     private BigDecimal thisWeekAvgScore;
     private BigDecimal lastWeekAvgScore;

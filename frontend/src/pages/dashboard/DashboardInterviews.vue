@@ -2,12 +2,12 @@
   <article class="paper-panel p-6">
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
-        <p class="section-kicker">最近面试</p>
-        <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">最近练习结果</h3>
+        <p class="section-kicker">诊断记录</p>
+        <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">最近面试诊断结果</h3>
       </div>
       <div class="flex gap-3">
         <RouterLink class="accent-link text-sm font-semibold" to="/interview/history">全部历史</RouterLink>
-        <RouterLink class="accent-link text-sm font-semibold" to="/interview">开始下一场</RouterLink>
+        <RouterLink class="accent-link text-sm font-semibold" to="/interview">开始下一次诊断</RouterLink>
       </div>
     </div>
 
@@ -35,8 +35,8 @@
     <EmptyState
       v-else
       icon="clipboard"
-      title="还没有面试记录"
-      description="先完成一场 3-5 题的模拟面试，首页才会开始积累最近结果和平均分。"
+      title="还没有诊断记录"
+      description="完成一场面试诊断后，这里会开始积累最近结果和平均分。"
       compact
       class="mt-6"
     />
@@ -65,7 +65,7 @@ const formatDate = (dateTime: string): string => {
 }
 
 const interviewTitle = (interview: RecentInterviewItem): string => {
-  return interview.status === 'finished' ? '已完成模拟面试' : '进行中的模拟面试'
+  return interview.status === 'finished' ? '已完成面试诊断' : '进行中的面试诊断'
 }
 
 const statusLabel = (status: string): string => {

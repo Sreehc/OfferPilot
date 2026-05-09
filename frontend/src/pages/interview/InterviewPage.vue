@@ -5,7 +5,7 @@
         <div class="module-topbar__title">
           <span class="state-pulse" aria-hidden="true"></span>
           <div class="module-topbar__title-row">
-            <h2 class="module-topbar__heading">模拟面试</h2>
+            <h2 class="module-topbar__heading">面试诊断</h2>
             <div v-if="phase === 'idle'" class="interview-status">
               <span class="detail-pill">{{ direction }}</span>
               <span class="detail-pill">{{ questionCount }} 题</span>
@@ -122,7 +122,7 @@
             class="action-button w-full"
             @click="handleStart()"
           >
-            {{ interviewMode === 'voice' && voiceAvailable ? '开始语音面试' : '开始面试' }}
+            {{ interviewMode === 'voice' && voiceAvailable ? '开始语音诊断' : '开始诊断' }}
           </el-button>
         </div>
 

@@ -192,7 +192,7 @@
               :to="{ path: '/cards', query: { docId: String(doc.id), title: doc.title } }"
               class="hard-button-secondary text-sm"
             >
-              生成知识卡片
+              生成今日卡片
             </RouterLink>
           </div>
         </article>

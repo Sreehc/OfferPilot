@@ -6,7 +6,7 @@
         <div>
           <p class="section-kicker">面试历史</p>
           <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
-            最近完成的模拟面试
+            最近完成的面试诊断
           </h3>
           <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
             按方向快速筛选，先看题量、得分和时间，再进入详情复盘。
@@ -18,7 +18,7 @@
           </el-select>
           <el-button size="large" class="hard-button-secondary" @click="loadData">刷新</el-button>
           <RouterLink to="/interview">
-            <el-button size="large" class="hard-button-primary">开始面试</el-button>
+            <el-button size="large" class="hard-button-primary">开始诊断</el-button>
           </RouterLink>
         </div>
       </div>
@@ -37,11 +37,11 @@
       <EmptyState
         icon="chart"
         title="暂无面试记录"
-        description="完成一场模拟面试后，记录会自动出现在这里。"
+        description="完成一场面试诊断后，记录会自动出现在这里。"
       >
         <template #action>
           <RouterLink to="/interview" class="hard-button-primary inline-flex">
-            开始面试
+            开始诊断
           </RouterLink>
         </template>
       </EmptyState>

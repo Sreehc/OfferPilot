@@ -203,8 +203,8 @@ const captchaKey = ref('')
 const showCaptcha = computed(() => failCount.value >= 3)
 const redirectTarget = computed(() => (route.query.redirect as string) || '/dashboard')
 const redirectLabel = computed(() => {
-  if (redirectTarget.value.includes('/interview')) return '模拟面试'
-  if (redirectTarget.value.includes('/review') || redirectTarget.value.includes('/wrong')) return '错题复习'
+  if (redirectTarget.value.includes('/interview')) return '面试诊断'
+  if (redirectTarget.value.includes('/review') || redirectTarget.value.includes('/wrong')) return '复习中心'
   if (redirectTarget.value.includes('/chat')) return '智能问答'
   return '首页概览'
 })

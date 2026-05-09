@@ -26,7 +26,7 @@ import EmptyState from '@/components/EmptyState.vue'
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
 interface TrendItem {
-  sessionId: number
+  sessionId: string
   direction: string
   totalScore: number
   startTime?: string

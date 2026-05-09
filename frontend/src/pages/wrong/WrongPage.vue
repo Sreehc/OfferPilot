@@ -35,7 +35,7 @@
     <section v-else-if="!prioritizedItems.length" class="cockpit-panel p-6">
       <EmptyState icon="review" title="错题本为空" description="完成练习后，需要继续复习的题目会显示在这里。">
         <template #action>
-          <RouterLink to="/interview" class="hard-button-primary inline-flex"> 开始面试 </RouterLink>
+          <RouterLink to="/interview" class="hard-button-primary inline-flex"> 开始面试诊断 </RouterLink>
         </template>
       </EmptyState>
     </section>

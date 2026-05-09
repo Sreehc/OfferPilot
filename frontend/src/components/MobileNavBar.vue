@@ -39,16 +39,16 @@ const IconCards = () => h('svg', { class: 'h-5 w-5', fill: 'none', viewBox: '0 0
   h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d: 'M7.25 8.25H5.5A1.75 1.75 0 003.75 10v7.5c0 .966.784 1.75 1.75 1.75h10A1.75 1.75 0 0017.25 17.5v-1.25' })
 ])
 
-const IconInterview = () => h('svg', { class: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2' }, [
-  h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d: 'M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z' })
+const IconReview = () => h('svg', { class: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2' }, [
+  h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d: 'M9 12h6m-6 4h6M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z' })
 ])
 
 const items = [
   { path: '/dashboard', label: '首页', icon: IconHome },
-  { path: '/chat', label: '问答', icon: IconChat },
+  { path: '/cards', label: '今日卡片', icon: IconCards },
+  { path: '/review', label: '复习中心', icon: IconReview },
   { path: '/knowledge', label: '知识库', icon: IconKnowledge },
-  { path: '/cards', label: '知识卡片', icon: IconCards },
-  { path: '/interview', label: '面试', icon: IconInterview },
+  { path: '/chat', label: '问答', icon: IconChat },
 ]
 
 const isActive = (path: string) => route.path === path || route.path.startsWith(path + '/')

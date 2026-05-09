@@ -155,7 +155,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import NavRail from '@/components/NavRail.vue'
 import MobileNavBar from '@/components/MobileNavBar.vue'
 import OfflinePage from '@/components/OfflinePage.vue'
@@ -165,7 +165,6 @@ import { useAuthStore } from '@/stores/auth'
 import type { ComponentPublicInstance } from 'vue'
 
 const authStore = useAuthStore()
-const route = useRoute()
 const router = useRouter()
 
 // Sidebar visibility (Cmd+B)
@@ -178,15 +177,15 @@ const searchInputRef = ref<ComponentPublicInstance | null>(null)
 
 const allSearchItems = [
   { label: '首页概览', path: '/dashboard' },
-  { label: '问答', path: '/chat' },
+  { label: '今日卡片', path: '/cards' },
   { label: '知识库', path: '/knowledge' },
-  { label: '知识卡片', path: '/cards' },
-  { label: '模拟面试', path: '/interview' },
-  { label: '面试历史', path: '/interview/history' },
-  { label: '错题复习', path: '/review' },
-  { label: '学习社区', path: '/community' },
-  { label: '排行榜', path: '/community/leaderboard' },
+  { label: '复习中心', path: '/review' },
+  { label: '问答', path: '/chat' },
+  { label: '面试诊断', path: '/interview' },
   { label: '数据分析', path: '/analytics' },
+  { label: '学习社区', path: '/community' },
+  { label: '面试诊断历史', path: '/interview/history' },
+  { label: '排行榜', path: '/community/leaderboard' },
   { label: '管理后台', path: '/admin', adminOnly: true },
   { label: '账户设置', path: '/settings' }
 ]

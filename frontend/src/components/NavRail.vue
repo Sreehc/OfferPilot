@@ -61,13 +61,14 @@ const authStore = useAuthStore()
 
 const allItems = [
   { path: '/dashboard', label: '首页', hint: '今日任务与进展', index: '01' },
-  { path: '/chat', label: '问答', hint: '提问并查看资料引用', index: '02' },
+  { path: '/cards', label: '今日卡片', hint: '今天先完成这里', index: '02' },
   { path: '/knowledge', label: '知识库', hint: '上传、筛选和管理资料', index: '03' },
-  { path: '/cards', label: '知识卡片', hint: '把资料转成每日记忆任务', index: '04' },
-  { path: '/interview', label: '面试', hint: '开始练习或查看结果', index: '05' },
-  { path: '/review', label: '错题复习', hint: '处理今日复习并查看全部错题', index: '06' },
-  { path: '/community', label: '社区', hint: '浏览问题和发布回答', index: '07' },
-  { path: '/admin', label: '管理后台', hint: '内容与数据管理', index: '08', adminOnly: true }
+  { path: '/review', label: '复习中心', hint: '处理到期复习和积压项', index: '04' },
+  { path: '/chat', label: '问答', hint: '提问并查看资料引用', index: '05' },
+  { path: '/interview', label: '面试诊断', hint: '做一次进阶诊断练习', index: '06' },
+  { path: '/analytics', label: '数据分析', hint: '查看节奏、掌握度和趋势', index: '07' },
+  { path: '/community', label: '社区', hint: '浏览问题和发布回答', index: '08' },
+  { path: '/admin', label: '管理后台', hint: '内容与数据管理', index: '09', adminOnly: true }
 ]
 
 const items = computed(() => allItems.filter((item) => !item.adminOnly || authStore.user?.role === 'ADMIN'))

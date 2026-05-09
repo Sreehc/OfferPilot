@@ -4,7 +4,7 @@
       <div class="module-topbar">
         <div class="module-topbar__title">
           <span class="state-pulse" aria-hidden="true"></span>
-          <h2 class="module-topbar__heading">错题复习</h2>
+          <h2 class="module-topbar__heading">复习中心</h2>
         </div>
 
         <div class="module-topbar__center">
@@ -39,7 +39,7 @@
 
     <section v-if="loading" class="cockpit-panel p-8 text-center">
       <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-      <p class="mt-4 text-sm text-slate-500">加载错题与复习数据...</p>
+      <p class="mt-4 text-sm text-slate-500">加载复习中心数据...</p>
     </section>
 
     <template v-else>
@@ -49,7 +49,7 @@
             <template #action>
               <div class="flex justify-center gap-3">
                 <button type="button" class="hard-button-secondary" @click="switchTab('all')">查看全部错题</button>
-                <RouterLink to="/interview" class="hard-button-primary">开始面试</RouterLink>
+                <RouterLink to="/interview" class="hard-button-primary">开始面试诊断</RouterLink>
               </div>
             </template>
           </EmptyState>
@@ -207,7 +207,7 @@
         <section v-if="!prioritizedWrongItems.length" class="cockpit-panel p-6">
           <EmptyState icon="review" title="错题池为空" description="完成练习后，需要继续复习的题目会显示在这里。">
             <template #action>
-              <RouterLink to="/interview" class="hard-button-primary inline-flex">开始面试</RouterLink>
+              <RouterLink to="/interview" class="hard-button-primary inline-flex">开始面试诊断</RouterLink>
             </template>
           </EmptyState>
         </section>
@@ -329,9 +329,7 @@ const wrongFilters = [
   { value: 'mastered' as const, label: '已掌握' }
 ]
 
-const todayCount = computed(() => reviewItems.value.length)
 const overdueCount = computed(() => reviewItems.value.filter((item) => item.overdueDays > 0).length)
-const wrongTotalDisplay = computed(() => wrongTotal.value || wrongItems.value.length)
 const currentReviewItem = computed(() => reviewItems.value[currentIndex.value] ?? null)
 
 const filteredWrongItems = computed(() => {
@@ -482,7 +480,7 @@ const loadData = async () => {
   try {
     await Promise.all([loadReviewData(), loadWrongData()])
   } catch {
-    ElMessage.error('错题复习数据加载失败')
+    ElMessage.error('复习中心数据加载失败')
   } finally {
     loading.value = false
   }

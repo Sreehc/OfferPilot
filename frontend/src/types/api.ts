@@ -63,6 +63,12 @@ export interface DashboardOverview {
   recentInterviews: RecentInterviewItem[]
   weakPoints: WeakPointItem[]
   firstVisit: boolean
+  todayLearnCards?: number
+  todayReviewCards?: number
+  todayCompletedCards?: number
+  todayCardCompletionRate?: number
+  masteredCardCount?: number
+  reviewDebtCount?: number
   overallAbility?: number
   recommendedDifficulty?: string
   weakCategories?: string[]

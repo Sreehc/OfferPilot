@@ -1,9 +1,12 @@
 package com.bytecoach.dashboard.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.bytecoach.adaptive.service.AdaptiveService;
 import com.bytecoach.adaptive.vo.AbilityProfileVO;
 import com.bytecoach.analytics.service.AnalyticsService;
 import com.bytecoach.analytics.vo.LearningInsightsVO;
+import com.bytecoach.cards.entity.KnowledgeCardTask;
+import com.bytecoach.cards.mapper.KnowledgeCardTaskMapper;
 import com.bytecoach.common.api.ResultCode;
 import com.bytecoach.common.config.ByteCoachProperties;
 import com.bytecoach.common.exception.BusinessException;
@@ -14,6 +17,7 @@ import com.bytecoach.dashboard.mapper.DashboardMetricsMapper;
 import com.bytecoach.dashboard.service.DashboardService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +39,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final AdaptiveService adaptiveService;
     private final AnalyticsService analyticsService;
     private final ByteCoachProperties props;
+    private final KnowledgeCardTaskMapper knowledgeCardTaskMapper;
 
     @Override
     public DashboardOverviewVO overview() {
@@ -61,6 +66,7 @@ public class DashboardServiceImpl implements DashboardService {
         int wrongCount = (int) defaultLong(dashboardMetricsMapper.countWrongQuestions(userId));
         List<RecentInterviewVO> recentInterviews = defaultList(dashboardMetricsMapper.selectRecentInterviews(userId));
         List<WeakPointVO> weakPoints = defaultList(dashboardMetricsMapper.selectWeakPoints(userId));
+        MemorySummary memorySummary = loadMemorySummary(userId);
 
         DashboardOverviewVO result = DashboardOverviewVO.builder()
                 .learningCount(learningCount)
@@ -69,6 +75,12 @@ public class DashboardServiceImpl implements DashboardService {
                 .recentInterviews(recentInterviews)
                 .weakPoints(weakPoints)
                 .firstVisit(learningCount == 0 && wrongCount == 0)
+                .todayLearnCards(memorySummary.todayLearnCards())
+                .todayReviewCards(memorySummary.todayReviewCards())
+                .todayCompletedCards(memorySummary.todayCompletedCards())
+                .todayCardCompletionRate(memorySummary.todayCardCompletionRate())
+                .masteredCardCount(memorySummary.masteredCardCount())
+                .reviewDebtCount(memorySummary.reviewDebtCount())
                 .build();
 
         // Populate adaptive learning fields
@@ -128,5 +140,58 @@ public class DashboardServiceImpl implements DashboardService {
 
     private <T> List<T> defaultList(List<T> value) {
         return value == null ? List.of() : value;
+    }
+
+    private MemorySummary loadMemorySummary(Long userId) {
+        Long latestTaskId = dashboardMetricsMapper.selectLatestCardTaskId(userId);
+        int reviewDebtCount = (int) defaultLong(dashboardMetricsMapper.countReviewDebt(userId));
+        if (latestTaskId == null) {
+            return new MemorySummary(0, 0, 0, BigDecimal.ZERO, 0, reviewDebtCount);
+        }
+
+        KnowledgeCardTask task = knowledgeCardTaskMapper.selectById(latestTaskId);
+        if (task == null) {
+            return new MemorySummary(0, 0, 0, BigDecimal.ZERO, 0, reviewDebtCount);
+        }
+
+        int currentDay = resolveCurrentDay(task);
+        int todayLearnCards = (int) defaultLong(dashboardMetricsMapper.countTodayLearnCards(task.getId(), currentDay));
+        int todayReviewCards = (int) defaultLong(dashboardMetricsMapper.countTodayReviewCards(task.getId(), currentDay));
+        int todayCompletedCards = (int) defaultLong(dashboardMetricsMapper.countTodayCompletedCards(task.getId()));
+        int masteredCardCount = (int) defaultLong(dashboardMetricsMapper.countMasteredCards(task.getId()));
+        int todayCardTotal = todayLearnCards + todayReviewCards;
+        BigDecimal todayCardCompletionRate = todayCardTotal <= 0
+                ? BigDecimal.ZERO
+                : BigDecimal.valueOf(todayCompletedCards)
+                        .multiply(BigDecimal.valueOf(100))
+                        .divide(BigDecimal.valueOf(todayCardTotal), 2, RoundingMode.HALF_UP);
+
+        return new MemorySummary(
+                todayLearnCards,
+                todayReviewCards,
+                todayCompletedCards,
+                todayCardCompletionRate,
+                masteredCardCount,
+                reviewDebtCount
+        );
+    }
+
+    private int resolveCurrentDay(KnowledgeCardTask task) {
+        int totalDays = Math.max(1, task.getDays() == null ? 1 : task.getDays());
+        int currentDay = task.getCurrentDay() == null ? 1 : task.getCurrentDay();
+        if ("completed".equals(task.getStatus())) {
+            return totalDays;
+        }
+        return Math.max(1, Math.min(currentDay, totalDays));
+    }
+
+    private record MemorySummary(
+            int todayLearnCards,
+            int todayReviewCards,
+            int todayCompletedCards,
+            BigDecimal todayCardCompletionRate,
+            int masteredCardCount,
+            int reviewDebtCount
+    ) {
     }
 }

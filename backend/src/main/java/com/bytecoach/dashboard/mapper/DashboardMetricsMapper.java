@@ -66,4 +66,64 @@ public interface DashboardMetricsMapper {
             LIMIT 5
             """)
     List<WeakPointVO> selectWeakPoints(@Param("userId") Long userId);
+
+    @Select("""
+            SELECT id
+            FROM knowledge_card_task
+            WHERE user_id = #{userId}
+              AND status IN ('active', 'draft', 'completed')
+            ORDER BY CASE status
+                         WHEN 'active' THEN 0
+                         WHEN 'draft' THEN 1
+                         WHEN 'completed' THEN 2
+                         ELSE 3
+                     END,
+                     update_time DESC
+            LIMIT 1
+            """)
+    Long selectLatestCardTaskId(@Param("userId") Long userId);
+
+    @Select("""
+            SELECT COUNT(*)
+            FROM knowledge_card
+            WHERE task_id = #{taskId}
+              AND state = 'new'
+              AND scheduled_day = #{currentDay}
+            """)
+    Long countTodayLearnCards(@Param("taskId") Long taskId, @Param("currentDay") Integer currentDay);
+
+    @Select("""
+            SELECT COUNT(*)
+            FROM knowledge_card
+            WHERE task_id = #{taskId}
+              AND state <> 'mastered'
+              AND (scheduled_day < #{currentDay}
+                   OR (scheduled_day <= #{currentDay} AND next_review_at IS NOT NULL AND next_review_at <= NOW()))
+            """)
+    Long countTodayReviewCards(@Param("taskId") Long taskId, @Param("currentDay") Integer currentDay);
+
+    @Select("""
+            SELECT COUNT(*)
+            FROM knowledge_card
+            WHERE task_id = #{taskId}
+              AND last_review_time IS NOT NULL
+              AND DATE(last_review_time) = CURRENT_DATE
+            """)
+    Long countTodayCompletedCards(@Param("taskId") Long taskId);
+
+    @Select("""
+            SELECT COUNT(*)
+            FROM knowledge_card
+            WHERE task_id = #{taskId}
+              AND state = 'mastered'
+            """)
+    Long countMasteredCards(@Param("taskId") Long taskId);
+
+    @Select("""
+            SELECT COUNT(*)
+            FROM wrong_question
+            WHERE user_id = #{userId}
+              AND next_review_date < CURRENT_DATE
+            """)
+    Long countReviewDebt(@Param("userId") Long userId);
 }
