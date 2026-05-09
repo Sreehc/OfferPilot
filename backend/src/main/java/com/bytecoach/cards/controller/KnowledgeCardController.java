@@ -1,9 +1,13 @@
 package com.bytecoach.cards.controller;
 
+import com.bytecoach.cards.dto.CardGenerateRequest;
 import com.bytecoach.cards.dto.CardRateRequest;
 import com.bytecoach.cards.dto.CardTaskCreateRequest;
 import com.bytecoach.cards.service.KnowledgeCardService;
+import com.bytecoach.cards.vo.CardDeckSummaryVO;
+import com.bytecoach.cards.vo.CardStatsSummaryVO;
 import com.bytecoach.cards.vo.KnowledgeCardTaskVO;
+import com.bytecoach.cards.vo.TodayCardsTaskVO;
 import com.bytecoach.common.api.Result;
 import com.bytecoach.common.api.ResultCode;
 import com.bytecoach.common.exception.BusinessException;
@@ -12,6 +16,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,6 +37,44 @@ public class KnowledgeCardController {
     @PostMapping("/task")
     public Result<KnowledgeCardTaskVO> createTask(@Valid @RequestBody CardTaskCreateRequest request) {
         return Result.success(knowledgeCardService.createTask(currentUserId(), request));
+    }
+
+    @Operation(summary = "生成卡片 deck")
+    @PostMapping("/generate")
+    public Result<KnowledgeCardTaskVO> generate(@Valid @RequestBody CardGenerateRequest request) {
+        return Result.success(knowledgeCardService.generateDeck(currentUserId(), request));
+    }
+
+    @Operation(summary = "获取今日卡片任务")
+    @GetMapping("/today")
+    public Result<TodayCardsTaskVO> today() {
+        return Result.success(knowledgeCardService.getTodayTask(currentUserId()));
+    }
+
+    @Operation(summary = "获取 deck 列表")
+    @GetMapping("/decks")
+    public Result<List<CardDeckSummaryVO>> decks() {
+        return Result.success(knowledgeCardService.listDecks(currentUserId()));
+    }
+
+    @Operation(summary = "切换当前 deck")
+    @PostMapping("/decks/{id}/activate")
+    public Result<TodayCardsTaskVO> activateDeck(@Parameter(description = "deck ID") @PathVariable Long id) {
+        return Result.success(knowledgeCardService.activateDeck(currentUserId(), id));
+    }
+
+    @Operation(summary = "获取卡片统计")
+    @GetMapping("/stats")
+    public Result<CardStatsSummaryVO> stats() {
+        return Result.success(knowledgeCardService.getStats(currentUserId()));
+    }
+
+    @Operation(summary = "提交卡片评分并返回今日任务")
+    @PostMapping("/{id}/review")
+    public Result<TodayCardsTaskVO> review(
+            @Parameter(description = "deck ID") @PathVariable Long id,
+            @Valid @RequestBody CardRateRequest request) {
+        return Result.success(knowledgeCardService.reviewDeck(currentUserId(), id, request));
     }
 
     @Operation(summary = "获取当前活跃任务")

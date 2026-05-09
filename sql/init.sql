@@ -111,21 +111,28 @@ CREATE TABLE IF NOT EXISTS knowledge_card_task (
     user_id BIGINT NOT NULL,
     doc_id BIGINT NOT NULL,
     doc_title VARCHAR(128) NOT NULL,
+    deck_title VARCHAR(128) DEFAULT NULL,
+    source_type VARCHAR(32) NOT NULL DEFAULT 'knowledge_doc' COMMENT 'knowledge_doc / wrong_auto',
     status VARCHAR(32) NOT NULL DEFAULT 'draft' COMMENT 'draft / active / completed / invalid',
+    is_current TINYINT NOT NULL DEFAULT 0,
     days INT NOT NULL DEFAULT 7,
     current_day INT NOT NULL DEFAULT 1,
     daily_target INT NOT NULL DEFAULT 0,
     total_cards INT NOT NULL DEFAULT 0,
     mastered_cards INT NOT NULL DEFAULT 0,
     review_count INT NOT NULL DEFAULT 0,
+    estimated_minutes INT NOT NULL DEFAULT 0,
     invalid_reason VARCHAR(255) DEFAULT NULL,
     started_at DATETIME DEFAULT NULL,
     completed_at DATETIME DEFAULT NULL,
+    last_studied_at DATETIME DEFAULT NULL,
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     KEY idx_card_task_user (user_id),
     KEY idx_card_task_doc (doc_id),
-    KEY idx_card_task_status (user_id, status)
+    KEY idx_card_task_status (user_id, status),
+    KEY idx_card_task_current (user_id, is_current),
+    KEY idx_card_task_source (user_id, source_type)
 );
 
 -- ============================================================
@@ -136,10 +143,13 @@ CREATE TABLE IF NOT EXISTS knowledge_card (
     task_id BIGINT NOT NULL,
     question TEXT NOT NULL,
     answer TEXT NOT NULL,
+    explanation TEXT DEFAULT NULL,
     sort_order INT NOT NULL DEFAULT 0,
     scheduled_day INT NOT NULL DEFAULT 1,
     state VARCHAR(32) NOT NULL DEFAULT 'new' COMMENT 'new / learning / weak / mastered',
     review_count INT NOT NULL DEFAULT 0,
+    source_ref_id BIGINT DEFAULT NULL,
+    source_ref_type VARCHAR(32) DEFAULT NULL COMMENT 'knowledge_chunk / wrong_question',
     last_rating INT DEFAULT NULL COMMENT '1=Again, 2=Hard, 3=Good, 4=Easy',
     last_review_time DATETIME DEFAULT NULL,
     ease_factor DECIMAL(4,2) NOT NULL DEFAULT 2.50,
@@ -150,7 +160,8 @@ CREATE TABLE IF NOT EXISTS knowledge_card (
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     KEY idx_card_task_id (task_id),
     KEY idx_card_task_state (task_id, state),
-    KEY idx_card_task_day (task_id, scheduled_day)
+    KEY idx_card_task_day (task_id, scheduled_day),
+    KEY idx_card_source_ref (task_id, source_ref_type, source_ref_id)
 );
 
 -- ============================================================
@@ -171,6 +182,29 @@ CREATE TABLE IF NOT EXISTS knowledge_card_log (
     KEY idx_card_log_user (user_id),
     KEY idx_card_log_task (task_id),
     KEY idx_card_log_card (card_id)
+);
+
+-- ============================================================
+-- 每日卡片任务快照表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS daily_card_task (
+    id BIGINT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    task_id BIGINT NOT NULL,
+    task_date DATE NOT NULL,
+    planned_count INT NOT NULL DEFAULT 0,
+    learn_count INT NOT NULL DEFAULT 0,
+    review_count INT NOT NULL DEFAULT 0,
+    completed_count INT NOT NULL DEFAULT 0,
+    streak_snapshot INT NOT NULL DEFAULT 0,
+    estimated_minutes INT NOT NULL DEFAULT 0,
+    tomorrow_due_count INT NOT NULL DEFAULT 0,
+    status VARCHAR(32) NOT NULL DEFAULT 'pending' COMMENT 'pending / completed',
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_daily_card_task (user_id, task_id, task_date),
+    KEY idx_daily_card_user_date (user_id, task_date),
+    KEY idx_daily_card_task (task_id)
 );
 
 -- ============================================================

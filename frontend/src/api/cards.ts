@@ -1,5 +1,5 @@
 import { request } from '@/utils/http'
-import type { KnowledgeCardTask } from '@/types/api'
+import type { CardDeckSummary, CardStatsSummary, KnowledgeCardTask, TodayCardsTask } from '@/types/api'
 
 export interface CardTaskCreatePayload {
   docId: number
@@ -14,6 +14,30 @@ export interface CardRatePayload {
 
 export const createCardTaskApi = (payload: CardTaskCreatePayload) => {
   return request<KnowledgeCardTask>({ url: '/cards/task', method: 'post', data: payload })
+}
+
+export const generateCardDeckApi = (payload: CardTaskCreatePayload) => {
+  return request<KnowledgeCardTask>({ url: '/cards/generate', method: 'post', data: payload })
+}
+
+export const fetchTodayCardsTaskApi = () => {
+  return request<TodayCardsTask | null>({ url: '/cards/today', method: 'get' })
+}
+
+export const fetchCardDecksApi = () => {
+  return request<CardDeckSummary[]>({ url: '/cards/decks', method: 'get' })
+}
+
+export const activateCardDeckApi = (deckId: string) => {
+  return request<TodayCardsTask>({ url: `/cards/decks/${deckId}/activate`, method: 'post' })
+}
+
+export const reviewDeckCardApi = (deckId: string, payload: CardRatePayload) => {
+  return request<TodayCardsTask>({ url: `/cards/${deckId}/review`, method: 'post', data: payload })
+}
+
+export const fetchCardStatsApi = () => {
+  return request<CardStatsSummary>({ url: '/cards/stats', method: 'get' })
 }
 
 export const fetchActiveCardTaskApi = () => {

@@ -261,10 +261,13 @@ export interface KnowledgeCardItem {
   id: string
   question: string
   answer: string
+  explanation?: string
   sortOrder: number
   scheduledDay: number
   state: 'new' | 'learning' | 'weak' | 'mastered'
   reviewCount: number
+  sourceRefId?: string | null
+  sourceRefType?: 'knowledge_chunk' | 'wrong_question' | string | null
   lastRating?: number | null
   easeFactor?: number
   intervalDays?: number
@@ -275,20 +278,67 @@ export interface KnowledgeCardTask {
   id: string
   docId: string
   docTitle: string
+  deckTitle?: string
+  sourceType?: 'knowledge_doc' | 'wrong_auto' | string
   status: 'draft' | 'active' | 'completed' | 'invalid'
+  isCurrent?: number
   days: number
   currentDay: number
   dailyTarget: number
   totalCards: number
   masteredCards: number
   reviewCount: number
+  estimatedMinutes?: number
   invalidReason?: string
   startedAt?: string
   completedAt?: string
+  lastStudiedAt?: string
   dueCount: number
   reviewedTodayCount: number
   currentCard?: KnowledgeCardItem | null
   cards: KnowledgeCardItem[]
+}
+
+export interface TodayCardsTask {
+  deckId: string
+  deckTitle: string
+  sourceType: 'knowledge_doc' | 'wrong_auto' | string
+  status: 'draft' | 'active' | 'completed' | 'invalid'
+  todayLearnCount: number
+  todayReviewCount: number
+  todayCompletedCount: number
+  completionRate: number
+  estimatedMinutes: number
+  streak: number
+  tomorrowDueCount: number
+  totalCards: number
+  masteredCards: number
+  dueCount: number
+  reviewedTodayCount: number
+  currentCard?: KnowledgeCardItem | null
+}
+
+export interface CardDeckSummary {
+  deckId: string
+  deckTitle: string
+  sourceType: 'knowledge_doc' | 'wrong_auto' | string
+  status: 'draft' | 'active' | 'completed' | 'invalid'
+  totalCards: number
+  masteredCards: number
+  dueCount: number
+  reviewedTodayCount: number
+  isCurrent: number
+  lastStudiedAt?: string | null
+}
+
+export interface CardStatsSummary {
+  currentDeckId?: string | null
+  deckCount: number
+  totalCards: number
+  masteredCards: number
+  dueTodayCount: number
+  streak: number
+  completionRate: number
 }
 
 export interface CommunityQuestion {

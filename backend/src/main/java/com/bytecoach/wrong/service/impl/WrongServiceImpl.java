@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.bytecoach.common.api.ResultCode;
 import com.bytecoach.common.dto.PageResult;
 import com.bytecoach.common.exception.BusinessException;
+import com.bytecoach.cards.service.KnowledgeCardService;
 import com.bytecoach.dashboard.service.DashboardService;
 import com.bytecoach.question.entity.Question;
 import com.bytecoach.question.mapper.QuestionMapper;
@@ -28,6 +29,7 @@ public class WrongServiceImpl implements WrongService {
     private final WrongQuestionMapper wrongQuestionMapper;
     private final QuestionMapper questionMapper;
     private final DashboardService dashboardService;
+    private final KnowledgeCardService knowledgeCardService;
 
     @Override
     public PageResult<WrongQuestionVO> list(Long userId, int pageNum, int pageSize) {
@@ -141,15 +143,18 @@ public class WrongServiceImpl implements WrongService {
     public void updateMastery(Long userId, Long id, WrongMasteryUpdateRequest request) {
         WrongQuestion wrong = getOwnedWrong(userId, id);
         wrong.setMasteryLevel(request.getMasteryLevel());
-        wrong.setReviewCount(wrong.getReviewCount() + 1);
+        wrong.setReviewCount((wrong.getReviewCount() == null ? 0 : wrong.getReviewCount()) + 1);
         wrong.setLastReviewTime(LocalDateTime.now());
         wrongQuestionMapper.updateById(wrong);
+        knowledgeCardService.syncWrongDeck(userId);
+        dashboardService.evictCache(userId);
     }
 
     @Override
     public void delete(Long userId, Long id) {
         WrongQuestion wrong = getOwnedWrong(userId, id);
         wrongQuestionMapper.deleteById(wrong.getId());
+        knowledgeCardService.syncWrongDeck(userId);
         dashboardService.evictCache(userId);
     }
 

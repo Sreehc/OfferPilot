@@ -3,6 +3,7 @@ package com.bytecoach.interview.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.bytecoach.ai.service.AiOrchestratorService;
+import com.bytecoach.cards.service.KnowledgeCardService;
 import com.bytecoach.category.entity.Category;
 import com.bytecoach.category.service.CategoryService;
 import com.bytecoach.common.api.ResultCode;
@@ -62,6 +63,7 @@ public class InterviewServiceImpl implements InterviewService {
     private final AiOrchestratorService aiOrchestratorService;
     private final DashboardService dashboardService;
     private final NotificationService notificationService;
+    private final KnowledgeCardService knowledgeCardService;
     private final ByteCoachProperties props;
 
     @Lazy
@@ -410,6 +412,7 @@ public class InterviewServiceImpl implements InterviewService {
             existing.setUserAnswer(request.getAnswer());
             existing.setErrorReason(aiResult.getComment());
             wrongQuestionMapper.updateById(existing);
+            knowledgeCardService.syncWrongDeck(userId);
             return;
         }
 
@@ -427,6 +430,7 @@ public class InterviewServiceImpl implements InterviewService {
         wrong.setNextReviewDate(LocalDate.now());
         wrong.setStreak(0);
         wrongQuestionMapper.insert(wrong);
+        knowledgeCardService.syncWrongDeck(userId);
     }
 
     private void finishSession(InterviewSession session, List<InterviewRecord> records, InterviewRecord lastRecord) {

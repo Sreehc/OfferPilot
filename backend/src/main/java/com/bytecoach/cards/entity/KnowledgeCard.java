@@ -14,10 +14,13 @@ public class KnowledgeCard extends BaseEntity {
     private Long taskId;
     private String question;
     private String answer;
+    private String explanation;
     private Integer sortOrder;
     private Integer scheduledDay;
     private String state;
     private Integer reviewCount;
+    private Long sourceRefId;
+    private String sourceRefType;
     private Integer lastRating;
     private LocalDateTime lastReviewTime;
     private BigDecimal easeFactor;

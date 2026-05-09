@@ -10,10 +10,13 @@ public class KnowledgeCardItemVO {
     private String id;
     private String question;
     private String answer;
+    private String explanation;
     private Integer sortOrder;
     private Integer scheduledDay;
     private String state;
     private Integer reviewCount;
+    private String sourceRefId;
+    private String sourceRefType;
     private Integer lastRating;
     private BigDecimal easeFactor;
     private Integer intervalDays;
