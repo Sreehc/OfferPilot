@@ -1,22 +1,6 @@
 <template>
-  <div class="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
-    <div class="surface-muted p-4">
-      <div class="text-sm font-semibold text-ink">导入内置资料</div>
-      <div class="mt-4 space-y-3">
-        <div v-for="seed in seeds" :key="seed.seedKey" class="surface-card p-4">
-          <div class="font-semibold text-ink">{{ seed.title }}</div>
-          <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ seed.summary }}</p>
-          <div class="mt-3 flex items-center justify-between">
-            <span class="text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">{{ seed.seedKey }}</span>
-            <el-button :loading="importing === seed.seedKey" type="primary" class="action-button !min-h-9 !px-3" @click="emit('import', seed.seedKey)">
-              导入
-            </el-button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="space-y-4">
+  <div class="space-y-4">
+    <section class="surface-muted p-4">
       <div class="grid gap-3 md:grid-cols-3">
         <el-select v-model="filter.categoryId" clearable placeholder="按分类" size="large">
           <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
@@ -29,10 +13,33 @@
         <el-input v-model="filter.keyword" clearable placeholder="搜索文档" size="large" />
       </div>
 
-      <div class="flex gap-3">
+      <div class="mt-4 flex flex-wrap gap-3">
         <el-button :loading="loading" type="primary" class="action-button" @click="emit('load')">刷新</el-button>
         <el-button class="hard-button-secondary" @click="emit('filterReset')">重置</el-button>
+        <el-button class="hard-button-secondary" @click="seedPanelOpen = !seedPanelOpen">
+          {{ seedPanelOpen ? '收起导入区' : '导入内置资料' }}
+        </el-button>
       </div>
+    </section>
+
+    <section v-if="seedPanelOpen" class="surface-muted p-4">
+      <div class="text-sm font-semibold text-ink">导入内置资料</div>
+      <div class="mt-4 grid gap-3 xl:grid-cols-3">
+        <div v-for="seed in seeds" :key="seed.seedKey" class="surface-card p-4">
+          <div class="font-semibold text-ink">{{ seed.title }}</div>
+          <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ seed.summary }}</p>
+          <div class="mt-3 flex items-center justify-between gap-3">
+            <span class="truncate text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">{{ seed.seedKey }}</span>
+            <el-button :loading="importing === seed.seedKey" type="primary" class="action-button !min-h-9 !px-3" @click="emit('import', seed.seedKey)">
+              导入
+            </el-button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="space-y-4">
+      <div class="text-sm text-slate-500 dark:text-slate-400">共 {{ total }} 份文档</div>
 
       <article v-for="doc in docs" :key="doc.id" class="surface-card p-4">
         <div class="flex items-start justify-between gap-4">
@@ -64,11 +71,12 @@
           @current-change="(page: number) => emit('pageChange', page)"
         />
       </div>
-    </div>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import type { CategoryItem, KnowledgeDocItem } from '@/types/api'
 
 interface KnowledgeFilter {
@@ -98,6 +106,7 @@ defineProps<{
 }>()
 
 const currentPage = defineModel<number>('currentPage', { default: 1 })
+const seedPanelOpen = ref(false)
 
 const emit = defineEmits<{
   import: [seedKey: string]

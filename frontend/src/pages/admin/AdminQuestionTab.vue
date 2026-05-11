@@ -1,29 +1,6 @@
 <template>
-  <div class="grid gap-4 xl:grid-cols-[380px_minmax(0,1fr)]">
-    <div class="surface-muted p-4">
-      <div class="text-sm font-semibold text-ink">{{ form.id ? '编辑题目' : '新增题目' }}</div>
-      <div class="mt-4 space-y-3">
-        <el-input v-model="form.title" placeholder="标题" size="large" />
-        <el-select v-model="form.categoryId" placeholder="分类" size="large" class="w-full">
-          <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
-        </el-select>
-        <el-select v-model="form.difficulty" placeholder="难度" size="large" class="w-full">
-          <el-option label="简单" value="easy" />
-          <el-option label="中等" value="medium" />
-          <el-option label="困难" value="hard" />
-        </el-select>
-        <el-input v-model="form.tags" placeholder="标签" size="large" />
-        <el-input v-model="form.standardAnswer" type="textarea" :rows="5" placeholder="标准答案" />
-      </div>
-      <div class="mt-4 flex gap-3">
-        <el-button :loading="saving" type="primary" class="action-button" @click="emit('save')">
-          {{ form.id ? '保存修改' : '新增题目' }}
-        </el-button>
-        <el-button class="hard-button-secondary" @click="emit('reset')">重置</el-button>
-      </div>
-    </div>
-
-    <div class="space-y-4">
+  <div class="space-y-4">
+    <section class="surface-muted p-4">
       <div class="grid gap-3 md:grid-cols-3">
         <el-select v-model="filter.categoryId" clearable placeholder="按分类" size="large">
           <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
@@ -36,9 +13,12 @@
         <el-input v-model="filter.keyword" clearable placeholder="搜索题目" size="large" />
       </div>
 
-      <div class="flex gap-3">
+      <div class="mt-4 flex flex-wrap gap-3">
         <el-button :loading="loading" type="primary" class="action-button" @click="emit('load')">刷新</el-button>
         <el-button class="hard-button-secondary" @click="emit('filterReset')">重置</el-button>
+        <el-button class="hard-button-secondary" @click="toggleEditor">
+          {{ editorOpen ? '收起编辑区' : form.id ? '继续编辑' : '新增题目' }}
+        </el-button>
         <el-upload
           :show-file-list="false"
           :before-upload="handleImport"
@@ -46,6 +26,41 @@
         >
           <el-button :loading="importing" type="success" plain>批量导入</el-button>
         </el-upload>
+      </div>
+    </section>
+
+    <section v-if="editorOpen" class="surface-muted p-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="text-sm font-semibold text-ink">{{ form.id ? '编辑题目' : '新增题目' }}</div>
+        <button type="button" class="text-sm text-slate-500 transition hover:text-ink" @click="closeEditor">收起</button>
+      </div>
+
+      <div class="mt-4 grid gap-3 lg:grid-cols-2">
+        <el-input v-model="form.title" placeholder="标题" size="large" />
+        <el-select v-model="form.categoryId" placeholder="分类" size="large" class="w-full">
+          <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
+        </el-select>
+        <el-select v-model="form.difficulty" placeholder="难度" size="large" class="w-full">
+          <el-option label="简单" value="easy" />
+          <el-option label="中等" value="medium" />
+          <el-option label="困难" value="hard" />
+        </el-select>
+        <el-input v-model="form.tags" placeholder="标签" size="large" />
+      </div>
+      <div class="mt-3">
+        <el-input v-model="form.standardAnswer" type="textarea" :rows="6" placeholder="标准答案" />
+      </div>
+      <div class="mt-4 flex flex-wrap gap-3">
+        <el-button :loading="saving" type="primary" class="action-button" @click="emit('save')">
+          {{ form.id ? '保存修改' : '新增题目' }}
+        </el-button>
+        <el-button class="hard-button-secondary" @click="emit('reset')">重置</el-button>
+      </div>
+    </section>
+
+    <section class="space-y-4">
+      <div class="flex items-center justify-between gap-3">
+        <div class="text-sm text-slate-500 dark:text-slate-400">共 {{ total }} 题</div>
       </div>
 
       <article v-for="item in questions" :key="item.id" class="surface-card p-4">
@@ -73,12 +88,13 @@
           @current-change="(page: number) => emit('pageChange', page)"
         />
       </div>
-    </div>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
+import { ref, watch } from 'vue'
 import type { CategoryItem, QuestionItem } from '@/types/api'
 import { importQuestionsApi } from '@/api/admin'
 
@@ -97,7 +113,7 @@ interface QuestionFilter {
   keyword: string
 }
 
-defineProps<{
+const props = defineProps<{
   questions: QuestionItem[]
   categories: CategoryItem[]
   form: QuestionForm
@@ -111,6 +127,7 @@ defineProps<{
 }>()
 
 const currentPage = defineModel<number>('currentPage', { default: 1 })
+const editorOpen = ref(false)
 
 const emit = defineEmits<{
   save: []
@@ -123,6 +140,27 @@ const emit = defineEmits<{
 }>()
 
 const importing = defineModel<boolean>('importing', { default: false })
+
+watch(
+  () => props.form.id,
+  (id) => {
+    if (id) editorOpen.value = true
+  }
+)
+
+const toggleEditor = () => {
+  if (editorOpen.value) {
+    closeEditor()
+    return
+  }
+  editorOpen.value = true
+  if (!props.form.id) emit('reset')
+}
+
+const closeEditor = () => {
+  editorOpen.value = false
+  emit('reset')
+}
 
 const handleImport = async (file: File) => {
   importing.value = true
