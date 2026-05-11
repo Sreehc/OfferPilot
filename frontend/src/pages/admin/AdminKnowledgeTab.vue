@@ -19,6 +19,9 @@
         <el-button class="hard-button-secondary" @click="seedPanelOpen = !seedPanelOpen">
           {{ seedPanelOpen ? '收起导入区' : '导入内置资料' }}
         </el-button>
+        <el-button class="hard-button-secondary" @click="searchPanelOpen = !searchPanelOpen">
+          {{ searchPanelOpen ? '收起检索验证' : '检索验证' }}
+        </el-button>
       </div>
     </section>
 
@@ -35,6 +38,41 @@
             </el-button>
           </div>
         </div>
+      </div>
+    </section>
+
+    <section v-if="searchPanelOpen" class="surface-muted p-4">
+      <div class="text-sm font-semibold text-ink">检索验证</div>
+      <div class="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_140px]">
+        <el-input v-model="searchQuery" placeholder="例如：JVM 垃圾回收器分类，以及 CMS 和 G1 的差异" size="large" />
+        <el-button :loading="searching" type="primary" class="action-button" @click="runSearch">
+          {{ searching ? '检索中...' : '开始检索' }}
+        </el-button>
+      </div>
+
+      <div v-if="searchResult?.references.length" class="mt-4 grid gap-3 xl:grid-cols-2">
+        <article v-for="(reference, index) in searchResult.references" :key="reference.chunkId" class="surface-card p-4">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">命中 {{ index + 1 }}</span>
+                <span class="text-[11px] font-semibold" :class="confidenceClass(reference.score)">
+                  {{ confidenceLabel(reference.score) }}
+                </span>
+              </div>
+              <div class="mt-2 font-semibold text-ink">{{ reference.docTitle }}</div>
+            </div>
+            <span class="text-sm font-semibold text-ink">{{ scorePercent(reference.score) }}</span>
+          </div>
+          <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ reference.snippet }}</p>
+        </article>
+      </div>
+
+      <div
+        v-else-if="searchResult"
+        class="mt-4 rounded-2xl border border-[var(--bc-line)] bg-white/30 px-4 py-5 text-sm text-slate-500 dark:bg-white/5 dark:text-slate-400"
+      >
+        没有找到相关结果。
       </div>
     </section>
 
@@ -77,7 +115,9 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { CategoryItem, KnowledgeDocItem } from '@/types/api'
+import { ElMessage } from 'element-plus'
+import { searchKnowledgeApi } from '@/api/knowledge'
+import type { CategoryItem, KnowledgeDocItem, KnowledgeSearchResult } from '@/types/api'
 
 interface KnowledgeFilter {
   categoryId?: number
@@ -107,6 +147,10 @@ defineProps<{
 
 const currentPage = defineModel<number>('currentPage', { default: 1 })
 const seedPanelOpen = ref(false)
+const searchPanelOpen = ref(false)
+const searching = ref(false)
+const searchQuery = ref('')
+const searchResult = ref<KnowledgeSearchResult | null>(null)
 
 const emit = defineEmits<{
   import: [seedKey: string]
@@ -116,4 +160,40 @@ const emit = defineEmits<{
   load: []
   pageChange: [page: number]
 }>()
+
+const runSearch = async () => {
+  if (!searchQuery.value.trim()) {
+    ElMessage.warning('请输入检索问题')
+    return
+  }
+  searching.value = true
+  searchResult.value = null
+  try {
+    const response = await searchKnowledgeApi(searchQuery.value.trim())
+    searchResult.value = response.data
+  } catch {
+    ElMessage.error('知识检索失败')
+  } finally {
+    searching.value = false
+  }
+}
+
+const scorePercent = (score?: number) => {
+  if (score == null) return 'N/A'
+  return `${Math.round(score * 100)}%`
+}
+
+const confidenceLabel = (score?: number) => {
+  if (score == null) return '待核验'
+  if (score >= 0.82) return '高可信'
+  if (score >= 0.66) return '可参考'
+  return '弱相关'
+}
+
+const confidenceClass = (score?: number) => {
+  if (score == null) return 'text-slate-500 dark:text-slate-400'
+  if (score >= 0.82) return 'text-[var(--bc-cyan)]'
+  if (score >= 0.66) return 'text-[var(--bc-amber)]'
+  return 'text-[var(--bc-coral)]'
+}
 </script>

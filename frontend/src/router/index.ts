@@ -18,10 +18,10 @@ const pageMeta = {
     title: '面试诊断'
   },
   review: {
-    title: '复习中心'
+    title: '复习'
   },
   community: {
-    title: '学习社区'
+    title: '社区'
   },
   analytics: {
     title: '数据分析'

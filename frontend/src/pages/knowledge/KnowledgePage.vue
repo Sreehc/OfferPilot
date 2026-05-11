@@ -192,47 +192,6 @@
       </div>
     </section>
 
-    <details v-if="isAdmin" class="cockpit-panel p-5 sm:p-6">
-      <summary class="cursor-pointer text-sm font-semibold text-ink">检索测试</summary>
-      <div class="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_150px]">
-        <el-input v-model="searchQuery" placeholder="例如：JVM 垃圾回收器分类，以及 CMS 和 G1 的差异" size="large" />
-        <el-button :loading="searching" type="primary" size="large" class="action-button !min-h-12" @click="runSearch">
-          {{ searching ? '检索中...' : '开始检索' }}
-        </el-button>
-      </div>
-
-      <div v-if="searchResult?.references.length" class="mt-6 grid gap-4 xl:grid-cols-2">
-        <article v-for="reference in decoratedReferences" :key="reference.chunkId" class="reference-card p-4 sm:p-5">
-          <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0">
-              <div class="flex flex-wrap items-center gap-2">
-                <span class="hard-chip !px-2 !py-0.5 !text-[9px]">命中 {{ reference.rank }}</span>
-                <span class="text-[11px] font-semibold uppercase tracking-[0.2em]" :class="reference.confidenceClass">
-                  {{ reference.confidenceLabel }}
-                </span>
-              </div>
-              <h4 class="mt-3 text-lg font-semibold text-ink">{{ reference.docTitle }}</h4>
-            </div>
-            <span class="reference-score">{{ reference.scoreText }}</span>
-          </div>
-
-          <p class="mt-4 text-sm leading-7 text-slate-700 dark:text-slate-200" v-html="reference.snippetHtml"></p>
-        </article>
-      </div>
-
-      <EmptyState
-        v-else-if="searchResult"
-        class="empty-state-card mt-6"
-        icon="search"
-        title="没有找到相关结果"
-        description="尝试换一个更具体的问题，或者先检查相关资料是否已经成功索引。"
-        compact
-      >
-        <template #action>
-          <button type="button" class="hard-button-secondary text-sm" @click="clearSearch">清空检索</button>
-        </template>
-      </EmptyState>
-    </details>
   </div>
 </template>
 
@@ -242,24 +201,12 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import AppShellHeader from '@/components/AppShellHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchCategoriesApi } from '@/api/category'
-import {
-  deleteKnowledgeDocApi,
-  fetchKnowledgeDocsApi,
-  fetchMyKnowledgeDocsApi,
-  searchKnowledgeApi,
-  uploadKnowledgeDocApi
-} from '@/api/knowledge'
-import type { CategoryItem, KnowledgeDocItem, KnowledgeSearchResult } from '@/types/api'
-import { useAuthStore } from '@/stores/auth'
-
-const authStore = useAuthStore()
+import { deleteKnowledgeDocApi, fetchKnowledgeDocsApi, fetchMyKnowledgeDocsApi, uploadKnowledgeDocApi } from '@/api/knowledge'
+import type { CategoryItem, KnowledgeDocItem } from '@/types/api'
 const categories = ref<CategoryItem[]>([])
 const docs = ref<KnowledgeDocItem[]>([])
-const searchResult = ref<KnowledgeSearchResult | null>(null)
 const loadingDocs = ref(false)
-const searching = ref(false)
 const uploading = ref(false)
-const searchQuery = ref('')
 const activeTab = ref<'system' | 'my'>('system')
 const currentPage = ref(1)
 const pageSize = ref(20)
@@ -275,8 +222,6 @@ const filters = reactive<{
   status: undefined
 })
 
-const isAdmin = computed(() => authStore.user?.role === 'ADMIN')
-
 const statusSummary = computed(() => {
   const summary = { draft: 0, parsed: 0, indexed: 0 }
   docs.value.forEach((doc) => {
@@ -284,26 +229,6 @@ const statusSummary = computed(() => {
   })
   return summary
 })
-
-const decoratedReferences = computed(() =>
-  (searchResult.value?.references ?? []).map((reference, index) => {
-    const query = searchResult.value?.query ?? ''
-    const keywords = query.split(/[\s,，。？！?!.、/]+/).filter((item) => item.length >= 2)
-    return {
-      ...reference,
-      rank: index + 1,
-      scoreText: scorePercent(reference.score),
-      confidenceLabel: confidenceLabel(reference.score),
-      confidenceClass: confidenceClass(reference.score),
-      snippetHtml: highlightSnippet(reference.snippet, keywords)
-    }
-  })
-)
-
-const clearSearch = () => {
-  searchQuery.value = ''
-  searchResult.value = null
-}
 
 const loadCategories = async () => {
   try {
@@ -392,23 +317,6 @@ const handleDelete = async (docId: number) => {
   }
 }
 
-const runSearch = async () => {
-  if (!searchQuery.value.trim()) {
-    ElMessage.warning('请输入检索问题')
-    return
-  }
-  searching.value = true
-  searchResult.value = null
-  try {
-    const response = await searchKnowledgeApi(searchQuery.value.trim())
-    searchResult.value = response.data
-  } catch {
-    ElMessage.error('知识检索失败')
-  } finally {
-    searching.value = false
-  }
-}
-
 const resetFilters = () => {
   filters.categoryId = undefined
   filters.keyword = ''
@@ -452,32 +360,6 @@ const statusToneClass = (status: KnowledgeDocItem['status']) => {
 const docType = (fileUrl?: string): 'pdf' | 'text' => {
   if (!fileUrl) return 'text'
   return fileUrl.toLowerCase().endsWith('.pdf') ? 'pdf' : 'text'
-}
-
-const scorePercent = (score?: number) => {
-  if (score == null) return 'N/A'
-  return `${Math.round(score * 100)}%`
-}
-
-const confidenceLabel = (score?: number) => {
-  if (score == null) return '待核验'
-  if (score >= 0.82) return '高可信'
-  if (score >= 0.66) return '可参考'
-  return '弱相关'
-}
-
-const confidenceClass = (score?: number) => {
-  if (score == null) return 'text-slate-500 dark:text-slate-400'
-  if (score >= 0.82) return 'text-[var(--bc-cyan)]'
-  if (score >= 0.66) return 'text-[var(--bc-amber)]'
-  return 'text-[var(--bc-coral)]'
-}
-
-const highlightSnippet = (snippet: string, keywords: string[]) => {
-  if (!keywords.length) return snippet
-  const escaped = keywords.map((keyword) => keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-  const pattern = new RegExp(`(${escaped.join('|')})`, 'gi')
-  return snippet.replace(pattern, '<mark class="knowledge-highlight">$1</mark>')
 }
 
 onMounted(async () => {

@@ -389,7 +389,7 @@
 
           <div class="flex gap-3">
             <RouterLink to="/wrong" class="hard-button-secondary flex-1 text-center"> 查看错题本 </RouterLink>
-            <RouterLink to="/review" class="hard-button-secondary flex-1 text-center"> 去复习中心 </RouterLink>
+            <RouterLink to="/review" class="hard-button-secondary flex-1 text-center"> 去复习 </RouterLink>
             <el-button type="primary" size="large" class="action-button flex-1" @click="handleNewInterview">
               再来一场
             </el-button>

@@ -266,9 +266,9 @@ const generateDeck = async () => {
     })
     await refreshWorkbench()
     await router.replace({ path: '/cards' })
-    ElMessage.success('已生成并切换为当前 deck')
+    ElMessage.success('已生成并切换为当前卡组')
   } catch (error: any) {
-    ElMessage.error(error?.message || '生成卡片 deck 失败')
+    ElMessage.error(error?.message || '生成卡组失败')
   } finally {
     generating.value = false
   }
@@ -282,9 +282,9 @@ const activateDeck = async (deckId: string) => {
     const [decksResponse, statsResponse] = await Promise.all([fetchCardDecksApi(), fetchCardStatsApi()])
     decks.value = decksResponse.data ?? []
     stats.value = statsResponse.data
-    ElMessage.success('已切换当前 deck')
+    ElMessage.success('已切换当前卡组')
   } catch (error: any) {
-    ElMessage.error(error?.message || '切换 deck 失败')
+    ElMessage.error(error?.message || '切换卡组失败')
   } finally {
     activatingDeckId.value = null
   }

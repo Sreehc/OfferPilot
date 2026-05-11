@@ -39,7 +39,7 @@
             <RouterLink :to="primaryMission.to" class="hard-button-primary">
               {{ primaryMission.cta }}
             </RouterLink>
-            <RouterLink to="/review" class="hard-button-secondary">去复习中心</RouterLink>
+            <RouterLink to="/review" class="hard-button-secondary">去复习</RouterLink>
           </div>
         </div>
       </section>
@@ -116,7 +116,7 @@
                   <div>
                     <p class="text-xs text-slate-500">今日完成状态</p>
                     <p class="mt-1 text-xl font-semibold text-ink">
-                      {{ overview.todayCompletionStatus || '等待今日任务开始' }}
+                      {{ overview.todayCompletionStatus || '等待今日卡片开始' }}
                     </p>
                   </div>
                   <div>
@@ -229,7 +229,7 @@ const primaryMission = computed(() => {
   if (todayCardTotal.value > 0) {
     return {
       to: '/cards',
-      title: '今天先完成你的记忆任务',
+      title: '今天先完成今日卡片',
       description: `今天共有 ${todayCardTotal.value} 张卡片要处理，其中待学 ${todayLearnCards.value} 张、待复习 ${todayReviewCards.value} 张。`,
       cta: '开始今日卡片',
       urgent: todayReviewCards.value > 0 || reviewDebtCount.value > 0
@@ -239,7 +239,7 @@ const primaryMission = computed(() => {
   return {
     to: '/knowledge',
     title: '先生成第一组卡片',
-    description: '你还没有今天要推进的卡片任务，先从知识库生成一组内容。',
+    description: '你今天还没有可处理的卡片，先从知识库生成一组内容。',
     cta: '去知识库',
     urgent: false
   }
@@ -253,7 +253,7 @@ const quickActions = computed(() => [
   },
   {
     to: '/review?tab=all',
-    label: '复习中心',
+    label: '复习',
     title: reviewDebtCount.value > 0 ? `清理 ${reviewDebtCount.value} 项积压` : '查看今天的复习'
   },
   {

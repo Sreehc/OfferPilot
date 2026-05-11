@@ -20,7 +20,7 @@
 
     <section v-if="loading" class="cockpit-panel p-8 text-center">
       <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-      <p class="mt-4 text-sm text-slate-500">加载复习中心数据...</p>
+      <p class="mt-4 text-sm text-slate-500">加载复习数据...</p>
     </section>
 
     <template v-else>
@@ -358,7 +358,7 @@ const loadData = async () => {
   try {
     await loadReviewData()
   } catch {
-    ElMessage.error('复习中心数据加载失败')
+    ElMessage.error('复习数据加载失败')
   } finally {
     loading.value = false
   }

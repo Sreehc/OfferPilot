@@ -79,7 +79,7 @@
                   class="hard-button-secondary"
                   @click="handleGenerate(item.sessionId)"
                 >
-                  补生成卡片
+                  生成卡片
                 </el-button>
                 <el-button
                   v-else
@@ -174,10 +174,10 @@ const handleGenerate = async (sessionId: string) => {
   sessionActionLoading[sessionId] = 'generate'
   try {
     await generateInterviewCardsApi(sessionId)
-    ElMessage.success('已补生成面试复习卡片')
+    ElMessage.success('已生成面试复习卡片')
     await loadData()
   } catch {
-    ElMessage.error('补生成卡片失败')
+    ElMessage.error('生成卡片失败')
   } finally {
     sessionActionLoading[sessionId] = ''
   }
