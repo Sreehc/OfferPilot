@@ -6,8 +6,7 @@ const pageMeta = {
     title: '首页'
   },
   chat: {
-    title: '问答',
-    subtitle: '直接提问，或结合知识库继续追问。'
+    title: '问答'
   },
   knowledge: {
     title: '知识库'
@@ -16,19 +15,16 @@ const pageMeta = {
     title: '今日卡片'
   },
   interview: {
-    title: '面试诊断',
-    subtitle: '做一次限时练习，检查你是否真的理解。'
+    title: '面试诊断'
   },
   review: {
     title: '复习中心'
   },
   community: {
-    title: '学习社区',
-    subtitle: '提问、讨论，补齐自己的盲点。'
+    title: '学习社区'
   },
   analytics: {
-    title: '数据分析',
-    subtitle: '看清最近的推进状态和当前重点。'
+    title: '数据分析'
   },
   admin: {
     title: '管理后台',
@@ -79,13 +75,13 @@ const router = createRouter({
           path: 'interview/history',
           name: 'interview-history',
           component: () => import('@/pages/interview/InterviewHistoryPage.vue'),
-          meta: { title: '面试诊断历史', subtitle: '查看历史记录，并把需要的结果加入今日卡片。' }
+          meta: { title: '面试诊断历史' }
         },
         {
           path: 'interview/detail/:id',
           name: 'interview-detail',
           component: () => import('@/pages/interview/InterviewDetailPage.vue'),
-          meta: { title: '面试详情', subtitle: '先看总分和低分题，再决定是否加入今日卡片。' }
+          meta: { title: '面试详情' }
         },
         {
           path: 'wrong',
@@ -108,19 +104,19 @@ const router = createRouter({
           path: 'community/submit',
           name: 'community-submit',
           component: () => import('@/pages/community/CommunitySubmitPage.vue'),
-          meta: { title: '发起提问', subtitle: '写清背景、现象和已尝试的方法。' }
+          meta: { title: '发起提问' }
         },
         {
           path: 'community/question/:id',
           name: 'community-question-detail',
           component: () => import('@/pages/community/CommunityQuestionDetail.vue'),
-          meta: { title: '问题详情', subtitle: '看问题、看回答，或直接参与讨论。' }
+          meta: { title: '问题详情' }
         },
         {
           path: 'community/leaderboard',
           name: 'community-leaderboard',
           component: () => import('@/pages/community/LeaderboardPage.vue'),
-          meta: { title: '社区排行榜', subtitle: '按贡献度查看社区排名。' }
+          meta: { title: '社区排行榜' }
         },
         {
           path: 'analytics',

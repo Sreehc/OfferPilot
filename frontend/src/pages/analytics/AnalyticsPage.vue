@@ -28,7 +28,7 @@
         <article v-for="signal in summarySignals" :key="signal.label" class="data-slab p-4" :class="signal.toneClass">
           <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ signal.label }}</p>
           <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ signal.value }}</p>
-          <p class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ signal.detail }}</p>
+          <p v-if="signal.detail" class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ signal.detail }}</p>
         </article>
       </div>
     </section>
@@ -36,11 +36,7 @@
     <section class="cockpit-panel p-5 sm:p-6">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div class="min-w-0">
-          <p class="section-kicker">记忆趋势</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">完成率、负债与掌握增长</h3>
-          <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-            第一主图优先展示记忆主线的推进情况，而不是面试分数变化。
-          </p>
+          <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">记忆趋势</h3>
         </div>
       </div>
 
@@ -62,14 +58,10 @@
       <article class="cockpit-panel p-5 sm:p-6">
         <div class="flex items-center justify-between gap-3">
           <div>
-            <p class="section-kicker">记忆强度</p>
-            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">复习后的稳定程度</h3>
+            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">记忆强度</h3>
           </div>
           <span class="detail-pill">2.5 初始值 / 1.3 风险线</span>
         </div>
-        <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-          记忆系数越高，表示当前掌握越稳定。
-        </p>
 
         <div v-if="efficiencyLoading" class="mt-5 flex h-[300px] items-center justify-center">
           <div class="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
@@ -99,14 +91,10 @@
       <article class="cockpit-panel p-5 sm:p-6">
         <div class="flex items-center justify-between gap-3">
           <div>
-            <p class="section-kicker">遗忘率</p>
-            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">哪一段最容易忘</h3>
+            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">遗忘率</h3>
           </div>
           <span class="detail-pill">重来次数 / 总评分</span>
         </div>
-        <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-          查看每周遗忘率和评分分布。
-        </p>
 
         <div v-if="efficiencyLoading" class="mt-5 flex h-[300px] items-center justify-center">
           <div class="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
@@ -130,11 +118,7 @@
     <section class="cockpit-panel p-5 sm:p-6">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p class="section-kicker">分类掌握度</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">各分类的记忆压力</h3>
-          <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-            看每个分类的总卡片数、已掌握数、待复习数和掌握率。
-          </p>
+          <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">分类掌握度</h3>
         </div>
       </div>
 
@@ -172,11 +156,7 @@
     <section v-if="!efficiencyLoading && hasMasteryData" class="cockpit-panel p-5 sm:p-6">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p class="section-kicker">掌握分布</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">掌握状态分布</h3>
-          <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-            查看各掌握状态的数量和占比。
-          </p>
+          <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">掌握分布</h3>
         </div>
         <span class="detail-pill">{{ totalMasteryCount }} 道题</span>
       </div>
@@ -206,11 +186,7 @@
     <section class="cockpit-panel p-5 sm:p-6">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div class="min-w-0">
-          <p class="section-kicker">辅助面试趋势</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">最近几周的面试表现变化</h3>
-          <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-            保留面试平均分与分类趋势，作为辅助判断你是否还需要做额外诊断。
-          </p>
+          <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">面试趋势</h3>
         </div>
       </div>
 
@@ -378,25 +354,25 @@ const summarySignals = computed(() => [
   {
     label: '观察周数',
     value: trendData.value.weeks.length,
-    detail: '当前趋势图覆盖的周数。',
+    detail: '',
     toneClass: '',
   },
   {
     label: '当前完成率',
     value: `${formatPercent(latestCompletionRate.value)}%`,
-    detail: '最近一个趋势窗口的完成率。',
+    detail: '',
     toneClass: 'summary-slab-cyan',
   },
   {
     label: '总复习次数',
     value: efficiencyData.value.totalReviews,
-    detail: '累计完成的复习次数。',
+    detail: '',
     toneClass: 'summary-slab-lime',
   },
   {
     label: '连续复习',
     value: `${efficiencyData.value.currentStreak} 天`,
-    detail: '连续复习天数。',
+    detail: '',
     toneClass: 'summary-slab-amber',
   },
 ])

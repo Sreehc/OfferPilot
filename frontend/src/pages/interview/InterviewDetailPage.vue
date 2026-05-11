@@ -17,7 +17,7 @@
 
     <section v-if="loading" class="paper-panel p-8 text-center">
       <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-      <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">加载面试详情...</p>
+      <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">正在加载...</p>
     </section>
 
     <section v-else-if="!detail" class="paper-panel p-8 text-center">
@@ -172,7 +172,7 @@
             <div>
               <div class="text-xs font-semibold uppercase tracking-[0.2em] text-coral">推荐复习卡片</div>
               <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                这张卡片会进入 {{ detail.interviewDeckTitle || '面试诊断卡片' }}，后续可在今日任务中继续复习。
+                会进入 {{ detail.interviewDeckTitle || '面试诊断卡片' }}。
               </p>
             </div>
             <span
@@ -196,7 +196,7 @@
               </p>
             </div>
             <div class="surface-card p-4 md:col-span-2">
-              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">解释说明</div>
+              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">解释</div>
               <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">
                 {{ record.recommendedCardExplanation || '暂无说明' }}
               </p>

@@ -99,7 +99,7 @@
                 v-else
                 icon="chat"
                 :title="sessions.length ? '没有找到相关会话' : '还没有会话'"
-                :description="sessions.length ? '换个关键词试试，或直接开始新对话。' : '新建对话后，会话会显示在这里。'"
+                :description="sessions.length ? '换个关键词试试。' : '新对话会显示在这里。'"
                 compact
                 class="session-strip__empty"
               />
@@ -160,8 +160,8 @@
                   <div v-else-if="!messages.length && !streaming" class="chat-empty-wrap">
                     <EmptyState
                       icon="chat"
-                      title="开始一次问答"
-                      description="直接输入问题，或选择知识库问答。"
+                      title="开始提问"
+                      description="输入问题即可。"
                       compact
                     />
                     <div class="prompt-suggestions">
@@ -233,7 +233,7 @@
               <footer class="composer-shell">
                 <div class="composer-shell__meta">
                   <span class="composer-hint">
-                    {{ mode === 'rag' ? '知识库问答会优先结合资料片段。' : '直接问答会直接生成回答。' }}
+                    {{ mode === 'rag' ? '会优先引用知识库。' : '直接生成回答。' }}
                   </span>
                   <span class="composer-shortcut">Enter 发送 · Shift + Enter 换行</span>
                 </div>
@@ -336,7 +336,7 @@
             v-if="!filteredSessions.length"
             icon="chat"
             :title="sessions.length ? '没有找到相关会话' : '还没有会话'"
-            :description="sessions.length ? '换个关键词试试，或直接开始新对话。' : '新建对话后，会话会显示在这里。'"
+            :description="sessions.length ? '换个关键词试试。' : '新对话会显示在这里。'"
             compact
           />
         </div>
@@ -365,7 +365,6 @@
         <div class="drawer-header">
           <div>
             <p>引用资料</p>
-            <span>当前回答关联的资料片段</span>
           </div>
           <button type="button" class="reference-close" @click="referenceDrawerVisible = false">关闭</button>
         </div>

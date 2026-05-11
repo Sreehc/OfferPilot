@@ -63,8 +63,7 @@
       <section class="cockpit-panel p-5 sm:p-6">
         <div class="forum-section-head">
           <div>
-            <p class="section-kicker">回复区</p>
-            <h3 class="mt-2 text-2xl font-semibold tracking-[-0.03em] text-ink">回复 {{ question.answers.length }}</h3>
+            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">回复 {{ question.answers.length }}</h3>
           </div>
         </div>
 
@@ -134,7 +133,7 @@
             class="empty-state-card"
             icon="chat"
             title="还没有回复"
-            description="现在就写下第一个回复。"
+            description="写下第一个回复。"
             compact
           />
         </div>
@@ -143,8 +142,7 @@
       <section class="cockpit-panel p-5 sm:p-6">
         <div class="forum-section-head">
           <div>
-            <p class="section-kicker">参与讨论</p>
-            <h3 class="mt-2 text-2xl font-semibold tracking-[-0.03em] text-ink">发表回复</h3>
+            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">写回复</h3>
           </div>
         </div>
 
@@ -153,7 +151,7 @@
             ref="answerInputRef"
             v-model="answerContent"
             rows="6"
-            placeholder="写下你的结论、补充或不同观点。"
+            placeholder="写下你的回复"
             class="answer-textarea"
           ></textarea>
 

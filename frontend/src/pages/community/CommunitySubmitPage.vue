@@ -55,12 +55,7 @@
 
           <aside class="compose-side space-y-4">
             <article class="compose-note">
-              <p class="text-sm font-semibold text-ink">提问时只保留这三点</p>
-              <ul class="mt-3 space-y-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                <li>说明你在哪个知识点、项目或面试情境里遇到这个问题。</li>
-                <li>写清你已经尝试过哪些分析，而不是只问“怎么做”。</li>
-                <li>如果有多个疑点，优先保留最关键的一个。</li>
-              </ul>
+              <p class="text-sm font-semibold text-ink">写背景、现象、已尝试内容</p>
             </article>
           </aside>
         </div>

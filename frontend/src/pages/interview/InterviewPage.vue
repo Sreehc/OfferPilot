@@ -29,7 +29,6 @@
     >
       <aside class="cockpit-panel p-4 sm:p-6">
         <div class="panel-heading">
-          <p class="section-kicker">{{ phase === 'idle' ? '面试设置' : '当前状态' }}</p>
           <h3 class="panel-heading__title">
             {{
               phase === 'idle'
@@ -41,15 +40,6 @@
                     : '继续当前流程'
             }}
           </h3>
-          <p class="panel-heading__meta">
-            {{
-              phase === 'idle'
-                ? '选择方向、题量和作答方式后即可开始。'
-                : phase === 'finished'
-                  ? '查看本场面试结果，或直接开始下一场。'
-                  : '按结论、原理、场景和权衡来组织答案。'
-            }}
-          </p>
         </div>
 
         <div v-if="phase === 'idle'" class="mt-6 space-y-4">
@@ -138,10 +128,7 @@
       <section class="cockpit-panel flex min-h-[560px] flex-col p-4 sm:p-6">
         <div v-if="phase === 'idle'" class="flex flex-1 items-center justify-center">
           <div class="max-w-md text-center">
-            <h4 class="text-2xl font-semibold text-ink">设置好方向和题量后开始</h4>
-            <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-              只保留当前题目、倒计时和结果，不在这里讲流程。
-            </p>
+            <h4 class="text-2xl font-semibold text-ink">准备好后开始</h4>
           </div>
         </div>
 
@@ -159,7 +146,6 @@
                   <h4 class="question-spotlight__title">
                     {{ currentQuestion?.questionTitle ?? '加载中...' }}
                   </h4>
-                  <p class="question-spotlight__hint">先给结论，再说明核心机制、适用场景和关键权衡。</p>
                 </div>
 
                 <div class="question-spotlight__timer">
@@ -187,14 +173,13 @@
 
           <template v-if="interviewMode !== 'voice' || !voiceAvailable">
             <div class="mt-5 flex items-center justify-between gap-3">
-              <p class="section-kicker">回答区</p>
               <span class="text-xs text-slate-400 dark:text-slate-500">`Ctrl + Enter` 快速提交</span>
             </div>
             <el-input
               v-model="answerText"
               type="textarea"
               :rows="12"
-              placeholder="按：结论 → 核心机制 → 场景权衡 → 风险补充 组织答案"
+              placeholder="先写结论，再补关键原因和权衡"
               class="interview-answer-input mt-5 flex-1"
               size="large"
               @keydown.ctrl.enter.prevent="handleSubmitAnswer"
@@ -240,17 +225,11 @@
             <div class="scoring-scan mx-auto flex h-40 w-40 items-center justify-center rounded-full">
               <div class="h-12 w-12 animate-spin rounded-full border-4 border-accent border-t-transparent"></div>
             </div>
-            <p class="section-kicker mt-8">正在评分</p>
-            <h4 class="mt-3 font-display text-4xl font-semibold leading-none text-ink">系统正在分析你的回答</h4>
-            <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">
-              准确性、完整性、结构化和深度会被纳入本题评分。
-            </p>
+            <h4 class="mt-8 font-display text-4xl font-semibold leading-none text-ink">正在评分</h4>
           </div>
         </div>
 
         <div v-else-if="phase === 'result'" class="space-y-4">
-          <p class="section-kicker">本题结果</p>
-
           <div v-if="voiceTranscript" class="data-slab p-4">
             <div class="flex items-center justify-between">
               <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">语音转录</div>
@@ -326,8 +305,6 @@
         </div>
 
         <div v-else-if="phase === 'finished'" class="space-y-4">
-          <p class="section-kicker">面试完成</p>
-
           <div class="score-card score-card-pass p-6">
             <div class="text-xs uppercase tracking-[0.24em] text-white/65">总分</div>
             <div class="mt-3 font-mono text-7xl font-semibold tracking-[-0.05em] text-white">

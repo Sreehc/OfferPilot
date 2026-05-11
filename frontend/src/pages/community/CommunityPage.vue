@@ -44,7 +44,7 @@
           <input
             v-model="keyword"
             type="text"
-            placeholder="搜索帖子标题或关键词..."
+            placeholder="搜索帖子"
             class="community-search__input"
             @keyup.enter="doSearch"
           />
@@ -113,7 +113,7 @@
           class="empty-state-card"
           icon="chat"
           title="当前版块还没有帖子"
-          description="可以换个版块看看，或者直接发起一个新问题。"
+          description="换个版块看看，或直接提问。"
         >
           <template #action>
             <RouterLink to="/community/submit" class="hard-button-primary inline-flex"> 发起提问 </RouterLink>

@@ -12,7 +12,7 @@
     <section class="cockpit-panel p-5 sm:p-6">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h3 class="text-xl font-semibold tracking-[-0.03em] text-ink sm:text-2xl">按排名查看贡献者</h3>
+          <h3 class="text-xl font-semibold tracking-[-0.03em] text-ink sm:text-2xl">贡献者排名</h3>
         </div>
         <span v-if="topEntry" class="detail-rank-pill" :class="rankBadgeClass(topEntry.rankTitle)">
           榜首：{{ topEntry.username || `用户${topEntry.userId}` }}
@@ -78,11 +78,7 @@
 
         <aside class="space-y-4">
           <article v-if="topEntry" class="cockpit-panel p-5">
-            <p class="section-kicker">榜首摘要</p>
-            <h4 class="mt-3 text-xl font-semibold text-ink">{{ topEntry.username || `用户${topEntry.userId}` }}</h4>
-            <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-              查看当前榜首用户的积分、回答数和采纳数。
-            </p>
+            <h4 class="text-xl font-semibold text-ink">{{ topEntry.username || `用户${topEntry.userId}` }}</h4>
             <div class="mt-4 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
               <article class="top-pilot-node">
                 <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">积分</p>

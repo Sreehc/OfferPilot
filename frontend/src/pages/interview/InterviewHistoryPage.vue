@@ -23,7 +23,7 @@
       <EmptyState
         icon="chart"
         title="暂无面试记录"
-        description="完成一场面试诊断后，记录会自动出现在这里。"
+        description="做完诊断后会显示在这里。"
       >
         <template #action>
           <RouterLink to="/interview" class="hard-button-primary inline-flex">
