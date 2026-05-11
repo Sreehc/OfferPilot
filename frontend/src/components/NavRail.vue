@@ -1,7 +1,5 @@
 <template>
-  <aside
-    class="relative z-[1] flex h-full min-h-0 flex-col justify-between overflow-y-auto bg-white/30 p-6 dark:bg-transparent"
-  >
+  <aside class="relative z-[1] h-full min-h-0 overflow-y-auto bg-white/30 p-6 dark:bg-transparent">
     <div class="space-y-8 pb-6">
       <section v-for="group in groups" :key="group.label" class="space-y-2">
         <p class="px-4 text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">
@@ -38,20 +36,6 @@
           </RouterLink>
         </nav>
       </section>
-    </div>
-
-    <div class="nav-rail-shortcuts hidden xl:block rounded-2xl border border-[var(--bc-line)] px-4 py-4">
-      <p class="text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">快捷键</p>
-      <div class="mt-3 space-y-2 text-xs text-slate-500 dark:text-slate-400">
-        <div class="flex items-center justify-between gap-3">
-          <span>打开搜索</span>
-          <span class="font-mono text-xs text-slate-400">/ 或 ⌘K</span>
-        </div>
-        <div class="flex items-center justify-between gap-3">
-          <span>收起侧栏</span>
-          <span class="font-mono text-xs text-slate-400">⌘B</span>
-        </div>
-      </div>
     </div>
   </aside>
 </template>

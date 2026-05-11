@@ -66,8 +66,7 @@
             <div class="mt-2 h-4 w-2/3 rounded bg-slate-100 dark:bg-slate-800"></div>
           </div>
           <div class="forum-thread__aside">
-            <div class="h-6 w-14 rounded-full bg-slate-100 dark:bg-slate-800"></div>
-            <div class="mt-4 h-10 w-16 rounded-2xl bg-slate-100 dark:bg-slate-800"></div>
+            <div class="h-16 w-16 rounded-2xl bg-slate-100 dark:bg-slate-800"></div>
           </div>
         </article>
       </div>
@@ -103,7 +102,6 @@
               <strong>{{ q.answerCount }}</strong>
               <span>回复</span>
             </div>
-            <span class="forum-thread__jump">进入讨论</span>
           </div>
         </article>
       </div>
@@ -448,7 +446,7 @@ onMounted(async () => {
 .forum-thread {
   display: grid;
   gap: 18px;
-  grid-template-columns: minmax(0, 1fr) 96px;
+  grid-template-columns: minmax(0, 1fr) 72px;
   align-items: center;
   border: 1px solid var(--bc-line);
   border-radius: 24px;
@@ -543,9 +541,9 @@ onMounted(async () => {
 }
 
 .forum-thread__aside {
-  display: grid;
-  gap: 12px;
-  justify-items: end;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .forum-thread__reply {
@@ -569,11 +567,6 @@ onMounted(async () => {
   margin-top: 6px;
   color: var(--bc-ink-secondary);
   font-size: 11px;
-}
-
-.forum-thread__jump {
-  color: var(--bc-ink-secondary);
-  font-size: 12px;
 }
 
 .question-pill {
@@ -645,9 +638,7 @@ onMounted(async () => {
   }
 
   .forum-thread__aside {
-    grid-template-columns: auto auto;
-    justify-content: space-between;
-    align-items: center;
+    justify-content: flex-start;
   }
 }
 

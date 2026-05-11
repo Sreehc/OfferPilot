@@ -13,8 +13,6 @@
       </button>
     </div>
 
-    <AppShellHeader compact />
-
     <section v-if="loading" class="paper-panel p-8 text-center">
       <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
       <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">正在加载...</p>
@@ -33,21 +31,11 @@
               <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">
                 {{ detail.direction }} 方向面试诊断
               </h3>
-              <span
-                v-if="detail.mode === 'voice'"
-                class="inline-flex items-center rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-semibold text-accent"
-              >
-                语音
-              </span>
-              <span
-                class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
-                :class="detail.cardsGenerated ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'"
-              >
-                {{ detail.cardsGenerated ? `已生成 ${detail.generatedCardCount || 0} 张复习卡片` : '未生成复习卡片' }}
-              </span>
             </div>
             <div class="mt-2 flex flex-wrap items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
+              <span>{{ detail.mode === 'voice' ? '语音面试' : '文本面试' }}</span>
               <span>{{ detail.questionCount }} 题</span>
+              <span>{{ detail.cardsGenerated ? `已生成 ${detail.generatedCardCount || 0} 张复习卡片` : '未生成复习卡片' }}</span>
               <span v-if="detail.startTime">{{ formatTime(detail.startTime) }}</span>
               <span v-if="detail.endTime">~ {{ formatTime(detail.endTime) }}</span>
             </div>
@@ -107,12 +95,6 @@
                   class="inline-flex items-center rounded-full bg-coral/10 px-2 py-0.5 text-xs font-semibold text-coral"
                 >
                   低分题
-                </span>
-                <span
-                  v-if="record.generatedCardId"
-                  class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700"
-                >
-                  已沉淀为卡片
                 </span>
               </div>
             </div>
@@ -232,7 +214,6 @@
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import AppShellHeader from '@/components/AppShellHeader.vue'
 import { activateInterviewCardsApi, generateInterviewCardsApi, interviewDetailApi } from '@/api/interview'
 import type { InterviewDetail } from '@/types/api'
 

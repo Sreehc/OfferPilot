@@ -7,8 +7,6 @@
       <span>&larr;</span> 返回社区
     </button>
 
-    <AppShellHeader compact />
-
     <section class="cockpit-panel p-5 sm:p-6">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
@@ -19,82 +17,41 @@
         </span>
       </div>
 
-      <div v-if="leaderboard.length" class="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)]">
-        <div class="space-y-4">
-          <article
-            v-for="entry in leaderboard"
-            :key="entry.userId"
-            class="rank-card"
-            :class="rankCardClass(entry.position)"
-          >
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-start">
-              <div class="rank-card__position" :class="rankClass(entry.position)">
-                {{ entry.position }}
+      <div v-if="leaderboard.length" class="mt-6 space-y-4">
+        <article
+          v-for="entry in leaderboard"
+          :key="entry.userId"
+          class="rank-card"
+          :class="rankCardClass(entry.position)"
+        >
+          <div class="flex flex-col gap-4 lg:flex-row lg:items-start">
+            <div class="rank-card__position" :class="rankClass(entry.position)">
+              {{ entry.position }}
+            </div>
+
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-lg font-semibold text-ink">{{ entry.username || `用户${entry.userId}` }}</span>
+                <span class="detail-rank-pill" :class="rankBadgeClass(entry.rankTitle)">{{ entry.rankTitle }}</span>
               </div>
 
-              <div class="min-w-0 flex-1">
-                <div class="flex flex-wrap items-center gap-2">
-                  <span class="text-lg font-semibold text-ink">{{ entry.username || `用户${entry.userId}` }}</span>
-                  <span class="detail-rank-pill" :class="rankBadgeClass(entry.rankTitle)">{{ entry.rankTitle }}</span>
-                </div>
-
-                <div class="mt-4 grid gap-3 sm:grid-cols-4">
-                  <article class="rank-metric">
-                    <p class="rank-metric__label">积分</p>
-                    <p class="rank-metric__value rank-metric__value-accent">{{ entry.communityScore }}</p>
-                  </article>
-                  <article class="rank-metric">
-                    <p class="rank-metric__label">提问</p>
-                    <p class="rank-metric__value">{{ entry.communityQuestions }}</p>
-                  </article>
-                  <article class="rank-metric">
-                    <p class="rank-metric__label">回答</p>
-                    <p class="rank-metric__value">{{ entry.communityAnswers }}</p>
-                  </article>
-                  <article class="rank-metric">
-                    <p class="rank-metric__label">采纳</p>
-                    <p class="rank-metric__value rank-metric__value-lime">{{ entry.communityAccepted }}</p>
-                  </article>
-                </div>
-              </div>
-
-              <div class="rank-card__signal">
-                <div class="rank-card__signal-row">
-                  <span>回答占比</span>
-                  <span>{{ answerRate(entry) }}</span>
-                </div>
-                <div class="rank-card__signal-row">
-                  <span>采纳率</span>
-                  <span>{{ acceptRate(entry) }}</span>
-                </div>
-                <div class="rank-card__signal-row">
-                  <span>活跃度</span>
-                  <span>{{ rankIntensity(entry.position) }}</span>
-                </div>
+              <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                <article class="rank-metric">
+                  <p class="rank-metric__label">积分</p>
+                  <p class="rank-metric__value rank-metric__value-accent">{{ entry.communityScore }}</p>
+                </article>
+                <article class="rank-metric">
+                  <p class="rank-metric__label">回答</p>
+                  <p class="rank-metric__value">{{ entry.communityAnswers }}</p>
+                </article>
+                <article class="rank-metric">
+                  <p class="rank-metric__label">采纳</p>
+                  <p class="rank-metric__value rank-metric__value-lime">{{ entry.communityAccepted }}</p>
+                </article>
               </div>
             </div>
-          </article>
-        </div>
-
-        <aside class="space-y-4">
-          <article v-if="topEntry" class="cockpit-panel p-5">
-            <h4 class="text-xl font-semibold text-ink">{{ topEntry.username || `用户${topEntry.userId}` }}</h4>
-            <div class="mt-4 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-              <article class="top-pilot-node">
-                <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">积分</p>
-                <p class="mt-2 font-mono text-2xl font-semibold text-ink">{{ topEntry.communityScore }}</p>
-              </article>
-              <article class="top-pilot-node">
-                <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">回答</p>
-                <p class="mt-2 font-mono text-2xl font-semibold text-ink">{{ topEntry.communityAnswers }}</p>
-              </article>
-              <article class="top-pilot-node">
-                <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">采纳</p>
-                <p class="mt-2 font-mono text-2xl font-semibold text-ink">{{ topEntry.communityAccepted }}</p>
-              </article>
-            </div>
-          </article>
-        </aside>
+          </div>
+        </article>
       </div>
 
       <EmptyState
@@ -111,7 +68,6 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import AppShellHeader from '@/components/AppShellHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchLeaderboardApi } from '@/api/community'
 import type { LeaderboardEntry } from '@/types/api'
@@ -133,13 +89,6 @@ function rankCardClass(position: number) {
   return ''
 }
 
-function rankIntensity(position: number) {
-  if (position === 1) return '榜首'
-  if (position <= 3) return '领先'
-  if (position <= 10) return '活跃'
-  return '持续参与'
-}
-
 function rankBadgeClass(rank: string) {
   const map: Record<string, string> = {
     '技术专家': 'rank-badge-expert',
@@ -152,17 +101,6 @@ function rankBadgeClass(rank: string) {
   return map[rank] || 'rank-badge-trainee'
 }
 
-function answerRate(entry: LeaderboardEntry) {
-  const total = entry.communityQuestions + entry.communityAnswers
-  if (total === 0) return '0%'
-  return `${Math.round((entry.communityAnswers / total) * 100)}%`
-}
-
-function acceptRate(entry: LeaderboardEntry) {
-  if (entry.communityAnswers === 0) return '0%'
-  return `${Math.round((entry.communityAccepted / entry.communityAnswers) * 100)}%`
-}
-
 onMounted(async () => {
   const { data } = await fetchLeaderboardApi(50)
   leaderboard.value = data
@@ -170,30 +108,18 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.top-pilot-card,
-.top-pilot-node,
 .rank-card,
-.rank-metric,
-.tier-card {
+.rank-metric {
   border-radius: 24px;
   border: 1px solid var(--bc-line);
   background: rgba(255, 255, 255, 0.34);
 }
 
-.dark .top-pilot-card,
-.dark .top-pilot-node,
 .dark .rank-card,
-.dark .rank-metric,
-.dark .tier-card {
+.dark .rank-metric {
   background: rgba(255, 255, 255, 0.05);
 }
 
-.top-pilot-card {
-  padding: 18px;
-}
-
-.top-pilot-node,
-.tier-card,
 .rank-metric {
   padding: 14px;
 }
@@ -255,34 +181,6 @@ onMounted(async () => {
 .rank-medal-default {
   background: rgba(140, 166, 191, 0.16);
   color: var(--bc-ink-secondary);
-}
-
-.rank-card__signal {
-  display: grid;
-  gap: 10px;
-  min-width: 180px;
-  border-radius: 20px;
-  border: 1px solid var(--bc-line);
-  background: rgba(255, 255, 255, 0.38);
-  padding: 14px;
-  font-size: 12px;
-}
-
-.dark .rank-card__signal {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.rank-card__signal-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  color: var(--bc-ink-secondary);
-}
-
-.rank-card__signal-row span:last-child {
-  color: var(--bc-ink);
-  font-weight: 600;
 }
 
 .rank-metric__label {

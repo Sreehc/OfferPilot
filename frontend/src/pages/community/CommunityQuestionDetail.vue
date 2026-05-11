@@ -7,8 +7,6 @@
       <span>&larr;</span> 返回社区
     </button>
 
-    <AppShellHeader compact />
-
     <section v-if="loading" class="cockpit-panel px-8 py-16 text-center text-slate-400">
       正在加载问题内容...
     </section>
@@ -173,7 +171,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import AppShellHeader from '@/components/AppShellHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import {
   acceptCommunityAnswerApi,

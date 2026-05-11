@@ -7,17 +7,8 @@
       <span>&larr;</span> 返回社区
     </button>
 
-    <AppShellHeader compact />
-
     <section class="cockpit-panel p-5 sm:p-6">
-      <el-form
-        ref="formRef"
-        :model="form"
-        :rules="formRules"
-        class="mt-6"
-        label-position="top"
-        @submit.prevent
-      >
+      <el-form ref="formRef" :model="form" :rules="formRules" label-position="top" @submit.prevent>
         <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div class="space-y-5">
             <el-form-item label="标题" prop="title">
@@ -31,7 +22,7 @@
                 v-model="form.title"
                 maxlength="200"
                 size="large"
-                placeholder="例如：Spring 循环依赖里三级缓存的作用为什么不能被二级缓存完全替代？"
+                placeholder="例如：Spring 循环依赖为什么要三级缓存？"
               />
             </el-form-item>
 
@@ -48,14 +39,14 @@
                 :rows="14"
                 maxlength="10000"
                 resize="none"
-                placeholder="可按“背景 / 现象 / 已尝试方案”描述问题。"
+                placeholder="按背景、现象、已尝试内容描述。"
               />
             </el-form-item>
           </div>
 
           <aside class="compose-side space-y-4">
             <article class="compose-note">
-              <p class="text-sm font-semibold text-ink">写背景、现象、已尝试内容</p>
+              <p class="text-sm font-semibold text-ink">先写背景，再写现象和已尝试内容</p>
             </article>
           </aside>
         </div>
@@ -87,7 +78,6 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { createCommunityQuestionApi } from '@/api/community'
-import AppShellHeader from '@/components/AppShellHeader.vue'
 import { useFormRules } from '@/composables/useFormRules'
 
 const router = useRouter()
