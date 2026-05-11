@@ -2,8 +2,7 @@
   <section class="cockpit-panel deck-list p-5 sm:p-6">
     <div class="deck-list__head">
       <div>
-        <p class="deck-list__kicker">Deck 列表</p>
-        <h3 class="deck-list__title">选择今天要推进的一组卡片</h3>
+        <h3 class="deck-list__title">切换当前 deck</h3>
       </div>
       <span class="deck-list__count">{{ decks.length }} 组</span>
     </div>
@@ -23,8 +22,7 @@
             </span>
           </div>
           <p>
-            {{ deck.masteredCards }} / {{ deck.totalCards }} 已掌握 · 今日待处理 {{ deck.dueCount }} 张 · 今日已评
-            {{ deck.reviewedTodayCount }} 张
+            今日待处理 {{ deck.dueCount }} 张 · 已掌握 {{ deck.masteredCards }}/{{ deck.totalCards }}
           </p>
           <div class="deck-card__bar">
             <div :style="{ width: `${progress(deck)}%` }"></div>
@@ -45,7 +43,7 @@
     </div>
 
     <div v-else class="deck-list__empty">
-      <p>还没有 deck。先从知识库选择资料生成第一组卡片。</p>
+      <p>还没有可用 deck。</p>
       <RouterLink to="/knowledge" class="hard-button-secondary">去知识库</RouterLink>
     </div>
   </section>
@@ -82,20 +80,11 @@ const progress = (deck: CardDeckSummary) => {
   gap: 14px;
 }
 
-.deck-list__kicker {
-  color: var(--bc-ink-secondary);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
 .deck-list__title {
-  margin-top: 7px;
   color: var(--bc-ink);
-  font-size: 1.3rem;
-  font-weight: 760;
-  letter-spacing: -0.045em;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
 }
 
 .deck-list__count {

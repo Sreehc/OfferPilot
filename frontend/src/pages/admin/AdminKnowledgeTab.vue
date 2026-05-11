@@ -39,7 +39,6 @@
           <div>
             <div class="font-semibold text-ink">{{ doc.title }}</div>
             <div class="mt-2 flex flex-wrap gap-2 text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-              <span>{{ doc.categoryName || '未分配分类' }}</span>
               <span>{{ doc.status === 'draft' ? '草稿' : doc.status === 'parsed' ? '已解析' : '已索引' }}</span>
               <span>{{ doc.chunkCount ?? 0 }} 个分块</span>
             </div>

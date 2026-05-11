@@ -14,31 +14,6 @@
           </p>
         </div>
 
-        <div class="auth-orbit-grid mt-8">
-          <article v-for="item in accessHighlights" :key="item.label" class="data-slab p-4" :class="item.toneClass">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ item.label }}</p>
-            <p class="mt-3 text-xl font-semibold text-ink">{{ item.title }}</p>
-            <p class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ item.detail }}</p>
-          </article>
-        </div>
-
-        <div class="mission-orbit mt-8">
-          <p class="text-sm font-semibold text-ink">登录后可继续</p>
-          <div class="mission-orbit__track">
-            <div
-              v-for="(step, index) in nextSteps"
-              :key="step.title"
-              class="mission-orbit__node"
-              :style="{ '--mission-delay': `${index * 90}ms` }"
-            >
-              <span class="mission-orbit__index">{{ step.index }}</span>
-              <div>
-                <p class="text-sm font-semibold text-ink">{{ step.title }}</p>
-                <p class="mt-1 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ step.detail }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
       </section>
 
       <section class="cockpit-panel auth-form-panel p-6 sm:p-8 md:p-10">
@@ -50,20 +25,6 @@
               输入用户名和密码即可继续。连续失败 3 次后才需要验证码。
             </p>
           </div>
-          <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ showCaptcha ? '需要验证码' : '快速进入' }}</span>
-        </div>
-
-        <div class="mt-6 grid gap-3 sm:grid-cols-2">
-          <article class="auth-stat-card">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">登录状态</p>
-            <p class="mt-2 text-lg font-semibold text-ink">{{ showCaptcha ? '加强校验中' : '常规登录' }}</p>
-            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ showCaptcha ? '请输入验证码后再继续。' : '当前无需额外验证。' }}</p>
-          </article>
-          <article class="auth-stat-card">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">登录后去向</p>
-            <p class="mt-2 text-lg font-semibold text-ink">{{ redirectLabel }}</p>
-            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">登录后会自动跳转。</p>
-          </article>
         </div>
 
         <el-form
@@ -140,17 +101,6 @@
             </div>
           </div>
         </el-form>
-
-        <div class="auth-footnote mt-8">
-          <div class="auth-footnote__item">
-            <span class="inline-flex h-2.5 w-2.5 rounded-full bg-[var(--bc-cyan)]"></span>
-            登录后可在设置里开启两步验证和设备管理。
-          </div>
-          <div class="auth-footnote__item">
-            <span class="inline-flex h-2.5 w-2.5 rounded-full bg-[var(--bc-amber)]"></span>
-            如果你是从其他页面跳转过来，成功后会自动返回。
-          </div>
-        </div>
       </section>
     </div>
   </div>
@@ -164,33 +114,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { fetchCaptchaApi, type LoginPayload } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 
-const accessHighlights = [
-  {
-    label: '继续学习',
-    title: '不中断当前任务',
-    detail: '登录成功后会回到你原本想访问的页面，不需要重新找入口。',
-    toneClass: 'auth-slab-cyan',
-  },
-  {
-    label: '统一记录',
-    title: '所有训练放在同一账号下',
-    detail: '问答、面试、错题、复习和计划都会累计到同一个学习记录里。',
-    toneClass: 'auth-slab-amber',
-  },
-  {
-    label: '账号安全',
-    title: '必要时再增加验证',
-    detail: '只有连续失败后才触发验证码，平时不会额外增加登录负担。',
-    toneClass: 'auth-slab-lime',
-  },
-]
-
-const nextSteps = [
-  { index: '01', title: '查看今天要做什么', detail: '先看首页中的主任务和待处理项。' },
-  { index: '02', title: '继续刚才的训练', detail: '如果你是从问答、面试或复习跳转过来，会直接回到原页面。' },
-  { index: '03', title: '把结果沉淀下来', detail: '继续训练后，系统会自动更新错题、复习和计划。' },
-]
-
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
@@ -202,13 +125,6 @@ const captchaKey = ref('')
 
 const showCaptcha = computed(() => failCount.value >= 3)
 const redirectTarget = computed(() => (route.query.redirect as string) || '/dashboard')
-const redirectLabel = computed(() => {
-  if (redirectTarget.value.includes('/interview')) return '面试诊断'
-  if (redirectTarget.value.includes('/review') || redirectTarget.value.includes('/wrong')) return '复习中心'
-  if (redirectTarget.value.includes('/chat')) return '智能问答'
-  return '首页概览'
-})
-
 const form = reactive({
   username: '',
   password: '',
@@ -309,79 +225,14 @@ const handleLogin = async () => {
   color: var(--bc-ink);
 }
 
-.auth-orbit-grid {
-  display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.auth-slab-cyan {
-  border-left-color: var(--bc-cyan);
-}
-
-.auth-slab-amber {
-  border-left-color: var(--bc-amber);
-}
-
-.auth-slab-coral {
-  border-left-color: var(--bc-coral);
-}
-
-.auth-slab-lime {
-  border-left-color: var(--bc-lime);
-}
-
-.mission-orbit {
-  border-radius: 28px;
-  border: 1px solid var(--bc-line);
-  background: rgba(255, 255, 255, 0.32);
-  padding: 22px;
-}
-
-.dark .mission-orbit {
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.mission-orbit__track {
-  display: grid;
-  gap: 14px;
-}
-
-.mission-orbit__node {
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
-  gap: 14px;
-  align-items: start;
-}
-
-.mission-orbit__index {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 16px;
-  background: rgba(var(--bc-accent-rgb), 0.14);
-  color: var(--bc-accent);
-  font-family: theme('fontFamily.mono');
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.auth-stat-card,
 .captcha-panel {
   border-radius: 22px;
   border: 1px solid var(--bc-line);
   background: rgba(255, 255, 255, 0.34);
 }
 
-.dark .auth-stat-card,
 .dark .captcha-panel {
   background: rgba(255, 255, 255, 0.05);
-}
-
-.auth-stat-card {
-  padding: 14px;
 }
 
 .captcha-console {
@@ -408,25 +259,6 @@ const handleLogin = async () => {
 .auth-links {
   display: flex;
   justify-content: center;
-}
-
-.auth-footnote {
-  display: grid;
-  gap: 10px;
-}
-
-.auth-footnote__item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 12px;
-  color: var(--bc-ink-secondary);
-}
-
-@media (max-width: 1024px) {
-  .auth-orbit-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 640px) {

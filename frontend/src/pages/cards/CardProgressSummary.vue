@@ -2,7 +2,6 @@
   <section class="cockpit-panel progress-summary p-5 sm:p-6">
     <div class="progress-summary__head">
       <div>
-        <p class="progress-summary__kicker">进度摘要</p>
         <h3 class="progress-summary__title">{{ title }}</h3>
       </div>
       <span class="progress-summary__rate">{{ task?.completionRate ?? stats?.completionRate ?? 0 }}%</span>
@@ -18,17 +17,17 @@
         <strong>{{ task?.todayCompletedCount ?? 0 }}</strong>
       </article>
       <article>
-        <span>明日预计复习</span>
+        <span>明日待复习</span>
         <strong>{{ task?.tomorrowDueCount ?? 0 }}</strong>
       </article>
       <article>
-        <span>今日完成率</span>
+        <span>完成率</span>
         <strong>{{ task?.completionRate ?? stats?.completionRate ?? 0 }}%</strong>
       </article>
     </div>
 
     <div v-if="task && !task.currentCard" class="progress-summary__done">
-      <p>今天这组卡片已经处理完。明天预计复习 {{ task.tomorrowDueCount }} 张。</p>
+      <p>今天这组卡片已经处理完，明天预计复习 {{ task.tomorrowDueCount }} 张。</p>
       <button type="button" class="hard-button-secondary" @click="$emit('overview')">返回任务总览</button>
     </div>
   </section>
@@ -50,7 +49,7 @@ defineEmits<{
 const title = computed(() => {
   if (!props.task) return '等待选择当前 deck'
   if (!props.task.currentCard) return '今日已完成'
-  return '当前 deck 正在推进'
+  return '当前进度'
 })
 </script>
 
@@ -62,20 +61,11 @@ const title = computed(() => {
   gap: 14px;
 }
 
-.progress-summary__kicker {
-  color: var(--bc-ink-secondary);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
 .progress-summary__title {
-  margin-top: 7px;
   color: var(--bc-ink);
-  font-size: 1.3rem;
-  font-weight: 760;
-  letter-spacing: -0.045em;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
 }
 
 .progress-summary__rate {

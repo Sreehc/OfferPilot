@@ -1,50 +1,27 @@
 <template>
   <div class="space-y-4 interview-cockpit">
-    <section class="cockpit-panel p-4 sm:p-5">
-      <div class="module-topbar">
-        <div class="module-topbar__title">
-          <span class="state-pulse" aria-hidden="true"></span>
-          <div class="module-topbar__title-row">
-            <h2 class="module-topbar__heading">面试诊断</h2>
-            <div v-if="phase === 'idle'" class="interview-status">
-              <span class="detail-pill">{{ direction }}</span>
-              <span class="detail-pill">{{ questionCount }} 题</span>
-            </div>
-            <p v-else class="module-topbar__summary">
-              {{
-                phase === 'answering'
-                  ? `第 ${currentQuestion?.currentIndex ?? '?'} 题 / 共 ${currentQuestion?.questionCount ?? '?'} 题`
-                  : phase === 'result'
-                    ? '本题结果'
-                    : phase === 'finished'
-                      ? '面试结果'
-                      : '正在评分'
-              }}
-            </p>
-          </div>
+    <AppShellHeader>
+      <template #actions>
+        <div v-if="phase === 'idle'" class="interview-status">
+          <span class="detail-pill">{{ direction }}</span>
+          <span class="detail-pill">{{ questionCount }} 题</span>
         </div>
-
-        <div class="module-topbar__center">
-          <div v-if="phase !== 'idle'" class="interview-status">
-            <span class="detail-pill">{{ direction }}</span>
-            <span class="detail-pill">
-              {{ interviewMode === 'voice' && voiceAvailable ? '语音作答' : '文字作答' }}
-            </span>
-          </div>
+        <div v-else class="interview-status">
+          <span class="detail-pill">{{ direction }}</span>
+          <span class="detail-pill">
+            {{ interviewMode === 'voice' && voiceAvailable ? '语音作答' : '文字作答' }}
+          </span>
         </div>
-
-        <div class="module-topbar__action">
-          <el-button
-            v-if="phase === 'finished'"
-            size="large"
-            class="hard-button-secondary !min-h-11 !px-5"
-            @click="handleViewDetail"
-          >
-            查看详情
-          </el-button>
-        </div>
-      </div>
-    </section>
+        <el-button
+          v-if="phase === 'finished'"
+          size="large"
+          class="hard-button-secondary !min-h-11 !px-5"
+          @click="handleViewDetail"
+        >
+          查看详情
+        </el-button>
+      </template>
+    </AppShellHeader>
 
     <section
       class="grid gap-4"
@@ -160,14 +137,10 @@
 
       <section class="cockpit-panel flex min-h-[560px] flex-col p-4 sm:p-6">
         <div v-if="phase === 'idle'" class="flex flex-1 items-center justify-center">
-          <div class="max-w-xl text-center">
-            <div class="interview-orbit mx-auto flex h-52 w-52 items-center justify-center rounded-full">
-              <div class="font-mono text-5xl font-semibold text-ink">3-5</div>
-            </div>
-            <p class="section-kicker mt-8">开始前说明</p>
-            <h4 class="mt-3 font-display text-4xl font-semibold leading-none text-ink">先做一次面试诊断</h4>
-            <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
-              诊断会帮助你发现薄弱点，低分题会自动沉淀为可复习卡片，后续可直接加入今日卡片工作台。
+          <div class="max-w-md text-center">
+            <h4 class="text-2xl font-semibold text-ink">设置好方向和题量后开始</h4>
+            <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+              只保留当前题目、倒计时和结果，不在这里讲流程。
             </p>
           </div>
         </div>
@@ -236,7 +209,6 @@
               >
                 提交答案并评分
               </el-button>
-              <span class="text-xs text-slate-400 dark:text-slate-500">提交后会立即生成评分、点评和追问</span>
             </div>
           </template>
 
@@ -440,6 +412,7 @@
 
           <div class="flex gap-3">
             <RouterLink to="/wrong" class="hard-button-secondary flex-1 text-center"> 查看错题本 </RouterLink>
+            <RouterLink to="/review" class="hard-button-secondary flex-1 text-center"> 去复习中心 </RouterLink>
             <el-button type="primary" size="large" class="action-button flex-1" @click="handleNewInterview">
               再来一场
             </el-button>
@@ -454,6 +427,7 @@
 import { ElMessage } from 'element-plus'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import AppShellHeader from '@/components/AppShellHeader.vue'
 import {
   currentQuestionApi,
   fetchVoiceStatusApi,

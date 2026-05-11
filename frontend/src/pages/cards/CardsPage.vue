@@ -1,16 +1,12 @@
 <template>
   <div class="cards-workbench space-y-5">
-    <section class="cockpit-panel cards-topbar p-4 sm:p-5">
-      <div>
-        <p class="cards-topbar__kicker">记忆工作台</p>
-        <h2>今日卡片</h2>
-      </div>
-      <div class="cards-topbar__actions">
+    <AppShellHeader>
+      <template #actions>
         <span v-if="todayTask" class="detail-pill">{{ todayTask.deckTitle }}</span>
         <span v-if="stats" class="detail-pill">{{ stats.deckCount }} 组 deck</span>
-        <RouterLink to="/knowledge" class="hard-button-secondary text-sm">知识库生成卡片</RouterLink>
-      </div>
-    </section>
+        <RouterLink to="/knowledge" class="hard-button-secondary text-sm">去知识库</RouterLink>
+      </template>
+    </AppShellHeader>
 
     <section v-if="loading" class="cockpit-panel cards-loading p-10 text-center">
       <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
@@ -20,17 +16,13 @@
     <template v-else>
       <section v-if="docId" class="cockpit-panel generate-panel p-5 sm:p-6">
         <div>
-          <p class="generate-panel__kicker">从知识库生成</p>
           <h3>{{ docTitle || `文档 #${docId}` }}</h3>
-          <p>把资料提炼成可执行的记忆任务。系统会按你选择的类型、数量、难度和复习天数生成一组卡片。</p>
+          <p>从这份资料生成一组新的卡片。</p>
         </div>
 
         <div v-if="matchedDocDeck" class="generate-panel__existing">
           <strong>这份资料已经生成过 deck：{{ matchedDocDeck.deckTitle }}</strong>
-          <p>
-            当前已有 {{ matchedDocDeck.totalCards }} 张卡片，已掌握 {{ matchedDocDeck.masteredCards }} 张。
-            按本次方向三规则，不会重复生成或追加新卡片。
-          </p>
+          <p>当前已有 {{ matchedDocDeck.totalCards }} 张卡片，已掌握 {{ matchedDocDeck.masteredCards }} 张。</p>
           <div class="generate-panel__existing-actions">
             <button
               type="button"
@@ -146,9 +138,8 @@
 
         <section v-if="!todayTask && decks.length === 0" class="cockpit-panel cards-empty p-8 sm:p-10">
           <div>
-            <p class="cards-empty__kicker">还没有当前 deck</p>
             <h3>先从知识库生成第一组卡片</h3>
-            <p>卡片页会直接展示今日待学、待复习和当前学习卡，不需要先进入其他模块。</p>
+            <p>生成后就能直接开始今天的学习。</p>
             <RouterLink to="/knowledge" class="hard-button-primary mt-6">去知识库生成卡片</RouterLink>
           </div>
         </section>
@@ -161,6 +152,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import AppShellHeader from '@/components/AppShellHeader.vue'
 import {
   activateCardDeckApi,
   fetchCardDecksApi,

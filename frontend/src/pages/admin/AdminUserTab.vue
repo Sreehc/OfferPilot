@@ -33,9 +33,6 @@
           <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">{{ row.status === 1 ? '正常' : '封禁' }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="注册时间" min-width="140">
-        <template #default="{ row }">{{ formatTime(row.createTime) }}</template>
-      </el-table-column>
       <el-table-column label="最后登录" min-width="140">
         <template #default="{ row }">{{ formatTime(row.lastLoginTime) }}</template>
       </el-table-column>
@@ -57,7 +54,6 @@
           <el-tag :type="row.role === 'ADMIN' ? 'warning' : 'info'" size="small">{{ row.role === 'ADMIN' ? '管理员' : '用户' }}</el-tag>
           <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">{{ row.status === 1 ? '正常' : '封禁' }}</el-tag>
         </div>
-        <div class="mobile-card-field"><span class="mobile-card-label">注册</span><span class="mobile-card-value">{{ formatTime(row.createTime) }}</span></div>
         <div class="mobile-card-field"><span class="mobile-card-label">最后登录</span><span class="mobile-card-value">{{ formatTime(row.lastLoginTime) }}</span></div>
         <div class="flex gap-2 mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
           <el-button size="small" @click="handleEdit(row)">编辑</el-button>

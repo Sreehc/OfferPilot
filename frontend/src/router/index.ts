@@ -3,49 +3,40 @@ import { useAuthStore } from '@/stores/auth'
 
 const pageMeta = {
   dashboard: {
-    kicker: '今日记忆任务',
-    title: '今天先完成你的卡片复习进度',
-    subtitle: '先处理今日卡片，再用问答、面试诊断和分析继续补强。'
+    title: '今天先完成今日卡片',
+    subtitle: '先把今天该学和该复习的卡片处理完。'
   },
   chat: {
-    kicker: '辅助问答',
-    title: '用资料问答补齐卡片后的疑问',
-    subtitle: '带着知识库上下文提问，快速澄清卡片里还没吃透的点。'
+    title: '问答',
+    subtitle: '直接提问，或结合知识库继续追问。'
   },
   knowledge: {
-    kicker: '知识库',
-    title: '管理会进入卡片系统的学习资料',
-    subtitle: '上传、筛选和整理资料，为今日卡片与问答提供内容来源。'
+    title: '知识库',
+    subtitle: '上传、筛选和管理会进入卡片系统的资料。'
   },
   cards: {
-    kicker: '今日卡片',
-    title: '记忆工作台',
-    subtitle: '处理今天该学和该复习的卡片，持续推进掌握度。'
+    title: '今日卡片',
+    subtitle: '处理今天该学和该复习的卡片。'
   },
   interview: {
-    kicker: '面试诊断',
-    title: '在卡片之外做一次进阶诊断',
-    subtitle: '完成限时练习，查看评分、点评和追问，验证是否真正理解。'
+    title: '面试诊断',
+    subtitle: '做一次限时练习，检查你是否真的理解。'
   },
   review: {
-    kicker: '复习中心',
-    title: '处理到期复习与积压问题',
-    subtitle: '统一完成今日复习、查看积压项，并回看所有需要巩固的题目。'
+    title: '复习中心',
+    subtitle: '先处理今天到期的复习内容。'
   },
   community: {
-    kicker: '学习社区',
-    title: '在交流中补齐盲点',
-    subtitle: '提问、讨论、互助，通过社区贡献积累积分和等级。'
+    title: '学习社区',
+    subtitle: '提问、讨论，补齐自己的盲点。'
   },
   analytics: {
-    kicker: '数据分析',
-    title: '看清你的学习节奏和问题分布',
-    subtitle: '查看学习趋势、复习情况和当前重点。'
+    title: '数据分析',
+    subtitle: '看清最近的推进状态和当前重点。'
   },
   admin: {
-    kicker: '管理后台',
-    title: '直接在站内处理内容与数据',
-    subtitle: '管理用户、内容、题库和文档。'
+    title: '管理后台',
+    subtitle: '处理用户、内容、题库和文档。'
   }
 } as const
 
@@ -92,13 +83,13 @@ const router = createRouter({
           path: 'interview/history',
           name: 'interview-history',
           component: () => import('@/pages/interview/InterviewHistoryPage.vue'),
-          meta: { kicker: '面试历史', title: '面试诊断历史', subtitle: '查看所有已完成的诊断记录与复盘。' }
+          meta: { title: '面试诊断历史', subtitle: '查看历史记录，并把需要的结果加入今日卡片。' }
         },
         {
           path: 'interview/detail/:id',
           name: 'interview-detail',
           component: () => import('@/pages/interview/InterviewDetailPage.vue'),
-          meta: { kicker: '面试详情', title: '面试详情', subtitle: '查看面试复盘和答案对比。' }
+          meta: { title: '面试详情', subtitle: '先看总分和低分题，再决定是否加入今日卡片。' }
         },
         {
           path: 'wrong',
@@ -121,19 +112,19 @@ const router = createRouter({
           path: 'community/submit',
           name: 'community-submit',
           component: () => import('@/pages/community/CommunitySubmitPage.vue'),
-          meta: { kicker: '发起提问', title: '发起提问', subtitle: '分享你的问题，获得社区帮助。' }
+          meta: { title: '发起提问', subtitle: '写清背景、现象和已尝试的方法。' }
         },
         {
           path: 'community/question/:id',
           name: 'community-question-detail',
           component: () => import('@/pages/community/CommunityQuestionDetail.vue'),
-          meta: { kicker: '问题详情', title: '问题详情', subtitle: '查看问题和回答。' }
+          meta: { title: '问题详情', subtitle: '看问题、看回答，或直接参与讨论。' }
         },
         {
           path: 'community/leaderboard',
           name: 'community-leaderboard',
           component: () => import('@/pages/community/LeaderboardPage.vue'),
-          meta: { kicker: '排行榜', title: '社区排行榜', subtitle: '查看社区贡献排名。' }
+          meta: { title: '社区排行榜', subtitle: '按贡献度查看社区排名。' }
         },
         {
           path: 'analytics',
@@ -151,7 +142,7 @@ const router = createRouter({
           path: 'settings',
           name: 'settings',
           component: () => import('@/pages/settings/SettingsPage.vue'),
-          meta: { kicker: '账户安全', title: '账户设置', subtitle: '管理设备、登录安全和数据导出。' }
+          meta: { title: '账户设置', subtitle: '管理设备、登录安全和数据导出。' }
         }
       ]
     },

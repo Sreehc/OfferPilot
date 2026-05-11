@@ -1,18 +1,7 @@
 <template>
   <div class="analytics-cockpit space-y-6">
-    <section class="cockpit-panel p-5 sm:p-6">
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div class="min-w-0 max-w-3xl">
-          <div class="flex items-center gap-3">
-            <span class="state-pulse" aria-hidden="true"></span>
-            <p class="section-kicker">记忆成长看板</p>
-          </div>
-          <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">查看最近的记忆推进状态</h2>
-          <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-            重点看今日完成、复习负债、掌握增长和遗忘风险，面试表现作为辅助参考保留在下方。
-          </p>
-        </div>
-
+    <AppShellHeader>
+      <template #actions>
         <div class="mode-switch grid grid-cols-3 gap-2">
           <button
             v-for="w in weekOptions"
@@ -25,20 +14,14 @@
             {{ w.label }}
           </button>
         </div>
-      </div>
+      </template>
+    </AppShellHeader>
 
-      <div class="mt-6 grid gap-3 md:grid-cols-3">
-        <article v-for="insight in headlineInsights" :key="insight.label" class="insight-card" :class="insight.toneClass">
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ insight.label }}</p>
-              <p class="mt-3 text-xl font-semibold text-ink">{{ insight.title }}</p>
-            </div>
-            <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ insight.badge }}</span>
-          </div>
-          <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">{{ insight.detail }}</p>
-          <p class="mt-4 text-xs font-semibold uppercase tracking-[0.18em]" :class="insight.ctaClass">{{ insight.cta }}</p>
-        </article>
+    <section class="cockpit-panel p-5 sm:p-6">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div class="min-w-0 max-w-3xl">
+          <p class="text-xl font-semibold tracking-[-0.03em] text-ink">先看完成率、复习负债和掌握增长</p>
+        </div>
       </div>
 
       <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -46,21 +29,6 @@
           <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ signal.label }}</p>
           <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ signal.value }}</p>
           <p class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ signal.detail }}</p>
-        </article>
-      </div>
-
-      <div class="mt-5 space-y-3">
-        <article v-for="lane in signalLanes" :key="lane.label" class="signal-lane">
-          <div class="flex items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
-              <span class="inline-flex h-2.5 w-2.5 rounded-full" :class="lane.dotClass"></span>
-              <div>
-                <p class="text-sm font-semibold text-ink">{{ lane.label }}</p>
-                <p class="text-xs text-slate-500 dark:text-slate-400">{{ lane.detail }}</p>
-              </div>
-            </div>
-            <span class="font-mono text-sm font-semibold text-ink">{{ lane.value }}</span>
-          </div>
         </article>
       </div>
     </section>
@@ -195,15 +163,6 @@
           </article>
         </div>
 
-        <aside class="cockpit-panel p-5">
-          <p class="section-kicker">使用方式</p>
-          <h4 class="mt-3 text-xl font-semibold text-ink">如何理解这些分类</h4>
-          <div class="mt-4 space-y-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-            <p>掌握率低、待复习高的分类，说明短期内更值得优先处理。</p>
-            <p>如果一个分类掌握率很高，可以减少额外重复训练，把精力转向新知识。</p>
-            <p>“未分类”代表当前卡片缺少可追溯分类来源。</p>
-          </div>
-        </aside>
       </div>
       <div v-else class="mt-5">
         <EmptyState icon="chart" title="暂无分类掌握度" description="先生成并复习卡片，系统才会形成分类掌握度。" compact />
@@ -241,15 +200,6 @@
           </article>
         </div>
 
-        <aside class="cockpit-panel p-5">
-          <p class="section-kicker">状态说明</p>
-          <h4 class="mt-3 text-xl font-semibold text-ink">不同状态代表什么</h4>
-          <div class="mt-4 space-y-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-            <p>“未开始”表示这些题还没进入复习。</p>
-            <p>“复习中”表示这些题还在持续巩固。</p>
-            <p>“已掌握”表示这些题已经较稳定。</p>
-          </div>
-        </aside>
       </div>
     </section>
 
@@ -300,6 +250,7 @@
 <script setup lang="ts">
 import * as echarts from 'echarts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import AppShellHeader from '@/components/AppShellHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchAbilityTrendApi, fetchEfficiencyApi, fetchLearningInsightsApi } from '@/api/analytics'
 import type { AbilityTrend, EfficiencyData, LearningInsights } from '@/types/api'
@@ -387,22 +338,6 @@ const latestCompletionRate = computed(() => {
   return data.length ? data[data.length - 1]!.value : null
 })
 
-const latestDebt = computed(() => {
-  const data = trendData.value.reviewDebtTrend
-  return data.length ? data[data.length - 1]!.value : null
-})
-
-const latestMasteredGrowth = computed(() => {
-  const data = trendData.value.masteredGrowthTrend
-  return data.length ? data[data.length - 1]!.value : null
-})
-
-const latestForgettingRate = computed(() => {
-  const data = efficiencyData.value.forgettingRateTrend
-  if (!data.length) return null
-  return +(data[data.length - 1]!.forgettingRate * 100).toFixed(1)
-})
-
 const masteryItems = computed(() => {
   const d = efficiencyData.value.masteryDistribution || {}
   const total = totalMasteryCount.value || 1
@@ -439,53 +374,6 @@ const masteryItems = computed(() => {
 
 const categoryMasteryItems = computed(() => efficiencyData.value.categoryMastery || [])
 
-const dominantContentTypeLabel = computed(() => {
-  const dist = efficiencyData.value.contentTypeDistribution || {}
-  const sorted = Object.entries(dist).sort((a, b) => b[1] - a[1])
-  const top = sorted[0]?.[0]
-  if (top === 'knowledge_card') return '知识卡片为主'
-  if (top === 'interview_card') return '面试卡片为主'
-  if (top === 'wrong_card') return '错题卡片为主'
-  return '等待数据'
-})
-
-const dominantContentTypeTone = computed(() => {
-  if (dominantContentTypeLabel.value.includes('知识')) return 'bg-[var(--bc-cyan)]'
-  if (dominantContentTypeLabel.value.includes('面试')) return 'bg-[var(--bc-coral)]'
-  if (dominantContentTypeLabel.value.includes('错题')) return 'bg-[var(--bc-amber)]'
-  return 'bg-slate-400'
-})
-
-const headlineInsights = computed(() => [
-  {
-    label: '今日完成状态',
-    title: learningInsights.value.todayCompletionStatus || '等待数据',
-    detail: '今天优先看是否完成当前卡片任务，而不是先追求更多功能模块使用。',
-    badge: latestCompletionRate.value != null && latestCompletionRate.value >= 100 ? '完成' : '进行中',
-    cta: latestCompletionRate.value != null && latestCompletionRate.value >= 100 ? '保持今天的节奏' : '优先清空今日任务',
-    ctaClass: latestCompletionRate.value != null && latestCompletionRate.value >= 100 ? 'text-[var(--bc-lime)]' : 'text-[var(--bc-cyan)]',
-    toneClass: latestCompletionRate.value != null && latestCompletionRate.value >= 100 ? 'insight-card-lime' : '',
-  },
-  {
-    label: '复习负债',
-    title: latestDebt.value == null ? '等待数据' : `${Math.round(latestDebt.value)} 项`,
-    detail: learningInsights.value.reviewDebtStatus || '关注复习积压是否持续上升。',
-    badge: latestDebt.value != null && latestDebt.value > 0 ? '优先处理' : '无积压',
-    cta: latestDebt.value != null && latestDebt.value > 0 ? '先去复习中心' : '维持当前节奏',
-    ctaClass: latestDebt.value != null && latestDebt.value > 0 ? 'text-[var(--bc-coral)]' : 'text-[var(--bc-lime)]',
-    toneClass: latestDebt.value != null && latestDebt.value > 0 ? 'insight-card-risk' : '',
-  },
-  {
-    label: '掌握增长',
-    title: latestMasteredGrowth.value == null ? '等待数据' : `${Math.round(latestMasteredGrowth.value)} 张`,
-    detail: learningInsights.value.masteryGrowthStatus || '看掌握卡片数是否在稳定增长。',
-    badge: latestMasteredGrowth.value != null && latestMasteredGrowth.value > 0 ? '增长中' : '待积累',
-    cta: latestMasteredGrowth.value != null && latestMasteredGrowth.value > 0 ? '继续巩固高频分类' : '先推进今天的复习',
-    ctaClass: latestMasteredGrowth.value != null && latestMasteredGrowth.value > 0 ? 'text-[var(--bc-lime)]' : 'text-[var(--bc-amber)]',
-    toneClass: latestMasteredGrowth.value != null && latestMasteredGrowth.value > 0 ? 'insight-card-cyan' : '',
-  },
-])
-
 const summarySignals = computed(() => [
   {
     label: '观察周数',
@@ -510,33 +398,6 @@ const summarySignals = computed(() => [
     value: `${efficiencyData.value.currentStreak} 天`,
     detail: '连续复习天数。',
     toneClass: 'summary-slab-amber',
-  },
-])
-
-const signalLanes = computed(() => [
-  {
-    label: '复习负债',
-    value: latestDebt.value == null ? '待生成' : `${Math.round(latestDebt.value)} 项`,
-    detail: '看积压是上升、下降还是归零。',
-    dotClass: latestDebt.value != null && latestDebt.value > 0 ? 'bg-[var(--bc-coral)]' : 'bg-[var(--bc-lime)]',
-  },
-  {
-    label: '遗忘风险',
-    value: latestForgettingRate.value == null ? '待生成' : `${latestForgettingRate.value}%`,
-    detail: '最近一次遗忘率快照。',
-    dotClass: latestForgettingRate.value == null ? 'bg-slate-400' : latestForgettingRate.value <= 20 ? 'bg-[var(--bc-cyan)]' : 'bg-[var(--bc-coral)]',
-  },
-  {
-    label: '内容结构',
-    value: dominantContentTypeLabel.value,
-    detail: '当前复习记录主要来自哪一类内容。',
-    dotClass: dominantContentTypeTone.value,
-  },
-  {
-    label: '面试辅助',
-    value: `${learningInsights.value.thisWeekInterviewCount || 0} 场`,
-    detail: '面试诊断作为辅助训练保留。',
-    dotClass: 'bg-[var(--bc-amber)]',
   },
 ])
 

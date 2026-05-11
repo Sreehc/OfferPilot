@@ -1,14 +1,13 @@
 <template>
   <section class="today-panel">
     <div class="today-panel__copy">
-      <p class="today-panel__kicker">今日任务</p>
-      <h2 class="today-panel__title">先完成当前 deck 的记忆任务</h2>
+      <h2 class="today-panel__title">先处理今天这组卡片</h2>
       <p class="today-panel__text">
         <template v-if="task">
-          当前推进「{{ task.deckTitle }}」，今天还有 {{ task.dueCount }} 张需要处理。
+          当前是「{{ task.deckTitle }}」，今天还有 {{ task.dueCount }} 张待处理。
         </template>
         <template v-else>
-          选择一个 deck 设为当前任务，或从知识库生成第一组卡片。
+          先从知识库生成卡片，或切换到一组已有 deck。
         </template>
       </p>
 
@@ -19,9 +18,9 @@
           :disabled="!task || !task.currentCard"
           @click="$emit('start')"
         >
-          {{ task?.currentCard ? '开始今日任务' : '今日任务已完成' }}
+          {{ task?.currentCard ? '开始学习' : '今日已完成' }}
         </button>
-        <RouterLink to="/knowledge" class="hard-button-secondary">从知识库生成卡片</RouterLink>
+        <RouterLink to="/knowledge" class="hard-button-secondary">去知识库</RouterLink>
       </div>
     </div>
 
@@ -108,30 +107,21 @@ const metrics = computed(() => {
   z-index: 1;
 }
 
-.today-panel__kicker {
-  color: var(--bc-ink-secondary);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-}
-
 .today-panel__title {
-  margin-top: 12px;
-  max-width: 680px;
+  max-width: 520px;
   color: var(--bc-ink);
-  font-size: clamp(2rem, 4vw, 4.3rem);
-  font-weight: 760;
-  letter-spacing: -0.075em;
-  line-height: 0.96;
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  line-height: 1.02;
 }
 
 .today-panel__text {
-  margin-top: 18px;
-  max-width: 38rem;
+  margin-top: 14px;
+  max-width: 30rem;
   color: rgb(100 116 139);
-  font-size: 1rem;
-  line-height: 1.8;
+  font-size: 0.95rem;
+  line-height: 1.7;
 }
 
 .today-panel__actions {

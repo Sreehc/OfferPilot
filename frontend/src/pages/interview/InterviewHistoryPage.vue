@@ -1,27 +1,16 @@
 <template>
   <div class="space-y-6">
-    <section class="paper-panel p-6">
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p class="section-kicker">面试历史</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
-            最近完成的面试诊断
-          </h3>
-          <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-            每场记录都会标记是否已沉淀为复习卡片，方便你补生成后再加入今日卡片主线。
-          </p>
-        </div>
-        <div class="flex gap-3">
-          <el-select v-model="filterDirection" clearable placeholder="按方向筛选" size="large" class="w-[160px]">
-            <el-option v-for="d in directions" :key="d" :label="d" :value="d" />
-          </el-select>
-          <el-button size="large" class="hard-button-secondary" @click="loadData">刷新</el-button>
-          <RouterLink to="/interview">
-            <el-button size="large" class="hard-button-primary">做一次诊断</el-button>
-          </RouterLink>
-        </div>
-      </div>
-    </section>
+    <AppShellHeader compact>
+      <template #actions>
+        <el-select v-model="filterDirection" clearable placeholder="按方向筛选" size="large" class="w-[160px]">
+          <el-option v-for="d in directions" :key="d" :label="d" :value="d" />
+        </el-select>
+        <el-button size="large" class="hard-button-secondary" @click="loadData">刷新</el-button>
+        <RouterLink to="/interview">
+          <el-button size="large" class="hard-button-primary">做一次诊断</el-button>
+        </RouterLink>
+      </template>
+    </AppShellHeader>
 
     <section v-if="loading" class="space-y-3">
       <article v-for="n in 3" :key="n" class="paper-panel p-5">
@@ -52,7 +41,7 @@
           class="paper-panel p-5 transition hover:ring-2 hover:ring-accent/20"
         >
           <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div class="min-w-0 cursor-pointer" @click="goToDetail(item.sessionId)">
+        <div class="min-w-0 cursor-pointer" @click="goToDetail(item.sessionId)">
               <div class="flex flex-wrap items-center gap-2">
                 <span class="hard-chip !bg-blue-100 !text-blue-700 text-xs">{{ item.direction }}</span>
                 <span class="text-xs text-slate-400 dark:text-slate-500">{{ item.questionCount }} 题</span>
@@ -63,7 +52,7 @@
                   {{ item.cardsGenerated ? `已生成 ${item.generatedCardCount || 0} 张` : '未生成卡片' }}
                 </span>
               </div>
-              <div class="mt-3 text-lg font-semibold text-ink">完成一次 {{ item.direction }} 方向诊断</div>
+              <div class="mt-3 text-lg font-semibold text-ink">{{ item.direction }} 方向诊断</div>
               <div class="mt-2 flex flex-wrap items-center gap-4 text-xs text-slate-400 dark:text-slate-500">
                 <span v-if="item.startTime">{{ formatTime(item.startTime) }}</span>
                 <span v-if="item.endTime">结束于 {{ formatTime(item.endTime) }}</span>
@@ -127,6 +116,7 @@
 import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref, watch } from 'vue'
 import EmptyState from '@/components/EmptyState.vue'
+import AppShellHeader from '@/components/AppShellHeader.vue'
 import { useRouter } from 'vue-router'
 import { activateInterviewCardsApi, fetchInterviewHistoryApi, generateInterviewCardsApi } from '@/api/interview'
 import type { InterviewHistoryItem } from '@/types/api'

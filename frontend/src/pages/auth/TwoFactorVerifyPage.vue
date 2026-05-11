@@ -14,26 +14,6 @@
           </p>
         </div>
 
-        <div class="auth-orbit-grid mt-8">
-          <article v-for="signal in verifyHighlights" :key="signal.label" class="data-slab p-4" :class="signal.toneClass">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ signal.label }}</p>
-            <p class="mt-3 text-xl font-semibold text-ink">{{ signal.title }}</p>
-            <p class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ signal.detail }}</p>
-          </article>
-        </div>
-
-        <div class="mission-orbit mt-8">
-          <p class="text-sm font-semibold text-ink">验证流程</p>
-          <div class="mission-orbit__track">
-            <div v-for="step in verifySteps" :key="step.index" class="mission-orbit__node">
-              <span class="mission-orbit__index">{{ step.index }}</span>
-              <div>
-                <p class="text-sm font-semibold text-ink">{{ step.title }}</p>
-                <p class="mt-1 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ step.detail }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
       </section>
 
       <section class="cockpit-panel auth-form-panel p-6 sm:p-8 md:p-10">
@@ -45,22 +25,6 @@
               {{ useRecovery ? '请输入恢复码完成登录。' : '请输入身份验证器里的 6 位验证码。' }}
             </p>
           </div>
-          <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ useRecovery ? '恢复码' : '验证码' }}</span>
-        </div>
-
-        <div class="mt-6 grid gap-3 sm:grid-cols-2">
-          <article class="auth-stat-card" :class="useRecovery ? 'auth-slab-coral' : 'auth-slab-cyan'">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">当前方式</p>
-            <p class="mt-2 text-lg font-semibold text-ink">{{ useRecovery ? '恢复码登录' : '身份验证器验证码' }}</p>
-            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              {{ useRecovery ? '适用于无法访问身份验证器的情况。' : '来自你的身份验证器应用。' }}
-            </p>
-          </article>
-          <article class="auth-stat-card auth-slab-amber">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">验证后去向</p>
-            <p class="mt-2 text-lg font-semibold text-ink">{{ redirectLabel }}</p>
-            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">验证后会自动跳转。</p>
-          </article>
         </div>
 
         <el-form class="mt-8" label-position="top" @submit.prevent>
@@ -93,17 +57,6 @@
           </button>
           <RouterLink class="accent-link font-semibold" to="/login">返回登录</RouterLink>
         </div>
-
-        <div class="auth-footnote mt-8">
-          <div class="auth-footnote__item">
-            <span class="inline-flex h-2.5 w-2.5 rounded-full bg-[var(--bc-cyan)]"></span>
-            恢复码通常只在身份验证器不可用时使用。
-          </div>
-          <div class="auth-footnote__item">
-            <span class="inline-flex h-2.5 w-2.5 rounded-full bg-[var(--bc-coral)]"></span>
-            如果验证已过期，返回登录页重新发起即可。
-          </div>
-        </div>
       </section>
     </div>
   </div>
@@ -116,33 +69,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { verifyTwoFactorApi } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 
-const verifyHighlights = [
-  {
-    label: '当前状态',
-    title: '只差最后一步',
-    detail: '完成这一步后就会恢复完整登录状态。',
-    toneClass: 'auth-slab-cyan',
-  },
-  {
-    label: '备用方式',
-    title: '可切换到恢复码',
-    detail: '如果暂时拿不到身份验证器，可以改用恢复码继续。',
-    toneClass: 'auth-slab-coral',
-  },
-  {
-    label: '返回路径',
-    title: '成功后自动回到原页面',
-    detail: '不会把你丢回首页，也不用重新寻找入口。',
-    toneClass: 'auth-slab-amber',
-  },
-]
-
-const verifySteps = [
-  { index: '01', title: '选择验证方式', detail: '默认使用验证码，拿不到时再切换到恢复码。' },
-  { index: '02', title: '输入并提交', detail: '系统会使用临时令牌完成最后一步校验。' },
-  { index: '03', title: '继续刚才的操作', detail: '验证通过后会直接回到你原本要访问的页面。' },
-]
-
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
@@ -153,13 +79,6 @@ const useRecovery = ref(false)
 
 const tempToken = route.query.tempToken as string
 const redirectTarget = computed(() => (route.query.redirect as string) || '/dashboard')
-const redirectLabel = computed(() => {
-  if (redirectTarget.value.includes('/interview')) return '面试诊断'
-  if (redirectTarget.value.includes('/review') || redirectTarget.value.includes('/wrong')) return '复习中心'
-  if (redirectTarget.value.includes('/chat')) return '智能问答'
-  return '首页概览'
-})
-
 const toggleMode = () => {
   useRecovery.value = !useRecovery.value
   code.value = ''
@@ -219,92 +138,4 @@ const handleVerify = async () => {
   color: var(--bc-ink);
 }
 
-.auth-orbit-grid {
-  display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.mission-orbit {
-  border-radius: 28px;
-  border: 1px solid var(--bc-line);
-  background: rgba(255, 255, 255, 0.32);
-  padding: 22px;
-}
-
-.dark .mission-orbit {
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.mission-orbit__track {
-  display: grid;
-  gap: 14px;
-}
-
-.mission-orbit__node {
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
-  gap: 14px;
-  align-items: start;
-}
-
-.mission-orbit__index {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 16px;
-  background: rgba(var(--bc-accent-rgb), 0.14);
-  color: var(--bc-accent);
-  font-family: theme('fontFamily.mono');
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.auth-stat-card {
-  border-radius: 22px;
-  border: 1px solid var(--bc-line);
-  background: rgba(255, 255, 255, 0.34);
-  padding: 14px;
-}
-
-.dark .auth-stat-card {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.auth-slab-cyan {
-  border-left-color: var(--bc-cyan);
-}
-
-.auth-slab-amber {
-  border-left-color: var(--bc-amber);
-}
-
-.auth-slab-coral {
-  border-left-color: var(--bc-coral);
-}
-
-.auth-slab-lime {
-  border-left-color: var(--bc-lime);
-}
-
-.auth-footnote {
-  display: grid;
-  gap: 10px;
-}
-
-.auth-footnote__item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 12px;
-  color: var(--bc-ink-secondary);
-}
-
-@media (max-width: 1024px) {
-  .auth-orbit-grid {
-    grid-template-columns: 1fr;
-  }
-}
 </style>

@@ -1,45 +1,38 @@
 <template>
   <div class="knowledge-cockpit space-y-5">
+    <AppShellHeader>
+      <template #actions>
+        <el-upload
+          :show-file-list="false"
+          :before-upload="handleBeforeUpload"
+          :http-request="handleUpload"
+          accept=".md,.markdown,.txt,.text,.pdf"
+        >
+          <el-button :loading="uploading" type="primary" size="large" class="action-button !min-h-11 !px-5">
+            {{ uploading ? '上传中...' : '添加文档' }}
+          </el-button>
+        </el-upload>
+      </template>
+    </AppShellHeader>
+
     <section class="cockpit-panel p-4 sm:p-5">
-      <div class="module-topbar">
-        <div class="module-topbar__title">
-          <span class="state-pulse" aria-hidden="true"></span>
-          <h2 class="module-topbar__heading">知识库</h2>
-        </div>
-
-        <div class="module-topbar__center">
-          <div class="mode-switch mode-switch-compact">
-            <button
-              type="button"
-              class="mode-switch__chip"
-              :class="{ 'mode-switch__chip-active': activeTab === 'system' }"
-              @click="switchTab('system')"
-            >
-              系统资料
-            </button>
-            <button
-              type="button"
-              class="mode-switch__chip"
-              :class="{ 'mode-switch__chip-active': activeTab === 'my' }"
-              @click="switchTab('my')"
-            >
-              我的文档
-            </button>
-          </div>
-        </div>
-
-        <div class="module-topbar__action">
-          <el-upload
-            :show-file-list="false"
-            :before-upload="handleBeforeUpload"
-            :http-request="handleUpload"
-            accept=".md,.markdown,.txt,.text,.pdf"
-          >
-            <el-button :loading="uploading" type="primary" size="large" class="action-button !min-h-11 !px-5">
-              {{ uploading ? '上传中...' : '添加文档' }}
-            </el-button>
-          </el-upload>
-        </div>
+      <div class="mode-switch mode-switch-compact">
+        <button
+          type="button"
+          class="mode-switch__chip"
+          :class="{ 'mode-switch__chip-active': activeTab === 'system' }"
+          @click="switchTab('system')"
+        >
+          系统资料
+        </button>
+        <button
+          type="button"
+          class="mode-switch__chip"
+          :class="{ 'mode-switch__chip-active': activeTab === 'my' }"
+          @click="switchTab('my')"
+        >
+          我的文档
+        </button>
       </div>
 
       <div class="upload-dropzone mt-5" @dragover.prevent @drop.prevent="handleDrop">
@@ -64,13 +57,7 @@
         <div class="upload-dropzone__aside">
           <div class="flex flex-wrap gap-2 text-[11px] text-slate-500 dark:text-slate-400">
             <span class="hard-chip">当前 {{ docs.length }} 份</span>
-            <span class="rounded-full border border-[var(--bc-line)] px-2.5 py-1">草稿 {{ statusSummary.draft }}</span>
-            <span class="rounded-full border border-[var(--bc-line)] px-2.5 py-1"
-              >已解析 {{ statusSummary.parsed }}</span
-            >
-            <span class="rounded-full border border-[var(--bc-line)] px-2.5 py-1"
-              >可检索 {{ statusSummary.indexed }}</span
-            >
+            <span class="rounded-full border border-[var(--bc-line)] px-2.5 py-1">可检索 {{ statusSummary.indexed }}</span>
           </div>
         </div>
       </div>
@@ -144,16 +131,13 @@
                 </svg>
               </div>
               <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
-                  <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ docType(doc.fileUrl).toUpperCase() }}</span>
-                  <span
-                    class="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em]"
-                    :class="statusTextClass(doc.status)"
-                  >
-                    <span class="h-2 w-2 rounded-full" :class="statusDotClass(doc.status)"></span>
-                    {{ statusLabel(doc.status) }}
-                  </span>
-                </div>
+                <span
+                  class="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em]"
+                  :class="statusTextClass(doc.status)"
+                >
+                  <span class="h-2 w-2 rounded-full" :class="statusDotClass(doc.status)"></span>
+                  {{ statusLabel(doc.status) }}
+                </span>
                 <h4 class="mt-3 line-clamp-2 text-lg font-semibold text-ink">{{ doc.title }}</h4>
               </div>
             </div>
@@ -170,39 +154,19 @@
               </template>
             </el-popconfirm>
           </div>
-
-          <div class="mt-4 flex flex-wrap gap-2 text-[11px]">
-            <span class="rounded-full border border-[var(--bc-line)] px-2.5 py-1 text-slate-500 dark:text-slate-300">
-              {{ doc.categoryName || '未分类' }}
-            </span>
-            <span class="rounded-full border border-[var(--bc-line)] px-2.5 py-1 text-slate-500 dark:text-slate-300">
-              {{ doc.chunkCount ?? 0 }} 个片段
-            </span>
-            <span class="rounded-full border border-[var(--bc-line)] px-2.5 py-1 text-slate-500 dark:text-slate-300">
-              {{ doc.cardCount ?? 0 }} 张卡片
-            </span>
-            <span class="rounded-full border border-[var(--bc-line)] px-2.5 py-1 text-slate-500 dark:text-slate-300">
-              {{ formatDate(doc.updateTime) }}
-            </span>
-          </div>
-
           <p class="mt-4 line-clamp-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
             {{ doc.summary || '暂无摘要。' }}
           </p>
 
           <div class="doc-card__memory mt-4">
             <div class="doc-card__memory-meta">
-              <p class="doc-card__memory-kicker">卡片生成</p>
               <template v-if="doc.cardDeckId">
                 <strong>{{ doc.cardDeckTitle || doc.title }}</strong>
-                <span>
-                  已生成 {{ doc.cardCount ?? 0 }} 张 · 类型 {{ formatCardTypes(doc.cardTypes) }} · 最近
-                  {{ formatDate(doc.cardGeneratedAt || doc.updateTime) }}
-                </span>
+                <span>已生成 {{ doc.cardCount ?? 0 }} 张卡片。</span>
               </template>
               <template v-else>
                 <strong>还没有生成卡片</strong>
-                <span>选择类型、数量、难度和复习天数后，直接进入记忆工作台。</span>
+                <span>可以直接从这份资料生成卡片。</span>
               </template>
             </div>
 
@@ -212,13 +176,6 @@
                 class="hard-button-primary text-sm"
               >
                 {{ doc.cardDeckId ? '进入今日卡片' : '生成卡片' }}
-              </RouterLink>
-              <RouterLink
-                v-if="doc.cardDeckId"
-                :to="{ path: '/cards', query: { docId: String(doc.id), title: doc.title } }"
-                class="hard-button-secondary text-sm"
-              >
-                查看生成配置
               </RouterLink>
             </div>
           </div>
@@ -236,17 +193,8 @@
       </div>
     </section>
 
-    <section class="cockpit-panel p-5 sm:p-6">
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div class="min-w-0">
-          <p class="section-kicker">检索测试</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">测试资料能否命中</h3>
-          <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-            输入一个问题，看看能命中哪些资料片段。
-          </p>
-        </div>
-      </div>
-
+    <details class="cockpit-panel p-5 sm:p-6">
+      <summary class="cursor-pointer text-sm font-semibold text-ink">检索测试</summary>
       <div class="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_150px]">
         <el-input v-model="searchQuery" placeholder="例如：JVM 垃圾回收器分类，以及 CMS 和 G1 的差异" size="large" />
         <el-button :loading="searching" type="primary" size="large" class="action-button !min-h-12" @click="runSearch">
@@ -285,13 +233,14 @@
           <button type="button" class="hard-button-secondary text-sm" @click="clearSearch">清空检索</button>
         </template>
       </EmptyState>
-    </section>
+    </details>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import AppShellHeader from '@/components/AppShellHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchCategoriesApi } from '@/api/category'
 import {
@@ -526,30 +475,6 @@ const highlightSnippet = (snippet: string, keywords: string[]) => {
   const escaped = keywords.map((keyword) => keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
   const pattern = new RegExp(`(${escaped.join('|')})`, 'gi')
   return snippet.replace(pattern, '<mark class="knowledge-highlight">$1</mark>')
-}
-
-const formatDate = (value?: string) => {
-  if (!value) return 'recent'
-  return new Intl.DateTimeFormat('zh-CN', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  }).format(new Date(value))
-}
-
-const formatCardTypes = (value?: string) => {
-  if (!value) return '默认'
-  const labelMap: Record<string, string> = {
-    concept: '概念卡',
-    qa: '问答卡',
-    scenario: '场景题卡',
-    compare: '易混淆点卡'
-  }
-  return value
-    .split(',')
-    .map((item) => labelMap[item] || item)
-    .join(' / ')
 }
 
 onMounted(async () => {

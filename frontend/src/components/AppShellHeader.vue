@@ -1,67 +1,63 @@
 <template>
-  <header class="cockpit-panel app-shell-header flex flex-col gap-5 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
-    <div class="min-w-0">
-      <div class="flex items-center gap-3">
-        <span class="state-pulse" aria-hidden="true"></span>
-        <p class="section-kicker">{{ kicker }}</p>
-      </div>
-      <h2 class="page-title mt-2 text-2xl sm:text-3xl">{{ title }}</h2>
-      <p class="page-subtitle mt-2 max-w-3xl text-sm">{{ subtitle }}</p>
-    </div>
-
-    <div class="flex flex-col gap-3 self-start sm:flex-row sm:items-center sm:self-auto">
-      <slot name="actions" />
-
-      <div class="hidden rounded-full border border-[var(--bc-line)] bg-white/45 px-3 py-2 text-xs text-slate-500 dark:bg-white/5 dark:text-slate-400 lg:inline-flex">
-        <span>/ 或 ⌘K 搜索</span>
+  <header class="cockpit-panel app-shell-header p-5 sm:p-6" :class="compact ? 'app-shell-header-compact' : ''">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div class="min-w-0">
+        <p v-if="resolvedKicker" class="section-kicker">{{ resolvedKicker }}</p>
+        <h1 :class="compact ? 'text-xl sm:text-2xl' : 'text-3xl sm:text-4xl'" class="page-title text-ink">
+          {{ resolvedTitle }}
+        </h1>
+        <p v-if="showResolvedSubtitle" class="page-subtitle mt-2 max-w-3xl text-sm text-slate-600 dark:text-slate-300">
+          {{ resolvedSubtitle }}
+        </p>
       </div>
 
-      <!-- Notification + Avatar dropdown -->
-      <div class="hidden sm:flex items-center gap-2">
-        <NotificationDropdown />
-        <AvatarDropdown
-          :name="name"
-          :role="role"
-          :initials="initials"
-          @logout="$emit('logout')"
-        />
-      </div>
-
-      <!-- Mobile: simplified actions -->
-      <div class="flex sm:hidden items-center gap-2">
-        <NotificationDropdown />
-        <AvatarDropdown
-          :name="name"
-          :role="role"
-          :initials="initials"
-          @logout="$emit('logout')"
-        />
+      <div v-if="$slots.actions" class="flex flex-wrap gap-3 lg:justify-end">
+        <slot name="actions" />
       </div>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
-import NotificationDropdown from './NotificationDropdown.vue'
-import AvatarDropdown from './AvatarDropdown.vue'
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 
-defineEmits<{
-  logout: []
-}>()
+const props = withDefaults(defineProps<{
+  title?: string
+  subtitle?: string
+  kicker?: string
+  compact?: boolean
+  showSubtitle?: boolean
+}>(), {
+  title: '',
+  subtitle: '',
+  kicker: '',
+  compact: false,
+  showSubtitle: true
+})
 
-defineProps<{
-  kicker: string
-  title: string
-  subtitle: string
-  name: string
-  role: string
-  initials: string
-}>()
+const route = useRoute()
+
+const routeMeta = computed(() => route.meta as { title?: string; subtitle?: string; kicker?: string })
+const resolvedTitle = computed(() => props.title || routeMeta.value.title || '')
+const resolvedSubtitle = computed(() => props.subtitle || routeMeta.value.subtitle || '')
+const resolvedKicker = computed(() => props.kicker || routeMeta.value.kicker || '')
+const showResolvedSubtitle = computed(() => props.showSubtitle && Boolean(resolvedSubtitle.value))
 </script>
 
 <style scoped>
 .app-shell-header {
   overflow: visible;
-  z-index: 20;
+}
+
+.page-title {
+  margin-top: 0;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+
+.app-shell-header-compact .page-title {
+  letter-spacing: -0.03em;
 }
 </style>

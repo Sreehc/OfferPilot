@@ -34,12 +34,12 @@
         </template>
       </el-table-column>
       <el-table-column label="IP" prop="ip" min-width="120" />
-      <el-table-column label="城市" min-width="100">
+      <el-table-column label="地点" min-width="100">
         <template #default="{ row }">
           {{ row.city || '-' }}
         </template>
       </el-table-column>
-      <el-table-column label="Device" min-width="140">
+      <el-table-column label="设备" min-width="140">
         <template #default="{ row }">
           {{ row.device || '-' }}
         </template>
@@ -51,9 +51,10 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="失败原因" min-width="140">
+      <el-table-column label="备注" min-width="140">
         <template #default="{ row }">
-          {{ row.failReason || '-' }}
+          <span v-if="row.status !== 1 && row.failReason" class="text-xs text-red-500">{{ row.failReason }}</span>
+          <span v-else>-</span>
         </template>
       </el-table-column>
     </el-table>
@@ -66,8 +67,8 @@
         </div>
         <div class="mobile-card-field"><span class="mobile-card-label">时间</span><span class="mobile-card-value">{{ formatTime(row.createTime) }}</span></div>
         <div class="mobile-card-field"><span class="mobile-card-label">IP</span><span class="mobile-card-value">{{ row.ip || '-' }}</span></div>
-        <div class="mobile-card-field"><span class="mobile-card-label">城市</span><span class="mobile-card-value">{{ row.city || '-' }}</span></div>
-        <div class="mobile-card-field"><span class="mobile-card-label">Device</span><span class="mobile-card-value">{{ row.device || '-' }}</span></div>
+        <div class="mobile-card-field"><span class="mobile-card-label">地点</span><span class="mobile-card-value">{{ row.city || '-' }}</span></div>
+        <div class="mobile-card-field"><span class="mobile-card-label">设备</span><span class="mobile-card-value">{{ row.device || '-' }}</span></div>
         <div v-if="row.failReason" class="mobile-card-field"><span class="mobile-card-label">原因</span><span class="mobile-card-value text-red-500">{{ row.failReason }}</span></div>
       </div>
     </div>

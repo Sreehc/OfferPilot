@@ -56,7 +56,6 @@
               <span>{{ item.categoryName }}</span>
               <span>{{ item.difficulty === 'easy' ? '简单' : item.difficulty === 'medium' ? '中等' : '困难' }}</span>
             </div>
-            <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ item.standardAnswer || '暂无标准答案' }}</p>
           </div>
           <div class="flex shrink-0 gap-2">
             <button type="button" class="accent-link text-sm font-semibold" @click="emit('edit', item)">编辑</button>

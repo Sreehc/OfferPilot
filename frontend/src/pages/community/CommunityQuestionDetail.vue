@@ -7,6 +7,8 @@
       <span>&larr;</span> 返回社区
     </button>
 
+    <AppShellHeader compact />
+
     <section v-if="loading" class="cockpit-panel px-8 py-16 text-center text-slate-400">
       正在加载问题内容...
     </section>
@@ -25,9 +27,15 @@
 
           <div class="forum-post__meta">
             <span>{{ question.authorName || '匿名用户' }}</span>
-            <span v-if="question.authorRank" class="detail-pill detail-pill-accent">{{ question.authorRank }}</span>
             <span>{{ formatTime(question.createdAt) }}</span>
             <span>{{ question.answers.length }} 条回复</span>
+          </div>
+
+          <div class="forum-post__content">
+            {{ question.content }}
+          </div>
+
+          <div class="forum-post__actions">
             <button
               type="button"
               class="forum-inline-vote"
@@ -39,13 +47,6 @@
               </svg>
               <span>{{ question.upvoteCount }}</span>
             </button>
-          </div>
-
-          <div class="forum-post__content">
-            {{ question.content }}
-          </div>
-
-          <div class="forum-post__actions">
             <button type="button" class="hard-button-primary" @click="focusAnswerComposer">写回复</button>
             <button
               v-if="isAuthor"
@@ -174,6 +175,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import AppShellHeader from '@/components/AppShellHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import {
   acceptCommunityAnswerApi,

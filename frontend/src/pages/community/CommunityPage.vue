@@ -1,12 +1,15 @@
 <template>
   <div class="community-forum space-y-6">
+    <AppShellHeader>
+      <template #actions>
+        <button class="hard-button-primary forum-header-bar__action text-sm" @click="$router.push('/community/submit')">
+          发起提问
+        </button>
+      </template>
+    </AppShellHeader>
+
     <section class="forum-hero cockpit-panel p-4 sm:p-5">
       <div class="forum-header-bar">
-        <div class="forum-header-bar__title">
-          <span class="state-pulse" aria-hidden="true"></span>
-          <h2 class="forum-header-bar__heading">社区讨论区</h2>
-        </div>
-
         <div class="forum-header-bar__tabs">
           <button
             v-for="board in boardOptions"
@@ -19,10 +22,6 @@
             {{ board.name }}
           </button>
         </div>
-
-        <button class="hard-button-primary forum-header-bar__action text-sm" @click="$router.push('/community/submit')">
-          发起提问
-        </button>
       </div>
     </section>
 
@@ -141,6 +140,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { fetchCategoriesApi } from '@/api/category'
 import { fetchCommunityQuestionsApi } from '@/api/community'
+import AppShellHeader from '@/components/AppShellHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import type { CategoryItem, CommunityQuestion } from '@/types/api'
 

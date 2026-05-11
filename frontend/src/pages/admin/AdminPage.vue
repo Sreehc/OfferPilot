@@ -1,28 +1,7 @@
 <template>
   <div class="space-y-6">
-    <section class="cockpit-panel p-5 sm:p-6">
-      <div class="module-topbar">
-        <div class="module-topbar__title">
-          <span class="state-pulse" aria-hidden="true"></span>
-          <h2 class="module-topbar__heading">管理后台</h2>
-        </div>
-
-        <div class="module-topbar__center">
-          <div class="admin-tab-pills" role="tablist" aria-label="管理模块">
-            <button
-              v-for="tab in tabOptions"
-              :key="tab.name"
-              type="button"
-              class="admin-tab-pill"
-              :class="{ 'admin-tab-pill-active': activeTab === tab.name }"
-              @click="activeTab = tab.name"
-            >
-              {{ tab.label }}
-            </button>
-          </div>
-        </div>
-
-        <div class="module-topbar__action">
+    <AppShellHeader>
+      <template #actions>
           <el-button
             :loading="exportingQuestions"
             size="large"
@@ -39,18 +18,11 @@
           >
             导出用户
           </el-button>
-        </div>
-      </div>
-    </section>
+      </template>
+    </AppShellHeader>
 
     <section class="cockpit-panel p-5 sm:p-6">
-      <div class="admin-panel-heading">
-        <div>
-          <h3 class="admin-panel-heading__title">{{ currentTabMeta.title }}</h3>
-        </div>
-      </div>
-
-      <el-tabs v-model="activeTab" class="admin-tabs mt-6">
+      <el-tabs v-model="activeTab" class="admin-tabs">
         <el-tab-pane label="系统概览" name="overview">
           <AdminOverviewTab />
         </el-tab-pane>
@@ -131,6 +103,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import AppShellHeader from '@/components/AppShellHeader.vue'
 import AdminOverviewTab from './AdminOverviewTab.vue'
 import AdminUserTab from './AdminUserTab.vue'
 import AdminContentReviewTab from './AdminContentReviewTab.vue'
@@ -182,28 +155,6 @@ const builtInSeeds = [
   { seedKey: 'jvm-interview-handbook', title: 'JVM 面试手册', summary: '内存区域、GC、类加载。' },
   { seedKey: 'mysql-high-frequency', title: 'MySQL 高频题', summary: '索引、事务、锁与执行计划。' }
 ]
-
-const tabMeta = {
-  overview: { title: '系统概览', description: '查看核心指标和近 30 天趋势。' },
-  users: { title: '用户管理', description: '搜索用户并处理角色、状态和详情。' },
-  contentReview: { title: '内容审核', description: '按提交时间扫描待审核内容，快速通过或拒绝。' },
-  category: { title: '分类管理', description: '左侧编辑，右侧查看现有分类列表。' },
-  question: { title: '题库管理', description: '筛选题目并进行编辑、删除或导入。' },
-  knowledge: { title: '文档管理', description: '筛选文档并执行导入、重切分和重建索引。' },
-  loginLogs: { title: '登录日志', description: '按用户名、时间和状态排查后台登录情况。' },
-} as const
-
-const tabOptions = [
-  { name: 'overview', label: '概览' },
-  { name: 'users', label: '用户' },
-  { name: 'contentReview', label: '审核' },
-  { name: 'category', label: '分类' },
-  { name: 'question', label: '题库' },
-  { name: 'knowledge', label: '文档' },
-  { name: 'loginLogs', label: '日志' },
-] as const
-
-const currentTabMeta = computed(() => tabMeta[activeTab.value as keyof typeof tabMeta] ?? tabMeta.overview)
 
 const loadCategories = async () => { const r = await fetchCategoriesApi(); categories.value = r.data }
 const loadQuestions = async () => { questionLoading.value = true; try { const r = await fetchQuestionsApi({ categoryId: questionFilter.categoryId, difficulty: questionFilter.difficulty, keyword: questionFilter.keyword || undefined, pageNum: questionPage.value, pageSize: questionPageSize.value }); questions.value = r.data.records; questionTotal.value = r.data.total; questionTotalPages.value = r.data.totalPages } catch { ElMessage.error('题库加载失败') } finally { questionLoading.value = false } }
@@ -287,13 +238,6 @@ onMounted(async () => { await loadCategories(); await Promise.all([loadQuestions
   line-height: 1.2;
 }
 
-.module-topbar__center {
-  display: flex;
-  justify-content: center;
-  min-width: 0;
-  flex: 1;
-}
-
 .module-topbar__action {
   display: flex;
   align-items: center;
@@ -302,42 +246,12 @@ onMounted(async () => { await loadCategories(); await Promise.all([loadQuestions
   justify-content: flex-end;
 }
 
-.admin-tab-pills {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.4rem;
-  border-radius: 999px;
-  background: rgba(241, 245, 249, 0.88);
-  padding: 0.25rem;
-}
-
-.admin-tab-pill {
-  border-radius: 999px;
-  padding: 0.68rem 0.95rem;
-  color: rgb(71 85 105);
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1;
-  transition: all 160ms var(--ease-hard);
-}
-
-.admin-tab-pill-active {
-  background: #fff;
-  color: var(--bc-ink);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
-}
-
 .admin-panel-heading__title {
   color: var(--bc-ink);
   font-size: 1.5rem;
   font-weight: 700;
   line-height: 1.15;
   letter-spacing: -0.03em;
-}
-
-:deep(.admin-tabs > .el-tabs__header) {
-  display: none;
 }
 
 :deep(.admin-tabs .el-tabs__nav-wrap::after) {
@@ -364,12 +278,7 @@ onMounted(async () => { await loadCategories(); await Promise.all([loadQuestions
     align-items: stretch;
   }
 
-  .module-topbar__center,
   .module-topbar__action {
-    justify-content: flex-start;
-  }
-
-  .admin-tab-pills {
     justify-content: flex-start;
   }
 }

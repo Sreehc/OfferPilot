@@ -1,41 +1,31 @@
 <template>
   <div class="repair-workbench space-y-6">
+    <AppShellHeader>
+      <template #actions>
+        <button
+          type="button"
+          class="hard-button-primary"
+          :disabled="!reviewItems.length"
+          @click="startReview"
+        >
+          {{ started ? '继续复习' : '开始复习' }}
+        </button>
+      </template>
+    </AppShellHeader>
+
     <section class="cockpit-panel p-4 sm:p-5">
-      <div class="module-topbar">
-        <div class="module-topbar__title">
-          <span class="state-pulse" aria-hidden="true"></span>
-          <div>
-            <p class="section-kicker">统一复习</p>
-            <h2 class="module-topbar__heading">复习中心</h2>
-          </div>
-        </div>
-
-        <div class="module-topbar__center">
-          <div class="repair-filter-row">
-            <button
-              v-for="filter in contentFilters"
-              :key="filter.value"
-              type="button"
-              class="repair-filter-chip"
-              :class="{ 'repair-filter-chip-active': selectedContentType === filter.value }"
-              @click="changeContentType(filter.value)"
-            >
-              {{ filter.label }}
-              <span class="repair-filter-chip__count">{{ contentCount(filter.value) }}</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="module-topbar__action">
-          <button
-            type="button"
-            class="hard-button-primary"
-            :disabled="!reviewItems.length"
-            @click="startReview"
-          >
-            {{ started ? '继续复习' : '开始复习' }}
-          </button>
-        </div>
+      <div class="repair-filter-row">
+        <button
+          v-for="filter in contentFilters"
+          :key="filter.value"
+          type="button"
+          class="repair-filter-chip"
+          :class="{ 'repair-filter-chip-active': selectedContentType === filter.value }"
+          @click="changeContentType(filter.value)"
+        >
+          {{ filter.label }}
+          <span class="repair-filter-chip__count">{{ contentCount(filter.value) }}</span>
+        </button>
       </div>
     </section>
 
@@ -46,31 +36,14 @@
 
     <template v-else>
       <section class="cockpit-panel p-5 sm:p-6">
-        <div class="review-launch">
-          <div class="review-launch__head">
-            <div>
-              <p class="section-kicker">今日统一队列</p>
-              <h3 class="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">
-                {{ heroTitle }}
-              </h3>
-              <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                {{ heroDescription }}
-              </p>
-            </div>
+          <div class="review-launch">
+            <div class="review-launch__head">
+            <p class="text-xl font-semibold tracking-[-0.03em] text-ink">{{ heroTitle }}</p>
             <div class="review-launch__signals">
               <span class="detail-pill">待复习 {{ stats?.todayPending ?? reviewData?.totalPending ?? 0 }}</span>
               <span class="detail-pill">逾期 {{ stats?.overdueCount ?? reviewData?.overdueCount ?? 0 }}</span>
               <span class="detail-pill">连续 {{ stats?.currentStreak ?? reviewData?.currentStreak ?? 0 }} 天</span>
-              <span class="detail-pill">累计 {{ stats?.totalReviews ?? 0 }} 次</span>
             </div>
-          </div>
-
-          <div class="review-launch__stats">
-            <article v-for="metric in summaryMetrics" :key="metric.label" class="review-launch__metric">
-              <span>{{ metric.label }}</span>
-              <strong>{{ metric.value }}</strong>
-              <small>{{ metric.hint }}</small>
-            </article>
           </div>
 
           <div class="mt-6 flex flex-wrap gap-3">
@@ -238,20 +211,6 @@
                 {{ masteryLabel(item.masteryLevel) }}
               </span>
             </div>
-
-            <div class="repair-card__answer mt-4">
-              <div class="repair-card__answer-label">答案摘要</div>
-              <p class="mt-2 text-sm leading-7 text-slate-700 dark:text-slate-200">
-                {{ item.answer || '暂无标准答案。' }}
-              </p>
-            </div>
-
-            <div v-if="item.explanation" class="mt-4">
-              <div class="repair-card__reason-label">{{ item.contentType === 'knowledge_card' ? '解释说明' : '错误原因' }}</div>
-              <p class="mt-2 text-sm leading-7 text-slate-700 dark:text-slate-200">
-                {{ item.explanation }}
-              </p>
-            </div>
           </article>
         </div>
       </section>
@@ -277,6 +236,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
+import AppShellHeader from '@/components/AppShellHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchReviewStatsApi, fetchReviewTodayApi, submitReviewRateApi } from '@/api/review'
 import type { ReviewContentType, ReviewStats, ReviewTodayData, UnifiedReviewItem } from '@/types/api'
@@ -311,42 +271,6 @@ const heroTitle = computed(() => {
   }
   return `${reviewItems.value.length} 项记忆任务等待处理`
 })
-
-const heroDescription = computed(() => {
-  if (selectedContentType.value === 'knowledge_card') {
-    return '优先处理已到期的知识卡片，把来源资料里的关键知识点巩固下来。'
-  }
-  if (selectedContentType.value === 'wrong_card') {
-    return '集中修复错题卡片，把已经暴露出的薄弱点重新打牢。'
-  }
-  if (selectedContentType.value === 'interview_card') {
-    return '这里展示来自面试低分题、并已沉淀进错题本的复习项。'
-  }
-  return '统一处理知识卡片、错题卡片和来自面试的复习项，不再分散在多个模块里。'
-})
-
-const summaryMetrics = computed(() => [
-  {
-    label: '今日待复习',
-    value: `${stats.value?.todayPending ?? reviewData.value?.totalPending ?? 0}`,
-    hint: '当前筛选下的待处理数量'
-  },
-  {
-    label: '今日已完成',
-    value: `${stats.value?.todayCompleted ?? reviewData.value?.todayCompleted ?? 0}`,
-    hint: '今天已经提交评分的总次数'
-  },
-  {
-    label: '逾期负债',
-    value: `${stats.value?.overdueCount ?? reviewData.value?.overdueCount ?? 0}`,
-    hint: '优先清空逾期项目'
-  },
-  {
-    label: '连续天数',
-    value: `${stats.value?.currentStreak ?? reviewData.value?.currentStreak ?? 0} 天`,
-    hint: '按统一复习记录计算'
-  }
-])
 
 const ratingButtons = [
   { rating: 1 as const, label: '重来', symbol: '↺', class: 'border-coral/30 bg-coral/10 text-coral hover:bg-coral/15' },

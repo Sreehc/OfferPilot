@@ -13,6 +13,8 @@
       </button>
     </div>
 
+    <AppShellHeader compact />
+
     <section v-if="loading" class="paper-panel p-8 text-center">
       <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
       <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">加载面试详情...</p>
@@ -27,7 +29,6 @@
       <section class="paper-panel p-6">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p class="section-kicker">总览</p>
             <div class="mt-3 flex flex-wrap items-center gap-3">
               <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">
                 {{ detail.direction }} 方向面试诊断
@@ -50,9 +51,6 @@
               <span v-if="detail.startTime">{{ formatTime(detail.startTime) }}</span>
               <span v-if="detail.endTime">~ {{ formatTime(detail.endTime) }}</span>
             </div>
-            <p class="mt-4 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-              本页会把低分题整理为推荐复习卡片。生成后不会抢占你当前的 deck，只有手动加入今日卡片时才会切换。
-            </p>
           </div>
           <div class="flex flex-col gap-3 lg:items-end">
             <div
@@ -91,23 +89,8 @@
         </div>
       </section>
 
-      <section class="paper-panel p-6">
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p class="section-kicker">推荐复习卡片</p>
-            <h4 class="mt-2 text-xl font-semibold text-ink">优先处理本场低分题</h4>
-            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              每道低分题都预先整理成“正面问题、背面答案、解释说明、追问点”的卡片结构，方便直接进入记忆主线。
-            </p>
-          </div>
-          <RouterLink to="/interview" class="text-sm font-semibold text-accent hover:underline">
-            再做一次诊断
-          </RouterLink>
-        </div>
-      </section>
-
       <section
-        v-for="(record, index) in detail.records"
+        v-for="(record, index) in sortedRecords"
         :key="record.questionId"
         class="paper-panel overflow-hidden"
       >
@@ -132,9 +115,6 @@
                   已沉淀为卡片
                 </span>
               </div>
-              <p v-if="record.isLowScore" class="mt-1 text-xs text-slate-400 dark:text-slate-500">
-                这道题会优先进入面试诊断卡片 deck，适合后续反复复盘。
-              </p>
             </div>
           </div>
           <span
@@ -236,14 +216,6 @@
         </div>
       </section>
 
-      <section class="paper-panel p-6">
-        <p class="section-kicker">下一步</p>
-        <h4 class="mt-2 text-xl font-semibold text-ink">把低分题沉淀进记忆主线</h4>
-        <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-          先生成复习卡片，再手动加入今日卡片，不会打断你当前正在推进的其他 deck。
-        </p>
-      </section>
-
       <section class="flex gap-3">
         <RouterLink to="/interview/history" class="hard-button-secondary flex-1 text-center">
           查看历史
@@ -258,8 +230,9 @@
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import AppShellHeader from '@/components/AppShellHeader.vue'
 import { activateInterviewCardsApi, generateInterviewCardsApi, interviewDetailApi } from '@/api/interview'
 import type { InterviewDetail } from '@/types/api'
 
@@ -270,6 +243,10 @@ const detail = ref<InterviewDetail | null>(null)
 const loading = ref(true)
 const generating = ref(false)
 const activating = ref(false)
+const sortedRecords = computed(() => {
+  if (!detail.value?.records) return []
+  return [...detail.value.records].sort((a, b) => Number(b.isLowScore) - Number(a.isLowScore))
+})
 
 const formatScore = (score: number | undefined | null): string => {
   if (score == null) return '-'

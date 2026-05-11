@@ -1,12 +1,6 @@
 <template>
   <div class="space-y-6">
-    <section class="paper-panel p-4 sm:p-6">
-      <p class="section-kicker">两步验证</p>
-      <h3 class="mt-4 text-xl sm:text-3xl font-semibold tracking-[-0.03em] text-ink">按步骤完成两步验证</h3>
-      <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
-        使用身份验证器应用扫描二维码，输入 6 位验证码完成设置。
-      </p>
-    </section>
+    <AppShellHeader compact title="两步验证设置" subtitle="扫描二维码并输入验证码完成设置。" />
 
     <section v-if="step === 1" class="paper-panel p-4 sm:p-6">
       <h4 class="text-lg font-semibold text-ink">第 1 步：扫描二维码</h4>
@@ -91,6 +85,7 @@
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 import { enableTwoFactorApi, setupTwoFactorApi } from '@/api/auth'
+import AppShellHeader from '@/components/AppShellHeader.vue'
 import type { TwoFactorSetup } from '@/types/api'
 
 defineEmits<{ done: [] }>()

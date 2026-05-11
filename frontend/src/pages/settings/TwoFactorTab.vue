@@ -6,14 +6,9 @@
     </div>
 
     <template v-else>
-      <div v-if="status?.enabled" class="space-y-4">
-        <div>
-          <h4 class="text-lg font-semibold text-ink">两步验证已开启</h4>
-          <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            登录时需要额外输入验证码，安全性更高。
-          </p>
-        </div>
+      <AppShellHeader compact title="两步验证" :subtitle="status?.enabled ? '当前已开启。' : '建议启用，为账号增加额外校验。'" />
 
+      <div v-if="status?.enabled" class="space-y-4">
         <div class="flex items-center gap-3 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 p-4">
           <div class="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 dark:bg-green-800/40">
             <svg class="h-4 w-4 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -54,27 +49,6 @@
       </div>
 
       <div v-else>
-        <div>
-          <h4 class="text-lg font-semibold text-ink">两步验证未开启</h4>
-          <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            建议尽快启用，为账号增加一道额外校验。
-          </p>
-        </div>
-
-        <div class="flex items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-4">
-          <div class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
-            <svg class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-          </div>
-          <div>
-            <p class="font-semibold text-ink">两步验证未启用</p>
-            <p class="text-sm text-slate-500 dark:text-slate-400">
-              启用后，登录时需要输入身份验证器应用中的验证码。
-            </p>
-          </div>
-        </div>
-
         <template v-if="!showSetup">
           <el-button type="primary" size="large" class="action-button mt-4" @click="showSetup = true">
             启用两步验证
@@ -93,6 +67,7 @@
 import { ElMessage } from 'element-plus'
 import { onMounted, ref } from 'vue'
 import { disableTwoFactorApi, fetchTwoFactorStatusApi } from '@/api/auth'
+import AppShellHeader from '@/components/AppShellHeader.vue'
 import type { TwoFactorStatus } from '@/types/api'
 import TwoFactorSetupPage from './TwoFactorSetupPage.vue'
 

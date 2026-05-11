@@ -1,18 +1,13 @@
 <template>
   <div class="space-y-6">
+    <AppShellHeader compact title="设备管理" subtitle="发现陌生设备可直接撤销。">
+      <template #actions>
+        <div class="text-sm text-slate-500 dark:text-slate-400">当前 {{ devices.length }} 台</div>
+      </template>
+    </AppShellHeader>
+
     <section class="paper-panel p-4 sm:p-6">
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p class="section-kicker">设备管理</p>
-          <h3 class="mt-4 text-xl sm:text-3xl font-semibold tracking-[-0.03em] text-ink">查看并撤销已登录设备</h3>
-          <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
-            如果发现陌生设备或不再使用的设备，直接撤销即可。当前设备不能被撤销。
-          </p>
-        </div>
-        <div class="flex flex-wrap items-center gap-3">
-          <div class="text-sm text-slate-500 dark:text-slate-400">
-          共 <span class="font-semibold text-ink">{{ devices.length }}</span> 台设备登录中
-          </div>
+      <div class="flex flex-wrap items-center justify-end gap-3">
           <el-button :loading="loading" type="primary" size="large" class="action-button" @click="loadDevices">
             刷新
           </el-button>
@@ -25,11 +20,10 @@
           >
             <template #reference>
               <el-button :loading="revokingAll" size="large" type="danger" plain>
-                撤销其他设备
-              </el-button>
-            </template>
-          </el-popconfirm>
-        </div>
+              撤销其他设备
+            </el-button>
+          </template>
+        </el-popconfirm>
       </div>
     </section>
 
@@ -112,6 +106,7 @@
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, ref } from 'vue'
+import AppShellHeader from '@/components/AppShellHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchDevicesApi, revokeDeviceApi, revokeAllDevicesApi } from '@/api/auth'
 import { localizeDeviceName } from '@/utils/device'

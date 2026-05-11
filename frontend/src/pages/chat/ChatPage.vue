@@ -1,33 +1,26 @@
 <template>
   <div class="chat-page">
-    <section class="cockpit-panel chat-page__topbar p-4 sm:p-5">
-      <div class="module-topbar">
-        <div class="module-topbar__title">
-          <span class="state-pulse" aria-hidden="true"></span>
-          <div class="module-topbar__title-group">
-            <h2 class="module-topbar__heading">问答</h2>
-            <div class="mode-toggle mode-toggle-page" role="tablist" aria-label="问答模式">
-              <button
-                type="button"
-                class="mode-toggle__item"
-                :class="{ 'mode-toggle__item-active': mode === 'rag' }"
-                @click="mode = 'rag'"
-              >
-                知识库问答
-              </button>
-              <button
-                type="button"
-                class="mode-toggle__item"
-                :class="{ 'mode-toggle__item-active': mode === 'chat' }"
-                @click="mode = 'chat'"
-              >
-                直接问答
-              </button>
-            </div>
-          </div>
+    <AppShellHeader>
+      <template #actions>
+        <div class="mode-toggle mode-toggle-page" role="tablist" aria-label="问答模式">
+          <button
+            type="button"
+            class="mode-toggle__item"
+            :class="{ 'mode-toggle__item-active': mode === 'rag' }"
+            @click="mode = 'rag'"
+          >
+            知识库问答
+          </button>
+          <button
+            type="button"
+            class="mode-toggle__item"
+            :class="{ 'mode-toggle__item-active': mode === 'chat' }"
+            @click="mode = 'chat'"
+          >
+            直接问答
+          </button>
         </div>
-
-        <div class="module-topbar__action">
+        <div class="flex flex-wrap gap-3">
           <button type="button" class="session-toggle" @click="toggleSessionPanel">
             <span class="session-toggle__icon" aria-hidden="true">
               <svg v-if="desktopSessionVisible && isDesktopViewport" viewBox="0 0 24 24" fill="none">
@@ -39,20 +32,10 @@
             </span>
             <span>会话</span>
           </button>
-
-          <button
-            v-if="mode === 'rag' && hasFocusedReferences"
-            type="button"
-            class="topbar-secondary"
-            @click="openReferences"
-          >
-            引用
-          </button>
-
           <button type="button" class="topbar-primary" @click="startNewSession">新对话</button>
         </div>
-      </div>
-    </section>
+      </template>
+    </AppShellHeader>
 
     <div class="chat-shell">
       <section class="chat-main panel-surface">
@@ -143,11 +126,8 @@
                     {{ mode === 'rag' ? '知识库问答' : '直接问答' }}
                   </span>
                 </div>
-                <p class="conversation-bar__meta">
-                  <span v-if="activeSession"
-                    >{{ formatSessionTime(activeSession.lastMessageTime || activeSession.updateTime) }} ·
-                  </span>
-                  {{ mode === 'rag' ? '将优先结合资料回答' : '直接生成回答' }}
+                <p v-if="activeSession" class="conversation-bar__meta">
+                  {{ formatSessionTime(activeSession.lastMessageTime || activeSession.updateTime) }}
                 </p>
               </div>
 
@@ -302,8 +282,7 @@
       <div class="drawer-shell drawer-shell-sessions">
         <div class="drawer-header">
           <div>
-            <p>会话中心</p>
-            <span>搜索、筛选并切换当前会话</span>
+            <p>会话列表</p>
           </div>
           <button type="button" class="reference-close" @click="sessionDrawerVisible = false">关闭</button>
         </div>
@@ -419,6 +398,7 @@ import { ElMessage } from 'element-plus'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import AppShellHeader from '@/components/AppShellHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { deleteChatSessionApi, fetchChatMessagesApi, fetchChatSessionsApi } from '@/api/chat'
 import type { ChatMessageItem, ChatSessionItem, KnowledgeReferenceItem } from '@/types/api'

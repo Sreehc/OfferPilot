@@ -1,11 +1,6 @@
 <template>
   <div class="space-y-4">
-    <div>
-      <h4 class="text-lg font-semibold text-ink">导出学习数据</h4>
-      <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
-        导出面试记录、错题本和复习记录，文件格式为表格文件。
-      </p>
-    </div>
+    <AppShellHeader compact title="数据导出" subtitle="导出你的学习记录。" />
 
     <div class="flex flex-wrap gap-3">
       <el-button :loading="exporting" type="primary" size="large" class="action-button" @click="handleExport">
@@ -31,6 +26,7 @@
 import { ElMessage } from 'element-plus'
 import { ref } from 'vue'
 import { exportMyDataApi } from '@/api/auth'
+import AppShellHeader from '@/components/AppShellHeader.vue'
 
 const exporting = ref(false)
 

@@ -7,42 +7,12 @@
       <span>&larr;</span> 返回社区
     </button>
 
-    <section class="cockpit-panel p-5 sm:p-6">
-      <div class="flex flex-wrap items-start justify-between gap-4">
-        <div class="min-w-0 max-w-3xl">
-          <div class="flex items-center gap-3">
-            <span class="state-pulse" aria-hidden="true"></span>
-            <p class="section-kicker">社区排行榜</p>
-          </div>
-          <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">谁的回答更稳定，一眼就能看出来</h2>
-          <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-            按积分、回答数和采纳数查看社区贡献。
-          </p>
-        </div>
-        <div class="flex flex-wrap gap-2">
-          <span class="leaderboard-pill">采纳 +50</span>
-          <span class="leaderboard-pill">点赞 +2</span>
-          <span class="leaderboard-pill">问题与回答都会计分</span>
-        </div>
-      </div>
-
-      <div class="mt-6 grid gap-3 md:grid-cols-3">
-        <article v-for="signal in boardSignals" :key="signal.label" class="data-slab p-4" :class="signal.toneClass">
-          <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ signal.label }}</p>
-          <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ signal.value }}</p>
-          <p class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ signal.detail }}</p>
-        </article>
-      </div>
-    </section>
+    <AppShellHeader compact />
 
     <section class="cockpit-panel p-5 sm:p-6">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p class="section-kicker">排名列表</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">按排名查看贡献者</h3>
-          <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-            查看不同用户在社区中的提问、回答和采纳情况。
-          </p>
+          <h3 class="text-xl font-semibold tracking-[-0.03em] text-ink sm:text-2xl">按排名查看贡献者</h3>
         </div>
         <span v-if="topEntry" class="detail-rank-pill" :class="rankBadgeClass(topEntry.rankTitle)">
           榜首：{{ topEntry.username || `用户${topEntry.userId}` }}
@@ -128,29 +98,6 @@
               </article>
             </div>
           </article>
-
-          <article class="cockpit-panel p-5">
-            <p class="section-kicker">等级体系</p>
-            <h4 class="mt-3 text-xl font-semibold text-ink">当前头衔分布</h4>
-            <div class="mt-4 space-y-3">
-              <article v-for="rank in ranks" :key="rank.name" class="tier-card">
-                <div class="flex items-center justify-between gap-3">
-                  <span class="detail-rank-pill" :class="rankBadgeClass(rank.name)">{{ rank.name }}</span>
-                  <span class="font-mono text-sm font-semibold text-ink">{{ rank.threshold }}+</span>
-                </div>
-              </article>
-            </div>
-          </article>
-
-          <article class="cockpit-panel p-5">
-            <p class="section-kicker">阅读提示</p>
-            <h4 class="mt-3 text-xl font-semibold text-ink">如何阅读这张榜</h4>
-            <div class="mt-4 space-y-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-              <p>高积分但低采纳：说明参与度高，但答案未必最稳定。</p>
-              <p>回答数不高但采纳率高：通常代表回答更容易被认可。</p>
-              <p>提问数高：常常意味着这个用户愿意公开暴露学习盲点，适合持续关注。</p>
-            </div>
-          </article>
         </aside>
       </div>
 
@@ -168,44 +115,14 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import AppShellHeader from '@/components/AppShellHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchLeaderboardApi } from '@/api/community'
 import type { LeaderboardEntry } from '@/types/api'
 
 const leaderboard = ref<LeaderboardEntry[]>([])
 
-const ranks = [
-  { name: '见习生', threshold: 0 },
-  { name: '初级工程师', threshold: 100 },
-  { name: '中级工程师', threshold: 300 },
-  { name: '高级工程师', threshold: 800 },
-  { name: '架构师', threshold: 2000 },
-  { name: '技术专家', threshold: 5000 },
-]
-
 const topEntry = computed(() => leaderboard.value[0] ?? null)
-const totalScore = computed(() => leaderboard.value.reduce((sum, entry) => sum + entry.communityScore, 0))
-const totalAccepted = computed(() => leaderboard.value.reduce((sum, entry) => sum + entry.communityAccepted, 0))
-const boardSignals = computed(() => [
-  {
-    label: '上榜人数',
-    value: leaderboard.value.length,
-    detail: '当前排行榜里可见的贡献者总数。',
-    toneClass: '',
-  },
-  {
-    label: '总积分',
-    value: totalScore.value,
-    detail: '所有上榜用户累计贡献分，可用来判断整体活跃度。',
-    toneClass: 'leaderboard-slab-cyan',
-  },
-  {
-    label: '总采纳数',
-    value: totalAccepted.value,
-    detail: '社区里被采纳为最佳答案的回答总量。',
-    toneClass: 'leaderboard-slab-lime',
-  },
-])
 
 function rankClass(position: number) {
   if (position === 1) return 'rank-medal-gold'
