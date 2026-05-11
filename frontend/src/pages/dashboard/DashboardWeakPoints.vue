@@ -33,7 +33,7 @@
       v-else
       icon="chart"
       title="还没有可计算的分类掌握度"
-      description="先生成并复习卡片，系统才会形成分类掌握度和待复习压力。"
+      description="生成并复习卡片后查看分类掌握度。"
       compact
       class="mt-5"
     />

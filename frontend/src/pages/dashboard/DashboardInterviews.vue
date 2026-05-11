@@ -36,7 +36,7 @@
       v-else
       icon="clipboard"
       title="还没有诊断记录"
-      description="完成一场面试诊断后，这里会开始积累最近结果和平均分。"
+      description="完成面试后查看最近结果。"
       compact
       class="mt-6"
     />

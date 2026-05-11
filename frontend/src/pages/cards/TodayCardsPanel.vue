@@ -4,10 +4,10 @@
       <h2 class="today-panel__title">{{ task ? '先处理今天这组卡片' : '先生成第一组卡片' }}</h2>
       <p class="today-panel__text">
         <template v-if="task">
-          当前是「{{ task.deckTitle }}」，今天还有 {{ task.dueCount }} 张待处理。
+          今天还有 {{ task.dueCount }} 张待处理。
         </template>
         <template v-else>
-          从知识库生成卡片后，今天的学习会出现在这里。
+          去知识库生成第一组卡片。
         </template>
       </p>
 
@@ -56,12 +56,12 @@ const metrics = computed(() => {
     {
       label: '预计用时',
       value: task ? `${task.estimatedMinutes} 分钟` : '待开始',
-      hint: '按当前队列估算'
+      hint: ''
     },
     {
       label: '连续天数',
       value: task ? `${task.streak} 天` : '0 天',
-      hint: '按评分日期计算'
+      hint: ''
     }
   ]
 })

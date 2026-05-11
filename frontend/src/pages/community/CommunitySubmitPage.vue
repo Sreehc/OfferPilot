@@ -22,7 +22,7 @@
                 v-model="form.title"
                 maxlength="200"
                 size="large"
-                placeholder="例如：Spring 循环依赖为什么要三级缓存？"
+                placeholder="例如：Spring 循环依赖为什么要三级缓存"
               />
             </el-form-item>
 
@@ -39,14 +39,14 @@
                 :rows="14"
                 maxlength="10000"
                 resize="none"
-                placeholder="按背景、现象、已尝试内容描述。"
+                placeholder="写清问题和已尝试内容"
               />
             </el-form-item>
           </div>
 
           <aside class="compose-side space-y-4">
             <article class="compose-note">
-              <p class="text-sm font-semibold text-ink">先写背景，再写现象和已尝试内容</p>
+              <p class="text-sm font-semibold text-ink">写清问题和已尝试内容</p>
             </article>
           </aside>
         </div>

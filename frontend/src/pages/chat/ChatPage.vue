@@ -234,7 +234,7 @@
               <footer class="composer-shell">
                 <div class="composer-shell__meta">
                   <span class="composer-hint">
-                    {{ mode === 'rag' ? '会优先引用知识库。' : '直接生成回答。' }}
+                    {{ mode === 'rag' ? '引用知识库' : '自由问答' }}
                   </span>
                   <span class="composer-shortcut">Enter 发送 · Shift + Enter 换行</span>
                 </div>

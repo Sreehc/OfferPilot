@@ -10,7 +10,7 @@
         <div class="mt-8 max-w-2xl">
           <h1 class="auth-hero-title">用一个账号开始学习</h1>
           <p class="mt-5 text-sm leading-8 text-slate-600 dark:text-slate-300 sm:text-base">
-            注册后会自动登录，学习记录会保存在这个账号中。
+            创建账号后开始学习。
           </p>
         </div>
 
@@ -22,7 +22,7 @@
             <p class="section-kicker">注册</p>
             <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">填写三个字段即可</h2>
             <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-              只需昵称、用户名和密码。完成后会自动登录，不需要额外配置。
+              填写昵称、用户名和密码。
             </p>
           </div>
         </div>
@@ -71,7 +71,7 @@
               class="action-button !min-h-12 w-full transition active:translate-y-px"
               @click="handleRegister"
             >
-              {{ loading ? '创建中...' : '创建账号并开始学习' }}
+              {{ loading ? '创建中...' : '创建账号' }}
             </el-button>
             <div class="auth-links">
               <span class="text-sm text-slate-500 dark:text-slate-400">

@@ -59,7 +59,7 @@
         class="empty-state-card mt-6"
         icon="trophy"
         title="暂无排名数据"
-        description="有了提问、回答和采纳记录后，这里会自动生成排行榜。"
+        description="参与社区后查看排名。"
         compact
       />
     </section>

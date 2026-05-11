@@ -129,7 +129,7 @@
                 </p>
               </div>
               <div class="mt-4 border-t border-[var(--bc-line)] pt-4 text-xs text-slate-500 dark:text-slate-400">
-                当前记忆系数：{{ formatEaseFactor(currentReviewItem.easeFactor) }} · 当前间隔：
+                记忆系数 {{ formatEaseFactor(currentReviewItem.easeFactor) }} · 间隔
                 {{ currentReviewItem.intervalDays ?? 0 }} 天
               </div>
             </div>
@@ -156,7 +156,7 @@
         <EmptyState
           icon="trophy"
           title="本轮复习已完成"
-          :description="`本轮共处理 ${reviewItems.length} 项，低分重来 ${againCount} 次。`"
+          :description="`已处理 ${reviewItems.length} 项 · 重来 ${againCount} 次`"
         >
           <template #action>
             <div class="flex justify-center gap-3">

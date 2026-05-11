@@ -10,7 +10,7 @@
         <div class="mt-8 max-w-2xl">
           <h1 class="auth-hero-title">快速进入今天的学习</h1>
           <p class="mt-5 text-sm leading-8 text-slate-600 dark:text-slate-300 sm:text-base">
-            登录后可继续问答、面试、复习或查看计划。
+            登录后继续学习。
           </p>
         </div>
 
@@ -22,7 +22,7 @@
             <p class="section-kicker">登录</p>
             <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">输入账号继续</h2>
             <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-              输入用户名和密码即可继续。连续失败 3 次后才需要验证码。
+              输入用户名和密码。
             </p>
           </div>
         </div>
@@ -91,7 +91,7 @@
               class="action-button !min-h-12 w-full transition active:translate-y-px"
               @click="handleLogin"
             >
-              {{ loading ? '登录中...' : '登录并继续' }}
+              {{ loading ? '登录中...' : '登录' }}
             </el-button>
             <div class="auth-links">
               <span class="text-sm text-slate-500 dark:text-slate-400">

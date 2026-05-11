@@ -20,7 +20,7 @@
     <section class="cockpit-panel p-5 sm:p-6">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div class="min-w-0 max-w-3xl">
-          <p class="text-xl font-semibold tracking-[-0.03em] text-ink">先看完成率、复习负债和掌握增长</p>
+          <p class="text-xl font-semibold tracking-[-0.03em] text-ink">学习概览</p>
         </div>
       </div>
 
@@ -47,7 +47,7 @@
         v-else-if="!trendData.completionRateTrend?.length && !trendData.reviewDebtTrend?.length && !trendData.masteredGrowthTrend?.length"
         class="mt-5 flex h-[380px] items-center justify-center"
       >
-        <EmptyState icon="chart" title="暂无记忆趋势数据" description="开始卡片学习并完成复习后，这里会显示记忆成长趋势。" compact />
+        <EmptyState icon="chart" title="暂无记忆趋势数据" description="开始学习后查看趋势。" compact />
       </div>
       <div v-else class="mt-5">
         <div ref="trendChartRef" class="chart-shell h-[380px] w-full"></div>
@@ -67,7 +67,7 @@
           <div class="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
         </div>
         <div v-else-if="!efficiencyData.efTrend?.length" class="mt-5 flex h-[300px] items-center justify-center">
-          <EmptyState icon="review" title="暂无复习数据" description="完成复习后，这里会显示记忆系数变化。" compact />
+          <EmptyState icon="review" title="暂无复习数据" description="完成复习后查看记忆系数。" compact />
         </div>
         <div v-else class="mt-5">
           <div class="grid gap-3 sm:grid-cols-3">
@@ -100,7 +100,7 @@
           <div class="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
         </div>
         <div v-else-if="!efficiencyData.forgettingRateTrend?.length" class="mt-5 flex h-[300px] items-center justify-center">
-          <EmptyState icon="review" title="暂无复习数据" description="完成复习后，这里会显示遗忘率趋势和评分分布。" compact />
+          <EmptyState icon="review" title="暂无复习数据" description="完成复习后查看遗忘率。" compact />
         </div>
         <div v-else class="mt-5">
           <div class="flex flex-wrap gap-2">
@@ -149,7 +149,7 @@
 
       </div>
       <div v-else class="mt-5">
-        <EmptyState icon="chart" title="暂无分类掌握度" description="先生成并复习卡片，系统才会形成分类掌握度。" compact />
+        <EmptyState icon="chart" title="暂无分类掌握度" description="生成并复习卡片后查看掌握度。" compact />
       </div>
     </section>
 
@@ -167,7 +167,7 @@
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p class="text-lg font-semibold text-ink">{{ item.label }}</p>
-                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ item.description }}</p>
+                <p v-if="item.description" class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ item.description }}</p>
               </div>
               <div class="text-right">
                 <p class="font-mono text-3xl font-semibold text-ink">{{ item.count }}</p>
@@ -194,7 +194,7 @@
         <div class="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
       </div>
       <div v-else-if="!trendData.overallTrend?.length" class="mt-5 flex h-[320px] items-center justify-center">
-        <EmptyState icon="chart" title="暂无面试数据" description="完成面试后，这里会显示最近的表现趋势。" compact />
+        <EmptyState icon="chart" title="暂无面试数据" description="完成面试后查看趋势。" compact />
       </div>
       <div v-else class="mt-5">
         <div v-if="normalizedCategoryTrends.length" class="mb-4 flex flex-wrap gap-2">
@@ -344,7 +344,7 @@ const masteryItems = computed(() => {
       label: '未开始',
       count: d.not_started ?? 0,
       percent: Math.round(((d.not_started ?? 0) / total) * 100),
-      description: '已经进入统一记忆池，但还没开始复习的内容。',
+      description: '还没开始',
       toneClass: 'mastery-card-coral',
       textClass: 'text-[var(--bc-coral)]',
       fillClass: 'mastery-fill-coral',
@@ -353,7 +353,7 @@ const masteryItems = computed(() => {
       label: '复习中',
       count: d.reviewing ?? 0,
       percent: Math.round(((d.reviewing ?? 0) / total) * 100),
-      description: '已经进入复习轨道，但还未稳定掌握。',
+      description: '还在复习',
       toneClass: 'mastery-card-amber',
       textClass: 'text-[var(--bc-amber)]',
       fillClass: 'mastery-fill-amber',
@@ -362,7 +362,7 @@ const masteryItems = computed(() => {
       label: '已掌握',
       count: d.mastered ?? 0,
       percent: Math.round(((d.mastered ?? 0) / total) * 100),
-      description: '已经进入稳定掌握区间的内容。',
+      description: '',
       toneClass: 'mastery-card-lime',
       textClass: 'text-[var(--bc-lime)]',
       fillClass: 'mastery-fill-lime',
