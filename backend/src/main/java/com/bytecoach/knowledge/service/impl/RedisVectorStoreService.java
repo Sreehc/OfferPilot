@@ -1,5 +1,6 @@
 package com.bytecoach.knowledge.service.impl;
 
+import com.bytecoach.ai.config.EmbeddingProperties;
 import com.bytecoach.ai.config.VectorProperties;
 import com.bytecoach.knowledge.service.VectorStoreService;
 import jakarta.annotation.PostConstruct;
@@ -27,6 +28,7 @@ import redis.clients.jedis.resps.ScanResult;
 @RequiredArgsConstructor
 public class RedisVectorStoreService implements VectorStoreService {
 
+    private final EmbeddingProperties embeddingProperties;
     private final VectorProperties vectorProperties;
     private final RedisProperties redisProperties;
 
@@ -34,6 +36,11 @@ public class RedisVectorStoreService implements VectorStoreService {
 
     @PostConstruct
     public void init() {
+        if (!embeddingProperties.isEnabled()) {
+            log.info("Embedding disabled, skipping Redis vector store initialization");
+            return;
+        }
+
         String host = redisProperties.getHost() != null ? redisProperties.getHost() : "127.0.0.1";
         int port = redisProperties.getPort() != 0 ? redisProperties.getPort() : 6379;
         String password = redisProperties.getPassword();
@@ -60,14 +67,22 @@ public class RedisVectorStoreService implements VectorStoreService {
     public void ensureIndex() {
         String indexName = vectorProperties.getIndexName();
         try {
-            jedis.ftInfo(indexName);
+            ProtocolCommand ftInfo = () -> SafeEncoder.encode("FT.INFO");
+            try (Connection conn = jedis.getPool().getResource()) {
+                conn.sendCommand(ftInfo, SafeEncoder.encode(indexName));
+                conn.getOne();
+            }
             log.info("Redis vector index '{}' already exists", indexName);
         } catch (JedisDataException e) {
-            if (e.getMessage() != null && e.getMessage().contains("Unknown Index")) {
+            String message = e.getMessage() == null ? "" : e.getMessage();
+            if (message.contains("Unknown Index") || message.contains("Unknown index name")) {
                 createIndex(indexName);
             } else {
                 log.error("Failed to check Redis index: {}", e.getMessage());
             }
+        } catch (Exception e) {
+            log.error("Failed to check Redis index: {}", e.getMessage());
+            throw e;
         }
     }
 
@@ -101,6 +116,9 @@ public class RedisVectorStoreService implements VectorStoreService {
 
     @Override
     public String store(Long chunkId, Long docId, String content, float[] embedding) {
+        if (jedis == null) {
+            return "bytecoach:chunk:" + chunkId;
+        }
         String key = "bytecoach:chunk:" + chunkId;
         byte[] embeddingBytes = floatArrayToBytes(embedding);
         jedis.hset(key, "chunkId", String.valueOf(chunkId));
@@ -112,11 +130,17 @@ public class RedisVectorStoreService implements VectorStoreService {
 
     @Override
     public void remove(Long chunkId) {
+        if (jedis == null) {
+            return;
+        }
         jedis.del("bytecoach:chunk:" + chunkId);
     }
 
     @Override
     public void removeByDocId(Long docId) {
+        if (jedis == null) {
+            return;
+        }
         // Scan and delete all chunks belonging to this doc
         ScanParams params = new ScanParams().match("bytecoach:chunk:*").count(100);
         String cursor = "0";
@@ -135,6 +159,9 @@ public class RedisVectorStoreService implements VectorStoreService {
     @Override
     @SuppressWarnings("unchecked")
     public List<VectorSearchResult> search(float[] queryEmbedding, int limit) {
+        if (jedis == null) {
+            return List.of();
+        }
         String indexName = vectorProperties.getIndexName();
         byte[] queryBytes = floatArrayToBytes(queryEmbedding);
         String query = "*=>[KNN " + limit + " @embedding $BLOB AS score]";

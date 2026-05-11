@@ -9,6 +9,7 @@ frontend/dist/
 # Production secrets — never commit
 .env.production
 .env.local
+deploy/.env
 
 # Internal planning docs — not for repo
 三期规划.md

@@ -34,9 +34,7 @@ services:
       - bytecoach
 
   backend:
-    build:
-      context: ../backend
-      dockerfile: Dockerfile
+    image: ${BYTECOACH_BACKEND_IMAGE:-ghcr.io/sreehc/bytecoach-backend:latest}
     container_name: bytecoach-backend
     restart: unless-stopped
     network_mode: host
@@ -73,9 +71,7 @@ services:
       start_period: 30s
 
   frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
+    image: ${BYTECOACH_FRONTEND_IMAGE:-ghcr.io/sreehc/bytecoach-frontend:latest}
     container_name: bytecoach-frontend
     restart: unless-stopped
     depends_on:

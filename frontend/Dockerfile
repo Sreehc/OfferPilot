@@ -8,9 +8,10 @@ RUN npm run build
 
 # ─── Stage 2: Serve ───
 FROM nginx:alpine
+LABEL org.opencontainers.image.source="https://github.com/Sreehc/ByteCoach"
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 HEALTHCHECK --interval=15s --timeout=3s --retries=3 \
-  CMD wget --spider -q http://localhost:80/ || exit 1
+  CMD wget --spider -q http://127.0.0.1:80/ || exit 1
 CMD ["nginx", "-g", "daemon off;"]
