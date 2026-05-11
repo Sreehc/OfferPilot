@@ -3,7 +3,7 @@
     <AppShellHeader>
       <template #actions>
         <span v-if="todayTask" class="detail-pill">{{ todayTask.deckTitle }}</span>
-        <span v-if="stats" class="detail-pill">{{ stats.deckCount }} 组 deck</span>
+        <span v-if="stats && stats.deckCount > 0" class="detail-pill">{{ stats.deckCount }} 组卡组</span>
         <RouterLink to="/knowledge" class="hard-button-secondary text-sm">去知识库</RouterLink>
       </template>
     </AppShellHeader>
@@ -21,7 +21,7 @@
         </div>
 
         <div v-if="matchedDocDeck" class="generate-panel__existing">
-          <strong>这份资料已经生成过 deck：{{ matchedDocDeck.deckTitle }}</strong>
+          <strong>这份资料已经生成过卡组：{{ matchedDocDeck.deckTitle }}</strong>
           <p>当前已有 {{ matchedDocDeck.totalCards }} 张卡片，已掌握 {{ matchedDocDeck.masteredCards }} 张。</p>
           <div class="generate-panel__existing-actions">
             <button
@@ -30,7 +30,7 @@
               :disabled="activatingDeckId === matchedDocDeck.deckId"
               @click="activateDeck(matchedDocDeck.deckId)"
             >
-              {{ activatingDeckId === matchedDocDeck.deckId ? '切换中...' : '设为当前 deck' }}
+              {{ activatingDeckId === matchedDocDeck.deckId ? '切换中...' : '设为当前卡组' }}
             </button>
             <button type="button" class="hard-button-secondary" @click="router.replace({ path: '/cards' })">
               返回工作台
@@ -110,7 +110,7 @@
 
           <div class="generate-panel__actions">
             <button type="button" class="hard-button-primary" :disabled="generating" @click="generateDeck">
-              {{ generating ? '生成中...' : '生成并设为当前 deck' }}
+              {{ generating ? '生成中...' : '生成并设为当前卡组' }}
             </button>
             <button type="button" class="hard-button-secondary" @click="router.replace({ path: '/cards' })">
               暂不生成
@@ -131,18 +131,10 @@
       <template v-else>
         <TodayCardsPanel :task="todayTask" @start="enterStudyMode" />
 
-        <div class="cards-workbench__grid">
+        <div v-if="todayTask || decks.length > 0" class="cards-workbench__grid">
           <CardDeckList :decks="decks" :activating-deck-id="activatingDeckId" @activate="activateDeck" />
           <CardProgressSummary :task="todayTask" :stats="stats" @overview="leaveStudyMode" />
         </div>
-
-        <section v-if="!todayTask && decks.length === 0" class="cockpit-panel cards-empty p-8 sm:p-10">
-          <div>
-            <h3>先从知识库生成第一组卡片</h3>
-            <p>生成后就能直接开始今天的学习。</p>
-            <RouterLink to="/knowledge" class="hard-button-primary mt-6">去知识库生成卡片</RouterLink>
-          </div>
-        </section>
       </template>
     </template>
   </div>

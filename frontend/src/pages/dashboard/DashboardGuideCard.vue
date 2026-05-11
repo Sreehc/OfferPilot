@@ -10,10 +10,7 @@
     <div class="relative flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
       <div class="max-w-3xl">
         <p class="section-kicker">首次使用</p>
-        <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink sm:text-3xl">先开始今日卡片，首页才会越来越有用</h3>
-        <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-          先从资料生成一轮卡片任务，再按天推进记忆。系统会随着你的复习、问答和诊断记录，逐步补齐薄弱点与建议。
-        </p>
+        <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink sm:text-3xl">先生成第一组卡片</h3>
         <div class="mt-5 flex flex-wrap gap-3">
           <RouterLink
             v-for="action in actions"

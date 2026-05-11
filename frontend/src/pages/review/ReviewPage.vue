@@ -1,17 +1,6 @@
 <template>
   <div class="repair-workbench space-y-6">
-    <AppShellHeader>
-      <template #actions>
-        <button
-          type="button"
-          class="hard-button-primary"
-          :disabled="!reviewItems.length"
-          @click="startReview"
-        >
-          {{ started ? '继续复习' : '开始复习' }}
-        </button>
-      </template>
-    </AppShellHeader>
+    <AppShellHeader />
 
     <section class="cockpit-panel p-4 sm:p-5">
       <div class="repair-filter-row">
@@ -267,9 +256,9 @@ const currentReviewItem = computed(() => reviewItems.value[currentIndex.value] ?
 
 const heroTitle = computed(() => {
   if (!reviewItems.value.length) {
-    return selectedContentType.value === 'interview_card' ? '当前没有来自面试错题的复习项' : '今天没有待处理的复习项'
+    return selectedContentType.value === 'interview_card' ? '当前没有面试卡片' : '今天没有待复习内容'
   }
-  return `${reviewItems.value.length} 项记忆任务等待处理`
+  return `今天先复习这 ${reviewItems.value.length} 项`
 })
 
 const ratingButtons = [
@@ -294,9 +283,9 @@ const emptyStateTitle = computed(() => {
 
 const emptyStateDescription = computed(() => {
   if (selectedContentType.value === 'interview_card') {
-    return '完成面试诊断后，低分题进入错题本并到期时，会出现在这里。'
+    return '完成面试诊断后，相关复习会出现在这里。'
   }
-  return '你可以继续推进今日卡片，或者回到知识库生成新的学习内容。'
+  return '去今日卡片，或去知识库生成新卡片。'
 })
 
 const contentTypeLabel = (contentType: string) => {

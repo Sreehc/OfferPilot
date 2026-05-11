@@ -47,7 +47,7 @@ defineEmits<{
 }>()
 
 const title = computed(() => {
-  if (!props.task) return '等待选择当前 deck'
+  if (!props.task) return '还没有今日任务'
   if (!props.task.currentCard) return '今日已完成'
   return '当前进度'
 })

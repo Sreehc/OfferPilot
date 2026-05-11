@@ -1,30 +1,24 @@
 <template>
   <section class="today-panel">
     <div class="today-panel__copy">
-      <h2 class="today-panel__title">先处理今天这组卡片</h2>
+      <h2 class="today-panel__title">{{ task ? '先处理今天这组卡片' : '先生成第一组卡片' }}</h2>
       <p class="today-panel__text">
         <template v-if="task">
           当前是「{{ task.deckTitle }}」，今天还有 {{ task.dueCount }} 张待处理。
         </template>
         <template v-else>
-          先从知识库生成卡片，或切换到一组已有 deck。
+          从知识库生成卡片后，今天的学习会出现在这里。
         </template>
       </p>
 
       <div class="today-panel__actions">
-        <button
-          type="button"
-          class="hard-button-primary"
-          :disabled="!task || !task.currentCard"
-          @click="$emit('start')"
-        >
-          {{ task?.currentCard ? '开始学习' : '今日已完成' }}
-        </button>
-        <RouterLink to="/knowledge" class="hard-button-secondary">去知识库</RouterLink>
+        <button v-if="task?.currentCard" type="button" class="hard-button-primary" @click="$emit('start')">开始学习</button>
+        <RouterLink v-else to="/knowledge" class="hard-button-primary">去知识库</RouterLink>
+        <RouterLink v-if="task" to="/knowledge" class="hard-button-secondary">去知识库</RouterLink>
       </div>
     </div>
 
-    <div class="today-panel__metrics">
+    <div v-if="task" class="today-panel__metrics">
       <article v-for="metric in metrics" :key="metric.label" class="today-panel__metric">
         <span>{{ metric.label }}</span>
         <strong>{{ metric.value }}</strong>

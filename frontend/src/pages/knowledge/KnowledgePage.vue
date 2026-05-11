@@ -89,8 +89,8 @@
           :title="activeTab === 'my' ? '你还没有上传文档' : '系统资料暂时为空'"
           :description="
             activeTab === 'my'
-              ? '上传文档后，可在这里查看处理进度。'
-              : '请联系管理员导入知识资料，或先切换到“我的文档”。'
+              ? '上传后会显示在这里。'
+              : '先切换到“我的文档”，或联系管理员导入资料。'
           "
         />
       </div>
@@ -165,8 +165,7 @@
                 <span>已生成 {{ doc.cardCount ?? 0 }} 张卡片。</span>
               </template>
               <template v-else>
-                <strong>还没有生成卡片</strong>
-                <span>可以直接从这份资料生成卡片。</span>
+                <strong>未生成卡片</strong>
               </template>
             </div>
 
@@ -175,7 +174,7 @@
                 :to="{ path: '/cards', query: { docId: String(doc.id), title: doc.title } }"
                 class="hard-button-primary text-sm"
               >
-                {{ doc.cardDeckId ? '进入今日卡片' : '生成卡片' }}
+                {{ doc.cardDeckId ? '去今日卡片' : '生成卡片' }}
               </RouterLink>
             </div>
           </div>
@@ -193,7 +192,7 @@
       </div>
     </section>
 
-    <details class="cockpit-panel p-5 sm:p-6">
+    <details v-if="isAdmin" class="cockpit-panel p-5 sm:p-6">
       <summary class="cursor-pointer text-sm font-semibold text-ink">检索测试</summary>
       <div class="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_150px]">
         <el-input v-model="searchQuery" placeholder="例如：JVM 垃圾回收器分类，以及 CMS 和 G1 的差异" size="large" />
@@ -251,7 +250,9 @@ import {
   uploadKnowledgeDocApi
 } from '@/api/knowledge'
 import type { CategoryItem, KnowledgeDocItem, KnowledgeSearchResult } from '@/types/api'
+import { useAuthStore } from '@/stores/auth'
 
+const authStore = useAuthStore()
 const categories = ref<CategoryItem[]>([])
 const docs = ref<KnowledgeDocItem[]>([])
 const searchResult = ref<KnowledgeSearchResult | null>(null)
@@ -273,6 +274,8 @@ const filters = reactive<{
   keyword: '',
   status: undefined
 })
+
+const isAdmin = computed(() => authStore.user?.role === 'ADMIN')
 
 const statusSummary = computed(() => {
   const summary = { draft: 0, parsed: 0, indexed: 0 }

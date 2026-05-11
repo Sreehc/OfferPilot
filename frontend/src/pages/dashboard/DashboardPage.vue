@@ -1,6 +1,6 @@
 <template>
   <div class="dashboard-canvas space-y-6 pb-6">
-    <DashboardGuideCard v-if="showGuideCard" :actions="quickActions" @dismiss="dismissGuide" />
+    <DashboardGuideCard v-if="showGuideCard" :actions="guideActions" @dismiss="dismissGuide" />
 
     <section v-if="loading" class="paper-panel min-h-[320px] p-6 sm:p-8">
       <div class="h-4 w-24 animate-pulse rounded-full bg-slate-200 dark:bg-slate-700"></div>
@@ -48,12 +48,8 @@
 
       <section class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <RouterLink v-for="action in quickActions" :key="action.to" :to="action.to" class="mission-card block p-5">
-          <div class="flex items-center justify-between gap-3">
-            <p class="text-sm font-semibold text-ink">{{ action.label }}</p>
-            <span class="hard-chip !px-2 !py-0.5 !text-[9px]">{{ action.badge }}</span>
-          </div>
+          <p class="text-sm font-semibold text-ink">{{ action.label }}</p>
           <h3 class="mt-4 text-lg font-semibold tracking-[-0.02em] text-ink">{{ action.title }}</h3>
-          <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{{ action.desc }}</p>
         </RouterLink>
       </section>
 
@@ -253,30 +249,29 @@ const quickActions = computed(() => [
   {
     to: '/cards',
     label: '今日卡片',
-    title: todayCardTotal.value > 0 ? `处理今天的 ${todayCardTotal.value} 张卡片` : '开始一轮卡片任务',
-    badge: '主线',
-    desc: '先完成今天的记忆任务。'
+    title: todayCardTotal.value > 0 ? `处理今天的 ${todayCardTotal.value} 张卡片` : '开始今天的卡片任务'
   },
   {
     to: '/review?tab=all',
     label: '复习中心',
-    title: reviewDebtCount.value > 0 ? `清理 ${reviewDebtCount.value} 项积压` : '查看今日复习',
-    badge: '复习',
-    desc: '优先清掉到期内容。'
+    title: reviewDebtCount.value > 0 ? `清理 ${reviewDebtCount.value} 项积压` : '查看今天的复习'
   },
   {
     to: '/knowledge',
     label: '知识库',
-    title: '上传或查找资料',
-    badge: '资料',
-    desc: '卡片和问答都从这里取内容。'
+    title: '上传资料或生成卡片'
   },
   {
     to: '/chat',
     label: '问答',
-    title: '继续追问没吃透的问题',
-    badge: '辅助',
-    desc: '适合在卡片后快速补盲。'
+    title: '继续追问没吃透的问题'
+  }
+])
+
+const guideActions = computed(() => [
+  {
+    to: '/knowledge',
+    label: '去知识库'
   }
 ])
 
@@ -289,6 +284,7 @@ const toggleSection = (name: string) => {
 const showGuideCard = computed(() => {
   const userId = authStore.user?.id
   if (!userId || guideDismissed.value || !overview.value.firstVisit) return false
+  if (todayCardTotal.value === 0) return false
   return !storage.getGuideSeen(userId)
 })
 

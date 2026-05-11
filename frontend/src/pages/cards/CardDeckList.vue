@@ -2,7 +2,7 @@
   <section class="cockpit-panel deck-list p-5 sm:p-6">
     <div class="deck-list__head">
       <div>
-        <h3 class="deck-list__title">切换当前 deck</h3>
+        <h3 class="deck-list__title">切换当前卡组</h3>
       </div>
       <span class="deck-list__count">{{ decks.length }} 组</span>
     </div>
@@ -43,7 +43,7 @@
     </div>
 
     <div v-else class="deck-list__empty">
-      <p>还没有可用 deck。</p>
+      <p>还没有可用卡组。</p>
       <RouterLink to="/knowledge" class="hard-button-secondary">去知识库</RouterLink>
     </div>
   </section>
@@ -62,8 +62,8 @@ defineEmits<{
 }>()
 
 const sourceLabel = (sourceType: string) => {
-  if (sourceType === 'wrong_auto') return '系统错题 deck'
-  return '知识库 deck'
+  if (sourceType === 'wrong_auto') return '错题卡组'
+  return '知识库卡组'
 }
 
 const progress = (deck: CardDeckSummary) => {

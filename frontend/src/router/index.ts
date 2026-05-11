@@ -3,28 +3,24 @@ import { useAuthStore } from '@/stores/auth'
 
 const pageMeta = {
   dashboard: {
-    title: '今天先完成今日卡片',
-    subtitle: '先把今天该学和该复习的卡片处理完。'
+    title: '首页'
   },
   chat: {
     title: '问答',
     subtitle: '直接提问，或结合知识库继续追问。'
   },
   knowledge: {
-    title: '知识库',
-    subtitle: '上传、筛选和管理会进入卡片系统的资料。'
+    title: '知识库'
   },
   cards: {
-    title: '今日卡片',
-    subtitle: '处理今天该学和该复习的卡片。'
+    title: '今日卡片'
   },
   interview: {
     title: '面试诊断',
     subtitle: '做一次限时练习，检查你是否真的理解。'
   },
   review: {
-    title: '复习中心',
-    subtitle: '先处理今天到期的复习内容。'
+    title: '复习中心'
   },
   community: {
     title: '学习社区',
