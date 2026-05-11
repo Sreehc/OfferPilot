@@ -3,7 +3,7 @@
     <div class="flex flex-wrap items-center gap-3">
       <el-input
         v-model="keyword"
-        placeholder="按用户名搜索"
+        placeholder="搜索用户"
         clearable
         size="large"
         class="max-w-xs"

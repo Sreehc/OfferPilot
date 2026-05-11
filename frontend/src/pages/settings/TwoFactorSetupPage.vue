@@ -1,12 +1,7 @@
 <template>
   <div class="space-y-6">
-    <AppShellHeader compact title="两步验证设置" subtitle="扫描二维码并输入验证码完成设置。" />
-
     <section v-if="step === 1" class="paper-panel p-4 sm:p-6">
-      <h4 class="text-lg font-semibold text-ink">第 1 步：扫描二维码</h4>
-      <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-        先用身份验证器应用扫描下方二维码；如果无法扫描，也可以手动复制密钥。
-      </p>
+      <h4 class="text-lg font-semibold text-ink">扫描二维码</h4>
       <div class="mt-4 flex flex-col items-center gap-6">
         <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white p-4">
           <img
@@ -21,7 +16,7 @@
         </div>
 
         <div class="text-center">
-          <p class="text-xs text-slate-500 dark:text-slate-400">无法扫描？手动输入密钥：</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">手动密钥</p>
           <div class="mt-2 flex items-center gap-2">
             <code class="rounded bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-sm font-mono select-all">{{ setupData?.secret }}</code>
             <el-button size="small" @click="copySecret">复制</el-button>
@@ -35,10 +30,7 @@
     </section>
 
     <section v-if="step === 2" class="paper-panel p-4 sm:p-6">
-      <h4 class="text-lg font-semibold text-ink">第 2 步：输入验证码</h4>
-      <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-        打开身份验证器应用，输入显示的 6 位数字。
-      </p>
+      <h4 class="text-lg font-semibold text-ink">输入验证码</h4>
       <div class="mt-4 max-w-xs">
         <el-input
           v-model="verifyCode"
@@ -59,7 +51,7 @@
     <section v-if="step === 3" class="paper-panel p-4 sm:p-6">
       <h4 class="text-lg font-semibold text-ink">恢复码</h4>
       <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-        请妥善保存以下恢复码。当您无法使用身份验证器时，可以使用恢复码登录。每个恢复码只能使用一次。
+        请保存好这些恢复码。每个只能使用一次。
       </p>
       <div class="mt-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-4">
         <div class="grid grid-cols-2 gap-2">
@@ -85,7 +77,6 @@
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 import { enableTwoFactorApi, setupTwoFactorApi } from '@/api/auth'
-import AppShellHeader from '@/components/AppShellHeader.vue'
 import type { TwoFactorSetup } from '@/types/api'
 
 defineEmits<{ done: [] }>()

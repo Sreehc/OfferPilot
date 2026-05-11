@@ -27,8 +27,7 @@ const pageMeta = {
     title: '数据分析'
   },
   admin: {
-    title: '管理后台',
-    subtitle: '处理用户、内容、题库和文档。'
+    title: '管理后台'
   }
 } as const
 
@@ -134,7 +133,7 @@ const router = createRouter({
           path: 'settings',
           name: 'settings',
           component: () => import('@/pages/settings/SettingsPage.vue'),
-          meta: { title: '账户设置', subtitle: '管理设备、登录安全和数据导出。' }
+          meta: { title: '设置' }
         }
       ]
     },

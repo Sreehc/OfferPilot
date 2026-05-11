@@ -1,7 +1,7 @@
 <template>
   <div class="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
     <div class="surface-muted p-4">
-      <div class="text-sm font-semibold text-ink">导入内置知识资料</div>
+      <div class="text-sm font-semibold text-ink">导入内置资料</div>
       <div class="mt-4 space-y-3">
         <div v-for="seed in seeds" :key="seed.seedKey" class="surface-card p-4">
           <div class="font-semibold text-ink">{{ seed.title }}</div>
@@ -18,20 +18,20 @@
 
     <div class="space-y-4">
       <div class="grid gap-3 md:grid-cols-3">
-        <el-select v-model="filter.categoryId" clearable placeholder="知识分类" size="large">
+        <el-select v-model="filter.categoryId" clearable placeholder="按分类" size="large">
           <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
         </el-select>
-        <el-select v-model="filter.status" clearable placeholder="状态筛选" size="large">
+        <el-select v-model="filter.status" clearable placeholder="按状态" size="large">
           <el-option label="草稿" value="draft" />
           <el-option label="已解析" value="parsed" />
           <el-option label="已索引" value="indexed" />
         </el-select>
-        <el-input v-model="filter.keyword" clearable placeholder="标题/摘要关键字" size="large" />
+        <el-input v-model="filter.keyword" clearable placeholder="搜索文档" size="large" />
       </div>
 
       <div class="flex gap-3">
-        <el-button :loading="loading" type="primary" class="action-button" @click="emit('load')">刷新文档</el-button>
-        <el-button class="hard-button-secondary" @click="emit('filterReset')">重置筛选</el-button>
+        <el-button :loading="loading" type="primary" class="action-button" @click="emit('load')">刷新</el-button>
+        <el-button class="hard-button-secondary" @click="emit('filterReset')">重置</el-button>
       </div>
 
       <article v-for="doc in docs" :key="doc.id" class="surface-card p-4">

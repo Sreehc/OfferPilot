@@ -1,8 +1,8 @@
 <template>
   <div class="space-y-4">
     <div class="flex flex-wrap items-center gap-3">
-      <el-input v-model="keyword" placeholder="搜索用户名/昵称" clearable size="large" class="max-w-xs" @keyup.enter="handleSearch" @clear="handleSearch" />
-      <el-select v-model="roleFilter" placeholder="角色筛选" clearable size="large" class="w-32" @change="handleSearch">
+      <el-input v-model="keyword" placeholder="搜索用户" clearable size="large" class="max-w-xs" @keyup.enter="handleSearch" @clear="handleSearch" />
+      <el-select v-model="roleFilter" placeholder="角色" clearable size="large" class="w-32" @change="handleSearch">
         <el-option label="全部" value="" />
         <el-option label="普通用户" value="USER" />
         <el-option label="管理员" value="ADMIN" />
@@ -96,7 +96,7 @@
           <div><span class="text-xs text-slate-400">注册时间</span><p class="font-semibold text-ink">{{ formatTime(detail.createTime) }}</p></div>
         </div>
         <div class="rule-divider"></div>
-        <h4 class="text-sm font-semibold text-ink">学习统计</h4>
+        <h4 class="text-sm font-semibold text-ink">学习数据</h4>
         <div class="grid grid-cols-3 gap-3">
           <div class="metric-card text-center p-3"><p class="metric-label">面试次数</p><p class="metric-value text-lg">{{ detail.interviewCount }}</p></div>
           <div class="metric-card text-center p-3"><p class="metric-label">错题数</p><p class="metric-value text-lg">{{ detail.wrongCount }}</p></div>

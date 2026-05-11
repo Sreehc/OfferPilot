@@ -1,8 +1,7 @@
 <template>
   <div class="space-y-4">
-    <AppShellHeader compact title="登录历史" subtitle="用时间、地点和设备快速排查异常登录。" />
-
-    <div class="flex justify-end">
+    <div class="flex items-center justify-between gap-3">
+      <div class="text-sm text-slate-500 dark:text-slate-400">共 {{ total }} 条</div>
       <el-button :loading="loading" type="primary" size="large" class="action-button" @click="loadLogs">
         刷新
       </el-button>
@@ -62,7 +61,6 @@
 import { ElMessage } from 'element-plus'
 import { onMounted, ref } from 'vue'
 import { fetchLoginLogsApi } from '@/api/auth'
-import AppShellHeader from '@/components/AppShellHeader.vue'
 import { localizeDeviceName } from '@/utils/device'
 import type { LoginLogItem } from '@/types/api'
 

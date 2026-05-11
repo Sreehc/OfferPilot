@@ -3,8 +3,8 @@
     <div class="surface-muted p-4">
       <div class="text-sm font-semibold text-ink">{{ form.id ? '编辑题目' : '新增题目' }}</div>
       <div class="mt-4 space-y-3">
-        <el-input v-model="form.title" placeholder="题目标题" size="large" />
-        <el-select v-model="form.categoryId" placeholder="题目分类" size="large" class="w-full">
+        <el-input v-model="form.title" placeholder="标题" size="large" />
+        <el-select v-model="form.categoryId" placeholder="分类" size="large" class="w-full">
           <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
         </el-select>
         <el-select v-model="form.difficulty" placeholder="难度" size="large" class="w-full">
@@ -12,7 +12,7 @@
           <el-option label="中等" value="medium" />
           <el-option label="困难" value="hard" />
         </el-select>
-        <el-input v-model="form.tags" placeholder="标签，例如：Spring,AOP" size="large" />
+        <el-input v-model="form.tags" placeholder="标签" size="large" />
         <el-input v-model="form.standardAnswer" type="textarea" :rows="5" placeholder="标准答案" />
       </div>
       <div class="mt-4 flex gap-3">
@@ -25,20 +25,20 @@
 
     <div class="space-y-4">
       <div class="grid gap-3 md:grid-cols-3">
-        <el-select v-model="filter.categoryId" clearable placeholder="分类筛选" size="large">
+        <el-select v-model="filter.categoryId" clearable placeholder="按分类" size="large">
           <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
         </el-select>
-        <el-select v-model="filter.difficulty" clearable placeholder="难度筛选" size="large">
+        <el-select v-model="filter.difficulty" clearable placeholder="按难度" size="large">
           <el-option label="简单" value="easy" />
           <el-option label="中等" value="medium" />
           <el-option label="困难" value="hard" />
         </el-select>
-        <el-input v-model="filter.keyword" clearable placeholder="关键字" size="large" />
+        <el-input v-model="filter.keyword" clearable placeholder="搜索题目" size="large" />
       </div>
 
       <div class="flex gap-3">
-        <el-button :loading="loading" type="primary" class="action-button" @click="emit('load')">刷新题库</el-button>
-        <el-button class="hard-button-secondary" @click="emit('filterReset')">重置筛选</el-button>
+        <el-button :loading="loading" type="primary" class="action-button" @click="emit('load')">刷新</el-button>
+        <el-button class="hard-button-secondary" @click="emit('filterReset')">重置</el-button>
         <el-upload
           :show-file-list="false"
           :before-upload="handleImport"

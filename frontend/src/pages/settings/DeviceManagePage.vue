@@ -1,36 +1,33 @@
 <template>
   <div class="space-y-6">
-    <AppShellHeader compact title="设备管理" subtitle="发现陌生设备可直接撤销。">
-      <template #actions>
-        <div class="text-sm text-slate-500 dark:text-slate-400">当前 {{ devices.length }} 台</div>
-      </template>
-    </AppShellHeader>
-
     <section class="paper-panel p-4 sm:p-6">
-      <div class="flex flex-wrap items-center justify-end gap-3">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="text-sm text-slate-500 dark:text-slate-400">当前 {{ devices.length }} 台</div>
+        <div class="flex flex-wrap items-center gap-3">
           <el-button :loading="loading" type="primary" size="large" class="action-button" @click="loadDevices">
             刷新
           </el-button>
           <el-popconfirm
             v-if="devices.length > 1"
-            title="确认撤销除当前设备外的所有设备？被撤销的设备将需要重新登录。"
+            title="确认撤销其他设备？"
             confirm-button-text="确认撤销"
             cancel-button-text="取消"
             @confirm="handleRevokeAll"
           >
             <template #reference>
               <el-button :loading="revokingAll" size="large" type="danger" plain>
-              撤销其他设备
-            </el-button>
-          </template>
-        </el-popconfirm>
+                撤销其他设备
+              </el-button>
+            </template>
+          </el-popconfirm>
+        </div>
       </div>
     </section>
 
     <section v-if="loading && devices.length === 0" class="paper-panel p-6">
       <div class="flex items-center justify-center py-8">
         <el-icon class="is-loading text-slate-400" :size="24"><i class="el-icon-loading" /></el-icon>
-        <span class="ml-3 text-sm text-slate-400">加载中...</span>
+        <span class="ml-3 text-sm text-slate-400">正在加载...</span>
       </div>
     </section>
 
@@ -38,7 +35,7 @@
       <EmptyState
         icon="bell"
         title="暂无已登录设备"
-        description="登录后设备会自动出现在此列表中。"
+        description="登录设备会显示在这里。"
       />
     </section>
 
@@ -106,7 +103,6 @@
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, ref } from 'vue'
-import AppShellHeader from '@/components/AppShellHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchDevicesApi, revokeDeviceApi, revokeAllDevicesApi } from '@/api/auth'
 import { localizeDeviceName } from '@/utils/device'

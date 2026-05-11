@@ -3,8 +3,8 @@
     <div class="surface-muted p-4">
       <div class="text-sm font-semibold text-ink">{{ form.id ? '编辑分类' : '新增分类' }}</div>
       <div class="mt-4 space-y-3">
-        <el-input v-model="form.name" placeholder="分类名称" size="large" />
-        <el-select v-model="form.type" placeholder="分类类型" size="large" class="w-full">
+        <el-input v-model="form.name" placeholder="名称" size="large" />
+        <el-select v-model="form.type" placeholder="类型" size="large" class="w-full">
           <el-option label="题目" value="question" />
           <el-option label="知识文档" value="knowledge" />
           <el-option label="面试" value="interview" />
@@ -20,7 +20,7 @@
     </div>
 
     <div class="space-y-3">
-      <div class="text-sm text-slate-500 dark:text-slate-400">现有分类 {{ categories.length }} 个</div>
+      <div class="text-sm text-slate-500 dark:text-slate-400">共 {{ categories.length }} 个分类</div>
       <article v-for="item in categories" :key="item.id" class="surface-card p-4">
         <div class="flex items-start justify-between gap-3">
           <div>

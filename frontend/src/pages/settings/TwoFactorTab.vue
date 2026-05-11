@@ -2,12 +2,10 @@
   <div class="space-y-4">
     <div v-if="loading" class="flex items-center justify-center py-8">
       <el-icon class="is-loading text-slate-400" :size="24"><i class="el-icon-loading" /></el-icon>
-      <span class="ml-3 text-sm text-slate-400">加载中...</span>
+      <span class="ml-3 text-sm text-slate-400">正在加载...</span>
     </div>
 
     <template v-else>
-      <AppShellHeader compact title="两步验证" :subtitle="status?.enabled ? '当前已开启。' : '建议启用，为账号增加额外校验。'" />
-
       <div v-if="status?.enabled" class="space-y-4">
         <div class="flex items-center gap-3 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 p-4">
           <div class="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 dark:bg-green-800/40">
@@ -25,9 +23,6 @@
 
         <div class="paper-panel p-4">
           <h4 class="text-sm font-semibold text-ink">关闭两步验证</h4>
-          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            关闭后，登录时将不再需要验证码。
-          </p>
           <div class="mt-3 flex items-center gap-3 max-w-xs">
             <el-input
               v-model="disableCode"
@@ -50,9 +45,12 @@
 
       <div v-else>
         <template v-if="!showSetup">
-          <el-button type="primary" size="large" class="action-button mt-4" @click="showSetup = true">
-            启用两步验证
-          </el-button>
+          <div class="paper-panel flex flex-wrap items-center justify-between gap-3 p-4">
+            <div class="text-sm font-semibold text-ink">未启用</div>
+            <el-button type="primary" size="large" class="action-button" @click="showSetup = true">
+              启用两步验证
+            </el-button>
+          </div>
         </template>
 
         <template v-else>
@@ -67,7 +65,6 @@
 import { ElMessage } from 'element-plus'
 import { onMounted, ref } from 'vue'
 import { disableTwoFactorApi, fetchTwoFactorStatusApi } from '@/api/auth'
-import AppShellHeader from '@/components/AppShellHeader.vue'
 import type { TwoFactorStatus } from '@/types/api'
 import TwoFactorSetupPage from './TwoFactorSetupPage.vue'
 

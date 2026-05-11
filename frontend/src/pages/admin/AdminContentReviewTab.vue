@@ -2,7 +2,7 @@
   <div class="space-y-4">
     <div class="flex items-center justify-between gap-3">
       <div class="text-sm text-slate-500 dark:text-slate-400">
-        待审核内容：<span class="font-semibold text-ink">{{ total }}</span> 条
+        待审核 <span class="font-semibold text-ink">{{ total }}</span> 条
       </div>
     </div>
 
@@ -43,8 +43,7 @@
     </div>
 
     <el-dialog v-model="rejectVisible" title="审核拒绝" width="400px">
-      <p class="text-sm text-slate-600 dark:text-slate-300 mb-3">请填写拒绝原因（可选）：</p>
-      <el-input v-model="rejectReason" type="textarea" :rows="3" placeholder="拒绝原因..." />
+      <el-input v-model="rejectReason" type="textarea" :rows="3" placeholder="拒绝原因（可选）" />
       <template #footer>
         <el-button @click="rejectVisible = false">取消</el-button>
         <el-button :loading="rejectLoading" type="danger" @click="handleReject">确认拒绝</el-button>

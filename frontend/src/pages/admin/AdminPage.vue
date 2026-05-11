@@ -22,6 +22,7 @@
     </AppShellHeader>
 
     <section class="cockpit-panel p-5 sm:p-6">
+      <div class="admin-tab-shell">
       <el-tabs v-model="activeTab" class="admin-tabs">
         <el-tab-pane label="系统概览" name="overview">
           <AdminOverviewTab />
@@ -96,6 +97,7 @@
           <AdminLoginLogTab />
         </el-tab-pane>
       </el-tabs>
+      </div>
     </section>
   </div>
 </template>
@@ -252,6 +254,17 @@ onMounted(async () => { await loadCategories(); await Promise.all([loadQuestions
   font-weight: 700;
   line-height: 1.15;
   letter-spacing: -0.03em;
+}
+
+.admin-tab-shell {
+  border-radius: 28px;
+  border: 1px solid var(--bc-line);
+  background: rgba(255, 255, 255, 0.26);
+  padding: 12px;
+}
+
+.dark .admin-tab-shell {
+  background: rgba(255, 255, 255, 0.04);
 }
 
 :deep(.admin-tabs .el-tabs__nav-wrap::after) {
