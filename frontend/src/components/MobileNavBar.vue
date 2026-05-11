@@ -1,16 +1,18 @@
 <template>
   <nav class="safe-area-bottom fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--bc-line)] bg-white/88 backdrop-blur-xl dark:bg-[#07111f]/86 md:hidden">
     <div class="flex items-center justify-around px-2 py-1.5">
-      <RouterLink
+      <component
         v-for="item in items"
         :key="item.path"
-        :to="item.path"
+        :is="item.path ? 'RouterLink' : 'button'"
+        v-bind="item.path ? { to: item.path } : { type: 'button' }"
         class="flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-2 transition-all"
         :class="isActive(item.path) ? 'bg-accent/12 text-accent shadow-[0_0_22px_rgba(var(--bc-accent-rgb),0.16)]' : 'text-slate-500 dark:text-slate-400'"
+        @click="item.action?.()"
       >
         <component :is="item.icon" class="h-5 w-5 shrink-0" />
         <span class="text-[10px] font-medium truncate">{{ item.label }}</span>
-      </RouterLink>
+      </component>
     </div>
   </nav>
 </template>
@@ -26,10 +28,6 @@ const IconHome = () => h('svg', { class: 'h-5 w-5', fill: 'none', viewBox: '0 0 
   h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' })
 ])
 
-const IconChat = () => h('svg', { class: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2' }, [
-  h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z' })
-])
-
 const IconKnowledge = () => h('svg', { class: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2' }, [
   h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' })
 ])
@@ -43,15 +41,23 @@ const IconReview = () => h('svg', { class: 'h-5 w-5', fill: 'none', viewBox: '0 
   h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d: 'M9 12h6m-6 4h6M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z' })
 ])
 
+const IconMore = () => h('svg', { class: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2' }, [
+  h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d: 'M12 6h.01M12 12h.01M12 18h.01' })
+])
+
+const openSidebar = () => {
+  window.dispatchEvent(new CustomEvent('bytecoach:open-sidebar'))
+}
+
 const items = [
   { path: '/dashboard', label: '首页', icon: IconHome },
   { path: '/cards', label: '今日卡片', icon: IconCards },
-  { path: '/review', label: '复习中心', icon: IconReview },
+  { path: '/review', label: '复习', icon: IconReview },
   { path: '/knowledge', label: '知识库', icon: IconKnowledge },
-  { path: '/chat', label: '问答', icon: IconChat },
+  { path: '', label: '更多', icon: IconMore, action: openSidebar },
 ]
 
-const isActive = (path: string) => route.path === path || route.path.startsWith(path + '/')
+const isActive = (path?: string) => Boolean(path) && (route.path === path || route.path.startsWith(path + '/'))
 </script>
 
 <style scoped>

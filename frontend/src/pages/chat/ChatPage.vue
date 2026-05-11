@@ -1,7 +1,7 @@
 <template>
   <div class="chat-page">
-    <AppShellHeader>
-      <template #actions>
+    <section class="chat-toolbar cockpit-panel p-4 sm:p-5">
+      <div class="chat-toolbar__actions">
         <div class="mode-toggle mode-toggle-page" role="tablist" aria-label="问答模式">
           <button
             type="button"
@@ -34,8 +34,8 @@
           </button>
           <button type="button" class="topbar-primary" @click="startNewSession">新对话</button>
         </div>
-      </template>
-    </AppShellHeader>
+      </div>
+    </section>
 
     <div class="chat-shell">
       <section class="chat-main panel-surface">
@@ -143,6 +143,7 @@
                 >
                   查看引用
                 </button>
+                <button type="button" class="topbar-primary topbar-primary-compact lg:hidden" @click="startNewSession">新对话</button>
               </div>
             </header>
 
@@ -397,7 +398,6 @@ import { ElMessage } from 'element-plus'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
-import AppShellHeader from '@/components/AppShellHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { deleteChatSessionApi, fetchChatMessagesApi, fetchChatSessionsApi } from '@/api/chat'
 import type { ChatMessageItem, ChatSessionItem, KnowledgeReferenceItem } from '@/types/api'
@@ -913,6 +913,18 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
+.chat-toolbar {
+  margin-bottom: 1rem;
+}
+
+.chat-toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
 .chat-shell {
   flex: 1;
   min-height: 0;
@@ -1175,6 +1187,10 @@ onUnmounted(() => {
   padding: 0.8rem 1rem;
   color: white;
   box-shadow: 0 14px 24px rgba(77, 163, 255, 0.2);
+}
+
+.topbar-primary-compact {
+  padding-inline: 0.92rem;
 }
 
 .session-strip {
@@ -1743,6 +1759,11 @@ onUnmounted(() => {
 @media (max-width: 1023px) {
   .chat-main {
     height: calc(100dvh - 196px);
+  }
+
+  .chat-toolbar__actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .module-topbar {

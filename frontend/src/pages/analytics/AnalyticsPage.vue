@@ -197,7 +197,7 @@
         <EmptyState icon="chart" title="暂无面试数据" description="完成面试后，这里会显示最近的表现趋势。" compact />
       </div>
       <div v-else class="mt-5">
-        <div v-if="trendData.categoryTrends?.length" class="mb-4 flex flex-wrap gap-2">
+        <div v-if="normalizedCategoryTrends.length" class="mb-4 flex flex-wrap gap-2">
           <button
             type="button"
             class="category-chip"
@@ -207,14 +207,14 @@
             全部分类
           </button>
           <button
-            v-for="cat in trendData.categoryTrends"
+            v-for="cat in normalizedCategoryTrends"
             :key="cat.categoryId"
             type="button"
             class="category-chip"
             :class="{ 'category-chip-active': selectedCategories.includes(cat.categoryId) }"
             @click="toggleCategory(cat.categoryId)"
           >
-            {{ cat.categoryName }}
+            {{ cat.displayName }}
           </button>
         </div>
         <div ref="interviewTrendChartRef" class="chart-shell h-[320px] w-full"></div>
@@ -309,6 +309,28 @@ const totalMasteryCount = computed(() => {
   return Object.values(d || {}).reduce((sum, value) => sum + value, 0)
 })
 
+const normalizedCategoryTrends = computed(() => {
+  const byId = new Map<number, AbilityTrend['categoryTrends'][number]>()
+  for (const trend of trendData.value.categoryTrends || []) {
+    if (!byId.has(trend.categoryId)) {
+      byId.set(trend.categoryId, trend)
+    }
+  }
+  const deduped = [...byId.values()]
+  const nameCount = deduped.reduce<Record<string, number>>((acc, item) => {
+    const name = item.categoryName || `分类 ${item.categoryId}`
+    acc[name] = (acc[name] || 0) + 1
+    return acc
+  }, {})
+  return deduped.map((item) => ({
+    ...item,
+    displayName: (() => {
+      const name = item.categoryName || `分类 ${item.categoryId}`
+      return (nameCount[name] ?? 0) > 1 ? `${name} #${item.categoryId}` : name
+    })()
+  }))
+})
+
 const latestCompletionRate = computed(() => {
   const data = trendData.value.completionRateTrend
   return data.length ? data[data.length - 1]!.value : null
@@ -353,7 +375,7 @@ const categoryMasteryItems = computed(() => efficiencyData.value.categoryMastery
 const summarySignals = computed(() => [
   {
     label: '观察周数',
-    value: trendData.value.weeks.length,
+    value: selectedWeeks.value,
     detail: '',
     toneClass: '',
   },
@@ -552,12 +574,12 @@ const renderInterviewTrendChart = () => {
   ]
 
   const catTrends = selectedCategories.value.length > 0
-    ? trendData.value.categoryTrends.filter((c) => selectedCategories.value.includes(c.categoryId))
-    : trendData.value.categoryTrends
+    ? normalizedCategoryTrends.value.filter((c) => selectedCategories.value.includes(c.categoryId))
+    : normalizedCategoryTrends.value
 
   catTrends.forEach((cat, idx) => {
     series.push({
-      name: cat.categoryName,
+      name: cat.displayName,
       type: 'line',
       data: weeks.map((w) => cat.points.find((p) => p.week === w)?.score ?? null),
       smooth: true,
@@ -787,9 +809,10 @@ watch(selectedCategories, () => {
 
 .chart-shell {
   border-radius: calc(var(--radius-md) + 2px);
+  border: 1px solid rgba(148, 163, 184, 0.16);
   background:
-    radial-gradient(circle at top left, rgba(54, 90, 176, 0.12), transparent 30%),
-    rgba(7, 17, 31, 0.98);
+    radial-gradient(circle at top left, rgba(85, 214, 190, 0.08), transparent 32%),
+    linear-gradient(180deg, rgba(247, 250, 252, 0.96), rgba(255, 255, 255, 0.88));
 }
 
 .category-chip {

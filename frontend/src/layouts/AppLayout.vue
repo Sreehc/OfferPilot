@@ -242,8 +242,13 @@ const handleKeydown = (e: KeyboardEvent) => {
   }
 }
 
+const openSidebar = () => {
+  sidebarVisible.value = true
+}
+
 onMounted(() => {
   document.addEventListener('keydown', handleKeydown)
+  window.addEventListener('bytecoach:open-sidebar', openSidebar)
   if (window.innerWidth >= 1024) {
     sidebarVisible.value = true
   }
@@ -251,6 +256,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
+  window.removeEventListener('bytecoach:open-sidebar', openSidebar)
 })
 
 const displayName = computed(() => authStore.user?.nickname || '访客')
