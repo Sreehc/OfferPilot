@@ -25,7 +25,7 @@
 
     <section
       class="grid gap-4"
-      :class="phase === 'idle' ? 'lg:grid-cols-[0.92fr_1.08fr]' : 'lg:grid-cols-[360px_minmax(0,1fr)]'"
+      :class="phase === 'idle' ? 'mx-auto max-w-2xl' : 'lg:grid-cols-[360px_minmax(0,1fr)]'"
     >
       <aside class="shell-section-card p-4 sm:p-6">
         <div class="panel-heading">
@@ -46,7 +46,10 @@
           <div class="data-slab p-4">
             <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">方向</div>
             <el-select v-model="direction" size="large" class="mt-2 w-full">
-              <el-option v-for="d in directions" :key="d" :label="d" :value="d" />
+              <el-option v-for="d in directions" :key="d.name" :label="d.name" :value="d.name">
+                <span>{{ d.name }}</span>
+                <span class="ml-2 text-xs text-slate-400">{{ d.desc }}</span>
+              </el-option>
             </el-select>
           </div>
           <div class="data-slab p-4">
@@ -125,12 +128,8 @@
         </div>
       </aside>
 
-      <section class="shell-section-card flex min-h-[560px] flex-col p-4 sm:p-6">
-        <div v-if="phase === 'idle'" class="flex flex-1 items-center justify-center">
-          <div class="max-w-md text-center">
-            <h4 class="text-2xl font-semibold text-ink">准备好后开始</h4>
-          </div>
-        </div>
+      <section v-if="phase !== 'idle'" class="shell-section-card flex min-h-[560px] flex-col p-4 sm:p-6">
+        <div v-if="false"></div>
 
         <div v-else-if="phase === 'answering'" class="flex flex-1 flex-col">
           <div class="question-stage question-stage-answering">
@@ -422,7 +421,14 @@ const route = useRoute()
 
 type Phase = 'idle' | 'answering' | 'scoring' | 'result' | 'finished'
 
-const directions = ['Spring', 'JVM', 'MySQL', 'Redis', '并发', '微服务']
+const directions = [
+  { name: 'Spring', desc: 'IoC、AOP、Boot 自动配置' },
+  { name: 'JVM', desc: '内存模型、GC、类加载' },
+  { name: 'MySQL', desc: '索引、事务、锁机制' },
+  { name: 'Redis', desc: '数据结构、缓存、持久化' },
+  { name: '并发', desc: '线程池、锁、CAS、AQS' },
+  { name: '微服务', desc: '网关、注册中心、限流' }
+]
 
 const phase = ref<Phase>('idle')
 const direction = ref('Spring')
@@ -691,7 +697,7 @@ onMounted(() => {
   void fetchRecommendInterviewApi()
     .then((res) => {
       const rec = res.data
-      if (rec && rec.direction && directions.includes(rec.direction)) {
+      if (rec && rec.direction && directions.some((d) => d.name === rec.direction)) {
         direction.value = rec.direction
       }
       if (rec && rec.questionCount) {
