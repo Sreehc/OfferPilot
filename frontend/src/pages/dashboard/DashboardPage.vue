@@ -63,169 +63,22 @@
             </div>
           </section>
 
-          <section class="grid gap-4 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
-            <article class="shell-section-card p-4 sm:p-5">
-              <div class="flex items-center justify-between gap-3">
-                <div>
-                  <p class="section-kicker">学习概览</p>
-                  <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">今天先处理核心任务</h3>
-                </div>
-                <RouterLink to="/analytics" class="text-sm font-semibold text-accent hover:underline">
-                  详细分析
-                </RouterLink>
-              </div>
-              <div class="mt-6 grid gap-3 sm:grid-cols-2">
-                <article
-                  v-for="metric in metrics"
-                  :key="metric.label"
-                  class="dashboard-summary-card"
-                  :class="metric.label === '今日卡片' ? 'dashboard-summary-card-primary sm:col-span-2' : ''"
-                >
-                  <p class="dashboard-summary-card__label">{{ metric.label }}</p>
-                  <p class="dashboard-summary-card__value">{{ metric.value }}</p>
-                </article>
-              </div>
-            </article>
-
-            <article class="shell-section-card p-4 sm:p-5">
-              <p class="section-kicker">下一步动作</p>
-              <div class="mt-6 grid gap-3 sm:grid-cols-2">
-                <RouterLink v-for="action in quickActions" :key="action.to" :to="action.to" class="dashboard-action-card">
-                  <p class="dashboard-action-card__label">{{ action.label }}</p>
-                  <h3 class="dashboard-action-card__title">{{ action.title }}</h3>
-                </RouterLink>
-              </div>
-            </article>
-          </section>
-        </div>
-
-        <aside class="space-y-4">
-          <section class="shell-section-card p-4 sm:p-5">
-            <p class="section-kicker">今日状态</p>
-            <div class="mt-5 space-y-4">
-              <div class="dashboard-status-row">
-                <span>当前状态</span>
-                <strong>{{ overview.todayCompletionStatus || '等待开始' }}</strong>
-              </div>
-              <div class="dashboard-status-row">
-                <span>连续学习</span>
-                <strong>{{ overview.studyStreak ?? reviewStats.currentStreak ?? 0 }} 天</strong>
-              </div>
-              <div class="dashboard-status-row">
-                <span>最近诊断</span>
-                <strong>{{ overview.recentInterviews?.length ? `${overview.recentInterviews.length} 场` : '暂无' }}</strong>
-              </div>
-            </div>
-          </section>
-
-          <section class="shell-section-card p-4 sm:p-5">
+          <article class="shell-section-card p-4 sm:p-5">
             <div class="flex items-center justify-between gap-3">
-              <div>
-                <p class="section-kicker">压力分类</p>
-                <h3 class="mt-3 text-xl font-semibold tracking-[-0.03em] text-ink">优先处理的分类</h3>
-              </div>
-              <RouterLink to="/review" class="text-sm font-semibold text-accent hover:underline">
-                去处理
+              <p class="section-kicker">下一步动作</p>
+              <RouterLink to="/analytics" class="text-sm font-semibold text-accent hover:underline">
+                更多数据 →
               </RouterLink>
             </div>
-
-            <div v-if="overview.categoryMasterySummary && overview.categoryMasterySummary.length > 0" class="mt-6 space-y-3">
-              <div
-                v-for="c in overview.categoryMasterySummary.slice(0, 3)"
-                :key="`${c.categoryName}-${c.categoryId ?? 'na'}`"
-                class="dashboard-pressure-row"
-              >
-                <div>
-                  <p class="font-semibold text-ink">{{ c.categoryName }}</p>
-                  <p class="text-xs text-slate-500">待复习 {{ c.dueCount }} · 已掌握 {{ c.masteredCards }}/{{ c.totalCards }}</p>
-                </div>
-                <strong>{{ Math.round(c.masteryRate) }}%</strong>
-              </div>
+            <div class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <RouterLink v-for="action in quickActions" :key="action.to" :to="action.to" class="dashboard-action-card">
+                <p class="dashboard-action-card__label">{{ action.label }}</p>
+                <h3 class="dashboard-action-card__title">{{ action.title }}</h3>
+              </RouterLink>
             </div>
-            <EmptyState
-              v-else
-              class="mt-6"
-              icon="chart"
-              title="暂无压力分类"
-              description="生成并复习卡片后查看。"
-              compact
-            />
-          </section>
-        </aside>
-      </section>
-
-      <section class="shell-section-card p-5 sm:p-6">
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div class="flex items-center gap-3">
-            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-accent/10 text-accent">
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                />
-              </svg>
-            </div>
-            <div>
-              <p class="text-xl font-semibold tracking-[-0.03em] text-ink">进阶分析</p>
-              <p class="text-sm text-slate-500">{{ overview.recentInterviews?.length ? `最近 ${overview.recentInterviews.length} 场诊断` : '暂无诊断记录' }}</p>
-            </div>
-          </div>
-          <RouterLink to="/analytics" class="text-sm font-semibold text-accent hover:underline">查看全部分析</RouterLink>
+          </article>
         </div>
 
-        <div class="mt-6 space-y-4">
-          <section class="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-            <DashboardInterviews :interviews="overview.recentInterviews" />
-            <DashboardWeakPoints :items="overview.categoryMasterySummary || []" />
-          </section>
-
-          <section class="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-            <article class="shell-section-card p-4 sm:p-6">
-              <p class="section-kicker">记忆成长摘要</p>
-              <h3 class="mt-3 text-xl font-semibold tracking-[-0.03em] text-ink sm:text-2xl">最近的记忆推进状态</h3>
-              <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                <div>
-                  <p class="text-xs text-slate-500">今日完成状态</p>
-                  <p class="mt-1 text-xl font-semibold text-ink">
-                    {{ overview.todayCompletionStatus || '等待今日卡片开始' }}
-                  </p>
-                </div>
-                <div>
-                  <p class="text-xs text-slate-500">连续学习</p>
-                  <p class="mt-1 text-3xl font-bold text-ink">
-                    {{ overview.studyStreak ?? reviewStats.currentStreak ?? 0 }} 天
-                  </p>
-                </div>
-              </div>
-              <div v-if="overview.categoryMasterySummary && overview.categoryMasterySummary.length > 0" class="mt-5 space-y-2">
-                <p class="mb-2 text-xs font-medium text-slate-500">当前最有压力的分类</p>
-                <div
-                  v-for="c in overview.categoryMasterySummary.slice(0, 4)"
-                  :key="`${c.categoryName}-${c.categoryId ?? 'na'}`"
-                  class="flex items-center justify-between text-sm"
-                >
-                  <span class="truncate text-slate-600 dark:text-slate-300">{{ c.categoryName }}</span>
-                  <div class="flex items-center gap-2">
-                    <span class="text-xs text-slate-400">待复习 {{ c.dueCount }}</span>
-                    <span class="text-xs font-medium text-accent">{{ Math.round(c.masteryRate) }}%</span>
-                  </div>
-                </div>
-              </div>
-            </article>
-
-            <article class="shell-section-card p-4 sm:p-6">
-              <p class="section-kicker">趋势记录</p>
-              <DashboardInterviewTrend :trend-data="trendData" :loading="trendLoading" />
-              <DashboardReviewHeatmap
-                class="mt-4"
-                :heatmap="reviewStats.heatmap"
-                :streak="reviewStats.currentStreak"
-                :today-pending="reviewStats.todayPending"
-              />
-            </article>
-          </section>
-        </div>
       </section>
     </template>
   </div>
@@ -235,12 +88,7 @@
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 import DashboardGuideCard from './DashboardGuideCard.vue'
-import DashboardInterviews from './DashboardInterviews.vue'
-import DashboardWeakPoints from './DashboardWeakPoints.vue'
-import DashboardInterviewTrend from './DashboardInterviewTrend.vue'
-import DashboardReviewHeatmap from './DashboardReviewHeatmap.vue'
 import { fetchDashboardOverviewApi } from '@/api/dashboard'
-import { fetchInterviewTrendApi } from '@/api/interview'
 import { fetchReviewStatsApi } from '@/api/review'
 import type { DashboardOverview, ReviewStats } from '@/types/api'
 import { useAuthStore } from '@/stores/auth'
@@ -248,8 +96,6 @@ import { storage } from '@/utils/storage'
 
 const authStore = useAuthStore()
 const loading = ref(true)
-const trendLoading = ref(true)
-const trendData = ref<Array<{ sessionId: string; direction: string; totalScore: number; startTime?: string }>>([])
 const reviewStats = ref<ReviewStats>({ totalReviews: 0, currentStreak: 0, todayPending: 0 })
 const guideDismissed = ref(false)
 const overview = ref<DashboardOverview>({
@@ -274,25 +120,6 @@ const todayReviewCards = computed(() => overview.value.todayReviewCards ?? 0)
 const todayCardCompletionRate = computed(() => overview.value.todayCardCompletionRate ?? 0)
 const reviewDebtCount = computed(() => overview.value.reviewDebtCount ?? 0)
 const todayCardTotal = computed(() => todayLearnCards.value + todayReviewCards.value)
-
-const metrics = computed(() => [
-  {
-    label: '今日卡片',
-    value: todayCardTotal.value > 0 ? `${todayCardTotal.value} 张` : '待开始'
-  },
-  {
-    label: '完成率',
-    value: `${formatPercent(todayCardCompletionRate.value)}%`
-  },
-  {
-    label: '连续天数',
-    value: `${overview.value.studyStreak ?? reviewStats.value.currentStreak} 天`
-  },
-  {
-    label: '复习负债',
-    value: reviewDebtCount.value > 0 ? `${reviewDebtCount.value} 项` : '无积压'
-  }
-])
 
 const primaryMission = computed(() => {
   if (todayCardTotal.value > 0) {
@@ -370,23 +197,6 @@ const loadOverview = async () => {
   }
 }
 
-const loadTrend = async () => {
-  trendLoading.value = true
-  try {
-    const response = await fetchInterviewTrendApi(20)
-    trendData.value = (response.data || []).map((item) => ({
-      sessionId: item.sessionId,
-      direction: item.direction,
-      totalScore: item.totalScore,
-      startTime: item.startTime
-    }))
-  } catch {
-    // supplementary only
-  } finally {
-    trendLoading.value = false
-  }
-}
-
 const loadReviewStats = async () => {
   try {
     const response = await fetchReviewStatsApi()
@@ -402,39 +212,11 @@ const formatPercent = (value: number): string => {
 
 onMounted(() => {
   void loadOverview()
-  void loadTrend()
   void loadReviewStats()
 })
 </script>
 
 <style scoped>
-.dashboard-summary-card {
-  border-radius: calc(var(--radius-md) - 4px);
-  border: 1px solid var(--bc-border-subtle);
-  background: rgba(255, 255, 255, 0.74);
-  padding: 1rem 1.1rem;
-}
-
-.dashboard-summary-card-primary {
-  background:
-    linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.08), transparent 42%),
-    rgba(255, 255, 255, 0.82);
-}
-
-.dashboard-summary-card__label {
-  font-size: 0.78rem;
-  color: var(--bc-ink-secondary);
-}
-
-.dashboard-summary-card__value {
-  margin-top: 0.5rem;
-  font-family: theme('fontFamily.mono');
-  font-size: clamp(1.8rem, 2vw, 2.5rem);
-  font-weight: 700;
-  line-height: 1;
-  color: var(--bc-ink);
-}
-
 .dashboard-action-card {
   border-radius: calc(var(--radius-md) - 4px);
   border: 1px solid var(--bc-border-subtle);
@@ -490,24 +272,5 @@ onMounted(() => {
   font-size: 1.2rem;
   line-height: 1.2;
   color: var(--bc-ink);
-}
-
-.dashboard-status-row,
-.dashboard-pressure-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.dashboard-status-row span,
-.dashboard-pressure-row p:last-child {
-  color: var(--bc-ink-secondary);
-}
-
-.dashboard-status-row strong,
-.dashboard-pressure-row strong {
-  color: var(--bc-ink);
-  font-weight: 700;
 }
 </style>
