@@ -9,7 +9,7 @@
             :class="{ 'mode-toggle__item-active': mode === 'rag' }"
             @click="mode = 'rag'"
           >
-            知识库问答
+            基于资料回答
           </button>
           <button
             type="button"
@@ -17,7 +17,7 @@
             :class="{ 'mode-toggle__item-active': mode === 'chat' }"
             @click="mode = 'chat'"
           >
-            直接问答
+            自由提问
           </button>
         </div>
         <div class="flex flex-wrap gap-3">
@@ -85,7 +85,7 @@
                   <span class="session-pill__title">{{ session.title || '未命名会话' }}</span>
                   <div class="session-pill__meta">
                     <span class="session-mode-tag" :class="session.mode === 'rag' ? 'tag-rag' : 'tag-chat'">
-                      {{ session.mode === 'rag' ? '知识库问答' : '直接问答' }}
+                      {{ session.mode === 'rag' ? '基于资料回答' : '自由提问' }}
                     </span>
                     <span>{{ formatSessionTime(session.lastMessageTime || session.updateTime) }}</span>
                   </div>
@@ -128,7 +128,7 @@
                 <div class="conversation-bar__headline">
                   <p class="conversation-bar__name">{{ activeSessionTitle }}</p>
                   <span class="session-mode-tag" :class="mode === 'rag' ? 'tag-rag' : 'tag-chat'">
-                    {{ mode === 'rag' ? '知识库问答' : '直接问答' }}
+                    {{ mode === 'rag' ? '基于资料回答' : '自由提问' }}
                   </span>
                 </div>
                 <p v-if="activeSession" class="conversation-bar__meta">
@@ -324,7 +324,7 @@
             <span class="session-pill__title">{{ session.title || '未命名会话' }}</span>
             <div class="session-pill__meta">
               <span class="session-mode-tag" :class="session.mode === 'rag' ? 'tag-rag' : 'tag-chat'">
-                {{ session.mode === 'rag' ? '知识库问答' : '直接问答' }}
+                {{ session.mode === 'rag' ? '基于资料回答' : '自由提问' }}
               </span>
               <span>{{ formatSessionTime(session.lastMessageTime || session.updateTime) }}</span>
             </div>
@@ -440,8 +440,8 @@ const isDesktopViewport = ref(typeof window !== 'undefined' ? window.innerWidth 
 
 const sessionFilters: Array<{ label: string; value: SessionFilterValue }> = [
   { label: '全部', value: 'all' },
-  { label: '知识库', value: 'rag' },
-  { label: '直接问答', value: 'chat' }
+  { label: '资料问答', value: 'rag' },
+  { label: '自由提问', value: 'chat' }
 ]
 
 const promptSuggestions = ['帮我梳理这次学习的重点', '解释一下这个知识点的核心原理', '给我一份更容易复习的总结']
