@@ -8,7 +8,7 @@
       </template>
     </AppShellHeader>
 
-    <section class="forum-hero shell-section-card p-4 sm:p-5">
+    <section class="forum-panel shell-section-card p-4 sm:p-5">
       <div class="forum-header-bar">
         <div class="forum-header-bar__tabs">
           <button
@@ -23,9 +23,9 @@
           </button>
         </div>
       </div>
-    </section>
 
-    <section class="forum-feed shell-section-card p-4 sm:p-5">
+      <div class="forum-panel__divider"></div>
+
       <div class="forum-toolbar">
         <div class="mode-switch">
           <button
@@ -281,9 +281,20 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.forum-hero {
+.forum-panel {
   position: relative;
-  overflow: hidden;
+}
+
+.forum-panel__divider {
+  height: 1px;
+  margin: 18px -16px 0;
+  background: rgba(148, 163, 184, 0.16);
+}
+
+@media (min-width: 640px) {
+  .forum-panel__divider {
+    margin-inline: -20px;
+  }
 }
 
 .forum-header-bar {
@@ -361,6 +372,7 @@ onMounted(async () => {
 .forum-toolbar {
   display: grid;
   gap: 14px;
+  margin-top: 18px;
 }
 
 .mode-switch {

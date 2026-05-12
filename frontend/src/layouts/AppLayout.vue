@@ -37,13 +37,19 @@
     </header>
 
     <div
-      class="pt-[64px] lg:mt-[64px] lg:grid lg:h-[calc(100dvh-64px)] lg:pt-0 lg:overflow-hidden"
-      :class="sidebarVisible ? 'lg:grid-cols-[252px_minmax(0,1fr)] xl:grid-cols-[264px_minmax(0,1fr)]' : 'lg:grid-cols-[minmax(0,1fr)]'"
+      class="app-layout-shell pt-[64px] lg:mt-[64px] lg:h-[calc(100dvh-64px)] lg:pt-0 lg:overflow-hidden"
+      :class="{ 'app-layout-shell-sidebar-hidden': !sidebarVisible }"
     >
-      <NavRail
-        v-show="sidebarVisible"
-        class="hidden min-h-[280px] border-r border-[var(--bc-border-subtle)] lg:block lg:h-full lg:min-h-0 lg:overflow-y-auto"
-      />
+      <div
+        class="desktop-rail hidden lg:block"
+        :class="{ 'desktop-rail-collapsed': !sidebarVisible }"
+        :aria-hidden="!sidebarVisible"
+        :inert="!sidebarVisible"
+      >
+        <NavRail
+          class="min-h-[280px] border-r border-[var(--bc-border-subtle)] lg:h-full lg:min-h-0 lg:overflow-y-auto"
+        />
+      </div>
 
       <Transition name="mobile-rail-fade">
         <div v-if="sidebarVisible" class="mobile-rail-overlay lg:hidden" @click="sidebarVisible = false"></div>
@@ -64,11 +70,11 @@
       <main
         class="relative z-[1] flex min-w-0 flex-col px-4 py-5 md:px-6 md:py-7 lg:h-full lg:min-h-0 lg:overflow-hidden lg:px-5 lg:py-7 xl:px-6"
       >
-        <section class="min-h-0 flex-1 lg:overflow-y-auto">
-          <div class="app-canvas w-full max-w-[1540px]">
+        <section class="min-h-0 flex flex-1 lg:overflow-y-auto">
+          <div class="app-canvas w-full max-w-[1720px]">
             <RouterView v-slot="{ Component, route: viewRoute }">
               <Transition name="page-slide" mode="out-in">
-                <component :is="Component" :key="viewRoute.path" />
+                <component :is="Component" :key="viewRoute.path" class="app-canvas-page" />
               </Transition>
             </RouterView>
           </div>
@@ -264,6 +270,32 @@ const handleLogout = async () => {
 </script>
 
 <style scoped>
+.app-canvas {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 100%;
+  margin-inline: auto;
+  width: 100%;
+  max-width: 1720px;
+}
+
+.app-canvas-page {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 100%;
+}
+
+.app-layout-shell {
+  display: block;
+}
+
+.desktop-rail {
+  min-width: 0;
+}
+
 .global-topbar {
   position: fixed;
   inset: 0 0 auto 0;
@@ -453,6 +485,43 @@ const handleLogout = async () => {
   padding: 0.15rem 0.4rem;
   color: var(--bc-ink-secondary);
   box-shadow: var(--bc-shadow-soft);
+}
+
+@media (min-width: 1024px) {
+  .app-layout-shell {
+    display: grid;
+    grid-template-columns: 252px minmax(0, 1fr);
+    transition: grid-template-columns 240ms var(--ease-hard);
+  }
+
+  .app-layout-shell-sidebar-hidden {
+    grid-template-columns: 0 minmax(0, 1fr);
+  }
+
+  .desktop-rail {
+    overflow: hidden;
+    opacity: 1;
+    transform: translateX(0);
+    transition:
+      opacity 180ms var(--ease-hard),
+      transform 220ms var(--ease-hard);
+  }
+
+  .desktop-rail-collapsed {
+    pointer-events: none;
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+}
+
+@media (min-width: 1280px) {
+  .app-layout-shell {
+    grid-template-columns: 264px minmax(0, 1fr);
+  }
+
+  .app-layout-shell-sidebar-hidden {
+    grid-template-columns: 0 minmax(0, 1fr);
+  }
 }
 
 @media (min-width: 1024px) {

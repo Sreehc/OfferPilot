@@ -40,7 +40,12 @@
     <div class="chat-shell">
       <section class="chat-main shell-section-card">
         <div class="chat-main__workspace" :class="{ 'chat-main__workspace-sidebar-hidden': !desktopSessionVisible }">
-          <aside v-if="desktopSessionVisible" class="session-sidebar hidden lg:flex">
+          <aside
+            class="session-sidebar hidden lg:flex"
+            :class="{ 'session-sidebar-collapsed': !desktopSessionVisible }"
+            :aria-hidden="!desktopSessionVisible"
+            :inert="!desktopSessionVisible"
+          >
             <div class="session-sidebar__header">
               <div>
                 <h2 class="session-sidebar__title">会话列表</h2>
@@ -276,7 +281,7 @@
     <el-drawer
       v-model="sessionDrawerVisible"
       direction="ltr"
-      :size="isDesktopViewport ? '320px' : '84%'"
+      :size="isDesktopViewport ? '300px' : '84%'"
       :with-header="false"
       class="chat-drawer"
     >
@@ -870,6 +875,7 @@ onUnmounted(() => {
 .chat-page {
   display: flex;
   flex-direction: column;
+  width: 100%;
   height: 100%;
   min-height: 0;
   overflow: hidden;
@@ -917,28 +923,34 @@ onUnmounted(() => {
 }
 
 .chat-shell {
-  flex: 1;
-  min-height: 0;
   overflow: hidden;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
 }
 
 .chat-main__workspace {
   display: grid;
-  grid-template-columns: 320px minmax(0, 1fr);
+  grid-template-columns: 288px minmax(0, 1fr);
   height: 100%;
   min-height: 0;
   flex: 1;
+  width: 100%;
   overflow: hidden;
+  transition: grid-template-columns 220ms var(--ease-hard);
 }
 
 .chat-main__workspace-sidebar-hidden {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: 0 minmax(0, 1fr);
 }
 
 .chat-main__content {
   display: flex;
   min-width: 0;
   min-height: 0;
+  width: 100%;
   flex-direction: column;
 }
 
@@ -946,9 +958,26 @@ onUnmounted(() => {
   display: flex;
   min-height: 0;
   flex-direction: column;
-  gap: 1rem;
-  padding: 1rem 1rem 1rem 0;
+  gap: 0.9rem;
+  padding: 1.1rem 1rem 1rem 1rem;
   border-right: 1px solid rgba(226, 232, 240, 0.7);
+  min-width: 0;
+  overflow: hidden;
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    opacity 180ms var(--ease-hard),
+    transform 220ms var(--ease-hard),
+    padding 220ms var(--ease-hard),
+    border-color 220ms var(--ease-hard);
+}
+
+.session-sidebar-collapsed {
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-18px);
+  padding-inline: 0;
+  border-color: transparent;
 }
 
 .session-sidebar__header {
@@ -956,26 +985,29 @@ onUnmounted(() => {
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
+  padding-inline: 0.1rem;
 }
 
 .session-sidebar__title {
-  margin-top: 0.35rem;
+  margin-top: 0.1rem;
   color: var(--bc-ink);
-  font-size: 1.15rem;
+  font-size: 1rem;
   font-weight: 700;
-  line-height: 1.25;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
 .session-sidebar__meta {
-  margin-top: 0.3rem;
+  margin-top: 0.22rem;
   color: rgb(148 163 184);
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .session-sidebar__toolbar {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.65rem;
+  padding-inline: 0.1rem;
 }
 
 .session-sidebar__list {
@@ -991,9 +1023,9 @@ onUnmounted(() => {
   display: flex;
   min-height: 0;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.65rem;
   overflow-y: auto;
-  padding-right: 0.2rem;
+  padding-inline: 0.1rem 0.3rem;
 }
 
 .chat-page__topbar {
@@ -1211,9 +1243,9 @@ onUnmounted(() => {
   border: 1px solid rgba(148, 163, 184, 0.22);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.8);
-  padding: 0.45rem 0.8rem;
+  padding: 0.42rem 0.72rem;
   color: rgb(71 85 105);
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1;
   transition: all 160ms var(--ease-hard);
 }
@@ -1244,15 +1276,15 @@ onUnmounted(() => {
 .session-pill {
   position: relative;
   display: flex;
-  min-width: 240px;
-  max-width: 300px;
-  flex: 0 0 240px;
+  min-width: 220px;
+  max-width: 280px;
+  flex: 0 0 220px;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.5rem;
   border: 1px solid rgba(148, 163, 184, 0.16);
   border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, 0.88);
-  padding: 0.9rem 0.95rem;
+  padding: 0.82rem 0.9rem;
   transition:
     border-color 160ms var(--ease-hard),
     box-shadow 160ms var(--ease-hard),
@@ -1275,11 +1307,11 @@ onUnmounted(() => {
 .session-pill__title {
   display: -webkit-box;
   overflow: hidden;
-  padding-right: 2.25rem;
+  padding-right: 2rem;
   color: var(--bc-ink);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  line-height: 1.45;
+  line-height: 1.38;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
@@ -1288,19 +1320,19 @@ onUnmounted(() => {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.4rem;
   color: rgb(100 116 139);
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .session-pill__delete {
   position: absolute;
-  top: 0.7rem;
-  right: 0.7rem;
+  top: 0.62rem;
+  right: 0.62rem;
   border-radius: 999px;
-  padding: 0.25rem 0.5rem;
+  padding: 0.2rem 0.42rem;
   color: rgb(148 163 184);
-  font-size: 11px;
+  font-size: 10px;
   transition: all 160ms var(--ease-hard);
 }
 
@@ -1802,8 +1834,12 @@ onUnmounted(() => {
 }
 
 @media (min-width: 1024px) {
+  .chat-main {
+    min-height: calc(100dvh - 232px);
+  }
+
   .chat-shell {
-    height: auto;
+    height: 100%;
   }
 }
 

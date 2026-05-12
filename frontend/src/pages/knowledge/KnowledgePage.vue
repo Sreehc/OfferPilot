@@ -16,211 +16,227 @@
     </AppShellHeader>
 
     <section class="knowledge-workspace">
-      <section class="shell-section-card p-5 sm:p-6">
-        <div class="mode-switch mode-switch-compact">
-          <button
-            type="button"
-            class="mode-switch__chip"
-            :class="{ 'mode-switch__chip-active': activeTab === 'system' }"
-            @click="switchTab('system')"
-          >
-            系统资料
-          </button>
-          <button
-            type="button"
-            class="mode-switch__chip"
-            :class="{ 'mode-switch__chip-active': activeTab === 'my' }"
-            @click="switchTab('my')"
-          >
-            我的文档
-          </button>
+      <section class="shell-section-card overflow-hidden knowledge-table-shell">
+        <div class="knowledge-table-head border-b border-slate-200/70 px-5 py-4 dark:border-slate-700/70">
+          <div class="knowledge-table-head__main">
+            <p class="section-kicker">文档</p>
+            <div class="mode-switch mode-switch-compact mt-3">
+              <button
+                type="button"
+                class="mode-switch__chip"
+                :class="{ 'mode-switch__chip-active': activeTab === 'system' }"
+                @click="switchTab('system')"
+              >
+                系统资料
+              </button>
+              <button
+                type="button"
+                class="mode-switch__chip"
+                :class="{ 'mode-switch__chip-active': activeTab === 'my' }"
+                @click="switchTab('my')"
+              >
+                我的文档
+              </button>
+            </div>
+            <h3 class="mt-4 text-2xl font-semibold tracking-[-0.03em] text-ink">共 {{ total }} 份文档</h3>
+          </div>
+          <div class="knowledge-table-head__aside">
+            <div class="knowledge-table-stat">
+              <span>当前列表</span>
+              <strong>{{ docs.length }}</strong>
+            </div>
+            <div class="knowledge-table-stat">
+              <span>可检索</span>
+              <strong>{{ statusSummary.indexed }}</strong>
+            </div>
+          </div>
         </div>
 
-        <div class="upload-dropzone mt-5" @dragover.prevent @drop.prevent="handleDrop">
-          <div class="upload-dropzone__copy">
-            <div class="upload-dropzone__icon" aria-hidden="true">
-              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M12 16V4m0 0l-4 4m4-4l4 4M4 15v2a3 3 0 003 3h10a3 3 0 003-3v-2"
-                />
-              </svg>
-            </div>
-            <div class="min-w-0">
-              <p class="text-sm font-semibold text-ink">拖拽文档到这里上传</p>
-              <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                支持 <span class="font-semibold text-ink">md / txt / pdf</span>，单文件不超过 20MB。
-              </p>
-            </div>
-          </div>
+        <div v-if="docs.length === 0 && !loadingDocs" class="p-5">
+          <EmptyState
+            class="empty-state-card"
+            icon="document"
+            :title="activeTab === 'my' ? '你还没有上传文档' : '系统资料暂时为空'"
+            :description="activeTab === 'my' ? '上传文档。' : '等待管理员导入资料。'"
+          />
+        </div>
 
-          <div class="upload-dropzone__aside">
-            <div class="flex flex-wrap gap-2 text-[11px] text-slate-500 dark:text-slate-400">
-              <span class="hard-chip">当前 {{ docs.length }} 份</span>
-              <span class="rounded-full border border-[var(--bc-line)] px-2.5 py-1">可检索 {{ statusSummary.indexed }}</span>
+        <div v-else class="knowledge-list">
+          <article
+            v-for="doc in docs"
+            :key="doc.id"
+            class="knowledge-row"
+            :class="statusToneClass(doc.status)"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex min-w-0 items-start gap-3">
+                <div
+                  class="doc-card__glyph"
+                  :class="docType(doc.fileUrl) === 'pdf' ? 'doc-card__glyph-pdf' : 'doc-card__glyph-text'"
+                >
+                  <svg
+                    v-if="docType(doc.fileUrl) === 'pdf'"
+                    class="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+                    />
+                  </svg>
+                  <svg v-else class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+                    />
+                  </svg>
+                </div>
+                <div class="min-w-0">
+                  <span
+                    class="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em]"
+                    :class="statusTextClass(doc.status)"
+                  >
+                    <span class="h-2 w-2 rounded-full" :class="statusDotClass(doc.status)"></span>
+                    {{ statusLabel(doc.status) }}
+                  </span>
+                  <h4 class="mt-3 line-clamp-2 text-lg font-semibold text-ink">{{ doc.title }}</h4>
+                </div>
+              </div>
+
+              <el-popconfirm
+                v-if="activeTab === 'my'"
+                title="确认删除此文档？删除后关联的 chunk 和向量数据将一并清除。"
+                confirm-button-text="删除"
+                cancel-button-text="取消"
+                @confirm="handleDelete(doc.id)"
+              >
+                <template #reference>
+                  <button type="button" class="doc-card__danger">删除</button>
+                </template>
+              </el-popconfirm>
             </div>
-          </div>
+            <div class="knowledge-row__body">
+              <div class="knowledge-row__summary">
+                <p class="line-clamp-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+                  {{ doc.summary || '暂无摘要。' }}
+                </p>
+              </div>
+
+              <div class="doc-card__memory">
+                <div class="doc-card__memory-meta">
+                  <template v-if="doc.cardDeckId">
+                    <strong>{{ doc.cardDeckTitle || doc.title }}</strong>
+                    <span>已生成 {{ doc.cardCount ?? 0 }} 张卡片。</span>
+                  </template>
+                  <template v-else>
+                    <strong>未生成卡片</strong>
+                    <span>从这份资料生成第一组卡片。</span>
+                  </template>
+                </div>
+
+                <div class="doc-card__memory-actions">
+                  <RouterLink
+                    :to="{ path: '/cards', query: { docId: String(doc.id), title: doc.title } }"
+                    class="hard-button-primary text-sm"
+                  >
+                    {{ doc.cardDeckId ? '去今日卡片' : '生成卡片' }}
+                  </RouterLink>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+        <div v-if="totalPages > 1" class="border-t border-slate-200/70 px-5 py-5 dark:border-slate-700/70">
+          <el-pagination
+            v-model:current-page="currentPage"
+            :page-size="pageSize"
+            :total="total"
+            layout="prev, pager, next"
+            @current-change="handlePageChange"
+          />
         </div>
       </section>
 
-      <aside class="shell-section-card p-5 sm:p-6 knowledge-side">
-        <p class="section-kicker">筛选与状态</p>
-        <div class="mt-5 grid gap-3">
-          <el-select v-model="filters.categoryId" clearable placeholder="知识分类" size="large">
-            <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
-          </el-select>
-          <el-select v-model="filters.status" clearable placeholder="文档状态" size="large">
-            <el-option label="草稿" value="draft" />
-            <el-option label="已解析" value="parsed" />
-            <el-option label="已索引" value="indexed" />
-          </el-select>
-          <el-input v-model="filters.keyword" clearable placeholder="搜索标题或摘要" size="large" />
-        </div>
-        <div class="mt-4 grid gap-3">
-          <el-button :loading="loadingDocs" type="primary" size="large" class="action-button !px-5" @click="loadDocs">
-            刷新
-          </el-button>
-          <el-button size="large" class="hard-button-secondary !px-5" @click="resetFilters">重置</el-button>
-        </div>
-        <div class="mt-5 space-y-3">
-          <div class="knowledge-status-row">
-            <span>草稿</span>
-            <strong>{{ statusSummary.draft }}</strong>
-          </div>
-          <div class="knowledge-status-row">
-            <span>已解析</span>
-            <strong>{{ statusSummary.parsed }}</strong>
-          </div>
-          <div class="knowledge-status-row">
-            <span>已索引</span>
-            <strong>{{ statusSummary.indexed }}</strong>
-          </div>
-        </div>
-      </aside>
-    </section>
-
-    <section class="shell-section-card overflow-hidden knowledge-table-shell">
-      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/70 px-5 py-4 dark:border-slate-700/70">
-        <div>
-          <p class="section-kicker">文档列表</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">共 {{ total }} 份文档</h3>
-        </div>
-        <div class="text-sm text-slate-500">
-          {{ activeTab === 'my' ? '上传后在这里管理你的资料和卡组。' : '查看系统资料并继续生成卡片。' }}
-        </div>
-      </div>
-
-      <div v-if="docs.length === 0 && !loadingDocs" class="p-5">
-        <EmptyState
-          class="empty-state-card"
-          icon="document"
-          :title="activeTab === 'my' ? '你还没有上传文档' : '系统资料暂时为空'"
-          :description="activeTab === 'my' ? '上传文档。' : '等待管理员导入资料。'"
-        />
-      </div>
-
-      <div v-else class="knowledge-list">
-        <article
-          v-for="doc in docs"
-          :key="doc.id"
-          class="knowledge-row"
-          :class="statusToneClass(doc.status)"
-        >
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex min-w-0 items-start gap-3">
-              <div
-                class="doc-card__glyph"
-                :class="docType(doc.fileUrl) === 'pdf' ? 'doc-card__glyph-pdf' : 'doc-card__glyph-text'"
-              >
-                <svg
-                  v-if="docType(doc.fileUrl) === 'pdf'"
-                  class="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  stroke-width="1.6"
-                >
+      <aside class="knowledge-side">
+        <section class="shell-section-card p-5 sm:p-6">
+          <p class="section-kicker">上传</p>
+          <div class="upload-dropzone mt-5" @dragover.prevent @drop.prevent="handleDrop">
+            <div class="upload-dropzone__copy">
+              <div class="upload-dropzone__icon" aria-hidden="true">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                   <path
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-                  />
-                </svg>
-                <svg v-else class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+                    d="M12 16V4m0 0l-4 4m4-4l4 4M4 15v2a3 3 0 003 3h10a3 3 0 003-3v-2"
                   />
                 </svg>
               </div>
               <div class="min-w-0">
-                <span
-                  class="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em]"
-                  :class="statusTextClass(doc.status)"
-                >
-                  <span class="h-2 w-2 rounded-full" :class="statusDotClass(doc.status)"></span>
-                  {{ statusLabel(doc.status) }}
-                </span>
-                <h4 class="mt-3 line-clamp-2 text-lg font-semibold text-ink">{{ doc.title }}</h4>
+                <p class="text-sm font-semibold text-ink">拖拽文档到这里上传</p>
+                <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                  支持 <span class="font-semibold text-ink">md / txt / pdf</span>，单文件不超过 20MB。
+                </p>
               </div>
             </div>
 
-            <el-popconfirm
-              v-if="activeTab === 'my'"
-              title="确认删除此文档？删除后关联的 chunk 和向量数据将一并清除。"
-              confirm-button-text="删除"
-              cancel-button-text="取消"
-              @confirm="handleDelete(doc.id)"
+            <div class="upload-dropzone__aside">
+              <div class="flex flex-wrap gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                <span class="hard-chip">当前 {{ docs.length }} 份</span>
+                <span class="rounded-full border border-[var(--bc-line)] px-2.5 py-1">可检索 {{ statusSummary.indexed }}</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="shell-section-card p-5 sm:p-6">
+          <p class="section-kicker">筛选与状态</p>
+          <div class="mt-5 grid gap-3">
+            <el-select v-model="filters.categoryId" clearable placeholder="知识分类" size="large">
+              <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
+            </el-select>
+            <el-select v-model="filters.status" clearable placeholder="文档状态" size="large">
+              <el-option label="草稿" value="draft" />
+              <el-option label="已解析" value="parsed" />
+              <el-option label="已索引" value="indexed" />
+            </el-select>
+            <el-input v-model="filters.keyword" clearable placeholder="搜索标题或摘要" size="large" />
+          </div>
+          <div class="knowledge-tool-actions mt-4">
+            <el-button
+              :loading="loadingDocs"
+              type="primary"
+              size="large"
+              class="action-button knowledge-tool-button"
+              @click="loadDocs"
             >
-              <template #reference>
-                <button type="button" class="doc-card__danger">删除</button>
-              </template>
-            </el-popconfirm>
+              刷新
+            </el-button>
+            <el-button size="large" class="hard-button-secondary knowledge-tool-button !ml-0" @click="resetFilters">
+              重置
+            </el-button>
           </div>
-          <div class="knowledge-row__body">
-            <div class="knowledge-row__summary">
-              <p class="line-clamp-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                {{ doc.summary || '暂无摘要。' }}
-              </p>
+          <div class="mt-5 space-y-3">
+            <div class="knowledge-status-row">
+              <span>草稿</span>
+              <strong>{{ statusSummary.draft }}</strong>
             </div>
-
-            <div class="doc-card__memory">
-              <div class="doc-card__memory-meta">
-                <template v-if="doc.cardDeckId">
-                  <strong>{{ doc.cardDeckTitle || doc.title }}</strong>
-                  <span>已生成 {{ doc.cardCount ?? 0 }} 张卡片。</span>
-                </template>
-                <template v-else>
-                  <strong>未生成卡片</strong>
-                  <span>从这份资料生成第一组卡片。</span>
-                </template>
-              </div>
-
-              <div class="doc-card__memory-actions">
-                <RouterLink
-                  :to="{ path: '/cards', query: { docId: String(doc.id), title: doc.title } }"
-                  class="hard-button-primary text-sm"
-                >
-                  {{ doc.cardDeckId ? '去今日卡片' : '生成卡片' }}
-                </RouterLink>
-              </div>
+            <div class="knowledge-status-row">
+              <span>已解析</span>
+              <strong>{{ statusSummary.parsed }}</strong>
+            </div>
+            <div class="knowledge-status-row">
+              <span>已索引</span>
+              <strong>{{ statusSummary.indexed }}</strong>
             </div>
           </div>
-        </article>
-      </div>
-      <div v-if="totalPages > 1" class="border-t border-slate-200/70 px-5 py-5 dark:border-slate-700/70">
-        <el-pagination
-          v-model:current-page="currentPage"
-          :page-size="pageSize"
-          :total="total"
-          layout="prev, pager, next"
-          @current-change="handlePageChange"
-        />
-      </div>
+        </section>
+      </aside>
     </section>
-
   </div>
 </template>
 
@@ -436,9 +452,73 @@ onMounted(async () => {
   gap: 18px;
 }
 
+.knowledge-table-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px 20px;
+}
+
+.knowledge-table-head__main {
+  min-width: 0;
+}
+
+.knowledge-table-head__aside {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.knowledge-table-stat {
+  display: grid;
+  gap: 4px;
+  min-width: 108px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.38);
+}
+
+.dark .knowledge-table-stat {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.knowledge-table-stat span {
+  color: var(--bc-ink-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.knowledge-table-stat strong {
+  color: var(--bc-ink);
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
 .knowledge-table-shell {
   border-top-left-radius: 24px;
   border-top-right-radius: 24px;
+  min-width: 0;
+}
+
+.knowledge-side {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.knowledge-tool-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.knowledge-tool-button {
+  width: 100%;
+  min-height: 44px;
+  padding-inline: 20px;
 }
 
 .knowledge-cockpit .mode-switch {
@@ -598,6 +678,7 @@ onMounted(async () => {
   flex-direction: column;
   align-items: flex-end;
   gap: 12px;
+  width: 100%;
 }
 
 .upload-dropzone__icon {
@@ -810,11 +891,15 @@ onMounted(async () => {
     width: 100%;
     align-items: flex-start;
   }
+
+  .knowledge-tool-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (min-width: 1200px) {
   .knowledge-workspace {
-    grid-template-columns: minmax(0, 1.15fr) 300px;
+    grid-template-columns: minmax(0, 1.45fr) 320px;
     align-items: start;
   }
 
