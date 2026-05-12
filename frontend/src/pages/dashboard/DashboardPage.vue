@@ -134,8 +134,8 @@ const primaryMission = computed(() => {
 
   return {
     to: '/knowledge',
-    title: '先生成第一组卡片',
-    description: '你今天还没有可处理的卡片，先从知识库生成一组内容。',
+    title: '上传资料，开始学习',
+    description: '你还没有学习资料。上传文档后 AI 会自动生成卡片，开始间隔记忆。',
     cta: '去知识库',
     urgent: false
   }

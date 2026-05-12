@@ -346,7 +346,7 @@ const emptyStateDescription = computed(() => {
   if (selectedContentType.value === 'interview_card') {
     return '完成面试诊断后，相关复习会出现在这里。'
   }
-  return '去今日卡片，或去知识库生成新卡片。'
+  return '去知识库上传资料生成卡片，或去今日卡片开始学习。'
 })
 
 const contentTypeLabel = (contentType: string) => {

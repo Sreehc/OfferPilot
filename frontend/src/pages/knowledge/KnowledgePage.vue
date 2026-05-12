@@ -56,8 +56,8 @@
           <EmptyState
             class="empty-state-card"
             icon="document"
-            :title="activeTab === 'my' ? '你还没有上传文档' : '系统资料暂时为空'"
-            :description="activeTab === 'my' ? '上传文档。' : '等待管理员导入资料。'"
+            :title="activeTab === 'my' ? '上传你的第一份学习资料' : '系统资料暂时为空'"
+            :description="activeTab === 'my' ? '上传文档后 AI 自动生成卡片，开始间隔记忆。' : '等待管理员导入资料。'"
           />
         </div>
 
