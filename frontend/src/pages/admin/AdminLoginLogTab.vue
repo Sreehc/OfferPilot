@@ -1,21 +1,29 @@
 <template>
   <div class="space-y-4">
-    <div class="flex flex-wrap items-center gap-3">
-      <el-input
-        v-model="keyword"
-        placeholder="搜索用户"
-        clearable
-        size="large"
-        class="max-w-xs"
-        @keyup.enter="handleSearch"
-        @clear="handleSearch"
-      />
-      <el-button :loading="loading" type="primary" size="large" class="action-button" @click="handleSearch">
-        搜索
-      </el-button>
-    </div>
+    <section class="shell-section-card p-5">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p class="section-kicker">登录日志</p>
+          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">共 {{ total }} 条记录</h3>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <el-input
+            v-model="keyword"
+            placeholder="搜索用户"
+            clearable
+            size="large"
+            class="max-w-xs"
+            @keyup.enter="handleSearch"
+            @clear="handleSearch"
+          />
+          <el-button :loading="loading" type="primary" size="large" class="action-button" @click="handleSearch">
+            搜索
+          </el-button>
+        </div>
+      </div>
+    </section>
 
-    <div class="mobile-cards">
+    <section class="shell-section-card p-5 mobile-cards">
     <el-table
       v-loading="loading"
       :data="logs"
@@ -72,7 +80,7 @@
         <div v-if="row.failReason" class="mobile-card-field"><span class="mobile-card-label">原因</span><span class="mobile-card-value text-red-500">{{ row.failReason }}</span></div>
       </div>
     </div>
-    </div>
+    </section>
 
     <div v-if="totalPages > 1" class="flex justify-center pt-2">
       <el-pagination

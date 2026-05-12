@@ -1,69 +1,77 @@
 <template>
   <div class="space-y-4">
-    <div class="flex flex-wrap items-center gap-3">
-      <el-input v-model="keyword" placeholder="搜索用户" clearable size="large" class="max-w-xs" @keyup.enter="handleSearch" @clear="handleSearch" />
-      <el-select v-model="roleFilter" placeholder="角色" clearable size="large" class="w-32" @change="handleSearch">
-        <el-option label="全部" value="" />
-        <el-option label="普通用户" value="USER" />
-        <el-option label="管理员" value="ADMIN" />
-      </el-select>
-      <el-button :loading="loading" type="primary" size="large" class="action-button" @click="handleSearch">搜索</el-button>
-    </div>
-
-    <div class="mobile-cards">
-    <el-table v-loading="loading" :data="users" stripe class="w-full" :header-cell-style="{ background: 'var(--el-bg-color-page)' }">
-      <el-table-column label="用户" min-width="180">
-        <template #default="{ row }">
-          <div class="flex items-center gap-2">
-            <el-avatar :size="28" :src="row.avatar">{{ (row.nickname || row.username || '?')[0] }}</el-avatar>
-            <div>
-              <div class="text-sm font-semibold text-ink">{{ row.nickname || row.username }}</div>
-              <div class="text-xs text-slate-400">{{ row.username }}</div>
-            </div>
-          </div>
-        </template>
-      </el-table-column>
-      <el-table-column label="角色" width="100">
-        <template #default="{ row }">
-          <el-tag :type="row.role === 'ADMIN' ? 'warning' : 'info'" size="small">{{ row.role === 'ADMIN' ? '管理员' : '用户' }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="状态" width="80">
-        <template #default="{ row }">
-          <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">{{ row.status === 1 ? '正常' : '封禁' }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="最后登录" min-width="140">
-        <template #default="{ row }">{{ formatTime(row.lastLoginTime) }}</template>
-      </el-table-column>
-      <el-table-column label="操作" width="200" fixed="right">
-        <template #default="{ row }">
-          <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-          <el-button v-if="row.status === 1" size="small" type="danger" plain @click="handleBan(row)">封禁</el-button>
-          <el-button v-else size="small" type="success" plain @click="handleUnban(row)">解封</el-button>
-          <el-button size="small" type="primary" plain @click="handleDetail(row)">详情</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-
-    <div class="mobile-card-list">
-      <div v-for="row in users" :key="row.id" class="mobile-card-item">
-        <div class="flex items-center gap-2 mb-2">
-          <el-avatar :size="24" :src="row.avatar">{{ (row.nickname || row.username || '?')[0] }}</el-avatar>
-          <span class="text-sm font-semibold text-ink">{{ row.nickname || row.username }}</span>
-          <el-tag :type="row.role === 'ADMIN' ? 'warning' : 'info'" size="small">{{ row.role === 'ADMIN' ? '管理员' : '用户' }}</el-tag>
-          <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">{{ row.status === 1 ? '正常' : '封禁' }}</el-tag>
+    <section class="shell-section-card p-5">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p class="section-kicker">用户管理</p>
+          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">共 {{ total }} 位用户</h3>
         </div>
-        <div class="mobile-card-field"><span class="mobile-card-label">最后登录</span><span class="mobile-card-value">{{ formatTime(row.lastLoginTime) }}</span></div>
-        <div class="flex gap-2 mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
-          <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-          <el-button v-if="row.status === 1" size="small" type="danger" plain @click="handleBan(row)">封禁</el-button>
-          <el-button v-else size="small" type="success" plain @click="handleUnban(row)">解封</el-button>
-          <el-button size="small" type="primary" plain @click="handleDetail(row)">详情</el-button>
+        <div class="flex flex-wrap items-center gap-3">
+          <el-input v-model="keyword" placeholder="搜索用户" clearable size="large" class="max-w-xs" @keyup.enter="handleSearch" @clear="handleSearch" />
+          <el-select v-model="roleFilter" placeholder="角色" clearable size="large" class="w-32" @change="handleSearch">
+            <el-option label="全部" value="" />
+            <el-option label="普通用户" value="USER" />
+            <el-option label="管理员" value="ADMIN" />
+          </el-select>
+          <el-button :loading="loading" type="primary" size="large" class="action-button" @click="handleSearch">搜索</el-button>
         </div>
       </div>
-    </div>
-    </div>
+    </section>
+
+    <section class="shell-section-card p-5 mobile-cards">
+      <el-table v-loading="loading" :data="users" stripe class="w-full" :header-cell-style="{ background: 'var(--el-bg-color-page)' }">
+        <el-table-column label="用户" min-width="180">
+          <template #default="{ row }">
+            <div class="flex items-center gap-2">
+              <el-avatar :size="28" :src="row.avatar">{{ (row.nickname || row.username || '?')[0] }}</el-avatar>
+              <div>
+                <div class="text-sm font-semibold text-ink">{{ row.nickname || row.username }}</div>
+                <div class="text-xs text-slate-400">{{ row.username }}</div>
+              </div>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="角色" width="100">
+          <template #default="{ row }">
+            <el-tag :type="row.role === 'ADMIN' ? 'warning' : 'info'" size="small">{{ row.role === 'ADMIN' ? '管理员' : '用户' }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="80">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">{{ row.status === 1 ? '正常' : '封禁' }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="最后登录" min-width="140">
+          <template #default="{ row }">{{ formatTime(row.lastLoginTime) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="200" fixed="right">
+          <template #default="{ row }">
+            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button v-if="row.status === 1" size="small" type="danger" plain @click="handleBan(row)">封禁</el-button>
+            <el-button v-else size="small" type="success" plain @click="handleUnban(row)">解封</el-button>
+            <el-button size="small" type="primary" plain @click="handleDetail(row)">详情</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <div class="mobile-card-list">
+        <div v-for="row in users" :key="row.id" class="mobile-card-item">
+          <div class="mb-2 flex items-center gap-2">
+            <el-avatar :size="24" :src="row.avatar">{{ (row.nickname || row.username || '?')[0] }}</el-avatar>
+            <span class="text-sm font-semibold text-ink">{{ row.nickname || row.username }}</span>
+            <el-tag :type="row.role === 'ADMIN' ? 'warning' : 'info'" size="small">{{ row.role === 'ADMIN' ? '管理员' : '用户' }}</el-tag>
+            <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">{{ row.status === 1 ? '正常' : '封禁' }}</el-tag>
+          </div>
+          <div class="mobile-card-field"><span class="mobile-card-label">最后登录</span><span class="mobile-card-value">{{ formatTime(row.lastLoginTime) }}</span></div>
+          <div class="mt-2 flex gap-2 border-t border-slate-200/60 pt-2 dark:border-slate-700/60">
+            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button v-if="row.status === 1" size="small" type="danger" plain @click="handleBan(row)">封禁</el-button>
+            <el-button v-else size="small" type="success" plain @click="handleUnban(row)">解封</el-button>
+            <el-button size="small" type="primary" plain @click="handleDetail(row)">详情</el-button>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <div v-if="totalPages > 1" class="flex justify-center pt-2">
       <el-pagination :current-page="pageNum" :page-size="pageSize" :total="total" layout="prev, pager, next" @current-change="handlePageChange" />

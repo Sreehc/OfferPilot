@@ -1,58 +1,65 @@
 <template>
-  <div class="space-y-6">
-    <div v-loading="loading" class="grid grid-cols-2 gap-4 md:grid-cols-5">
-      <article class="metric-card text-center">
-        <p class="metric-label">总用户数</p>
-        <p class="metric-value">{{ overview?.totalUsers ?? '-' }}</p>
-      </article>
-      <article class="metric-card text-center">
-        <p class="metric-label">今日活跃</p>
-        <p class="metric-value">{{ overview?.todayActive ?? '-' }}</p>
-      </article>
-      <article class="metric-card text-center">
-        <p class="metric-label">今日新增</p>
-        <p class="metric-value">{{ overview?.todayNew ?? '-' }}</p>
-      </article>
-      <article class="metric-card text-center">
-        <p class="metric-label">总面试次数</p>
-        <p class="metric-value">{{ overview?.totalInterviews ?? '-' }}</p>
-      </article>
-      <article class="metric-card text-center">
-        <p class="metric-label">总复习次数</p>
-        <p class="metric-value">{{ overview?.totalReviews ?? '-' }}</p>
-      </article>
-    </div>
-
-    <section class="overview-trend-panel p-6">
-      <div class="overview-trend-head">
-        <div>
-          <h3 class="overview-trend-title">近 30 天用户趋势</h3>
+  <div v-loading="loading" class="space-y-5">
+    <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <section class="shell-section-card p-5 sm:p-6">
+        <div class="overview-panel-head">
+          <div>
+            <p class="section-kicker">系统趋势</p>
+            <h3 class="overview-panel-title">近 30 天用户趋势</h3>
+          </div>
+          <span class="overview-panel-range">最近 30 天</span>
         </div>
-        <span class="overview-trend-range">最近 30 天</span>
-      </div>
 
-      <div v-if="latestPoint" class="overview-trend-summary">
-        <article class="overview-trend-node">
-          <p class="overview-trend-node__label">最近一天新增</p>
-          <p class="overview-trend-node__value">{{ latestPoint.newUsers }}</p>
-        </article>
-        <article class="overview-trend-node">
-          <p class="overview-trend-node__label">最近一天活跃</p>
-          <p class="overview-trend-node__value">{{ latestPoint.activeUsers }}</p>
-        </article>
-      </div>
+        <div class="mt-5 grid gap-3 sm:grid-cols-2">
+          <article class="data-slab p-4">
+            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">最近一天新增</p>
+            <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ latestPoint?.newUsers ?? 0 }}</p>
+          </article>
+          <article class="data-slab p-4">
+            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">最近一天活跃</p>
+            <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ latestPoint?.activeUsers ?? 0 }}</p>
+          </article>
+        </div>
 
-      <div v-if="trend.length" ref="chartRef" class="h-72 w-full"></div>
-      <div v-else class="flex h-72 items-center justify-center text-sm text-slate-500 dark:text-slate-400">
-        暂无趋势数据
-      </div>
-    </section>
+        <div v-if="trend.length" ref="chartRef" class="chart-shell mt-5 h-[320px] w-full"></div>
+        <div v-else class="mt-5 flex h-[320px] items-center justify-center text-sm text-slate-500">
+          暂无趋势数据
+        </div>
+      </section>
+
+      <aside class="space-y-4">
+        <section class="shell-section-card p-5 sm:p-6">
+          <p class="section-kicker">系统概览</p>
+          <h3 class="overview-panel-title mt-3">后台摘要</h3>
+          <div class="mt-5 space-y-3">
+            <article v-for="card in spotlightCards" :key="card.label" class="overview-spotlight">
+              <p class="overview-spotlight__label">{{ card.label }}</p>
+              <p class="overview-spotlight__value">{{ card.value }}</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="shell-section-card p-5 sm:p-6">
+          <p class="section-kicker">业务负载</p>
+          <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+            <article class="data-slab p-4">
+              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">总面试次数</p>
+              <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ overview?.totalInterviews ?? '-' }}</p>
+            </article>
+            <article class="data-slab p-4">
+              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">总复习次数</p>
+              <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ overview?.totalReviews ?? '-' }}</p>
+            </article>
+          </div>
+        </section>
+      </aside>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ElMessage } from 'element-plus'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import { fetchAdminOverviewApi, fetchAdminTrendApi } from '@/api/admin'
 import type { AdminOverview, AdminTrendItem } from '@/api/admin'
@@ -62,7 +69,13 @@ const overview = ref<AdminOverview | null>(null)
 const trend = ref<AdminTrendItem[]>([])
 const chartRef = ref<HTMLElement | null>(null)
 let chart: echarts.ECharts | null = null
+
 const latestPoint = computed(() => trend.value.at(-1) ?? null)
+const spotlightCards = computed(() => [
+  { label: '总用户数', value: overview.value?.totalUsers ?? '-' },
+  { label: '今日活跃', value: overview.value?.todayActive ?? '-' },
+  { label: '今日新增', value: overview.value?.todayNew ?? '-' }
+])
 
 const loadData = async () => {
   loading.value = true
@@ -71,7 +84,11 @@ const loadData = async () => {
     overview.value = overviewRes.data
     trend.value = trendRes.data
     renderChart()
-  } catch { ElMessage.error('加载概览数据失败') } finally { loading.value = false }
+  } catch {
+    ElMessage.error('加载概览数据失败')
+  } finally {
+    loading.value = false
+  }
 }
 
 const renderChart = () => {
@@ -79,20 +96,58 @@ const renderChart = () => {
   if (!chart) {
     chart = echarts.init(chartRef.value)
   }
+
   chart.setOption({
-    tooltip: { trigger: 'axis' },
-    legend: { data: ['新增用户', '活跃用户'], bottom: 0 },
-    grid: { left: '3%', right: '4%', bottom: '12%', top: '5%', containLabel: true },
-    xAxis: { type: 'category', data: trend.value.map((t) => t.date), boundaryGap: false },
-    yAxis: { type: 'value', minInterval: 1 },
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(255, 255, 255, 0.96)',
+      borderColor: 'rgba(16, 35, 58, 0.08)',
+      textStyle: { color: '#10233a' }
+    },
+    legend: { data: ['新增用户', '活跃用户'], bottom: 0, textStyle: { color: '#6b7b8d' } },
+    grid: { left: '3%', right: '4%', bottom: '14%', top: '6%', containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: trend.value.map((t) => t.date),
+      boundaryGap: false,
+      axisLine: { lineStyle: { color: 'rgba(16, 35, 58, 0.12)' } },
+      axisLabel: { color: '#6b7b8d' }
+    },
+    yAxis: {
+      type: 'value',
+      minInterval: 1,
+      axisLine: { show: false },
+      axisLabel: { color: '#6b7b8d' },
+      splitLine: { lineStyle: { color: 'rgba(16, 35, 58, 0.08)' } }
+    },
     series: [
-      { name: '新增用户', type: 'line', smooth: true, data: trend.value.map((t) => t.newUsers), itemStyle: { color: '#2F4F9D' } },
-      { name: '活跃用户', type: 'line', smooth: true, data: trend.value.map((t) => t.activeUsers), itemStyle: { color: '#82b1ff' } }
+      {
+        name: '新增用户',
+        type: 'line',
+        smooth: true,
+        symbolSize: 8,
+        lineStyle: { width: 3, color: '#b56a12' },
+        itemStyle: { color: '#b56a12' },
+        areaStyle: { color: 'rgba(181, 106, 18, 0.12)' },
+        data: trend.value.map((t) => t.newUsers)
+      },
+      {
+        name: '活跃用户',
+        type: 'line',
+        smooth: true,
+        symbolSize: 8,
+        lineStyle: { width: 3, color: '#2f7f77' },
+        itemStyle: { color: '#2f7f77' },
+        areaStyle: { color: 'rgba(47, 127, 119, 0.08)' },
+        data: trend.value.map((t) => t.activeUsers)
+      }
     ]
   })
 }
 
-const handleResize = () => { chart?.resize() }
+const handleResize = () => {
+  chart?.resize()
+}
 
 onMounted(() => {
   void loadData()
@@ -106,86 +161,59 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.overview-trend-panel {
-  border-radius: 28px;
-  border: 1px solid var(--bc-line);
-  background:
-    radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.08), transparent 34%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.42));
-}
-
-.dark .overview-trend-panel {
-  background:
-    radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.12), transparent 34%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
-}
-
-.overview-trend-head {
+.overview-panel-head {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: end;
   justify-content: space-between;
   gap: 12px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
 }
 
-.overview-trend-title {
+.overview-panel-title {
   color: var(--bc-ink);
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 700;
   letter-spacing: -0.03em;
 }
 
-.overview-trend-range {
+.overview-panel-range {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  border: 1px solid var(--bc-line);
-  padding: 6px 10px;
+  background: rgba(var(--bc-accent-rgb), 0.1);
+  padding: 8px 12px;
   color: var(--bc-ink-secondary);
   font-size: 11px;
-  font-weight: 600;
-}
-
-.overview-trend-summary {
-  display: grid;
-  gap: 12px;
-  margin-top: 18px;
-  margin-bottom: 10px;
-}
-
-.overview-trend-node {
-  border-radius: 20px;
-  border: 1px solid var(--bc-line);
-  background: rgba(255, 255, 255, 0.34);
-  padding: 14px;
-}
-
-.dark .overview-trend-node {
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.overview-trend-node__label {
-  color: var(--bc-ink-secondary);
-  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
-.overview-trend-node__value {
-  margin-top: 8px;
+.overview-spotlight {
+  border-radius: 20px;
+  background: rgba(var(--bc-accent-rgb), 0.08);
+  padding: 16px;
+}
+
+.overview-spotlight__label {
+  color: var(--bc-ink-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.overview-spotlight__value {
+  margin-top: 10px;
   color: var(--bc-ink);
   font-family: theme('fontFamily.mono');
-  font-size: 1.75rem;
+  font-size: 2rem;
   font-weight: 700;
 }
 
-@media (min-width: 768px) {
-  .overview-trend-summary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.chart-shell {
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.34));
 }
 </style>

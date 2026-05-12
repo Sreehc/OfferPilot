@@ -21,7 +21,7 @@
       </template>
     </AppShellHeader>
 
-    <section class="cockpit-panel p-5 sm:p-6">
+    <section class="shell-section-card p-5 sm:p-6 admin-workspace-shell">
       <div class="admin-tab-shell">
       <el-tabs v-model="activeTab" class="admin-tabs">
         <el-tab-pane label="系统概览" name="overview">
@@ -256,36 +256,55 @@ onMounted(async () => { await loadCategories(); await Promise.all([loadQuestions
   letter-spacing: -0.03em;
 }
 
+.admin-workspace-shell {
+  background:
+    linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.04), transparent 18%),
+    var(--bc-surface-card);
+}
+
 .admin-tab-shell {
   border-radius: 24px;
   background: transparent;
-  padding: 4px 0 0;
-}
-
-.dark .admin-tab-shell {
-  background: transparent;
+  padding: 2px 0 0;
 }
 
 :deep(.admin-tabs .el-tabs__nav-wrap::after) {
   display: none;
 }
 
+:deep(.admin-tabs .el-tabs__header) {
+  margin-bottom: 24px;
+}
+
+:deep(.admin-tabs .el-tabs__nav-wrap) {
+  padding: 4px;
+  border-radius: 18px;
+  background: rgba(var(--bc-ink-rgb), 0.035);
+}
+
+:deep(.admin-tabs .el-tabs__nav) {
+  gap: 4px;
+}
+
 :deep(.admin-tabs .el-tabs__item) {
   min-height: 44px;
+  border-radius: 14px;
+  padding: 0 14px;
   color: var(--bc-ink-secondary);
   font-weight: 600;
 }
 
 :deep(.admin-tabs .el-tabs__item.is-active) {
   color: var(--bc-ink);
+  background: rgba(var(--bc-accent-rgb), 0.12);
 }
 
 :deep(.admin-tabs .el-tabs__active-bar) {
-  background: var(--bc-accent);
+  display: none;
 }
 
-:deep(.admin-tabs > .el-tabs__header) {
-  margin-bottom: 16px;
+:deep(.admin-tabs .el-tabs__content) {
+  overflow: visible;
 }
 
 @media (max-width: 1023px) {
