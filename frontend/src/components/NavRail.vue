@@ -30,7 +30,6 @@
               <div class="min-w-0">
                 <div class="font-semibold text-ink">{{ item.label }}</div>
                 <div
-                  v-if="item.group === '主任务' || isActive(item.path)"
                   class="truncate text-[11px] text-slate-400 dark:text-slate-500"
                 >
                   {{ item.hint }}
@@ -62,8 +61,8 @@ type NavItem = {
 
 const allItems: NavItem[] = [
   { path: '/dashboard', label: '首页', hint: '今日任务与进展', group: '主任务' },
-  { path: '/cards', label: '今日卡片', hint: '今天先完成这里', group: '主任务' },
-  { path: '/review', label: '复习', hint: '处理到期和积压项', group: '主任务' },
+  { path: '/cards', label: '今日卡片', hint: '新卡学习 + 每日循环复习', group: '主任务' },
+  { path: '/review', label: '复习', hint: '间隔复习：到期卡片 + 错题', group: '主任务' },
   { path: '/knowledge', label: '知识库', hint: '上传和管理资料', group: '主任务' },
   { path: '/chat', label: '问答', hint: '提问并查看资料引用', group: '辅助' },
   { path: '/interview', label: '面试诊断', hint: '做一次进阶练习', group: '辅助' },

@@ -24,66 +24,51 @@
     </section>
 
     <template v-else>
-      <section v-if="!started" class="review-workbench">
-        <section class="shell-section-card p-5 sm:p-6">
-          <div class="review-launch">
-            <div class="review-launch__head">
-              <div>
+      <section v-if="!started" class="shell-section-card p-5 sm:p-6">
+        <div class="review-launch">
+          <div class="review-launch__head">
+            <div>
+              <div class="flex items-center gap-2">
                 <p class="section-kicker">复习工作台</p>
-                <p class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink sm:text-3xl">{{ heroTitle }}</p>
+                <el-tooltip content="系统根据遗忘曲线自动安排复习时间，逾期越久优先级越高。" placement="top">
+                  <span class="inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full bg-slate-200 text-[10px] font-bold text-slate-500 dark:bg-slate-700 dark:text-slate-400">?</span>
+                </el-tooltip>
               </div>
-              <div class="review-launch__signals">
-                <span class="detail-pill">待复习 {{ stats?.todayPending ?? reviewData?.totalPending ?? 0 }}</span>
-                <span class="detail-pill">逾期 {{ stats?.overdueCount ?? reviewData?.overdueCount ?? 0 }}</span>
-                <span class="detail-pill">连续 {{ stats?.currentStreak ?? reviewData?.currentStreak ?? 0 }} 天</span>
-              </div>
+              <p class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink sm:text-3xl">{{ heroTitle }}</p>
             </div>
-
-            <div class="review-launch__stats">
-              <article class="review-launch__metric">
-                <span>当前筛选</span>
-                <strong>{{ selectedFilterLabel }}</strong>
-              </article>
-              <article class="review-launch__metric">
-                <span>待复习</span>
-                <strong>{{ reviewItems.length }}</strong>
-              </article>
-              <article class="review-launch__metric">
-                <span>逾期</span>
-                <strong>{{ stats?.overdueCount ?? reviewData?.overdueCount ?? 0 }}</strong>
-              </article>
-              <article class="review-launch__metric">
-                <span>连续</span>
-                <strong>{{ stats?.currentStreak ?? reviewData?.currentStreak ?? 0 }} 天</strong>
-              </article>
-            </div>
-
-            <div class="mt-6 flex flex-wrap gap-3">
-              <button type="button" class="hard-button-primary" :disabled="!reviewItems.length" @click="startReview">
-                {{ reviewItems.length ? '开始今日复习' : '当前无待复习项' }}
-              </button>
-              <RouterLink to="/cards" class="hard-button-secondary">去今日卡片</RouterLink>
+            <div class="review-launch__signals">
+              <span class="detail-pill">待复习 {{ stats?.todayPending ?? reviewData?.totalPending ?? 0 }}</span>
+              <span class="detail-pill">逾期 {{ stats?.overdueCount ?? reviewData?.overdueCount ?? 0 }}</span>
+              <span class="detail-pill">连续 {{ stats?.currentStreak ?? reviewData?.currentStreak ?? 0 }} 天</span>
             </div>
           </div>
-        </section>
 
-        <aside class="shell-section-card p-5 sm:p-6">
-          <p class="section-kicker">今日状态</p>
-          <div class="mt-5 space-y-4">
-            <div class="review-status-row">
+          <div class="review-launch__stats">
+            <article class="review-launch__metric">
+              <span>当前筛选</span>
+              <strong>{{ selectedFilterLabel }}</strong>
+            </article>
+            <article class="review-launch__metric">
               <span>待复习</span>
-              <strong>{{ stats?.todayPending ?? reviewData?.totalPending ?? 0 }} 项</strong>
-            </div>
-            <div class="review-status-row">
+              <strong>{{ reviewItems.length }}</strong>
+            </article>
+            <article class="review-launch__metric">
               <span>逾期</span>
-              <strong>{{ stats?.overdueCount ?? reviewData?.overdueCount ?? 0 }} 项</strong>
-            </div>
-            <div class="review-status-row">
+              <strong>{{ stats?.overdueCount ?? reviewData?.overdueCount ?? 0 }}</strong>
+            </article>
+            <article class="review-launch__metric">
               <span>已完成</span>
-              <strong>{{ reviewData?.todayCompleted ?? 0 }} 项</strong>
-            </div>
+              <strong>{{ reviewData?.todayCompleted ?? 0 }}</strong>
+            </article>
           </div>
-        </aside>
+
+          <div class="mt-6 flex flex-wrap gap-3">
+            <button type="button" class="hard-button-primary" :disabled="!reviewItems.length" @click="startReview">
+              {{ reviewItems.length ? '开始今日复习' : '当前无待复习项' }}
+            </button>
+            <RouterLink to="/cards" class="hard-button-secondary">去今日卡片</RouterLink>
+          </div>
+        </div>
       </section>
 
       <section v-if="started && currentReviewItem" class="review-session-layout">
