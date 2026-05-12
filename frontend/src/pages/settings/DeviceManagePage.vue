@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6">
-    <section class="paper-panel p-4 sm:p-6">
+    <section class="shell-section-card p-4 sm:p-6">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="text-sm text-slate-500 dark:text-slate-400">当前 {{ devices.length }} 台</div>
         <div class="flex flex-wrap items-center gap-3">
@@ -24,14 +24,14 @@
       </div>
     </section>
 
-    <section v-if="loading && devices.length === 0" class="paper-panel p-6">
+    <section v-if="loading && devices.length === 0" class="shell-section-card p-6">
       <div class="flex items-center justify-center py-8">
         <el-icon class="is-loading text-slate-400" :size="24"><i class="el-icon-loading" /></el-icon>
         <span class="ml-3 text-sm text-slate-400">正在加载...</span>
       </div>
     </section>
 
-    <section v-else-if="devices.length === 0" class="paper-panel p-6">
+    <section v-else-if="devices.length === 0" class="shell-section-card p-6">
       <EmptyState
         icon="bell"
         title="暂无已登录设备"

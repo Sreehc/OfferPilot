@@ -27,7 +27,7 @@
       class="grid gap-4"
       :class="phase === 'idle' ? 'lg:grid-cols-[0.92fr_1.08fr]' : 'lg:grid-cols-[360px_minmax(0,1fr)]'"
     >
-      <aside class="cockpit-panel p-4 sm:p-6">
+      <aside class="shell-section-card p-4 sm:p-6">
         <div class="panel-heading">
           <h3 class="panel-heading__title">
             {{
@@ -125,7 +125,7 @@
         </div>
       </aside>
 
-      <section class="cockpit-panel flex min-h-[560px] flex-col p-4 sm:p-6">
+      <section class="shell-section-card flex min-h-[560px] flex-col p-4 sm:p-6">
         <div v-if="phase === 'idle'" class="flex flex-1 items-center justify-center">
           <div class="max-w-md text-center">
             <h4 class="text-2xl font-semibold text-ink">准备好后开始</h4>
@@ -804,15 +804,13 @@ onMounted(() => {
 .question-spotlight {
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(var(--bc-accent-rgb), 0.2);
-  border-radius: 28px;
-  padding: 24px 24px 22px;
+  border: 1px solid rgba(var(--bc-accent-rgb), 0.14);
+  border-radius: 24px;
+  padding: 22px 22px 20px;
   background:
     radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.18), transparent 34%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.62));
-  box-shadow:
-    0 24px 50px rgba(15, 23, 42, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    rgba(255, 255, 255, 0.82);
+  box-shadow: none;
 }
 
 .dark .question-spotlight {
@@ -931,13 +929,11 @@ onMounted(() => {
 .interview-orbit,
 .scoring-scan {
   position: relative;
-  border: 1px solid var(--bc-line-hot);
+  border: 1px solid rgba(var(--bc-accent-rgb), 0.14);
   background:
     radial-gradient(circle, rgba(var(--bc-accent-rgb), 0.18), transparent 58%),
     linear-gradient(145deg, rgba(255, 255, 255, 0.08), transparent);
-  box-shadow:
-    0 0 0 12px rgba(var(--bc-accent-rgb), 0.04),
-    0 0 60px rgba(var(--bc-accent-rgb), 0.18);
+  box-shadow: none;
 }
 
 .interview-orbit::before,
@@ -964,8 +960,8 @@ onMounted(() => {
 .score-card {
   overflow: hidden;
   border-radius: var(--radius-lg);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 26px 56px rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: none;
 }
 
 .score-card-pass {

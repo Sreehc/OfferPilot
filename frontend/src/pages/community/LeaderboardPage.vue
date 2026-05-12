@@ -7,7 +7,7 @@
       <span>&larr;</span> 返回社区
     </button>
 
-    <section class="cockpit-panel p-5 sm:p-6">
+    <section class="shell-section-card p-5 sm:p-6">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h3 class="text-xl font-semibold tracking-[-0.03em] text-ink sm:text-2xl">贡献者排名</h3>

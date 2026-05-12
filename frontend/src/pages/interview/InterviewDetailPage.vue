@@ -13,18 +13,18 @@
       </button>
     </div>
 
-    <section v-if="loading" class="paper-panel p-8 text-center">
+    <section v-if="loading" class="shell-section-card p-8 text-center">
       <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
       <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">正在加载...</p>
     </section>
 
-    <section v-else-if="!detail" class="paper-panel p-8 text-center">
+    <section v-else-if="!detail" class="shell-section-card p-8 text-center">
       <p class="text-lg font-semibold text-ink">面试记录未找到</p>
       <RouterLink to="/interview/history" class="hard-button-primary mt-4 inline-flex">返回历史</RouterLink>
     </section>
 
     <template v-else>
-      <section class="paper-panel p-6">
+      <section class="shell-section-card p-6">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div class="mt-3 flex flex-wrap items-center gap-3">
@@ -80,7 +80,7 @@
       <section
         v-for="(record, index) in sortedRecords"
         :key="record.questionId"
-        class="paper-panel overflow-hidden"
+        class="shell-section-card overflow-hidden"
       >
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/60 px-6 py-4 dark:border-slate-700/60">
           <div class="flex min-w-0 items-center gap-3">

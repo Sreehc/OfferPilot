@@ -15,55 +15,58 @@
       </template>
     </AppShellHeader>
 
-    <section class="cockpit-panel p-4 sm:p-5">
-      <div class="mode-switch mode-switch-compact">
-        <button
-          type="button"
-          class="mode-switch__chip"
-          :class="{ 'mode-switch__chip-active': activeTab === 'system' }"
-          @click="switchTab('system')"
-        >
-          系统资料
-        </button>
-        <button
-          type="button"
-          class="mode-switch__chip"
-          :class="{ 'mode-switch__chip-active': activeTab === 'my' }"
-          @click="switchTab('my')"
-        >
-          我的文档
-        </button>
-      </div>
-
-      <div class="upload-dropzone mt-5" @dragover.prevent @drop.prevent="handleDrop">
-        <div class="upload-dropzone__copy">
-          <div class="upload-dropzone__icon" aria-hidden="true">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M12 16V4m0 0l-4 4m4-4l4 4M4 15v2a3 3 0 003 3h10a3 3 0 003-3v-2"
-              />
-            </svg>
-          </div>
-          <div class="min-w-0">
-            <p class="text-sm font-semibold text-ink">拖拽文档到这里上传</p>
-            <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
-              支持 <span class="font-semibold text-ink">md / txt / pdf</span>，单文件不超过 20MB。
-            </p>
-          </div>
+    <section class="knowledge-workspace">
+      <section class="shell-section-card p-5 sm:p-6">
+        <div class="mode-switch mode-switch-compact">
+          <button
+            type="button"
+            class="mode-switch__chip"
+            :class="{ 'mode-switch__chip-active': activeTab === 'system' }"
+            @click="switchTab('system')"
+          >
+            系统资料
+          </button>
+          <button
+            type="button"
+            class="mode-switch__chip"
+            :class="{ 'mode-switch__chip-active': activeTab === 'my' }"
+            @click="switchTab('my')"
+          >
+            我的文档
+          </button>
         </div>
 
-        <div class="upload-dropzone__aside">
-          <div class="flex flex-wrap gap-2 text-[11px] text-slate-500 dark:text-slate-400">
-            <span class="hard-chip">当前 {{ docs.length }} 份</span>
-            <span class="rounded-full border border-[var(--bc-line)] px-2.5 py-1">可检索 {{ statusSummary.indexed }}</span>
+        <div class="upload-dropzone mt-5" @dragover.prevent @drop.prevent="handleDrop">
+          <div class="upload-dropzone__copy">
+            <div class="upload-dropzone__icon" aria-hidden="true">
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M12 16V4m0 0l-4 4m4-4l4 4M4 15v2a3 3 0 003 3h10a3 3 0 003-3v-2"
+                />
+              </svg>
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-ink">拖拽文档到这里上传</p>
+              <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                支持 <span class="font-semibold text-ink">md / txt / pdf</span>，单文件不超过 20MB。
+              </p>
+            </div>
+          </div>
+
+          <div class="upload-dropzone__aside">
+            <div class="flex flex-wrap gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+              <span class="hard-chip">当前 {{ docs.length }} 份</span>
+              <span class="rounded-full border border-[var(--bc-line)] px-2.5 py-1">可检索 {{ statusSummary.indexed }}</span>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div class="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
-        <div class="grid gap-3 md:grid-cols-3">
+      <aside class="shell-section-card p-5 sm:p-6 knowledge-side">
+        <p class="section-kicker">筛选与状态</p>
+        <div class="mt-5 grid gap-3">
           <el-select v-model="filters.categoryId" clearable placeholder="知识分类" size="large">
             <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
           </el-select>
@@ -74,32 +77,54 @@
           </el-select>
           <el-input v-model="filters.keyword" clearable placeholder="搜索标题或摘要" size="large" />
         </div>
-        <div class="flex flex-wrap gap-3">
+        <div class="mt-4 grid gap-3">
           <el-button :loading="loadingDocs" type="primary" size="large" class="action-button !px-5" @click="loadDocs">
             刷新
           </el-button>
           <el-button size="large" class="hard-button-secondary !px-5" @click="resetFilters">重置</el-button>
         </div>
+        <div class="mt-5 space-y-3">
+          <div class="knowledge-status-row">
+            <span>草稿</span>
+            <strong>{{ statusSummary.draft }}</strong>
+          </div>
+          <div class="knowledge-status-row">
+            <span>已解析</span>
+            <strong>{{ statusSummary.parsed }}</strong>
+          </div>
+          <div class="knowledge-status-row">
+            <span>已索引</span>
+            <strong>{{ statusSummary.indexed }}</strong>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="shell-section-card overflow-hidden knowledge-table-shell">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/70 px-5 py-4 dark:border-slate-700/70">
+        <div>
+          <p class="section-kicker">文档列表</p>
+          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">共 {{ total }} 份文档</h3>
+        </div>
+        <div class="text-sm text-slate-500">
+          {{ activeTab === 'my' ? '上传后在这里管理你的资料和卡组。' : '查看系统资料并继续生成卡片。' }}
+        </div>
       </div>
 
-      <div v-if="docs.length === 0 && !loadingDocs" class="mt-5">
+      <div v-if="docs.length === 0 && !loadingDocs" class="p-5">
         <EmptyState
           class="empty-state-card"
           icon="document"
           :title="activeTab === 'my' ? '你还没有上传文档' : '系统资料暂时为空'"
-          :description="
-            activeTab === 'my'
-              ? '上传文档。'
-              : '等待管理员导入资料。'
-          "
+          :description="activeTab === 'my' ? '上传文档。' : '等待管理员导入资料。'"
         />
       </div>
 
-      <div v-else class="mt-5 grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+      <div v-else class="knowledge-list">
         <article
           v-for="doc in docs"
           :key="doc.id"
-          class="mission-card doc-card p-4 sm:p-5"
+          class="knowledge-row"
           :class="statusToneClass(doc.status)"
         >
           <div class="flex items-start justify-between gap-3">
@@ -154,34 +179,38 @@
               </template>
             </el-popconfirm>
           </div>
-          <p class="mt-4 line-clamp-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-            {{ doc.summary || '暂无摘要。' }}
-          </p>
-
-          <div class="doc-card__memory mt-4">
-            <div class="doc-card__memory-meta">
-              <template v-if="doc.cardDeckId">
-                <strong>{{ doc.cardDeckTitle || doc.title }}</strong>
-                <span>已生成 {{ doc.cardCount ?? 0 }} 张卡片。</span>
-              </template>
-              <template v-else>
-                <strong>未生成卡片</strong>
-              </template>
+          <div class="knowledge-row__body">
+            <div class="knowledge-row__summary">
+              <p class="line-clamp-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+                {{ doc.summary || '暂无摘要。' }}
+              </p>
             </div>
 
-            <div class="doc-card__memory-actions">
-              <RouterLink
-                :to="{ path: '/cards', query: { docId: String(doc.id), title: doc.title } }"
-                class="hard-button-primary text-sm"
-              >
-                {{ doc.cardDeckId ? '去今日卡片' : '生成卡片' }}
-              </RouterLink>
+            <div class="doc-card__memory">
+              <div class="doc-card__memory-meta">
+                <template v-if="doc.cardDeckId">
+                  <strong>{{ doc.cardDeckTitle || doc.title }}</strong>
+                  <span>已生成 {{ doc.cardCount ?? 0 }} 张卡片。</span>
+                </template>
+                <template v-else>
+                  <strong>未生成卡片</strong>
+                  <span>从这份资料生成第一组卡片。</span>
+                </template>
+              </div>
+
+              <div class="doc-card__memory-actions">
+                <RouterLink
+                  :to="{ path: '/cards', query: { docId: String(doc.id), title: doc.title } }"
+                  class="hard-button-primary text-sm"
+                >
+                  {{ doc.cardDeckId ? '去今日卡片' : '生成卡片' }}
+                </RouterLink>
+              </div>
             </div>
           </div>
         </article>
       </div>
-
-      <div v-if="totalPages > 1" class="mt-6 flex justify-center">
+      <div v-if="totalPages > 1" class="border-t border-slate-200/70 px-5 py-5 dark:border-slate-700/70">
         <el-pagination
           v-model:current-page="currentPage"
           :page-size="pageSize"
@@ -402,6 +431,16 @@ onMounted(async () => {
   min-width: max-content;
 }
 
+.knowledge-workspace {
+  display: grid;
+  gap: 18px;
+}
+
+.knowledge-table-shell {
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+}
+
 .knowledge-cockpit .mode-switch {
   min-width: min(100%, 260px);
 }
@@ -578,6 +617,47 @@ onMounted(async () => {
   min-height: 100%;
 }
 
+.knowledge-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.knowledge-row {
+  padding: 20px;
+}
+
+.knowledge-row + .knowledge-row {
+  border-top: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.knowledge-row__body {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.knowledge-row__summary {
+  min-width: 0;
+}
+
+.knowledge-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.knowledge-status-row span {
+  color: var(--bc-ink-secondary);
+  font-size: 13px;
+}
+
+.knowledge-status-row strong {
+  color: var(--bc-ink);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
 .doc-card-danger {
   border-color: rgba(255, 107, 107, 0.28);
 }
@@ -619,7 +699,6 @@ onMounted(async () => {
 }
 
 .doc-card__memory {
-  border: 1px solid rgba(var(--bc-accent-rgb), 0.16);
   border-radius: 20px;
   background:
     linear-gradient(135deg, rgba(var(--bc-accent-rgb), 0.1), transparent 62%),
@@ -730,6 +809,23 @@ onMounted(async () => {
   .upload-dropzone__aside {
     width: 100%;
     align-items: flex-start;
+  }
+}
+
+@media (min-width: 1200px) {
+  .knowledge-workspace {
+    grid-template-columns: minmax(0, 1.15fr) 300px;
+    align-items: start;
+  }
+
+  .knowledge-side {
+    position: sticky;
+    top: 88px;
+  }
+
+  .knowledge-row__body {
+    grid-template-columns: minmax(0, 1fr) 300px;
+    align-items: start;
   }
 }
 </style>

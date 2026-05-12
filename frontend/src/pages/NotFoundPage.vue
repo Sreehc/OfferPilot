@@ -1,6 +1,6 @@
 <template>
   <div class="flex min-h-screen items-center justify-center px-4">
-    <section class="paper-panel max-w-lg p-10 text-center">
+    <section class="shell-section-card max-w-lg p-10 text-center">
       <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
         <span class="text-3xl font-bold text-slate-300 dark:text-slate-600">?</span>
       </div>

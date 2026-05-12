@@ -13,13 +13,13 @@
     </AppShellHeader>
 
     <section v-if="loading" class="space-y-3">
-      <article v-for="n in 3" :key="n" class="paper-panel p-5">
+      <article v-for="n in 3" :key="n" class="shell-section-card p-5">
         <div class="h-4 w-32 animate-pulse rounded bg-slate-200 dark:bg-slate-700"></div>
         <div class="mt-3 h-3 w-full animate-pulse rounded bg-slate-100 dark:bg-slate-800"></div>
       </article>
     </section>
 
-    <section v-else-if="!items.length" class="paper-panel p-6">
+    <section v-else-if="!items.length" class="shell-section-card p-6">
       <EmptyState
         icon="chart"
         title="暂无面试记录"
@@ -38,7 +38,7 @@
         <div
           v-for="item in items"
           :key="item.sessionId"
-          class="paper-panel p-5 transition hover:ring-2 hover:ring-accent/20"
+          class="shell-section-card p-5 transition hover:ring-2 hover:ring-accent/20"
         >
           <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div class="min-w-0 cursor-pointer" @click="goToDetail(item.sessionId)">

@@ -21,7 +21,7 @@
           </div>
         </div>
 
-        <div class="paper-panel p-4">
+        <div class="shell-section-card p-4">
           <h4 class="text-sm font-semibold text-ink">关闭两步验证</h4>
           <div class="mt-3 flex items-center gap-3 max-w-xs">
             <el-input
@@ -45,7 +45,7 @@
 
       <div v-else>
         <template v-if="!showSetup">
-          <div class="paper-panel flex flex-wrap items-center justify-between gap-3 p-4">
+          <div class="shell-section-card flex flex-wrap items-center justify-between gap-3 p-4">
             <div class="text-sm font-semibold text-ink">未启用</div>
             <el-button type="primary" size="large" class="action-button" @click="showSetup = true">
               启用两步验证

@@ -8,7 +8,7 @@
       </template>
     </AppShellHeader>
 
-    <section class="forum-hero cockpit-panel p-4 sm:p-5">
+    <section class="forum-hero shell-section-card p-4 sm:p-5">
       <div class="forum-header-bar">
         <div class="forum-header-bar__tabs">
           <button
@@ -25,7 +25,7 @@
       </div>
     </section>
 
-    <section class="forum-feed cockpit-panel p-4 sm:p-5">
+    <section class="forum-feed shell-section-card p-4 sm:p-5">
       <div class="forum-toolbar">
         <div class="mode-switch">
           <button
@@ -71,7 +71,7 @@
         </article>
       </div>
 
-      <div v-else-if="questions.length" class="mt-5 space-y-3">
+      <div v-else-if="questions.length" class="forum-thread-list mt-5">
         <article
           v-for="q in questions"
           :key="q.id"

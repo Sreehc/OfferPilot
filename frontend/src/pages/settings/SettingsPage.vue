@@ -2,7 +2,7 @@
   <div class="settings-cockpit space-y-6">
     <AppShellHeader />
 
-    <section class="cockpit-panel p-5 sm:p-6">
+    <section class="shell-section-card p-5 sm:p-6">
       <section class="settings-tab-shell">
         <el-tabs v-model="activeTab" class="settings-tabs">
           <el-tab-pane label="设备管理" name="devices">

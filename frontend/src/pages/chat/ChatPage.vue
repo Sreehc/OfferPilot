@@ -1,6 +1,6 @@
 <template>
   <div class="chat-page">
-    <section class="chat-toolbar cockpit-panel p-4 sm:p-5">
+    <section class="chat-toolbar shell-section-card p-4 sm:p-5">
       <div class="chat-toolbar__actions">
         <div class="mode-toggle mode-toggle-page" role="tablist" aria-label="问答模式">
           <button
@@ -38,7 +38,7 @@
     </section>
 
     <div class="chat-shell">
-      <section class="chat-main panel-surface">
+      <section class="chat-main shell-section-card">
         <div class="chat-main__workspace" :class="{ 'chat-main__workspace-sidebar-hidden': !desktopSessionVisible }">
           <aside v-if="desktopSessionVisible" class="session-sidebar hidden lg:flex">
             <div class="session-sidebar__header">
@@ -875,15 +875,6 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-.panel-surface {
-  border: 1px solid var(--bc-border-subtle);
-  border-radius: calc(var(--radius-xl) + 2px);
-  background:
-    radial-gradient(circle at 0 0, rgba(85, 214, 190, 0.1), transparent 28%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(248, 250, 252, 0.95));
-  box-shadow: var(--bc-shadow-soft);
-}
-
 .session-mode-tag {
   display: inline-flex;
   align-items: center;
@@ -956,9 +947,8 @@ onUnmounted(() => {
   min-height: 0;
   flex-direction: column;
   gap: 1rem;
-  padding: 1rem;
-  border-right: 1px solid rgba(226, 232, 240, 0.88);
-  background: linear-gradient(180deg, rgba(247, 250, 252, 0.94), rgba(255, 255, 255, 0.72));
+  padding: 1rem 1rem 1rem 0;
+  border-right: 1px solid rgba(226, 232, 240, 0.7);
 }
 
 .session-sidebar__header {
@@ -1329,7 +1319,7 @@ onUnmounted(() => {
   flex-direction: column;
   min-height: 0;
   flex: 1;
-  padding: 0.9rem 1rem 1rem;
+  padding: 0.85rem 1rem 1rem;
   overflow: hidden;
 }
 
@@ -1427,7 +1417,7 @@ onUnmounted(() => {
   width: 100%;
   border-radius: 22px;
   padding: 1rem 1rem 0.95rem;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+  box-shadow: none;
 }
 
 .message-bubble-user {
@@ -1460,16 +1450,12 @@ onUnmounted(() => {
 
 .composer-shell {
   margin-top: 0.75rem;
-  border: 1px solid rgba(148, 163, 184, 0.16);
+  border: 1px solid rgba(148, 163, 184, 0.12);
   border-radius: 18px;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(246, 249, 252, 0.94)),
-    radial-gradient(circle at top left, rgba(85, 214, 190, 0.1), transparent 34%);
+  background: rgba(255, 255, 255, 0.9);
   padding: 0.7rem;
-  box-shadow:
-    0 12px 26px rgba(15, 23, 42, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(20px);
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .composer-shell__meta {
@@ -1596,7 +1582,7 @@ onUnmounted(() => {
 .reference-card {
   border: 1px solid rgba(148, 163, 184, 0.16);
   border-radius: var(--radius-lg);
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.84);
   padding: 0.95rem;
 }
 
@@ -1638,7 +1624,7 @@ onUnmounted(() => {
 .message-skeleton {
   border: 1px solid rgba(148, 163, 184, 0.12);
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.72);
   padding: 1rem;
 }
 

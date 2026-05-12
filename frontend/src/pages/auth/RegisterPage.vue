@@ -1,7 +1,7 @@
 <template>
   <div class="auth-immersive-shell px-4 py-8 md:px-6 md:py-10">
     <div class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1180px] items-stretch gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(380px,1.05fr)]">
-      <section class="cockpit-panel auth-brand-panel p-6 sm:p-8">
+      <section class="shell-section-card auth-brand-panel p-6 sm:p-8">
         <div class="flex items-center gap-3">
           <span class="state-pulse" aria-hidden="true"></span>
           <p class="section-kicker">创建账号</p>
@@ -16,7 +16,7 @@
 
       </section>
 
-      <section class="cockpit-panel auth-form-panel p-6 sm:p-8 md:p-10">
+      <section class="shell-section-card auth-form-panel p-6 sm:p-8 md:p-10">
         <div class="flex items-start justify-between gap-4">
           <div>
             <p class="section-kicker">注册</p>

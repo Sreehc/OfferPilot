@@ -7,12 +7,12 @@
       <span>&larr;</span> 返回社区
     </button>
 
-    <section v-if="loading" class="cockpit-panel px-8 py-16 text-center text-slate-400">
+    <section v-if="loading" class="shell-section-card px-8 py-16 text-center text-slate-400">
       正在加载问题内容...
     </section>
 
     <template v-else-if="question">
-      <section class="forum-post cockpit-panel p-5 sm:p-6">
+      <section class="forum-post shell-section-card p-5 sm:p-6">
         <div class="forum-post__body">
           <div class="forum-post__badges">
             <span class="forum-status-chip" :class="questionResolved(question) ? 'detail-chip-resolved' : 'detail-chip-active'">
@@ -58,7 +58,7 @@
         </div>
       </section>
 
-      <section class="cockpit-panel p-5 sm:p-6">
+      <section class="shell-section-card p-5 sm:p-6">
         <div class="forum-section-head">
           <div>
             <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">回复 {{ question.answers.length }}</h3>
@@ -137,7 +137,7 @@
         </div>
       </section>
 
-      <section class="cockpit-panel p-5 sm:p-6">
+      <section class="shell-section-card p-5 sm:p-6">
         <div class="forum-section-head">
           <div>
             <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">写回复</h3>

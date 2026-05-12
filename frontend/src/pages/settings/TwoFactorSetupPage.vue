@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6">
-    <section v-if="step === 1" class="paper-panel p-4 sm:p-6">
+    <section v-if="step === 1" class="shell-section-card p-4 sm:p-6">
       <h4 class="text-lg font-semibold text-ink">扫描二维码</h4>
       <div class="mt-4 flex flex-col items-center gap-6">
         <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white p-4">
@@ -29,7 +29,7 @@
       </el-button>
     </section>
 
-    <section v-if="step === 2" class="paper-panel p-4 sm:p-6">
+    <section v-if="step === 2" class="shell-section-card p-4 sm:p-6">
       <h4 class="text-lg font-semibold text-ink">输入验证码</h4>
       <div class="mt-4 max-w-xs">
         <el-input
@@ -48,7 +48,7 @@
       </div>
     </section>
 
-    <section v-if="step === 3" class="paper-panel p-4 sm:p-6">
+    <section v-if="step === 3" class="shell-section-card p-4 sm:p-6">
       <h4 class="text-lg font-semibold text-ink">恢复码</h4>
       <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
         请保存好这些恢复码。每个只能使用一次。

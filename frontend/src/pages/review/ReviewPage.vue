@@ -2,7 +2,7 @@
   <div class="repair-workbench space-y-6">
     <AppShellHeader />
 
-    <section class="cockpit-panel p-4 sm:p-5">
+    <section class="shell-section-card p-4 sm:p-5">
       <div class="repair-filter-row">
         <button
           v-for="filter in contentFilters"
@@ -18,141 +18,213 @@
       </div>
     </section>
 
-    <section v-if="loading" class="cockpit-panel p-8 text-center">
+    <section v-if="loading" class="shell-section-card p-8 text-center">
       <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
       <p class="mt-4 text-sm text-slate-500">加载复习数据...</p>
     </section>
 
     <template v-else>
-      <section class="cockpit-panel p-5 sm:p-6">
+      <section v-if="!started" class="review-workbench">
+        <section class="shell-section-card p-5 sm:p-6">
           <div class="review-launch">
             <div class="review-launch__head">
-            <p class="text-xl font-semibold tracking-[-0.03em] text-ink">{{ heroTitle }}</p>
-            <div class="review-launch__signals">
-              <span class="detail-pill">待复习 {{ stats?.todayPending ?? reviewData?.totalPending ?? 0 }}</span>
-              <span class="detail-pill">逾期 {{ stats?.overdueCount ?? reviewData?.overdueCount ?? 0 }}</span>
-              <span class="detail-pill">连续 {{ stats?.currentStreak ?? reviewData?.currentStreak ?? 0 }} 天</span>
+              <div>
+                <p class="section-kicker">复习工作台</p>
+                <p class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink sm:text-3xl">{{ heroTitle }}</p>
+              </div>
+              <div class="review-launch__signals">
+                <span class="detail-pill">待复习 {{ stats?.todayPending ?? reviewData?.totalPending ?? 0 }}</span>
+                <span class="detail-pill">逾期 {{ stats?.overdueCount ?? reviewData?.overdueCount ?? 0 }}</span>
+                <span class="detail-pill">连续 {{ stats?.currentStreak ?? reviewData?.currentStreak ?? 0 }} 天</span>
+              </div>
+            </div>
+
+            <div class="review-launch__stats">
+              <article class="review-launch__metric">
+                <span>当前筛选</span>
+                <strong>{{ selectedFilterLabel }}</strong>
+              </article>
+              <article class="review-launch__metric">
+                <span>待复习</span>
+                <strong>{{ reviewItems.length }}</strong>
+              </article>
+              <article class="review-launch__metric">
+                <span>逾期</span>
+                <strong>{{ stats?.overdueCount ?? reviewData?.overdueCount ?? 0 }}</strong>
+              </article>
+              <article class="review-launch__metric">
+                <span>连续</span>
+                <strong>{{ stats?.currentStreak ?? reviewData?.currentStreak ?? 0 }} 天</strong>
+              </article>
+            </div>
+
+            <div class="mt-6 flex flex-wrap gap-3">
+              <button type="button" class="hard-button-primary" :disabled="!reviewItems.length" @click="startReview">
+                {{ reviewItems.length ? '开始今日复习' : '当前无待复习项' }}
+              </button>
+              <RouterLink to="/cards" class="hard-button-secondary">去今日卡片</RouterLink>
             </div>
           </div>
+        </section>
 
-          <div class="mt-6 flex flex-wrap gap-3">
-            <button type="button" class="hard-button-primary" :disabled="!reviewItems.length" @click="startReview">
-              {{ reviewItems.length ? '开始今日复习' : '当前无待复习项' }}
-            </button>
-            <RouterLink to="/cards" class="hard-button-secondary">去今日卡片</RouterLink>
+        <aside class="shell-section-card p-5 sm:p-6">
+          <p class="section-kicker">今日状态</p>
+          <div class="mt-5 space-y-4">
+            <div class="review-status-row">
+              <span>待复习</span>
+              <strong>{{ stats?.todayPending ?? reviewData?.totalPending ?? 0 }} 项</strong>
+            </div>
+            <div class="review-status-row">
+              <span>逾期</span>
+              <strong>{{ stats?.overdueCount ?? reviewData?.overdueCount ?? 0 }} 项</strong>
+            </div>
+            <div class="review-status-row">
+              <span>已完成</span>
+              <strong>{{ reviewData?.todayCompleted ?? 0 }} 项</strong>
+            </div>
           </div>
-        </div>
+        </aside>
       </section>
 
-      <section v-if="started && currentReviewItem" class="mx-auto max-w-3xl px-2 sm:px-0">
-        <div class="mb-4 flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
-          <span class="font-mono">{{ currentIndex + 1 }} / {{ reviewItems.length }}</span>
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="hard-chip" :class="contentChipClass(currentReviewItem.contentType)">
-              {{ contentTypeLabel(currentReviewItem.contentType) }}
-            </span>
-            <span
-              v-if="currentReviewItem.overdueDays > 0"
-              class="rounded-full border border-coral/30 bg-coral/10 px-3 py-1 text-coral"
-            >
-              逾期 {{ currentReviewItem.overdueDays }} 天
-            </span>
-          </div>
-        </div>
-
-        <div class="mb-6 h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
-          <div
-            class="h-full rounded-full bg-accent transition-all duration-300"
-            :style="{ width: `${((currentIndex + 1) / Math.max(reviewItems.length, 1)) * 100}%` }"
-          ></div>
-        </div>
-
-        <p class="mb-3 text-center text-xs text-slate-400 dark:text-slate-500 sm:hidden">
-          左滑重来 · 右滑良好 · 点击翻转
-        </p>
-
-        <div
-          class="flashcard-wrapper cursor-pointer"
-          :class="{ flipped: showAnswer }"
-          @click="flipCard"
-          @touchstart="onTouchStart"
-          @touchmove.passive="onTouchMove"
-          @touchend="onTouchEnd"
-        >
-          <div class="flashcard">
-            <div class="flashcard-front memory-card p-5 sm:p-8">
-              <div class="flex items-center justify-between gap-4">
-                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                  先回忆问题
-                </div>
-                <span class="hard-chip">{{ masteryLabel(currentReviewItem.masteryLevel) }}</span>
-              </div>
-              <div class="mt-6 flex flex-wrap items-center gap-2">
+      <section v-if="started && currentReviewItem" class="review-session-layout">
+        <div class="space-y-4">
+          <div class="shell-section-card p-4 sm:p-5">
+            <div class="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
+              <span class="font-mono">{{ currentIndex + 1 }} / {{ reviewItems.length }}</span>
+              <div class="flex flex-wrap items-center gap-2">
                 <span class="hard-chip" :class="contentChipClass(currentReviewItem.contentType)">
                   {{ contentTypeLabel(currentReviewItem.contentType) }}
                 </span>
-                <span v-if="currentReviewItem.deckTitle" class="detail-pill">{{ currentReviewItem.deckTitle }}</span>
+                <span
+                  v-if="currentReviewItem.overdueDays > 0"
+                  class="rounded-full border border-coral/30 bg-coral/10 px-3 py-1 text-coral"
+                >
+                  逾期 {{ currentReviewItem.overdueDays }} 天
+                </span>
               </div>
-              <h3 class="mt-8 text-xl font-semibold leading-relaxed text-ink sm:text-2xl">
-                {{ currentReviewItem.title }}
-              </h3>
-              <p class="mt-8 text-sm text-slate-400 dark:text-slate-500">点击翻转查看答案与解释</p>
             </div>
 
-            <div class="flashcard-back memory-card p-5 sm:p-8">
-              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                标准答案
-              </div>
-              <p class="mt-4 whitespace-pre-wrap text-sm leading-7 text-slate-700 dark:text-slate-200">
-                {{ currentReviewItem.answer || '暂无标准答案' }}
-              </p>
+            <div class="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
               <div
-                v-if="currentReviewItem.explanation"
-                class="mt-4 border-t border-slate-200/60 pt-4 dark:border-slate-700/60"
-              >
-                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                  {{ currentReviewItem.contentType === 'knowledge_card' ? '解释说明' : '之前错误原因' }}
+                class="h-full rounded-full bg-accent transition-all duration-300"
+                :style="{ width: `${((currentIndex + 1) / Math.max(reviewItems.length, 1)) * 100}%` }"
+              ></div>
+            </div>
+          </div>
+
+          <p class="text-center text-xs text-slate-400 dark:text-slate-500 sm:hidden">
+            左滑重来 · 右滑良好 · 点击翻转
+          </p>
+
+          <div
+            class="flashcard-wrapper cursor-pointer"
+            :class="{ flipped: showAnswer }"
+            @click="flipCard"
+            @touchstart="onTouchStart"
+            @touchmove.passive="onTouchMove"
+            @touchend="onTouchEnd"
+          >
+            <div class="flashcard">
+              <div class="flashcard-front memory-card p-5 sm:p-8">
+                <div class="flex items-center justify-between gap-4">
+                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                    先回忆问题
+                  </div>
+                  <span class="hard-chip">{{ masteryLabel(currentReviewItem.masteryLevel) }}</span>
                 </div>
-                <p class="mt-1 text-sm text-slate-700 dark:text-slate-200">
-                  {{ currentReviewItem.explanation }}
-                </p>
-              </div>
-              <div
-                v-if="currentReviewItem.sourceQuote && currentReviewItem.contentType === 'knowledge_card'"
-                class="mt-4 border-t border-[var(--bc-line)] pt-4"
-              >
-                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                  来源片段
+                <div class="mt-6 flex flex-wrap items-center gap-2">
+                  <span class="hard-chip" :class="contentChipClass(currentReviewItem.contentType)">
+                    {{ contentTypeLabel(currentReviewItem.contentType) }}
+                  </span>
+                  <span v-if="currentReviewItem.deckTitle" class="detail-pill">{{ currentReviewItem.deckTitle }}</span>
                 </div>
-                <p class="mt-1 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                  {{ currentReviewItem.sourceQuote }}
-                </p>
+                <h3 class="mt-8 text-xl font-semibold leading-relaxed text-ink sm:text-2xl">
+                  {{ currentReviewItem.title }}
+                </h3>
+                <p class="mt-8 text-sm text-slate-400 dark:text-slate-500">点击翻转查看答案与解释</p>
               </div>
-              <div class="mt-4 border-t border-[var(--bc-line)] pt-4 text-xs text-slate-500 dark:text-slate-400">
-                记忆系数 {{ formatEaseFactor(currentReviewItem.easeFactor) }} · 间隔
-                {{ currentReviewItem.intervalDays ?? 0 }} 天
+
+              <div class="flashcard-back memory-card p-5 sm:p-8">
+                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                  标准答案
+                </div>
+                <p class="mt-4 whitespace-pre-wrap text-sm leading-7 text-slate-700 dark:text-slate-200">
+                  {{ currentReviewItem.answer || '暂无标准答案' }}
+                </p>
+                <div
+                  v-if="currentReviewItem.explanation"
+                  class="mt-4 border-t border-slate-200/60 pt-4 dark:border-slate-700/60"
+                >
+                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                    {{ currentReviewItem.contentType === 'knowledge_card' ? '解释说明' : '之前错误原因' }}
+                  </div>
+                  <p class="mt-1 text-sm text-slate-700 dark:text-slate-200">
+                    {{ currentReviewItem.explanation }}
+                  </p>
+                </div>
+                <div
+                  v-if="currentReviewItem.sourceQuote && currentReviewItem.contentType === 'knowledge_card'"
+                  class="mt-4 border-t border-[var(--bc-line)] pt-4"
+                >
+                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                    来源片段
+                  </div>
+                  <p class="mt-1 text-sm leading-7 text-slate-600 dark:text-slate-300">
+                    {{ currentReviewItem.sourceQuote }}
+                  </p>
+                </div>
+                <div class="mt-4 border-t border-[var(--bc-line)] pt-4 text-xs text-slate-500 dark:text-slate-400">
+                  记忆系数 {{ formatEaseFactor(currentReviewItem.easeFactor) }} · 间隔
+                  {{ currentReviewItem.intervalDays ?? 0 }} 天
+                </div>
               </div>
             </div>
           </div>
+
+          <div v-if="showAnswer" class="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+            <button
+              v-for="btn in ratingButtons"
+              :key="btn.rating"
+              type="button"
+              class="rating-button flex flex-col items-center gap-1 p-3 text-sm font-semibold transition-all"
+              :class="btn.class"
+              :disabled="submitting"
+              @click="handleRate(btn.rating)"
+            >
+              <span class="text-base">{{ btn.symbol }}</span>
+              <span>{{ btn.label }}</span>
+            </button>
+          </div>
         </div>
 
-        <div v-if="showAnswer" class="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-          <button
-            v-for="btn in ratingButtons"
-            :key="btn.rating"
-            type="button"
-            class="rating-button flex flex-col items-center gap-1 p-3 text-sm font-semibold transition-all"
-            :class="btn.class"
-            :disabled="submitting"
-            @click="handleRate(btn.rating)"
-          >
-            <span class="text-base">{{ btn.symbol }}</span>
-            <span>{{ btn.label }}</span>
-          </button>
-        </div>
+        <aside class="shell-section-card p-5 sm:p-6 review-session-aside">
+          <p class="section-kicker">当前状态</p>
+          <div class="mt-5 space-y-4">
+            <div class="review-status-row">
+              <span>当前筛选</span>
+              <strong>{{ selectedFilterLabel }}</strong>
+            </div>
+            <div class="review-status-row">
+              <span>待复习</span>
+              <strong>{{ reviewItems.length }} 项</strong>
+            </div>
+            <div class="review-status-row">
+              <span>逾期</span>
+              <strong>{{ stats?.overdueCount ?? reviewData?.overdueCount ?? 0 }} 项</strong>
+            </div>
+            <div class="review-status-row">
+              <span>连续</span>
+              <strong>{{ stats?.currentStreak ?? reviewData?.currentStreak ?? 0 }} 天</strong>
+            </div>
+            <div class="review-status-row">
+              <span>已完成</span>
+              <strong>{{ reviewData?.todayCompleted ?? 0 }} 项</strong>
+            </div>
+          </div>
+        </aside>
       </section>
 
-      <section v-else-if="started && !currentReviewItem" class="cockpit-panel p-8">
+      <section v-else-if="started && !currentReviewItem" class="shell-section-card p-8">
         <EmptyState
           icon="trophy"
           title="本轮复习已完成"
@@ -167,7 +239,7 @@
         </EmptyState>
       </section>
 
-      <section v-else-if="reviewItems.length" class="cockpit-panel p-5 sm:p-6">
+      <section v-else-if="reviewItems.length" class="shell-section-card p-5 sm:p-6">
         <div class="queue-head">
           <div>
             <p class="section-kicker">待复习列表</p>
@@ -176,7 +248,7 @@
           <span class="detail-pill">{{ reviewItems.length }} 项</span>
         </div>
 
-        <div class="mt-5 space-y-3">
+        <div class="review-queue mt-5">
           <article
             v-for="item in reviewItems"
             :key="item.reviewItemId"
@@ -204,7 +276,7 @@
         </div>
       </section>
 
-      <section v-else class="cockpit-panel p-8">
+      <section v-else class="shell-section-card p-8">
         <EmptyState
           icon="review"
           :title="emptyStateTitle"
@@ -259,6 +331,10 @@ const heroTitle = computed(() => {
     return selectedContentType.value === 'interview_card' ? '当前没有面试卡片' : '今天没有待复习内容'
   }
   return `今天先复习这 ${reviewItems.value.length} 项`
+})
+
+const selectedFilterLabel = computed(() => {
+  return contentFilters.find((item) => item.value === selectedContentType.value)?.label ?? '全部'
 })
 
 const ratingButtons = [
@@ -489,6 +565,16 @@ onMounted(() => {
   gap: 10px;
 }
 
+.review-workbench {
+  display: grid;
+  gap: 18px;
+}
+
+.review-session-layout {
+  display: grid;
+  gap: 18px;
+}
+
 .repair-filter-chip {
   display: inline-flex;
   align-items: center;
@@ -528,11 +614,10 @@ onMounted(() => {
 
 .review-launch {
   border-radius: 24px;
-  border: 1px solid var(--bc-line);
   background:
     radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.1), transparent 32%),
-    rgba(255, 255, 255, 0.24);
-  padding: 24px;
+    rgba(255, 255, 255, 0.28);
+  padding: 22px;
 }
 
 .dark .review-launch {
@@ -564,9 +649,8 @@ onMounted(() => {
 }
 
 .review-launch__metric {
-  border: 1px solid var(--bc-line);
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(var(--bc-accent-rgb), 0.06);
   padding: 14px;
 }
 
@@ -595,6 +679,24 @@ onMounted(() => {
   padding: 6px 10px;
   font-size: 11px;
   color: var(--bc-ink-secondary);
+}
+
+.review-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.review-status-row span {
+  color: var(--bc-ink-secondary);
+  font-size: 13px;
+}
+
+.review-status-row strong {
+  color: var(--bc-ink);
+  font-size: 1.05rem;
+  font-weight: 700;
 }
 
 .flashcard-wrapper {
@@ -662,11 +764,20 @@ onMounted(() => {
 .repair-card {
   position: relative;
   overflow: hidden;
-  border: 1px solid var(--bc-line);
   border-left-width: 3px;
-  border-radius: 22px;
-  background: var(--bc-surface-card);
-  box-shadow: var(--bc-shadow-soft);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.review-queue {
+  overflow: hidden;
+  border-radius: 24px;
+  background: rgba(var(--bc-ink-rgb), 0.02);
+}
+
+.review-queue .repair-card + .repair-card {
+  border-top: 1px solid rgba(148, 163, 184, 0.16);
 }
 
 .repair-card-due {
@@ -718,6 +829,23 @@ onMounted(() => {
 
   .review-launch__stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1200px) {
+  .review-workbench {
+    grid-template-columns: minmax(0, 1.15fr) 300px;
+    align-items: start;
+  }
+
+  .review-session-layout {
+    grid-template-columns: minmax(0, 1.15fr) 300px;
+    align-items: start;
+  }
+
+  .review-session-aside {
+    position: sticky;
+    top: 88px;
   }
 }
 
