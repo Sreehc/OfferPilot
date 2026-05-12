@@ -21,7 +21,7 @@
       </template>
     </AppShellHeader>
 
-    <section class="shell-section-card p-5 sm:p-6 admin-workspace-shell">
+    <section class="shell-section-card p-4 sm:p-5 admin-workspace-shell">
       <div class="admin-tab-shell">
       <el-tabs v-model="activeTab" class="admin-tabs">
         <el-tab-pane label="系统概览" name="overview">
@@ -265,7 +265,7 @@ onMounted(async () => { await loadCategories(); await Promise.all([loadQuestions
 .admin-tab-shell {
   border-radius: 24px;
   background: transparent;
-  padding: 2px 0 0;
+  padding: 0;
 }
 
 :deep(.admin-tabs .el-tabs__nav-wrap::after) {
@@ -273,11 +273,11 @@ onMounted(async () => { await loadCategories(); await Promise.all([loadQuestions
 }
 
 :deep(.admin-tabs .el-tabs__header) {
-  margin-bottom: 24px;
+  margin-bottom: 18px;
 }
 
 :deep(.admin-tabs .el-tabs__nav-wrap) {
-  padding: 4px;
+  padding: 3px;
   border-radius: 18px;
   background: rgba(var(--bc-ink-rgb), 0.035);
 }

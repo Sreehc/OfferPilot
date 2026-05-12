@@ -247,7 +247,7 @@ const confidenceClass = (score?: number) => {
 
 @media (min-width: 1280px) {
   .admin-tool-grid {
-    grid-template-columns: 320px minmax(0, 1fr);
+    grid-template-columns: 288px minmax(0, 1fr);
     align-items: start;
   }
 }

@@ -1,7 +1,7 @@
 <template>
   <div v-loading="loading" class="space-y-5">
-    <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-      <section class="shell-section-card p-5 sm:p-6">
+    <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_288px]">
+      <section class="shell-section-card p-4 sm:p-5">
         <div class="overview-panel-head">
           <div>
             <p class="section-kicker">系统趋势</p>
@@ -28,7 +28,7 @@
       </section>
 
       <aside class="space-y-4">
-        <section class="shell-section-card p-5 sm:p-6">
+        <section class="shell-section-card p-4 sm:p-5">
           <p class="section-kicker">系统概览</p>
           <h3 class="overview-panel-title mt-3">后台摘要</h3>
           <div class="mt-5 space-y-3">
@@ -39,7 +39,7 @@
           </div>
         </section>
 
-        <section class="shell-section-card p-5 sm:p-6">
+        <section class="shell-section-card p-4 sm:p-5">
           <p class="section-kicker">业务负载</p>
           <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
             <article class="data-slab p-4">
