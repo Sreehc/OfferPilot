@@ -23,26 +23,14 @@
       </template>
     </AppShellHeader>
 
-    <section
-      class="grid gap-4"
-      :class="phase === 'idle' ? 'mx-auto max-w-2xl' : 'lg:grid-cols-[360px_minmax(0,1fr)]'"
-    >
+    <!-- Idle state: centered single-column layout -->
+    <div v-if="phase === 'idle'" class="mx-auto max-w-2xl space-y-4">
       <aside class="shell-section-card p-4 sm:p-6">
         <div class="panel-heading">
-          <h3 class="panel-heading__title">
-            {{
-              phase === 'idle'
-                ? '开始前设置'
-                : phase === 'finished'
-                  ? '面试已完成'
-                  : phase === 'result'
-                    ? '本题已评分'
-                    : '继续当前流程'
-            }}
-          </h3>
+          <h3 class="panel-heading__title">开始前设置</h3>
         </div>
 
-        <div v-if="phase === 'idle'" class="mt-6 space-y-4">
+        <div class="mt-6 space-y-4">
           <div class="data-slab p-4">
             <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">方向</div>
             <el-select v-model="direction" size="large" class="mt-2 w-full">
@@ -95,8 +83,83 @@
             {{ interviewMode === 'voice' && voiceAvailable ? '开始语音诊断' : '开始诊断' }}
           </el-button>
         </div>
+      </aside>
 
-        <div v-else class="mt-6 space-y-4">
+      <!-- Recent interview history -->
+      <section class="shell-section-card p-4 sm:p-6">
+        <div class="flex items-center justify-between">
+          <h3 class="interview-history__heading">最近面试</h3>
+          <RouterLink
+            v-if="recentInterviews.length > 0"
+            to="/interview/history"
+            class="text-sm font-medium text-accent transition hover:opacity-80"
+          >
+            查看全部
+          </RouterLink>
+        </div>
+
+        <div v-if="loadingHistory" class="py-8 text-center text-sm text-slate-400">加载中...</div>
+
+        <div v-else-if="recentInterviews.length === 0" class="interview-history-empty py-6 text-center">
+          <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 dark:bg-white/5">
+            <svg class="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+            </svg>
+          </div>
+          <p class="text-sm leading-6 text-slate-500 dark:text-slate-400">
+            还没有面试记录。AI 面试官会针对你的知识薄弱点出题，回答后即时评分并给出标准答案和追问。
+          </p>
+        </div>
+
+        <div v-else class="mt-4 space-y-2">
+          <RouterLink
+            v-for="item in recentInterviews"
+            :key="item.sessionId"
+            :to="`/interview/detail/${item.sessionId}`"
+            class="interview-history-item data-slab flex items-center gap-4 p-4 transition hover:shadow-sm"
+          >
+            <div
+              class="interview-history-item__score flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl font-mono text-lg font-bold"
+              :class="scoreClass(item.totalScore)"
+            >
+              {{ Math.round(item.totalScore) }}
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2">
+                <span class="font-semibold text-ink">{{ item.direction }}</span>
+                <span class="text-xs text-slate-400">{{ item.questionCount }} 题</span>
+                <span v-if="item.mode === 'voice'" class="rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
+                  语音
+                </span>
+              </div>
+              <div class="mt-1 text-xs text-slate-400">
+                {{ formatRelativeTime(item.endTime || item.startTime) }}
+              </div>
+            </div>
+            <svg class="h-4 w-4 shrink-0 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+          </RouterLink>
+        </div>
+      </section>
+    </div>
+
+    <!-- Active states: two-column layout -->
+    <section v-if="phase !== 'idle'" class="grid gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
+      <aside class="shell-section-card p-4 sm:p-6">
+        <div class="panel-heading">
+          <h3 class="panel-heading__title">
+            {{
+              phase === 'finished'
+                ? '面试已完成'
+                : phase === 'result'
+                  ? '本题已评分'
+                  : '继续当前流程'
+            }}
+          </h3>
+        </div>
+
+        <div class="mt-6 space-y-4">
           <div class="data-slab p-4">
             <div
               class="flex items-center justify-between text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400"
@@ -128,7 +191,7 @@
         </div>
       </aside>
 
-      <section v-if="phase !== 'idle'" class="shell-section-card flex min-h-[560px] flex-col p-4 sm:p-6">
+      <section class="shell-section-card flex min-h-[560px] flex-col p-4 sm:p-6">
         <div v-if="false"></div>
 
         <div v-else-if="phase === 'answering'" class="flex flex-1 flex-col">
@@ -406,6 +469,7 @@ import { useRoute } from 'vue-router'
 import AppShellHeader from '@/components/AppShellHeader.vue'
 import {
   currentQuestionApi,
+  fetchInterviewHistoryApi,
   fetchVoiceStatusApi,
   interviewDetailApi,
   startInterviewApi,
@@ -414,7 +478,13 @@ import {
   submitVoiceAnswerApi
 } from '@/api/interview'
 import { fetchRecommendInterviewApi } from '@/api/adaptive'
-import type { InterviewAnswerResult, InterviewCurrentQuestion, InterviewDetail, VoiceSubmitResult } from '@/types/api'
+import type {
+  InterviewAnswerResult,
+  InterviewCurrentQuestion,
+  InterviewDetail,
+  InterviewHistoryItem,
+  VoiceSubmitResult
+} from '@/types/api'
 import VoiceRecorder from '@/components/VoiceRecorder.vue'
 
 const route = useRoute()
@@ -447,6 +517,8 @@ const lastResult = ref<InterviewAnswerResult | null>(null)
 const lastVoiceResult = ref<VoiceSubmitResult | null>(null)
 const detail = ref<InterviewDetail | null>(null)
 const expandedQuestions = ref<Set<string>>(new Set())
+const recentInterviews = ref<InterviewHistoryItem[]>([])
+const loadingHistory = ref(false)
 
 const toggleQuestion = (questionId: string) => {
   if (expandedQuestions.value.has(questionId)) {
@@ -632,6 +704,36 @@ const speakText = (text: string) => {
   window.speechSynthesis.speak(utterance)
 }
 
+const scoreClass = (score: number) => (score >= 80 ? 'text-accent' : score >= 60 ? 'text-amber-500' : 'text-coral')
+
+const formatRelativeTime = (dateStr?: string) => {
+  if (!dateStr) return ''
+  const now = Date.now()
+  const then = new Date(dateStr).getTime()
+  const diffMs = now - then
+  if (diffMs < 0) return '刚刚'
+  const diffMin = Math.floor(diffMs / 60000)
+  if (diffMin < 1) return '刚刚'
+  if (diffMin < 60) return `${diffMin} 分钟前`
+  const diffHour = Math.floor(diffMin / 60)
+  if (diffHour < 24) return `${diffHour} 小时前`
+  const diffDay = Math.floor(diffHour / 24)
+  if (diffDay < 30) return `${diffDay} 天前`
+  return new Date(dateStr).toLocaleDateString('zh-CN')
+}
+
+const loadRecentInterviews = async () => {
+  loadingHistory.value = true
+  try {
+    const res = await fetchInterviewHistoryApi(undefined, 1, 5)
+    recentInterviews.value = res.data.records
+  } catch {
+    // silent fail
+  } finally {
+    loadingHistory.value = false
+  }
+}
+
 const handleNextQuestion = async () => {
   if (!currentQuestion.value) return
 
@@ -684,6 +786,9 @@ const handleNewInterview = () => {
 }
 
 onMounted(() => {
+  // Load recent interviews for idle state
+  void loadRecentInterviews()
+
   // Check voice availability
   void fetchVoiceStatusApi()
     .then((res) => {
@@ -780,6 +885,22 @@ onMounted(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.interview-history__heading {
+  color: var(--bc-ink);
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.interview-history-item {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.interview-history-item__score {
+  background: rgba(var(--bc-accent-rgb), 0.08);
 }
 
 .panel-heading__title {
