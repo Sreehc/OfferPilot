@@ -1,8 +1,9 @@
 <template>
-  <section class="cockpit-panel deck-list p-5 sm:p-6">
+  <section class="shell-section-card deck-list p-5 sm:p-6">
     <div class="deck-list__head">
       <div>
-        <h3 class="deck-list__title">切换当前卡组</h3>
+        <p class="section-kicker">卡组队列</p>
+        <h3 class="deck-list__title mt-3">切换当前卡组</h3>
       </div>
       <span class="deck-list__count">{{ decks.length }} 组</span>
     </div>
@@ -97,9 +98,9 @@ const progress = (deck: CardDeckSummary) => {
 }
 
 .deck-list__items {
-  display: grid;
-  gap: 12px;
   margin-top: 18px;
+  border-radius: 24px;
+  background: rgba(var(--bc-ink-rgb), 0.02);
 }
 
 .deck-card {
@@ -107,10 +108,11 @@ const progress = (deck: CardDeckSummary) => {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 14px;
   align-items: center;
-  border: 1px solid var(--bc-line);
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.24);
-  padding: 14px;
+  padding: 16px 18px;
+}
+
+.deck-card + .deck-card {
+  border-top: 1px solid rgba(148, 163, 184, 0.16);
 }
 
 .dark .deck-card {
@@ -118,7 +120,6 @@ const progress = (deck: CardDeckSummary) => {
 }
 
 .deck-card-current {
-  border-color: rgba(var(--bc-accent-rgb), 0.36);
   background:
     linear-gradient(135deg, rgba(var(--bc-accent-rgb), 0.12), transparent 62%),
     rgba(255, 255, 255, 0.25);
@@ -174,15 +175,14 @@ const progress = (deck: CardDeckSummary) => {
 .deck-card__action {
   min-width: 72px;
   min-height: 38px;
-  border: 1px solid var(--bc-line);
   border-radius: 999px;
+  background: rgba(var(--bc-ink-rgb), 0.04);
   color: var(--bc-ink);
   font-size: 13px;
   font-weight: 800;
 }
 
 .deck-card__action:not(:disabled):hover {
-  border-color: rgba(var(--bc-accent-rgb), 0.35);
   background: rgba(var(--bc-accent-rgb), 0.1);
 }
 

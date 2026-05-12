@@ -8,38 +8,19 @@
       </template>
     </AppShellHeader>
 
-    <section v-if="loading" class="cockpit-panel cards-loading p-10 text-center">
+    <section v-if="loading" class="shell-section-card cards-loading p-10 text-center">
       <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
       <p class="mt-4 text-sm text-slate-500">加载今日记忆工作台...</p>
     </section>
 
     <template v-else>
-      <section v-if="docId" class="cockpit-panel generate-panel p-5 sm:p-6">
-        <div>
-          <h3>{{ docTitle || `文档 #${docId}` }}</h3>
-          <p>从这份资料生成一组新的卡片。</p>
-        </div>
+      <section v-if="docId" class="generate-workspace">
+        <aside class="shell-section-card p-5 sm:p-6">
+          <p class="section-kicker">生成摘要</p>
+          <h3 class="generate-panel__title mt-3">{{ docTitle || `文档 #${docId}` }}</h3>
+          <p class="generate-panel__intro">从这份资料生成一组新的卡片，并直接切换到当前工作卡组。</p>
 
-        <div v-if="matchedDocDeck" class="generate-panel__existing">
-          <strong>这份资料已经生成过卡组：{{ matchedDocDeck.deckTitle }}</strong>
-          <p>当前已有 {{ matchedDocDeck.totalCards }} 张卡片，已掌握 {{ matchedDocDeck.masteredCards }} 张。</p>
-          <div class="generate-panel__existing-actions">
-            <button
-              type="button"
-              class="hard-button-primary"
-              :disabled="activatingDeckId === matchedDocDeck.deckId"
-              @click="activateDeck(matchedDocDeck.deckId)"
-            >
-              {{ activatingDeckId === matchedDocDeck.deckId ? '切换中...' : '设为当前卡组' }}
-            </button>
-            <button type="button" class="hard-button-secondary" @click="router.replace({ path: '/cards' })">
-              返回工作台
-            </button>
-          </div>
-        </div>
-
-        <div v-else class="generate-panel__control">
-          <div class="generate-panel__summary">
+          <div class="generate-panel__summary mt-6">
             <article class="generate-panel__metric">
               <span>卡片类型</span>
               <strong>{{ selectedCardTypes.length }} 种</strong>
@@ -58,65 +39,94 @@
             </article>
           </div>
 
-          <div class="generate-panel__form">
-            <div class="generate-panel__field generate-panel__field-wide">
-              <label>生成类型</label>
-              <el-checkbox-group v-model="selectedCardTypes" class="generate-panel__types">
-                <el-checkbox
-                  v-for="option in cardTypeOptions"
-                  :key="option.value"
-                  :label="option.value"
-                  class="generate-type-chip"
-                >
-                  <span>{{ option.label }}</span>
-                  <small>{{ option.hint }}</small>
-                </el-checkbox>
-              </el-checkbox-group>
+          <div v-if="matchedDocDeck" class="generate-panel__existing mt-6">
+            <strong>这份资料已经生成过卡组：{{ matchedDocDeck.deckTitle }}</strong>
+            <p>当前已有 {{ matchedDocDeck.totalCards }} 张卡片，已掌握 {{ matchedDocDeck.masteredCards }} 张。</p>
+            <div class="generate-panel__existing-actions">
+              <button
+                type="button"
+                class="hard-button-primary"
+                :disabled="activatingDeckId === matchedDocDeck.deckId"
+                @click="activateDeck(matchedDocDeck.deckId)"
+              >
+                {{ activatingDeckId === matchedDocDeck.deckId ? '切换中...' : '设为当前卡组' }}
+              </button>
+              <button type="button" class="hard-button-secondary" @click="router.replace({ path: '/cards' })">
+                返回工作台
+              </button>
             </div>
+          </div>
+        </aside>
 
-            <div class="generate-panel__field">
-              <label for="cardCount">生成数量</label>
-              <el-input-number
-                id="cardCount"
-                v-model="cardCount"
-                :min="4"
-                :max="30"
-                :step="2"
-                size="large"
-                controls-position="right"
-              />
-            </div>
-
-            <div class="generate-panel__field">
-              <label for="difficulty">难度</label>
-              <el-select id="difficulty" v-model="difficulty" size="large">
-                <el-option v-for="item in difficultyOptions" :key="item.value" :label="item.label" :value="item.value" />
-              </el-select>
-            </div>
-
-            <div class="generate-panel__field">
-              <label for="days">复习天数</label>
-              <el-input-number
-                id="days"
-                v-model="days"
-                :min="1"
-                :max="30"
-                :step="1"
-                size="large"
-                controls-position="right"
-              />
+        <section class="shell-section-card p-5 sm:p-6">
+          <div class="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p class="section-kicker">生成设置</p>
+              <h3 class="generate-panel__title mt-3">配置这一组卡片</h3>
             </div>
           </div>
 
-          <div class="generate-panel__actions">
-            <button type="button" class="hard-button-primary" :disabled="generating" @click="generateDeck">
-              {{ generating ? '生成中...' : '生成并设为当前卡组' }}
-            </button>
-            <button type="button" class="hard-button-secondary" @click="router.replace({ path: '/cards' })">
-              暂不生成
-            </button>
+          <div v-if="!matchedDocDeck" class="generate-panel__control mt-6">
+            <div class="generate-panel__form">
+              <div class="generate-panel__field generate-panel__field-wide">
+                <label>生成类型</label>
+                <el-checkbox-group v-model="selectedCardTypes" class="generate-panel__types">
+                  <el-checkbox
+                    v-for="option in cardTypeOptions"
+                    :key="option.value"
+                    :label="option.value"
+                    class="generate-type-chip"
+                  >
+                    <span>{{ option.label }}</span>
+                    <small>{{ option.hint }}</small>
+                  </el-checkbox>
+                </el-checkbox-group>
+              </div>
+
+              <div class="generate-panel__field">
+                <label for="cardCount">生成数量</label>
+                <el-input-number
+                  id="cardCount"
+                  v-model="cardCount"
+                  :min="4"
+                  :max="30"
+                  :step="2"
+                  size="large"
+                  controls-position="right"
+                />
+              </div>
+
+              <div class="generate-panel__field">
+                <label for="difficulty">难度</label>
+                <el-select id="difficulty" v-model="difficulty" size="large">
+                  <el-option v-for="item in difficultyOptions" :key="item.value" :label="item.label" :value="item.value" />
+                </el-select>
+              </div>
+
+              <div class="generate-panel__field">
+                <label for="days">复习天数</label>
+                <el-input-number
+                  id="days"
+                  v-model="days"
+                  :min="1"
+                  :max="30"
+                  :step="1"
+                  size="large"
+                  controls-position="right"
+                />
+              </div>
+            </div>
+
+            <div class="generate-panel__actions">
+              <button type="button" class="hard-button-primary" :disabled="generating" @click="generateDeck">
+                {{ generating ? '生成中...' : '生成并设为当前卡组' }}
+              </button>
+              <button type="button" class="hard-button-secondary" @click="router.replace({ path: '/cards' })">
+                暂不生成
+              </button>
+            </div>
           </div>
-        </div>
+        </section>
       </section>
 
       <CardStudySession
@@ -129,12 +139,12 @@
       />
 
       <template v-else>
-        <TodayCardsPanel :task="todayTask" @start="enterStudyMode" />
-
-        <div v-if="todayTask || decks.length > 0" class="cards-workbench__grid">
-          <CardDeckList :decks="decks" :activating-deck-id="activatingDeckId" @activate="activateDeck" />
+        <section class="cards-workbench__hero-grid">
+          <TodayCardsPanel :task="todayTask" @start="enterStudyMode" />
           <CardProgressSummary :task="todayTask" :stats="stats" @overview="leaveStudyMode" />
-        </div>
+        </section>
+
+        <CardDeckList :decks="decks" :activating-deck-id="activatingDeckId" @activate="activateDeck" />
       </template>
     </template>
   </div>
@@ -384,23 +394,25 @@ watch(
   min-height: 260px;
 }
 
+.generate-workspace {
+  display: grid;
+  gap: 18px;
+}
+
 .generate-panel {
   display: grid;
   gap: 20px;
 }
 
-.generate-panel h3,
-.cards-empty h3 {
-  margin-top: 8px;
+.generate-panel__title {
   color: var(--bc-ink);
   font-size: clamp(1.45rem, 2.5vw, 2.25rem);
   font-weight: 780;
   letter-spacing: -0.06em;
 }
 
-.generate-panel p,
-.cards-empty p {
-  margin-top: 8px;
+.generate-panel__intro {
+  margin-top: 10px;
   color: rgb(100 116 139);
   line-height: 1.8;
 }
@@ -413,13 +425,12 @@ watch(
 .generate-panel__summary {
   display: grid;
   gap: 10px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .generate-panel__metric {
-  border: 1px solid var(--bc-line);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.24);
+  border-radius: 20px;
+  background: rgba(var(--bc-accent-rgb), 0.08);
   padding: 14px;
 }
 
@@ -474,9 +485,9 @@ watch(
   flex-direction: column;
   align-items: flex-start;
   gap: 4px;
-  border: 1px solid var(--bc-line);
+  border: 1px solid rgba(var(--bc-accent-rgb), 0.12);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(var(--bc-accent-rgb), 0.04);
   padding: 12px 14px;
 }
 
@@ -532,6 +543,11 @@ watch(
   align-items: start;
 }
 
+.cards-workbench__hero-grid {
+  display: grid;
+  gap: 18px;
+}
+
 .cards-empty {
   display: grid;
   min-height: 320px;
@@ -544,9 +560,18 @@ watch(
 
 @media (max-width: 980px) {
   .cards-workbench__grid,
+  .generate-workspace,
   .generate-panel__form,
   .generate-panel__summary {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 1200px) {
+  .generate-workspace,
+  .cards-workbench__hero-grid {
+    grid-template-columns: minmax(0, 1.15fr) 360px;
+    align-items: start;
   }
 }
 </style>

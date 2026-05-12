@@ -1,6 +1,7 @@
 <template>
   <section class="today-panel">
     <div class="today-panel__copy">
+      <p class="section-kicker">今日卡片</p>
       <h2 class="today-panel__title">{{ task ? '先处理今天这组卡片' : '先生成第一组卡片' }}</h2>
       <p class="today-panel__text">
         <template v-if="task">
@@ -18,11 +19,11 @@
       </div>
     </div>
 
-    <div v-if="task" class="today-panel__metrics">
+    <div class="today-panel__metrics">
       <article v-for="metric in metrics" :key="metric.label" class="today-panel__metric">
         <span>{{ metric.label }}</span>
         <strong>{{ metric.value }}</strong>
-        <small>{{ metric.hint }}</small>
+        <small v-if="metric.hint">{{ metric.hint }}</small>
       </article>
     </div>
   </section>
@@ -74,12 +75,11 @@ const metrics = computed(() => {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
   gap: 22px;
-  border: 1px solid var(--bc-line);
   border-radius: 30px;
   background:
-    radial-gradient(circle at 78% 12%, rgba(85, 214, 190, 0.16), transparent 28%),
-    linear-gradient(135deg, rgba(var(--bc-accent-rgb), 0.13), transparent 42%),
-    var(--bc-panel);
+    radial-gradient(circle at 82% 10%, rgba(var(--bc-accent-rgb), 0.12), transparent 26%),
+    linear-gradient(135deg, rgba(var(--bc-accent-rgb), 0.09), transparent 44%),
+    var(--bc-surface-card);
   padding: clamp(22px, 3vw, 34px);
   box-shadow: var(--bc-shadow-soft);
 }
@@ -134,11 +134,8 @@ const metrics = computed(() => {
 
 .today-panel__metric {
   min-height: 128px;
-  border: 1px solid rgba(var(--bc-accent-rgb), 0.14);
   border-radius: 24px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.13), transparent),
-    rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.42);
   padding: 18px;
 }
 

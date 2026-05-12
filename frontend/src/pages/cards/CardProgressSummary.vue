@@ -1,8 +1,9 @@
 <template>
-  <section class="cockpit-panel progress-summary p-5 sm:p-6">
+  <section class="shell-section-card progress-summary p-5 sm:p-6">
     <div class="progress-summary__head">
       <div>
-        <h3 class="progress-summary__title">{{ title }}</h3>
+        <p class="section-kicker">当前进度</p>
+        <h3 class="progress-summary__title mt-3">{{ title }}</h3>
       </div>
       <span class="progress-summary__rate">{{ task?.completionRate ?? stats?.completionRate ?? 0 }}%</span>
     </div>
@@ -83,9 +84,8 @@ const title = computed(() => {
 }
 
 .progress-summary__grid article {
-  border: 1px solid var(--bc-line);
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.24);
+  background: rgba(var(--bc-accent-rgb), 0.06);
   padding: 15px;
 }
 
@@ -116,7 +116,6 @@ const title = computed(() => {
   justify-content: space-between;
   gap: 14px;
   margin-top: 18px;
-  border: 1px solid rgba(var(--bc-accent-rgb), 0.18);
   border-radius: 20px;
   background: rgba(var(--bc-accent-rgb), 0.08);
   padding: 16px;
