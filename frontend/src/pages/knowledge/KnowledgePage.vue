@@ -141,11 +141,20 @@
 
                 <div class="doc-card__memory-actions">
                   <RouterLink
-                    :to="{ path: '/cards', query: { docId: String(doc.id), title: doc.title } }"
+                    v-if="doc.cardDeckId"
+                    to="/cards"
                     class="hard-button-primary text-sm"
                   >
-                    {{ doc.cardDeckId ? '去今日卡片' : '生成卡片' }}
+                    去今日卡片
                   </RouterLink>
+                  <button
+                    v-else
+                    type="button"
+                    class="hard-button-primary text-sm"
+                    @click="openGeneratePanel(doc)"
+                  >
+                    生成卡片
+                  </button>
                 </div>
               </div>
             </div>
@@ -237,6 +246,16 @@
         </section>
       </aside>
     </section>
+
+    <CardGeneratePanel
+      :visible="showGeneratePanel"
+      :doc-id="generateDocId"
+      :doc-title="generateDocTitle"
+      :decks="[]"
+      @close="showGeneratePanel = false"
+      @generated="handleGenerated"
+      @activated="handleGenerated"
+    />
   </div>
 </template>
 
@@ -245,6 +264,7 @@ import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import AppShellHeader from '@/components/AppShellHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import CardGeneratePanel from '@/pages/cards/CardGeneratePanel.vue'
 import { fetchCategoriesApi } from '@/api/category'
 import { deleteKnowledgeDocApi, fetchKnowledgeDocsApi, fetchMyKnowledgeDocsApi, uploadKnowledgeDocApi } from '@/api/knowledge'
 import type { CategoryItem, KnowledgeDocItem } from '@/types/api'
@@ -252,6 +272,9 @@ const categories = ref<CategoryItem[]>([])
 const docs = ref<KnowledgeDocItem[]>([])
 const loadingDocs = ref(false)
 const uploading = ref(false)
+const showGeneratePanel = ref(false)
+const generateDocId = ref(0)
+const generateDocTitle = ref('')
 const activeTab = ref<'system' | 'my'>('system')
 const currentPage = ref(1)
 const pageSize = ref(20)
@@ -405,6 +428,16 @@ const statusToneClass = (status: KnowledgeDocItem['status']) => {
 const docType = (fileUrl?: string): 'pdf' | 'text' => {
   if (!fileUrl) return 'text'
   return fileUrl.toLowerCase().endsWith('.pdf') ? 'pdf' : 'text'
+}
+
+const openGeneratePanel = (doc: KnowledgeDocItem) => {
+  generateDocId.value = doc.id
+  generateDocTitle.value = doc.title
+  showGeneratePanel.value = true
+}
+
+const handleGenerated = () => {
+  void loadDocs()
 }
 
 onMounted(async () => {
