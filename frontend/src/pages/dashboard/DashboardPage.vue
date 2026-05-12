@@ -16,20 +16,20 @@
     </section>
 
     <template v-else>
-      <section class="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_360px]">
+      <section class="grid gap-4 xl:grid-cols-[minmax(0,1.48fr)_332px]">
         <div class="space-y-4">
-          <section class="paper-panel relative overflow-hidden p-6 sm:p-7" :class="{ 'border-[var(--bc-line-hot)]': primaryMission.urgent }">
+          <section class="paper-panel relative overflow-hidden p-5 sm:p-6" :class="{ 'border-[var(--bc-line-hot)]': primaryMission.urgent }">
             <div
               class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(var(--bc-accent-rgb),0.1),transparent_30%),radial-gradient(circle_at_92%_12%,rgba(47,127,119,0.08),transparent_24%)]"
             ></div>
-            <div class="relative grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-end">
+            <div class="relative grid gap-5 lg:grid-cols-[minmax(0,1fr)_236px] lg:items-end">
               <div>
                 <div class="flex flex-wrap items-center gap-2">
                   <span class="hard-chip">连续 {{ reviewStats.currentStreak }} 天</span>
                   <span class="hard-chip">待复习 {{ todayReviewCards }} 张</span>
                 </div>
 
-                <div class="mt-6 max-w-3xl">
+                <div class="mt-5 max-w-[42rem]">
                   <h2 class="font-display text-4xl font-semibold leading-[1.02] tracking-[-0.04em] text-ink sm:text-5xl">
                     {{ primaryMission.title }}
                   </h2>
@@ -38,7 +38,7 @@
                   </p>
                 </div>
 
-                <div class="mt-6 flex flex-wrap items-center gap-3">
+                <div class="mt-5 flex flex-wrap items-center gap-3">
                   <RouterLink :to="primaryMission.to" class="hard-button-primary">
                     {{ primaryMission.cta }}
                   </RouterLink>
@@ -63,8 +63,8 @@
             </div>
           </section>
 
-          <section class="grid gap-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-            <article class="shell-section-card p-5 sm:p-6">
+          <section class="grid gap-4 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
+            <article class="shell-section-card p-4 sm:p-5">
               <div class="flex items-center justify-between gap-3">
                 <div>
                   <p class="section-kicker">学习概览</p>
@@ -87,7 +87,7 @@
               </div>
             </article>
 
-            <article class="shell-section-card p-5 sm:p-6">
+            <article class="shell-section-card p-4 sm:p-5">
               <p class="section-kicker">下一步动作</p>
               <div class="mt-6 grid gap-3 sm:grid-cols-2">
                 <RouterLink v-for="action in quickActions" :key="action.to" :to="action.to" class="dashboard-action-card">
@@ -100,7 +100,7 @@
         </div>
 
         <aside class="space-y-4">
-          <section class="shell-section-card p-5 sm:p-6">
+          <section class="shell-section-card p-4 sm:p-5">
             <p class="section-kicker">今日状态</p>
             <div class="mt-5 space-y-4">
               <div class="dashboard-status-row">
@@ -118,7 +118,7 @@
             </div>
           </section>
 
-          <section class="shell-section-card p-5 sm:p-6">
+          <section class="shell-section-card p-4 sm:p-5">
             <div class="flex items-center justify-between gap-3">
               <div>
                 <p class="section-kicker">压力分类</p>

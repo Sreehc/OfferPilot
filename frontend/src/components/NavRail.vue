@@ -1,8 +1,8 @@
 <template>
-  <aside class="relative z-[1] h-full min-h-0 overflow-y-auto bg-transparent p-5">
-    <div class="space-y-7 pb-6">
+  <aside class="relative z-[1] h-full min-h-0 overflow-y-auto bg-transparent px-3 py-4">
+    <div class="space-y-6 pb-5">
       <section v-for="group in groups" :key="group.label" class="space-y-2">
-        <p class="px-4 text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">
+        <p class="px-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">
           {{ group.label }}
         </p>
         <nav class="space-y-1">
@@ -10,7 +10,7 @@
             v-for="item in group.items"
             :key="item.path"
             :to="item.path"
-            class="group flex cursor-pointer items-center gap-3 px-4 py-3 text-sm transition-all duration-150"
+            class="group flex cursor-pointer items-center gap-3 px-3 py-3 text-sm transition-all duration-150"
             style="border-radius: var(--radius-md)"
             :class="
               isActive(item.path)
@@ -31,7 +31,7 @@
                 <div class="font-semibold text-ink">{{ item.label }}</div>
                 <div
                   v-if="item.group === '主任务' || isActive(item.path)"
-                  class="truncate text-xs text-slate-400 dark:text-slate-500"
+                  class="truncate text-[11px] text-slate-400 dark:text-slate-500"
                 >
                   {{ item.hint }}
                 </div>

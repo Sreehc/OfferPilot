@@ -38,7 +38,7 @@
 
     <div
       class="pt-[64px] lg:mt-[64px] lg:grid lg:h-[calc(100dvh-64px)] lg:pt-0 lg:overflow-hidden"
-      :class="sidebarVisible ? 'lg:grid-cols-[292px_minmax(0,1fr)]' : 'lg:grid-cols-[minmax(0,1fr)]'"
+      :class="sidebarVisible ? 'lg:grid-cols-[252px_minmax(0,1fr)] xl:grid-cols-[264px_minmax(0,1fr)]' : 'lg:grid-cols-[minmax(0,1fr)]'"
     >
       <NavRail
         v-show="sidebarVisible"
@@ -62,10 +62,10 @@
       </Transition>
 
       <main
-        class="relative z-[1] flex min-w-0 flex-col px-4 py-5 md:px-6 md:py-7 lg:h-full lg:min-h-0 lg:overflow-hidden lg:px-8 lg:py-7"
+        class="relative z-[1] flex min-w-0 flex-col px-4 py-5 md:px-6 md:py-7 lg:h-full lg:min-h-0 lg:overflow-hidden lg:px-5 lg:py-7 xl:px-6"
       >
         <section class="min-h-0 flex-1 lg:overflow-y-auto">
-          <div class="app-canvas mx-auto w-full max-w-[1480px]">
+          <div class="app-canvas w-full max-w-[1540px]">
             <RouterView v-slot="{ Component, route: viewRoute }">
               <Transition name="page-slide" mode="out-in">
                 <component :is="Component" :key="viewRoute.path" />
