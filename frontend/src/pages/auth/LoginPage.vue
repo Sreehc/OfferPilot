@@ -8,10 +8,28 @@
         </div>
 
         <div class="mt-8 max-w-2xl">
-          <h1 class="auth-hero-title">快速进入今天的学习</h1>
+          <h1 class="auth-hero-title">用 AI 记得更牢，面试更从容</h1>
           <p class="mt-5 text-sm leading-8 text-slate-600 dark:text-slate-300 sm:text-base">
-            登录后继续学习。
+            ByteCoach 帮你用间隔记忆法掌握知识点，AI 模拟面试检验学习效果。
           </p>
+        </div>
+
+        <div class="mt-10 grid gap-4 sm:grid-cols-3">
+          <div class="auth-feature-card">
+            <div class="auth-feature-card__icon">🧠</div>
+            <p class="auth-feature-card__title">AI 间隔记忆</p>
+            <p class="auth-feature-card__desc">根据遗忘曲线自动安排复习，科学高效。</p>
+          </div>
+          <div class="auth-feature-card">
+            <div class="auth-feature-card__icon">🎯</div>
+            <p class="auth-feature-card__title">模拟面试</p>
+            <p class="auth-feature-card__desc">AI 评分 + 标准答案 + 追问，查漏补缺。</p>
+          </div>
+          <div class="auth-feature-card">
+            <div class="auth-feature-card__icon">📚</div>
+            <p class="auth-feature-card__title">知识卡片</p>
+            <p class="auth-feature-card__desc">上传资料，自动生成结构化学习卡片。</p>
+          </div>
         </div>
 
       </section>
@@ -260,6 +278,32 @@ const handleLogin = async () => {
 .auth-links {
   display: flex;
   justify-content: center;
+}
+
+.auth-feature-card {
+  border-radius: calc(var(--radius-md) - 2px);
+  border: 1px solid rgba(var(--bc-accent-rgb), 0.12);
+  background: rgba(255, 255, 255, 0.5);
+  padding: 16px;
+}
+
+.auth-feature-card__icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.auth-feature-card__title {
+  margin-top: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--bc-ink);
+}
+
+.auth-feature-card__desc {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--bc-ink-secondary);
 }
 
 @media (max-width: 640px) {
