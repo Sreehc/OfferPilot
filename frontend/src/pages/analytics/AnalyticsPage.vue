@@ -17,45 +17,48 @@
       </template>
     </AppShellHeader>
 
-    <section class="cockpit-panel p-5 sm:p-6">
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div class="min-w-0 max-w-3xl">
-          <p class="text-xl font-semibold tracking-[-0.03em] text-ink">学习概览</p>
+    <section class="shell-section-card p-5 sm:p-6">
+      <div class="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)] xl:items-stretch">
+        <aside class="analytics-overview">
+          <div>
+            <p class="section-kicker">学习概览</p>
+            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">先看整体节奏</h3>
+          </div>
+
+          <div class="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+            <article v-for="signal in summarySignals" :key="signal.label" class="analytics-overview-card" :class="signal.toneClass">
+              <p class="analytics-overview-card__label">{{ signal.label }}</p>
+              <p class="analytics-overview-card__value">{{ signal.value }}</p>
+            </article>
+          </div>
+        </aside>
+
+        <div class="analytics-main-chart">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">记忆趋势</h3>
+              <p class="mt-1 text-sm text-slate-500">完成率、复习负债和掌握增长</p>
+            </div>
+          </div>
+
+          <div v-if="trendLoading" class="mt-5 flex h-[340px] items-center justify-center">
+            <div class="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+          </div>
+          <div
+            v-else-if="!trendData.completionRateTrend?.length && !trendData.reviewDebtTrend?.length && !trendData.masteredGrowthTrend?.length"
+            class="mt-5 flex h-[340px] items-center justify-center"
+          >
+            <EmptyState icon="chart" title="暂无记忆趋势数据" description="开始学习后查看趋势。" compact />
+          </div>
+          <div v-else class="mt-5">
+            <div ref="trendChartRef" class="chart-shell h-[340px] w-full"></div>
+          </div>
         </div>
-      </div>
-
-      <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <article v-for="signal in summarySignals" :key="signal.label" class="data-slab p-4" :class="signal.toneClass">
-          <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ signal.label }}</p>
-          <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ signal.value }}</p>
-          <p v-if="signal.detail" class="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">{{ signal.detail }}</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="cockpit-panel p-5 sm:p-6">
-      <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div class="min-w-0">
-          <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">记忆趋势</h3>
-        </div>
-      </div>
-
-      <div v-if="trendLoading" class="mt-5 flex h-[340px] items-center justify-center">
-        <div class="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-      </div>
-      <div
-        v-else-if="!trendData.completionRateTrend?.length && !trendData.reviewDebtTrend?.length && !trendData.masteredGrowthTrend?.length"
-        class="mt-5 flex h-[340px] items-center justify-center"
-      >
-        <EmptyState icon="chart" title="暂无记忆趋势数据" description="开始学习后查看趋势。" compact />
-      </div>
-      <div v-else class="mt-5">
-        <div ref="trendChartRef" class="chart-shell h-[340px] w-full"></div>
       </div>
     </section>
 
     <section class="grid gap-4 xl:grid-cols-2">
-      <article class="cockpit-panel p-5 sm:p-6">
+      <article class="shell-section-card p-5 sm:p-6">
         <div class="flex items-center justify-between gap-3">
           <div>
             <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">记忆强度</h3>
@@ -87,7 +90,7 @@
         </div>
       </article>
 
-      <article class="cockpit-panel p-5 sm:p-6">
+      <article class="shell-section-card p-5 sm:p-6">
         <div class="flex items-center justify-between gap-3">
           <div>
             <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">遗忘率</h3>
@@ -113,15 +116,15 @@
       </article>
     </section>
 
-    <section class="cockpit-panel p-5 sm:p-6">
-      <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">分类掌握度</h3>
+    <section class="grid gap-4 xl:grid-cols-2">
+      <article class="shell-section-card p-5 sm:p-6">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">分类掌握度</h3>
+          </div>
         </div>
-      </div>
 
-      <div v-if="!efficiencyLoading && categoryMasteryItems.length" class="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div class="space-y-4">
+        <div v-if="!efficiencyLoading && categoryMasteryItems.length" class="mt-6 space-y-4">
           <article
             v-for="item in categoryMasteryItems"
             :key="`${item.categoryName}-${item.categoryId ?? 'na'}`"
@@ -144,23 +147,20 @@
             </div>
           </article>
         </div>
-
-      </div>
-      <div v-else class="mt-5">
-        <EmptyState icon="chart" title="暂无分类掌握度" description="生成并复习卡片后查看掌握度。" compact />
-      </div>
-    </section>
-
-    <section v-if="!efficiencyLoading && hasMasteryData" class="cockpit-panel p-5 sm:p-6">
-      <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">掌握分布</h3>
+        <div v-else class="mt-5">
+          <EmptyState icon="chart" title="暂无分类掌握度" description="生成并复习卡片后查看掌握度。" compact />
         </div>
-        <span class="detail-pill">{{ totalMasteryCount }} 道题</span>
-      </div>
+      </article>
 
-      <div class="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div class="space-y-4">
+      <article class="shell-section-card p-5 sm:p-6">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">掌握分布</h3>
+            <p class="mt-1 text-sm text-slate-500">{{ totalMasteryCount }} 道题</p>
+          </div>
+        </div>
+
+        <div v-if="!efficiencyLoading && hasMasteryData" class="mt-6 space-y-4">
           <article v-for="item in masteryItems" :key="item.label" class="mastery-card" :class="item.toneClass">
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -176,11 +176,13 @@
             </div>
           </article>
         </div>
-
-      </div>
+        <div v-else class="mt-5">
+          <EmptyState icon="chart" title="暂无掌握分布" description="完成复习后查看分布。" compact />
+        </div>
+      </article>
     </section>
 
-    <section class="cockpit-panel p-5 sm:p-6">
+    <section class="shell-section-card p-5 sm:p-6">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div class="min-w-0">
           <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">面试趋势</h3>
@@ -764,6 +766,36 @@ watch(selectedCategories, () => {
 .mode-switch__item-active {
   background: rgba(var(--bc-accent-rgb), 0.12);
   color: var(--bc-ink);
+}
+
+.analytics-overview {
+  display: flex;
+  flex-direction: column;
+}
+
+.analytics-overview-card {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid var(--bc-border-subtle);
+  background: rgba(255, 255, 255, 0.72);
+  padding: 1rem 1.1rem;
+}
+
+.analytics-overview-card__label {
+  font-size: 0.78rem;
+  color: var(--bc-ink-secondary);
+}
+
+.analytics-overview-card__value {
+  margin-top: 0.55rem;
+  font-family: theme('fontFamily.mono');
+  font-size: clamp(1.8rem, 2vw, 2.4rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--bc-ink);
+}
+
+.analytics-main-chart {
+  min-width: 0;
 }
 
 .insight-card {
