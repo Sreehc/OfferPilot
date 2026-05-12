@@ -3,24 +3,23 @@
     <DashboardGuideCard v-if="showGuideCard" :actions="guideActions" @dismiss="dismissGuide" />
 
     <section v-if="loading" class="shell-section-card min-h-[320px] p-6 sm:p-8">
-      <div class="h-4 w-24 animate-pulse rounded-full bg-slate-200 dark:bg-slate-700"></div>
-      <div class="mt-6 h-14 w-3/4 animate-pulse rounded-[var(--radius-md)] bg-slate-200 dark:bg-slate-700"></div>
-      <div class="mt-4 h-4 w-full animate-pulse rounded-full bg-slate-100 dark:bg-slate-800"></div>
+      <div class="skeleton-line h-4 w-24"></div>
+      <div class="skeleton-line mt-6 h-14 w-3/4 rounded-[var(--radius-md)]"></div>
+      <div class="skeleton-line mt-4 h-4 w-full"></div>
       <div class="mt-8 grid gap-3 sm:grid-cols-3">
-        <div
-          v-for="index in 3"
-          :key="index"
-          class="h-24 animate-pulse rounded-[var(--radius-md)] bg-slate-100 dark:bg-slate-800"
-        ></div>
+        <div v-for="index in 3" :key="index" class="skeleton-line h-24 rounded-[var(--radius-md)]"></div>
       </div>
     </section>
 
     <template v-else>
-      <section class="grid gap-4 xl:grid-cols-[minmax(0,1.48fr)_332px]">
+      <section class="grid gap-4">
         <div class="space-y-4">
-          <section class="shell-section-card relative overflow-hidden p-5 sm:p-6" :class="{ 'border-[var(--bc-line-hot)]': primaryMission.urgent }">
+          <section
+            class="shell-section-card relative overflow-hidden p-5 sm:p-6"
+            :class="{ 'border-[var(--bc-line-hot)]': primaryMission.urgent }"
+          >
             <div
-              class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(var(--bc-accent-rgb),0.1),transparent_30%),radial-gradient(circle_at_92%_12%,rgba(47,127,119,0.08),transparent_24%)]"
+              class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(var(--bc-accent-rgb),0.1),transparent_30%),radial-gradient(circle_at_92%_12%,rgba(var(--bc-cyan-rgb),0.08),transparent_24%)]"
             ></div>
             <div class="relative grid gap-5 lg:grid-cols-[minmax(0,1fr)_236px] lg:items-end">
               <div>
@@ -30,10 +29,12 @@
                 </div>
 
                 <div class="mt-5 max-w-[42rem]">
-                  <h2 class="font-display text-4xl font-semibold leading-[1.02] tracking-[-0.04em] text-ink sm:text-5xl">
+                  <h2
+                    class="font-display text-4xl font-semibold leading-[1.02] tracking-[-0.04em] text-ink sm:text-5xl"
+                  >
                     {{ primaryMission.title }}
                   </h2>
-                  <p class="mt-4 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300 sm:text-base">
+                  <p class="mt-4 max-w-2xl text-sm leading-7 sm:text-base" style="color: var(--bc-ink-secondary)">
                     {{ primaryMission.description }}
                   </p>
                 </div>
@@ -78,7 +79,6 @@
             </div>
           </article>
         </div>
-
       </section>
     </template>
   </div>
@@ -220,7 +220,8 @@ onMounted(() => {
 .dashboard-action-card {
   border-radius: calc(var(--radius-md) - 4px);
   border: 1px solid var(--bc-border-subtle);
-  background: rgba(255, 255, 255, 0.72);
+  background: linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.08), transparent 56%), var(--bc-surface-muted);
+  box-shadow: var(--bc-shadow-soft);
   padding: 1rem 1.1rem;
   transition:
     transform var(--motion-fast) var(--ease-hard),
@@ -230,7 +231,7 @@ onMounted(() => {
 
 .dashboard-action-card:hover {
   transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.92);
+  background: linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.12), transparent 56%), var(--bc-surface-card-hover);
   box-shadow: var(--bc-shadow-hover);
 }
 
@@ -255,8 +256,9 @@ onMounted(() => {
 
 .dashboard-hero-summary__item {
   border-radius: calc(var(--radius-md) - 6px);
-  border: 1px solid rgba(var(--bc-accent-rgb), 0.1);
-  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(var(--bc-accent-rgb), 0.16);
+  background: linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.12), transparent 72%), var(--bc-surface-muted);
+  box-shadow: var(--bc-shadow-soft);
   padding: 0.9rem 1rem;
 }
 

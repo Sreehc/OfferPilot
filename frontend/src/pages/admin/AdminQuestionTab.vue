@@ -71,7 +71,7 @@
           <article v-for="item in questions" :key="item.id" class="admin-record">
             <div class="min-w-0">
               <div class="font-semibold text-ink">{{ item.title }}</div>
-              <div class="mt-2 flex flex-wrap gap-2 text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+              <div class="mt-2 flex flex-wrap gap-2 text-xs uppercase tracking-[0.2em] text-secondary">
                 <span>{{ item.categoryName }}</span>
                 <span>{{ item.difficulty === 'easy' ? '简单' : item.difficulty === 'medium' ? '中等' : '困难' }}</span>
               </div>

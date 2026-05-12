@@ -1,7 +1,7 @@
 <template>
   <div class="community-submit space-y-6">
     <button
-      class="inline-flex items-center gap-2 text-sm text-slate-500 transition-colors hover:text-ink"
+      class="inline-flex items-center gap-2 text-sm text-secondary transition-colors hover:text-ink"
       @click="$router.back()"
     >
       <span>&larr;</span> 返回社区
@@ -15,7 +15,7 @@
               <template #label>
                 <div class="form-label-row">
                   <span>标题</span>
-                  <span class="text-xs text-slate-400">{{ form.title.length }}/200</span>
+                  <span class="text-xs text-tertiary">{{ form.title.length }}/200</span>
                 </div>
               </template>
               <el-input
@@ -30,7 +30,7 @@
               <template #label>
                 <div class="form-label-row">
                   <span>问题内容</span>
-                  <span class="text-xs text-slate-400">{{ form.content.length }}/10000</span>
+                  <span class="text-xs text-tertiary">{{ form.content.length }}/10000</span>
                 </div>
               </template>
               <el-input
@@ -119,12 +119,12 @@ async function handleSubmit() {
 .compose-note {
   border-radius: 20px;
   border: 1px solid var(--bc-line);
-  background: rgba(255, 255, 255, 0.34);
+  background: var(--panel-muted);
   padding: 14px 16px;
 }
 
 .dark .compose-note {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--panel-muted);
 }
 
 .form-label-row {

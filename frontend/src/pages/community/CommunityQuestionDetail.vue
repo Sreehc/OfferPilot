@@ -1,13 +1,13 @@
 <template>
   <div class="community-detail space-y-5">
     <button
-      class="inline-flex items-center gap-2 text-sm text-slate-500 transition-colors hover:text-ink"
+      class="inline-flex items-center gap-2 text-sm text-secondary transition-colors hover:text-ink"
       @click="$router.push('/community')"
     >
       <span>&larr;</span> 返回社区
     </button>
 
-    <section v-if="loading" class="shell-section-card px-8 py-16 text-center text-slate-400">
+    <section v-if="loading" class="shell-section-card px-8 py-16 text-center text-tertiary">
       正在加载问题内容...
     </section>
 
@@ -74,7 +74,7 @@
                   <span class="text-sm font-semibold text-ink">{{ acceptedAnswer.authorName || '匿名用户' }}</span>
                   <span v-if="acceptedAnswer.authorRank" class="detail-pill detail-pill-accent">{{ acceptedAnswer.authorRank }}</span>
                 </div>
-                <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                <div class="flex flex-wrap items-center gap-2 text-xs text-secondary">
                   <span>{{ formatTime(acceptedAnswer.createdAt) }}</span>
                   <span class="forum-inline-vote forum-inline-vote-static">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -98,7 +98,7 @@
                   <span v-if="a.authorRank" class="detail-pill detail-pill-accent">{{ a.authorRank }}</span>
                 </div>
 
-                <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                <div class="flex flex-wrap items-center gap-2 text-xs text-secondary">
                   <span>{{ formatTime(a.createdAt) }}</span>
                   <button
                     type="button"
@@ -313,30 +313,28 @@ onMounted(() => {
 .forum-post__content,
 .forum-reply__content {
   white-space: pre-wrap;
-  color: rgb(51 65 85);
+  color: var(--text-primary);
   font-size: 14px;
   line-height: 1.95;
 }
 
 .dark .forum-post__content,
 .dark .forum-reply__content {
-  color: rgb(226 232 240);
+  color: var(--text-primary);
 }
 
 .forum-post__content {
   margin-top: 20px;
   border-radius: 24px;
   border: 1px solid rgba(var(--bc-accent-rgb), 0.08);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.44), rgba(255, 255, 255, 0.26));
+  background: linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.04), transparent 34%), var(--panel-muted);
   padding: 22px 24px;
   font-size: 15px;
   line-height: 2;
 }
 
 .dark .forum-post__content {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+  background: linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.06), transparent 34%), var(--panel-muted);
 }
 
 .forum-post__actions {
@@ -355,26 +353,26 @@ onMounted(() => {
 .forum-reply {
   border-radius: 24px;
   border: 1px solid var(--bc-line);
-  background: rgba(255, 255, 255, 0.34);
+  background: var(--panel-bg);
   padding: 18px;
 }
 
 .dark .accepted-answer,
 .dark .forum-reply {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--panel-bg);
 }
 
 .accepted-answer {
   border-color: rgba(159, 232, 112, 0.26);
   background:
     linear-gradient(145deg, rgba(159, 232, 112, 0.08), transparent 38%),
-    rgba(255, 255, 255, 0.34);
+    var(--panel-bg);
 }
 
 .dark .accepted-answer {
   background:
     linear-gradient(145deg, rgba(159, 232, 112, 0.1), transparent 38%),
-    rgba(255, 255, 255, 0.05);
+    var(--panel-bg);
 }
 
 .forum-reply__head {
@@ -429,7 +427,7 @@ onMounted(() => {
   min-height: 30px;
   border: 1px solid var(--bc-line);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.42);
+  background: var(--interactive-bg);
   padding: 0 10px;
   color: var(--bc-ink-secondary);
   font-size: 12px;
@@ -441,7 +439,7 @@ onMounted(() => {
 }
 
 .dark .forum-inline-vote {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--interactive-bg);
 }
 
 .forum-inline-vote:hover,

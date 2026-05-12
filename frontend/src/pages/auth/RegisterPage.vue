@@ -9,7 +9,7 @@
 
         <div class="mt-8 max-w-2xl">
           <h1 class="auth-hero-title">用一个账号开始学习</h1>
-          <p class="mt-5 text-sm leading-8 text-slate-600 dark:text-slate-300 sm:text-base">
+          <p class="mt-5 text-sm leading-8 text-secondary sm:text-base">
             创建账号后开始学习。
           </p>
         </div>
@@ -21,7 +21,7 @@
           <div>
             <p class="section-kicker">注册</p>
             <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">填写三个字段即可</h2>
-            <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            <p class="mt-3 text-sm leading-7 text-secondary">
               填写昵称、用户名和密码。
             </p>
           </div>
@@ -74,7 +74,7 @@
               {{ loading ? '创建中...' : '创建账号' }}
             </el-button>
             <div class="auth-links">
-              <span class="text-sm text-slate-500 dark:text-slate-400">
+              <span class="text-sm text-secondary">
                 已有账号？
                 <RouterLink to="/login" class="accent-link font-semibold">返回登录</RouterLink>
               </span>
@@ -159,9 +159,9 @@ const handleRegister = async () => {
   gap: 3rem;
   background:
     radial-gradient(circle at 16% 18%, rgba(var(--bc-accent-rgb), 0.12), transparent 30%),
-    radial-gradient(circle at 82% 14%, rgba(47, 127, 119, 0.08), transparent 24%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.18), transparent 42%),
-    var(--bc-panel);
+    radial-gradient(circle at 82% 14%, rgba(var(--bc-cyan-rgb), 0.08), transparent 24%),
+    linear-gradient(145deg, rgba(var(--bc-ink-rgb), 0.04), transparent 42%),
+    var(--panel-bg);
 }
 
 .auth-hero-title {

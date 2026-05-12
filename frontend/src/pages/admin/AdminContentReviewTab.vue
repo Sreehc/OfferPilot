@@ -21,7 +21,7 @@
           <template #default="{ row }">
             <div>
               <p class="text-sm font-semibold text-ink">{{ row.title || '(回答)' }}</p>
-              <p class="mt-1 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">{{ row.content }}</p>
+              <p class="mt-1 line-clamp-2 text-xs text-secondary">{{ row.content }}</p>
             </div>
           </template>
         </el-table-column>

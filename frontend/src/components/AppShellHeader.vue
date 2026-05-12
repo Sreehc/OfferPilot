@@ -6,7 +6,7 @@
         <h1 :class="compact ? 'text-xl sm:text-2xl' : 'text-3xl sm:text-4xl'" class="page-title text-ink">
           {{ resolvedTitle }}
         </h1>
-        <p v-if="showResolvedSubtitle" class="page-subtitle mt-2 max-w-3xl text-sm text-slate-600 dark:text-slate-300">
+        <p v-if="showResolvedSubtitle" class="page-subtitle mt-2 max-w-3xl text-sm">
           {{ resolvedSubtitle }}
         </p>
       </div>

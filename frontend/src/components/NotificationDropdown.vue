@@ -7,7 +7,7 @@
       title="通知"
       @click="toggleDropdown"
     >
-      <svg class="h-5 w-5 text-slate-600 dark:text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+      <svg class="h-5 w-5 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
         <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
       </svg>
       <span
@@ -56,8 +56,8 @@
               v-for="n in notifications"
               :key="n.id"
               type="button"
-              class="flex w-full gap-3 px-4 py-3 text-left transition hover:bg-slate-50 dark:hover:bg-slate-700/50"
-              :class="{ 'bg-blue-50/50 dark:bg-blue-900/10': !n.isRead }"
+              class="notification-row flex w-full gap-3 px-4 py-3 text-left transition"
+              :class="{ 'notification-row-unread': !n.isRead }"
               @click="handleClickNotification(n)"
             >
               <!-- Type icon -->
@@ -76,10 +76,10 @@
                     class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[var(--bc-accent)]"
                   ></span>
                 </div>
-                <p class="mt-0.5 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
+                <p class="mt-0.5 line-clamp-2 text-xs text-secondary">
                   {{ n.content }}
                 </p>
-                <span class="mt-1 block text-[11px] text-slate-400">{{ formatTime(n.createTime) }}</span>
+                <span class="mt-1 block text-[11px] text-tertiary">{{ formatTime(n.createTime) }}</span>
               </div>
             </button>
           </div>
@@ -198,10 +198,10 @@ const typeIconClass = (type: string) => {
   const map: Record<string, string> = {
     interview: 'bg-[rgba(47,127,119,0.12)] text-[var(--bc-cyan)]',
     review: 'bg-[rgba(var(--bc-accent-rgb),0.12)] text-[var(--bc-accent)]',
-    community: 'bg-[rgba(16,35,58,0.08)] text-[var(--bc-ink)]',
+    community: 'bg-[var(--panel-muted)] text-[var(--bc-ink)]',
     rank: 'bg-[rgba(74,122,73,0.12)] text-[var(--bc-lime)]',
   }
-  return map[type] || 'bg-[rgba(16,35,58,0.08)] text-[var(--bc-ink)]'
+  return map[type] || 'bg-[var(--panel-muted)] text-[var(--bc-ink)]'
 }
 
 const formatTime = (time: string) => {
@@ -248,5 +248,13 @@ onUnmounted(() => {
 .dropdown-leave-to {
   opacity: 0;
   transform: translateY(-4px);
+}
+
+.notification-row:hover {
+  background: var(--interactive-hover);
+}
+
+.notification-row-unread {
+  background: rgba(var(--bc-accent-rgb), 0.08);
 }
 </style>

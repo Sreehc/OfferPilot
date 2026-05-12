@@ -20,15 +20,21 @@
       >
         <div class="flex items-start justify-between gap-3">
           <div>
-            <div class="text-xs uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">{{ interview.direction }}</div>
+            <div class="text-xs uppercase tracking-[0.28em]" style="color: var(--bc-ink-secondary)">
+              {{ interview.direction }}
+            </div>
             <div class="mt-2 text-lg font-semibold text-ink">{{ interviewTitle(interview) }}</div>
           </div>
           <div class="text-right">
-            <div class="text-3xl font-semibold tracking-[-0.03em] text-ink">{{ formatScore(interview.totalScore) }}</div>
-            <div class="mt-1 text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ statusLabel(interview.status) }}</div>
+            <div class="text-3xl font-semibold tracking-[-0.03em] text-ink">
+              {{ formatScore(interview.totalScore) }}
+            </div>
+            <div class="mt-1 text-xs uppercase tracking-[0.22em]" style="color: var(--bc-ink-secondary)">
+              {{ statusLabel(interview.status) }}
+            </div>
           </div>
         </div>
-        <div class="mt-3 text-sm text-slate-500 dark:text-slate-400">{{ formatDate(interview.finishedAt) }}</div>
+        <div class="mt-3 text-sm" style="color: var(--bc-ink-secondary)">{{ formatDate(interview.finishedAt) }}</div>
       </RouterLink>
     </div>
 

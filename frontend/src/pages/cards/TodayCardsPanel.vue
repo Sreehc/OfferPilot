@@ -135,14 +135,12 @@ const metrics = computed(() => {
 .today-panel__metric {
   min-height: 128px;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.42);
+  background: var(--panel-muted);
   padding: 18px;
 }
 
 .dark .today-panel__metric {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent),
-    rgba(255, 255, 255, 0.04);
+  background: var(--panel-muted);
 }
 
 .today-panel__metric span,

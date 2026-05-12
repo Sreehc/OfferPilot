@@ -2,7 +2,7 @@
   <aside class="relative z-[1] h-full min-h-0 overflow-y-auto bg-transparent px-3 py-4">
     <div class="space-y-6 pb-5">
       <section v-for="group in groups" :key="group.label" class="space-y-2">
-        <p class="px-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">
+        <p class="px-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-tertiary">
           {{ group.label }}
         </p>
         <nav class="space-y-1">
@@ -15,7 +15,7 @@
             :class="
               isActive(item.path)
                 ? 'bg-[rgba(var(--bc-accent-rgb),0.12)] text-ink shadow-[inset_3px_0_0_rgba(var(--bc-accent-rgb),0.9)]'
-                : 'text-slate-600 hover:bg-white/55 hover:text-ink active:translate-y-px dark:text-slate-300 dark:hover:bg-white/5'
+                : 'text-secondary hover:text-ink active:translate-y-px rail-link-idle'
             "
           >
             <div class="flex min-w-0 items-center gap-3">
@@ -24,14 +24,12 @@
                 :class="
                   isActive(item.path)
                     ? 'bg-accent'
-                    : 'bg-slate-300 group-hover:bg-accent/60 dark:bg-slate-600'
+                    : 'rail-link-dot group-hover:bg-accent/60'
                 "
               ></span>
               <div class="min-w-0">
                 <div class="font-semibold text-ink">{{ item.label }}</div>
-                <div
-                  class="truncate text-[11px] text-slate-400 dark:text-slate-500"
-                >
+                <div class="truncate text-[11px] text-tertiary">
                   {{ item.hint }}
                 </div>
               </div>
@@ -80,3 +78,13 @@ const groups = computed(() =>
 
 const isActive = (path: string) => route.path === path || route.path.startsWith(path + '/')
 </script>
+
+<style scoped>
+.rail-link-idle:hover {
+  background: var(--interactive-hover);
+}
+
+.rail-link-dot {
+  background: color-mix(in srgb, var(--text-tertiary) 72%, transparent);
+}
+</style>

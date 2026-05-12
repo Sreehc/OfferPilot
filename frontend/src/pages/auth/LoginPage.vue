@@ -9,7 +9,7 @@
 
         <div class="mt-8 max-w-2xl">
           <h1 class="auth-hero-title">用 AI 记得更牢，面试更从容</h1>
-          <p class="mt-5 text-sm leading-8 text-slate-600 dark:text-slate-300 sm:text-base">
+          <p class="mt-5 text-sm leading-8 text-secondary sm:text-base">
             ByteCoach 帮你用间隔记忆法掌握知识点，AI 模拟面试检验学习效果。
           </p>
         </div>
@@ -39,7 +39,7 @@
           <div>
             <p class="section-kicker">登录</p>
             <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">输入账号继续</h2>
-            <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            <p class="mt-3 text-sm leading-7 text-secondary">
               输入用户名和密码。
             </p>
           </div>
@@ -93,7 +93,7 @@
                   alt="验证码"
                   class="h-14 w-[148px] object-cover"
                 />
-                <div v-else class="flex h-14 w-[148px] items-center justify-center text-xs text-slate-400">
+                <div v-else class="flex h-14 w-[148px] items-center justify-center text-xs text-tertiary">
                   加载中...
                 </div>
                 <span class="captcha-panel__hint">点击刷新</span>
@@ -112,7 +112,7 @@
               {{ loading ? '登录中...' : '登录' }}
             </el-button>
             <div class="auth-links">
-              <span class="text-sm text-slate-500 dark:text-slate-400">
+              <span class="text-sm text-secondary">
                 还没有账号？
                 <RouterLink class="accent-link font-semibold" to="/register">立即注册</RouterLink>
               </span>
@@ -231,9 +231,9 @@ const handleLogin = async () => {
   gap: 3rem;
   background:
     radial-gradient(circle at 18% 18%, rgba(var(--bc-accent-rgb), 0.12), transparent 30%),
-    radial-gradient(circle at 82% 16%, rgba(47, 127, 119, 0.08), transparent 24%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.18), transparent 42%),
-    var(--bc-panel);
+    radial-gradient(circle at 82% 16%, rgba(var(--bc-cyan-rgb), 0.08), transparent 24%),
+    linear-gradient(145deg, rgba(var(--bc-ink-rgb), 0.04), transparent 42%),
+    var(--panel-bg);
 }
 
 .auth-hero-title {
@@ -247,11 +247,11 @@ const handleLogin = async () => {
 .captcha-panel {
   border-radius: 22px;
   border: 1px solid var(--bc-border-subtle);
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--interactive-bg);
 }
 
 .dark .captcha-panel {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--interactive-bg);
 }
 
 .captcha-console {
@@ -283,7 +283,7 @@ const handleLogin = async () => {
 .auth-feature-card {
   border-radius: calc(var(--radius-md) - 2px);
   border: 1px solid rgba(var(--bc-accent-rgb), 0.12);
-  background: rgba(255, 255, 255, 0.5);
+  background: var(--panel-muted);
   padding: 16px;
 }
 

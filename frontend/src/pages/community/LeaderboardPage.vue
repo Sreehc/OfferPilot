@@ -1,7 +1,7 @@
 <template>
   <div class="leaderboard-cockpit space-y-6">
     <button
-      class="inline-flex items-center gap-2 text-sm text-slate-500 transition-colors hover:text-ink"
+      class="inline-flex items-center gap-2 text-sm text-secondary transition-colors hover:text-ink"
       @click="$router.push('/community')"
     >
       <span>&larr;</span> 返回社区
@@ -112,12 +112,12 @@ onMounted(async () => {
 .rank-metric {
   border-radius: 24px;
   border: 1px solid var(--bc-line);
-  background: rgba(255, 255, 255, 0.34);
+  background: var(--panel-bg);
 }
 
 .dark .rank-card,
 .dark .rank-metric {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--panel-bg);
 }
 
 .rank-metric {

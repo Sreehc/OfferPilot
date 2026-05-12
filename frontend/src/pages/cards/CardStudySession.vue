@@ -231,13 +231,13 @@ watch(
   border: 1px solid var(--bc-line);
   border-radius: 32px;
   background:
-    radial-gradient(circle at 80% 18%, rgba(85, 214, 190, 0.13), transparent 30%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.1), transparent 36%),
-    var(--bc-panel);
+    radial-gradient(circle at 80% 18%, rgba(var(--bc-cyan-rgb), 0.13), transparent 30%),
+    linear-gradient(145deg, rgba(var(--bc-accent-rgb), 0.04), transparent 36%),
+    var(--panel-bg);
   padding: clamp(22px, 4vw, 38px);
   box-shadow:
     var(--bc-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    inset 0 1px 0 rgba(var(--bc-ink-rgb), 0.04);
 }
 
 .cards-face {
@@ -271,14 +271,14 @@ watch(
   border-radius: 26px;
   background:
     linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.08), transparent 62%),
-    rgba(255, 255, 255, 0.28);
+    var(--panel-muted);
   padding: clamp(20px, 3vw, 30px);
 }
 
 .dark .cards-face__content {
   background:
     linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.1), transparent 62%),
-    rgba(255, 255, 255, 0.04);
+    var(--panel-muted);
 }
 
 .cards-face__title {
@@ -333,7 +333,7 @@ watch(
   min-height: 92px;
   border: 1px solid var(--bc-line);
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.36);
+  background: var(--interactive-bg);
   padding: 14px;
   text-align: left;
   transition:
@@ -343,7 +343,7 @@ watch(
 }
 
 .dark .rating-button {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--interactive-bg);
 }
 
 .rating-button:hover:not(:disabled) {
@@ -386,7 +386,7 @@ watch(
   justify-content: center;
   border: 1px solid var(--bc-line);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.32);
+  background: var(--interactive-bg);
   color: var(--bc-ink-secondary);
   font-size: 12px;
   font-weight: 700;

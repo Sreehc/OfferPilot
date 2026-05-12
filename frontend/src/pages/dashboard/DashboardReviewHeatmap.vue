@@ -3,10 +3,8 @@
     <div class="flex items-end justify-between">
       <div>
         <p class="section-kicker">复习日历</p>
-        <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
-          {{ streak }} 天连续打卡
-        </h3>
-        <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+        <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">{{ streak }} 天连续打卡</h3>
+        <p class="mt-2 text-sm leading-6" style="color: var(--bc-ink-secondary)">
           {{ todayPending > 0 ? `今日还有 ${todayPending} 道待复习` : '今日复习已完成' }}
         </p>
       </div>
@@ -31,9 +29,9 @@
     </div>
 
     <!-- Legend -->
-    <div class="mt-3 flex items-center justify-end gap-1 text-[10px] text-slate-400">
+    <div class="mt-3 flex items-center justify-end gap-1 text-[10px]" style="color: var(--bc-ink-secondary)">
       <span>少</span>
-      <div class="h-[10px] w-[10px] rounded-[2px] bg-slate-100 dark:bg-slate-800"></div>
+      <div class="heatmap-empty-cell h-[10px] w-[10px] rounded-[2px]"></div>
       <div class="h-[10px] w-[10px] rounded-[2px] bg-accent/20"></div>
       <div class="h-[10px] w-[10px] rounded-[2px] bg-accent/50"></div>
       <div class="h-[10px] w-[10px] rounded-[2px] bg-accent/80"></div>
@@ -90,7 +88,7 @@ const weeks = computed(() => {
   while (currentWeek.length < 7) {
     currentWeek.push({ date: null, count: 0 })
   }
-  if (currentWeek.some(d => d.date)) {
+  if (currentWeek.some((d) => d.date)) {
     data.push(currentWeek)
   }
 
@@ -98,10 +96,17 @@ const weeks = computed(() => {
 })
 
 const heatmapColor = (count: number) => {
-  if (count === 0) return 'bg-slate-100 dark:bg-slate-800'
+  if (count === 0) return 'heatmap-empty-cell'
   if (count <= 2) return 'bg-accent/20'
   if (count <= 5) return 'bg-accent/50'
   if (count <= 10) return 'bg-accent/80'
   return 'bg-accent'
 }
 </script>
+
+<style scoped>
+.heatmap-empty-cell {
+  background: var(--bc-surface-muted);
+  border: 1px solid var(--bc-border-subtle);
+}
+</style>

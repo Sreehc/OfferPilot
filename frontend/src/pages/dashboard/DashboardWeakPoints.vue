@@ -5,21 +5,23 @@
 
     <div v-if="items.length" class="mt-6 space-y-4">
       <div ref="chartRef" class="mx-auto h-[280px] w-full"></div>
-      <div class="surface-muted overflow-hidden divide-y divide-slate-200/70 dark:divide-slate-700/70">
+      <div class="surface-muted overflow-hidden divide-y divide-[var(--bc-border-subtle)]">
         <div v-for="item in items" :key="item.categoryName" class="px-4 py-4">
           <div class="flex items-center justify-between gap-3 text-sm">
             <div>
               <div class="font-semibold text-ink">{{ item.categoryName }}</div>
-              <div class="text-slate-500 dark:text-slate-400">
+              <div style="color: var(--bc-ink-secondary)">
                 待复习 {{ item.dueCount }} · 已掌握 {{ item.masteredCards }}/{{ item.totalCards }}
               </div>
             </div>
             <div class="text-right">
-              <div class="text-2xl font-semibold tracking-[-0.03em] text-accent">{{ Math.round(item.masteryRate) }}%</div>
-              <div class="text-xs text-slate-400">掌握率</div>
+              <div class="text-2xl font-semibold tracking-[-0.03em] text-accent">
+                {{ Math.round(item.masteryRate) }}%
+              </div>
+              <div class="text-xs" style="color: var(--bc-ink-secondary)">掌握率</div>
             </div>
           </div>
-          <div class="mt-3 h-2 rounded-full bg-slate-200 dark:bg-slate-700">
+          <div class="mt-3 h-2 rounded-full" style="background: var(--bc-surface-button)">
             <div
               class="h-2 rounded-full bg-accent/80"
               :style="{ width: `${Math.min(Math.max(item.masteryRate, 0), 100)}%` }"
@@ -45,13 +47,17 @@ import * as echarts from 'echarts'
 import EmptyState from '@/components/EmptyState.vue'
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import type { CategoryMasteryItem } from '@/types/api'
+import { useTheme } from '@/composables/useTheme'
 
 const props = defineProps<{
   items: CategoryMasteryItem[]
 }>()
 
+const { theme } = useTheme()
 const chartRef = ref<HTMLElement | null>(null)
 let chart: echarts.ECharts | null = null
+
+const readThemeToken = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 
 const renderChart = () => {
   if (!chartRef.value || !props.items.length) return
@@ -59,11 +65,21 @@ const renderChart = () => {
   chart = echarts.init(chartRef.value)
 
   const items = props.items.slice(0, 6)
+  const accentColor = readThemeToken('--bc-accent')
+  const cyanColor = readThemeToken('--bc-cyan')
+  const inkColor = readThemeToken('--bc-ink')
+  const secondaryInkColor = readThemeToken('--bc-ink-secondary')
+  const borderColor = readThemeToken('--bc-border-subtle')
+  const surfaceColor = readThemeToken('--bc-surface-card')
+
   chart.setOption({
     grid: { left: 12, right: 12, top: 12, bottom: 12, containLabel: true },
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
+      backgroundColor: surfaceColor,
+      borderColor,
+      textStyle: { color: inkColor },
       formatter: (params: Array<{ seriesName: string; value: number }>) => {
         const first = params[0]
         const idx = params.findIndex((item) => item.seriesName === '掌握率')
@@ -76,12 +92,13 @@ const renderChart = () => {
       type: 'value',
       min: 0,
       max: 100,
-      axisLabel: { formatter: '{value}%' },
-      splitLine: { lineStyle: { color: '#e2e8f0' } }
+      axisLabel: { formatter: '{value}%', color: secondaryInkColor },
+      splitLine: { lineStyle: { color: borderColor } }
     },
     yAxis: {
       type: 'category',
       data: items.map((item) => item.categoryName),
+      axisLabel: { color: secondaryInkColor },
       axisTick: { show: false },
       axisLine: { show: false }
     },
@@ -93,8 +110,8 @@ const renderChart = () => {
         barWidth: 14,
         itemStyle: {
           color: new echarts.graphic.LinearGradient(1, 0, 0, 0, [
-            { offset: 0, color: '#365ab0' },
-            { offset: 1, color: '#55d6be' }
+            { offset: 0, color: accentColor },
+            { offset: 1, color: cyanColor }
           ]),
           borderRadius: [0, 8, 8, 0]
         }
@@ -104,7 +121,7 @@ const renderChart = () => {
 }
 
 watch(
-  () => props.items,
+  () => [props.items, theme.value],
   () => {
     nextTick(renderChart)
   },

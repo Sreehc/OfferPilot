@@ -3,22 +3,22 @@
     <section v-if="step === 1" class="shell-section-card p-4 sm:p-6">
       <h4 class="text-lg font-semibold text-ink">扫描二维码</h4>
       <div class="mt-4 flex flex-col items-center gap-6">
-        <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white p-4">
+        <div class="rounded-lg border border-[var(--border-subtle)] bg-white p-4">
           <img
             v-if="qrCodeUrl"
             :src="qrCodeUrl"
             alt="两步验证二维码"
             class="h-48 w-48"
           />
-          <div v-else class="flex h-48 w-48 items-center justify-center text-slate-400">
+          <div v-else class="flex h-48 w-48 items-center justify-center text-tertiary">
             <el-icon class="is-loading" :size="24"><i class="el-icon-loading" /></el-icon>
           </div>
         </div>
 
         <div class="text-center">
-          <p class="text-xs text-slate-500 dark:text-slate-400">手动密钥</p>
+          <p class="text-xs text-secondary">手动密钥</p>
           <div class="mt-2 flex items-center gap-2">
-            <code class="rounded bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-sm font-mono select-all">{{ setupData?.secret }}</code>
+            <code class="rounded bg-[var(--panel-muted)] px-3 py-1.5 text-sm font-mono select-all">{{ setupData?.secret }}</code>
             <el-button size="small" @click="copySecret">复制</el-button>
           </div>
         </div>
@@ -50,15 +50,15 @@
 
     <section v-if="step === 3" class="shell-section-card p-4 sm:p-6">
       <h4 class="text-lg font-semibold text-ink">恢复码</h4>
-      <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+      <p class="mt-2 text-sm text-secondary">
         请保存好这些恢复码。每个只能使用一次。
       </p>
-      <div class="mt-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-4">
+      <div class="mt-4 rounded-lg border border-[var(--border-subtle)] bg-[var(--panel-muted)] p-4">
         <div class="grid grid-cols-2 gap-2">
           <code
             v-for="code in recoveryCodes"
             :key="code"
-            class="rounded bg-white dark:bg-slate-900 px-3 py-1.5 text-sm font-mono text-center border border-slate-200 dark:border-slate-700"
+            class="rounded bg-[var(--panel-bg)] px-3 py-1.5 text-sm font-mono text-center border border-[var(--border-subtle)]"
           >{{ code }}</code>
         </div>
       </div>

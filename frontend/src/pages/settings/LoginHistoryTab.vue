@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4">
     <div class="flex items-center justify-between gap-3">
-      <div class="text-sm text-slate-500 dark:text-slate-400">共 {{ total }} 条</div>
+      <div class="text-sm text-secondary">共 {{ total }} 条</div>
       <el-button :loading="loading" type="primary" size="large" class="action-button" @click="loadLogs">
         刷新
       </el-button>

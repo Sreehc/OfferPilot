@@ -32,9 +32,9 @@
         <div class="mt-4 space-y-3">
           <article v-for="seed in seeds" :key="seed.seedKey" class="surface-muted p-4">
             <div class="font-semibold text-ink">{{ seed.title }}</div>
-            <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ seed.summary }}</p>
+            <p class="mt-2 text-sm leading-6 text-secondary">{{ seed.summary }}</p>
             <div class="mt-3 flex items-center justify-between gap-3">
-              <span class="truncate text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">{{ seed.seedKey }}</span>
+              <span class="truncate text-xs uppercase tracking-[0.2em] text-tertiary">{{ seed.seedKey }}</span>
               <el-button :loading="importing === seed.seedKey" type="primary" class="action-button !min-h-9 !px-3" @click="emit('import', seed.seedKey)">
                 导入
               </el-button>
@@ -68,7 +68,7 @@
       <section v-if="searchPanelOpen && searchResult" class="shell-section-card p-5">
         <div class="flex items-center justify-between gap-3">
           <div class="text-sm font-semibold text-ink">检索结果</div>
-          <div class="text-xs uppercase tracking-[0.16em] text-slate-400">{{ searchResult.references.length }} 条命中</div>
+          <div class="text-xs uppercase tracking-[0.16em] text-tertiary">{{ searchResult.references.length }} 条命中</div>
         </div>
 
         <div v-if="searchResult.references.length" class="mt-4 grid gap-3 xl:grid-cols-2">
@@ -76,7 +76,7 @@
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
-                  <span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">命中 {{ index + 1 }}</span>
+                  <span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-tertiary">命中 {{ index + 1 }}</span>
                   <span class="text-[11px] font-semibold" :class="confidenceClass(reference.score)">
                     {{ confidenceLabel(reference.score) }}
                   </span>
@@ -85,11 +85,11 @@
               </div>
               <span class="text-sm font-semibold text-ink">{{ scorePercent(reference.score) }}</span>
             </div>
-            <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ reference.snippet }}</p>
+            <p class="mt-3 text-sm leading-6 text-secondary">{{ reference.snippet }}</p>
           </article>
         </div>
 
-        <div v-else class="mt-4 rounded-2xl bg-[rgba(16,35,58,0.04)] px-4 py-5 text-sm text-slate-500 dark:bg-white/5 dark:text-slate-400">
+        <div v-else class="mt-4 rounded-2xl bg-[var(--panel-muted)] px-4 py-5 text-sm text-secondary">
           没有找到相关结果。
         </div>
       </section>
@@ -99,11 +99,11 @@
           <article v-for="doc in docs" :key="doc.id" class="admin-record">
             <div class="min-w-0">
               <div class="font-semibold text-ink">{{ doc.title }}</div>
-              <div class="mt-2 flex flex-wrap gap-2 text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+              <div class="mt-2 flex flex-wrap gap-2 text-xs uppercase tracking-[0.2em] text-secondary">
                 <span>{{ doc.status === 'draft' ? '草稿' : doc.status === 'parsed' ? '已解析' : '已索引' }}</span>
                 <span>{{ doc.chunkCount ?? 0 }} 个分块</span>
               </div>
-              <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ doc.summary || '暂无摘要' }}</p>
+              <p class="mt-3 text-sm leading-6 text-secondary">{{ doc.summary || '暂无摘要' }}</p>
             </div>
             <div class="admin-record__actions">
               <el-button :loading="actionId === `rechunk-${doc.id}`" class="hard-button-secondary !min-h-9 !px-3" @click="emit('rechunk', doc.id)">
@@ -211,7 +211,7 @@ const confidenceLabel = (score?: number) => {
 }
 
 const confidenceClass = (score?: number) => {
-  if (score == null) return 'text-slate-500 dark:text-slate-400'
+  if (score == null) return 'text-secondary'
   if (score >= 0.82) return 'text-[var(--bc-cyan)]'
   if (score >= 0.66) return 'text-[var(--bc-amber)]'
   return 'text-[var(--bc-coral)]'

@@ -116,13 +116,13 @@ const progress = (deck: CardDeckSummary) => {
 }
 
 .dark .deck-card {
-  background: rgba(255, 255, 255, 0.035);
+  background: var(--panel-bg);
 }
 
 .deck-card-current {
   background:
     linear-gradient(135deg, rgba(var(--bc-accent-rgb), 0.12), transparent 62%),
-    rgba(255, 255, 255, 0.25);
+    var(--panel-muted);
 }
 
 .deck-card__title-row {

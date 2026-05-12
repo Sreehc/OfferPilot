@@ -108,7 +108,7 @@
         >
           <template #prefix>
             <svg
-              class="h-4 w-4 text-slate-400 dark:text-slate-500"
+              class="h-4 w-4 text-tertiary"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -126,19 +126,19 @@
             class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition hover:bg-[rgba(var(--bc-accent-rgb),0.08)]"
             @click="navigateTo(item.path)"
           >
-            <span class="font-medium text-ink dark:text-slate-200">{{ item.label }}</span>
-            <span class="ml-auto text-xs text-slate-400 dark:text-slate-500">{{ item.path }}</span>
+            <span class="font-medium text-ink">{{ item.label }}</span>
+            <span class="ml-auto text-xs text-tertiary">{{ item.path }}</span>
           </button>
           <p
             v-if="searchQuery && !filteredSearchItems.length"
-            class="py-4 text-center text-sm text-slate-400 dark:text-slate-500"
+            class="py-4 text-center text-sm text-tertiary"
           >
             无匹配结果
           </p>
         </div>
       </div>
       <template #footer>
-        <div class="flex items-center justify-between px-1 text-xs text-slate-400 dark:text-slate-500">
+        <div class="flex items-center justify-between px-1 text-xs text-tertiary">
           <span
             ><kbd class="search-kbd">/</kbd> 或
             <kbd class="search-kbd">⌘K</kbd>
@@ -309,8 +309,8 @@ const handleLogout = async () => {
   border-bottom: 1px solid var(--bc-border-subtle);
   background:
     radial-gradient(circle at 12% 20%, rgba(var(--bc-accent-rgb), 0.08), transparent 18%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 244, 238, 0.88));
-  box-shadow: 0 8px 24px rgba(32, 40, 53, 0.05);
+    linear-gradient(180deg, color-mix(in srgb, var(--panel-bg) 94%, transparent), color-mix(in srgb, var(--bc-shell) 88%, transparent));
+  box-shadow: 0 8px 24px rgba(32, 40, 53, 0.07);
   backdrop-filter: blur(18px);
 }
 
@@ -331,7 +331,7 @@ const handleLogout = async () => {
   gap: 5px;
   border: 1px solid var(--bc-border-subtle);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.56);
+  background: var(--interactive-bg);
   box-shadow: var(--bc-shadow-soft);
   transition:
     background-color var(--motion-base) var(--ease-hard),
@@ -371,7 +371,7 @@ const handleLogout = async () => {
     radial-gradient(circle at 32% 32%, rgba(var(--bc-accent-rgb), 0.22), transparent 48%),
     linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.14), rgba(var(--bc-accent-rgb), 0.06));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.48),
+    inset 0 1px 0 rgba(var(--bc-ink-rgb), 0.05),
     0 8px 16px rgba(var(--bc-accent-rgb), 0.12);
 }
 
@@ -410,7 +410,7 @@ const handleLogout = async () => {
   padding: 0 16px;
   border-radius: 12px;
   border: 1px solid var(--bc-border-subtle);
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--interactive-bg);
   color: var(--bc-ink);
   font-size: 14px;
   font-weight: 700;
@@ -429,7 +429,7 @@ const handleLogout = async () => {
   position: fixed;
   inset: 64px 0 0;
   z-index: 38;
-  background: rgba(16, 35, 58, 0.14);
+  background: rgba(16, 12, 8, 0.32);
   backdrop-filter: blur(6px);
 }
 
@@ -442,7 +442,7 @@ const handleLogout = async () => {
   height: calc(100dvh - 64px);
   border-right: 1px solid var(--bc-border-subtle);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 244, 238, 0.96)),
+    linear-gradient(180deg, color-mix(in srgb, var(--panel-bg) 96%, transparent), color-mix(in srgb, var(--bc-shell) 92%, transparent)),
     var(--bc-panel);
   box-shadow: 24px 0 48px rgba(32, 40, 53, 0.12);
 }
@@ -481,7 +481,7 @@ const handleLogout = async () => {
   min-width: 26px;
   border-radius: 8px;
   border: 1px solid var(--bc-border-subtle);
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--interactive-bg);
   padding: 0.15rem 0.4rem;
   color: var(--bc-ink-secondary);
   box-shadow: var(--bc-shadow-soft);

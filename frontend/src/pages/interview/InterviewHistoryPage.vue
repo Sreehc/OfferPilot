@@ -14,8 +14,8 @@
 
     <section v-if="loading" class="space-y-3">
       <article v-for="n in 3" :key="n" class="shell-section-card p-5">
-        <div class="h-4 w-32 animate-pulse rounded bg-slate-200 dark:bg-slate-700"></div>
-        <div class="mt-3 h-3 w-full animate-pulse rounded bg-slate-100 dark:bg-slate-800"></div>
+        <div class="skeleton-line h-4 w-32"></div>
+        <div class="skeleton-line mt-3 h-3 w-full"></div>
       </article>
     </section>
 
@@ -41,19 +41,19 @@
           class="shell-section-card p-5 transition hover:ring-2 hover:ring-accent/20"
         >
           <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div class="min-w-0 cursor-pointer" @click="goToDetail(item.sessionId)">
+            <div class="min-w-0 cursor-pointer" @click="goToDetail(item.sessionId)">
               <div class="flex flex-wrap items-center gap-2">
-                <span class="hard-chip !bg-blue-100 !text-blue-700 text-xs">{{ item.direction }}</span>
-                <span class="text-xs text-slate-400 dark:text-slate-500">{{ item.questionCount }} 题</span>
+                <span class="hard-chip text-xs">{{ item.direction }}</span>
+                <span class="text-xs text-tertiary">{{ item.questionCount }} 题</span>
                 <span
                   class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"
-                  :class="item.cardsGenerated ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'"
+                  :class="item.cardsGenerated ? 'history-card-status-ready' : 'history-card-status-pending'"
                 >
                   {{ item.cardsGenerated ? `已生成 ${item.generatedCardCount || 0} 张` : '未生成卡片' }}
                 </span>
               </div>
               <div class="mt-3 text-lg font-semibold text-ink">{{ item.direction }} 方向诊断</div>
-              <div class="mt-2 flex flex-wrap items-center gap-4 text-xs text-slate-400 dark:text-slate-500">
+              <div class="mt-2 flex flex-wrap items-center gap-4 text-xs text-tertiary">
                 <span v-if="item.startTime">{{ formatTime(item.startTime) }}</span>
                 <span v-if="item.endTime">结束于 {{ formatTime(item.endTime) }}</span>
               </div>
@@ -62,7 +62,7 @@
             <div class="flex shrink-0 flex-col items-end gap-3">
               <div class="flex items-center gap-6">
                 <div class="text-right">
-                  <div class="text-xs text-slate-400 dark:text-slate-500">得分</div>
+                  <div class="text-xs text-tertiary">得分</div>
                   <span
                     class="text-2xl font-semibold tracking-[-0.03em]"
                     :class="item.totalScore >= 60 ? 'text-accent' : 'text-red-500'"
@@ -205,3 +205,15 @@ onMounted(() => {
   void loadData()
 })
 </script>
+
+<style scoped>
+.history-card-status-ready {
+  background: rgba(74, 122, 73, 0.12);
+  color: var(--bc-lime);
+}
+
+.history-card-status-pending {
+  background: var(--interactive-bg);
+  color: var(--text-secondary);
+}
+</style>

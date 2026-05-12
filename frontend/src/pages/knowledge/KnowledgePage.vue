@@ -42,12 +42,20 @@
           </div>
           <div class="knowledge-table-head__aside">
             <div class="knowledge-table-stat">
-              <span>当前列表</span>
+              <span>当前视图</span>
+              <strong>{{ activeTabLabel }}</strong>
+            </div>
+            <div class="knowledge-table-stat">
+              <span>当前结果</span>
               <strong>{{ docs.length }}</strong>
             </div>
             <div class="knowledge-table-stat">
               <span>可学习</span>
               <strong>{{ statusSummary.indexed + statusSummary.parsed }}</strong>
+            </div>
+            <div class="knowledge-table-stat">
+              <span>处理中</span>
+              <strong>{{ statusSummary.draft }}</strong>
             </div>
           </div>
         </div>
@@ -109,21 +117,8 @@
               </div>
 
               <div class="flex shrink-0 items-center gap-2">
-                <RouterLink
-                  v-if="doc.cardDeckId"
-                  to="/cards"
-                  class="hard-button-primary text-xs !min-h-[34px] !px-3"
-                >
-                  去学习
-                </RouterLink>
-                <button
-                  v-else-if="doc.status === 'indexed' || doc.status === 'parsed'"
-                  type="button"
-                  class="hard-button-primary text-xs !min-h-[34px] !px-3"
-                  @click="openGeneratePanel(doc)"
-                >
-                  生成卡片
-                </button>
+                <span v-if="doc.cardDeckId" class="detail-pill">{{ doc.cardCount ?? 0 }} 张卡片</span>
+                <span v-else-if="doc.status === 'indexed' || doc.status === 'parsed'" class="detail-pill">待生成卡片</span>
                 <el-popconfirm
                   v-if="activeTab === 'my'"
                   title="确认删除此文档？删除后关联的 chunk 和向量数据将一并清除。"
@@ -139,7 +134,7 @@
             </div>
             <div class="knowledge-row__body">
               <div class="knowledge-row__summary">
-                <p class="line-clamp-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+                <p class="line-clamp-3 text-sm leading-7 text-secondary">
                   {{ doc.summary || '暂无摘要。' }}
                 </p>
               </div>
@@ -204,14 +199,14 @@
               </div>
               <div class="min-w-0">
                 <p class="text-sm font-semibold text-ink">拖拽文档到这里上传</p>
-                <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                <p class="mt-1 text-sm text-secondary">
                   支持 <span class="font-semibold text-ink">md / txt / pdf</span>，单文件不超过 20MB。
                 </p>
               </div>
             </div>
 
             <div class="upload-dropzone__aside">
-              <div class="flex flex-wrap gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+              <div class="flex flex-wrap gap-2 text-[11px] text-secondary">
                 <span class="hard-chip">当前 {{ docs.length }} 份</span>
                 <span class="rounded-full border border-[var(--bc-line)] px-2.5 py-1">可学习 {{ statusSummary.indexed + statusSummary.parsed }}</span>
               </div>
@@ -300,6 +295,8 @@ const statusSummary = computed(() => {
   })
   return summary
 })
+
+const activeTabLabel = computed(() => (activeTab.value === 'my' ? '我的文档' : '系统资料'))
 
 const loadCategories = async () => {
   try {
@@ -513,11 +510,11 @@ onMounted(async () => {
   min-width: 108px;
   padding: 10px 14px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.38);
+  background: var(--panel-muted);
 }
 
 .dark .knowledge-table-stat {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--panel-muted);
 }
 
 .knowledge-table-stat span {
@@ -590,7 +587,7 @@ onMounted(async () => {
   min-height: 40px;
   border: 1px solid var(--bc-line);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.42);
+  background: var(--interactive-bg);
   padding: 0 16px;
   color: var(--bc-ink-secondary);
   font-size: 13px;
@@ -602,7 +599,7 @@ onMounted(async () => {
 }
 
 .dark .mode-switch__chip {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--interactive-bg);
 }
 
 .mode-switch__chip-active {
@@ -621,7 +618,7 @@ onMounted(async () => {
   padding: 14px 16px;
   border: 1px solid rgba(var(--bc-accent-rgb), 0.12);
   border-radius: 20px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.56));
+  background: var(--interactive-bg);
   color: var(--bc-ink-secondary);
   text-align: left;
   transition:
@@ -633,7 +630,7 @@ onMounted(async () => {
 }
 
 .dark .mode-switch__item {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+  background: var(--interactive-bg);
 }
 
 .mode-switch__item:hover {
@@ -647,7 +644,7 @@ onMounted(async () => {
   border-color: rgba(var(--bc-accent-rgb), 0.3);
   background:
     radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.18), transparent 48%),
-    linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.16), rgba(255, 255, 255, 0.92));
+    var(--interactive-hover);
   color: var(--bc-ink);
   box-shadow:
     inset 0 0 0 1px rgba(var(--bc-accent-rgb), 0.14),
@@ -685,7 +682,7 @@ onMounted(async () => {
   border-radius: 26px;
   padding: 20px 22px;
   background:
-    radial-gradient(circle at left top, rgba(var(--bc-accent-rgb), 0.11), transparent 44%), rgba(255, 255, 255, 0.28);
+    radial-gradient(circle at left top, rgba(var(--bc-accent-rgb), 0.11), transparent 44%), var(--panel-muted);
   transition:
     border-color var(--motion-base) var(--ease-hard),
     transform var(--motion-base) var(--ease-hard),
@@ -694,7 +691,7 @@ onMounted(async () => {
 
 .dark .upload-dropzone {
   background:
-    radial-gradient(circle at left top, rgba(var(--bc-accent-rgb), 0.16), transparent 44%), rgba(255, 255, 255, 0.04);
+    radial-gradient(circle at left top, rgba(var(--bc-accent-rgb), 0.16), transparent 44%), var(--panel-muted);
 }
 
 .upload-dropzone:hover {
@@ -819,14 +816,14 @@ onMounted(async () => {
   border-radius: 20px;
   background:
     linear-gradient(135deg, rgba(var(--bc-accent-rgb), 0.1), transparent 62%),
-    rgba(255, 255, 255, 0.24);
+    var(--panel-muted);
   padding: 14px;
 }
 
 .dark .doc-card__memory {
   background:
     linear-gradient(135deg, rgba(var(--bc-accent-rgb), 0.11), transparent 62%),
-    rgba(255, 255, 255, 0.04);
+    var(--panel-muted);
 }
 
 .doc-card__memory-meta {

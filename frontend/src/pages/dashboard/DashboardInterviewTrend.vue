@@ -8,12 +8,7 @@
     </div>
 
     <div v-else-if="!trendData.length" class="mt-4 flex h-[260px] items-center justify-center">
-      <EmptyState
-        icon="chart"
-        title="暂无面试数据"
-        description="完成面试后将显示趋势"
-        compact
-      />
+      <EmptyState icon="chart" title="暂无面试数据" description="完成面试后将显示趋势" compact />
     </div>
 
     <div v-else ref="chartRef" class="mt-4 h-[260px] w-full"></div>
@@ -24,6 +19,7 @@
 import * as echarts from 'echarts'
 import EmptyState from '@/components/EmptyState.vue'
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { useTheme } from '@/composables/useTheme'
 
 interface TrendItem {
   sessionId: string
@@ -37,8 +33,11 @@ const props = defineProps<{
   loading: boolean
 }>()
 
+const { theme } = useTheme()
 const chartRef = ref<HTMLElement | null>(null)
 let chart: echarts.ECharts | null = null
+
+const readThemeToken = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 
 const formatTime = (time?: string): string => {
   if (!time) return ''
@@ -55,13 +54,21 @@ const renderChart = () => {
 
   const xData = props.trendData.map((_, i) => `#${i + 1}`)
   const scores = props.trendData.map((item) => Number(item.totalScore) || 0)
-  const tooltips = props.trendData.map(
-    (item) => `${item.direction} - ${formatTime(item.startTime)}`
-  )
+  const tooltips = props.trendData.map((item) => `${item.direction} - ${formatTime(item.startTime)}`)
+  const accentColor = readThemeToken('--bc-accent')
+  const accentRgb = readThemeToken('--bc-accent-rgb')
+  const coralColor = readThemeToken('--bc-coral')
+  const inkColor = readThemeToken('--bc-ink')
+  const secondaryInkColor = readThemeToken('--bc-ink-secondary')
+  const borderColor = readThemeToken('--bc-border')
+  const surfaceColor = readThemeToken('--bc-surface-card')
 
   chart.setOption({
     tooltip: {
       trigger: 'axis',
+      backgroundColor: surfaceColor,
+      borderColor,
+      textStyle: { color: inkColor },
       formatter: (params: { dataIndex: number; value: number }[]) => {
         const p = params[0]
         if (!p) return ''
@@ -72,15 +79,15 @@ const renderChart = () => {
     xAxis: {
       type: 'category',
       data: xData,
-      axisLine: { lineStyle: { color: '#e2e8f0' } },
-      axisLabel: { color: '#94a3b8', fontSize: 11 }
+      axisLine: { lineStyle: { color: borderColor } },
+      axisLabel: { color: secondaryInkColor, fontSize: 11 }
     },
     yAxis: {
       type: 'value',
       min: 0,
       max: 100,
-      splitLine: { lineStyle: { color: '#f1f5f9' } },
-      axisLabel: { color: '#94a3b8', fontSize: 11 }
+      splitLine: { lineStyle: { color: borderColor } },
+      axisLabel: { color: secondaryInkColor, fontSize: 11 }
     },
     series: [
       {
@@ -89,18 +96,18 @@ const renderChart = () => {
         smooth: true,
         symbol: 'circle',
         symbolSize: 6,
-        lineStyle: { color: '#365ab0', width: 2 },
-        itemStyle: { color: '#365ab0' },
+        lineStyle: { color: accentColor, width: 2 },
+        itemStyle: { color: accentColor },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(54,90,176,0.25)' },
-            { offset: 1, color: 'rgba(54,90,176,0.02)' }
+            { offset: 0, color: `rgba(${accentRgb}, 0.22)` },
+            { offset: 1, color: `rgba(${accentRgb}, 0.02)` }
           ])
         },
         markLine: {
           silent: true,
-          lineStyle: { color: '#ef4444', type: 'dashed', width: 1 },
-          data: [{ yAxis: 60, label: { formatter: '60', color: '#ef4444', fontSize: 10 } }]
+          lineStyle: { color: coralColor, type: 'dashed', width: 1 },
+          data: [{ yAxis: 60, label: { formatter: '60', color: coralColor, fontSize: 10 } }]
         }
       }
     ]
@@ -108,7 +115,7 @@ const renderChart = () => {
 }
 
 watch(
-  () => [props.trendData, props.loading],
+  () => [props.trendData, props.loading, theme.value],
   () => {
     if (!props.loading && props.trendData.length) {
       nextTick(renderChart)

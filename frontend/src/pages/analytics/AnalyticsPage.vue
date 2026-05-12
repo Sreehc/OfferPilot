@@ -28,7 +28,12 @@
           </div>
 
           <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-            <article v-for="signal in summarySignals" :key="signal.label" class="analytics-overview-card" :class="signal.toneClass">
+            <article
+              v-for="signal in summarySignals"
+              :key="signal.label"
+              class="analytics-overview-card"
+              :class="signal.toneClass"
+            >
               <p class="analytics-overview-card__label">{{ signal.label }}</p>
               <p class="analytics-overview-card__value">{{ signal.value }}</p>
             </article>
@@ -39,7 +44,7 @@
           <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">记忆趋势</h3>
-              <p class="mt-1 text-sm text-slate-500">完成率、复习负债和掌握增长</p>
+              <p class="mt-1 text-sm text-secondary">完成率、复习负债和掌握增长</p>
             </div>
           </div>
 
@@ -47,7 +52,11 @@
             <div class="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
           </div>
           <div
-            v-else-if="!trendData.completionRateTrend?.length && !trendData.reviewDebtTrend?.length && !trendData.masteredGrowthTrend?.length"
+            v-else-if="
+              !trendData.completionRateTrend?.length &&
+              !trendData.reviewDebtTrend?.length &&
+              !trendData.masteredGrowthTrend?.length
+            "
             class="mt-4 flex h-[340px] items-center justify-center"
           >
             <EmptyState icon="chart" title="暂无记忆趋势数据" description="开始学习后查看趋势。" compact />
@@ -76,15 +85,17 @@
         <div v-else class="mt-5">
           <div class="grid gap-3 sm:grid-cols-3">
             <article class="data-slab p-4">
-              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">平均记忆系数</p>
+              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-tertiary">平均记忆系数</p>
               <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ efficiencyData.avgEaseFactor }}</p>
             </article>
             <article class="data-slab p-4">
-              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">复习完成率</p>
-              <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ formatPercent(efficiencyData.reviewCompletionRate) }}%</p>
+              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-tertiary">复习完成率</p>
+              <p class="mt-3 font-mono text-3xl font-semibold text-ink">
+                {{ formatPercent(efficiencyData.reviewCompletionRate) }}%
+              </p>
             </article>
             <article class="data-slab p-4">
-              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">连续天数</p>
+              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-tertiary">连续天数</p>
               <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ efficiencyData.currentStreak }} 天</p>
             </article>
           </div>
@@ -102,7 +113,10 @@
         <div v-if="efficiencyLoading" class="mt-5 flex h-[260px] items-center justify-center">
           <div class="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
         </div>
-        <div v-else-if="!efficiencyData.forgettingRateTrend?.length" class="mt-5 flex h-[260px] items-center justify-center">
+        <div
+          v-else-if="!efficiencyData.forgettingRateTrend?.length"
+          class="mt-5 flex h-[260px] items-center justify-center"
+        >
           <EmptyState icon="review" title="暂无复习数据" description="完成复习后查看遗忘率。" compact />
         </div>
         <div v-else class="mt-5">
@@ -135,7 +149,7 @@
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p class="text-lg font-semibold text-ink">{{ item.categoryName }}</p>
-                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                <p class="mt-1 text-sm text-secondary">
                   已掌握 {{ item.masteredCards }}/{{ item.totalCards }} · 待复习 {{ item.dueCount }}
                 </p>
               </div>
@@ -145,7 +159,10 @@
               </div>
             </div>
             <div class="mastery-track mt-4">
-              <span class="mastery-track__fill mastery-fill-cyan" :style="{ width: `${Math.round(item.masteryRate)}%` }"></span>
+              <span
+                class="mastery-track__fill mastery-fill-cyan"
+                :style="{ width: `${Math.round(item.masteryRate)}%` }"
+              ></span>
             </div>
           </article>
         </div>
@@ -158,7 +175,7 @@
         <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">掌握分布</h3>
-            <p class="mt-1 text-sm text-slate-500">{{ totalMasteryCount }} 道题</p>
+            <p class="mt-1 text-sm text-secondary">{{ totalMasteryCount }} 道题</p>
           </div>
         </div>
 
@@ -170,7 +187,9 @@
               </div>
               <div class="text-right">
                 <p class="font-mono text-3xl font-semibold text-ink">{{ item.count }}</p>
-                <p class="text-xs font-semibold uppercase tracking-[0.18em]" :class="item.textClass">{{ item.percent }}%</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.18em]" :class="item.textClass">
+                  {{ item.percent }}%
+                </p>
               </div>
             </div>
             <div class="mastery-track mt-4">
@@ -229,6 +248,8 @@ import * as echarts from 'echarts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AppShellHeader from '@/components/AppShellHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import { useTheme } from '@/composables/useTheme'
+import { readThemePalette } from '@/utils/theme'
 import AnalyticsInsightBar from './AnalyticsInsightBar.vue'
 import { fetchAbilityTrendApi, fetchEfficiencyApi, fetchLearningInsightsApi } from '@/api/analytics'
 import type { AbilityTrend, EfficiencyData, LearningInsights } from '@/types/api'
@@ -236,7 +257,7 @@ import type { AbilityTrend, EfficiencyData, LearningInsights } from '@/types/api
 const weekOptions = [
   { label: '4 周', value: 4 },
   { label: '8 周', value: 8 },
-  { label: '12 周', value: 12 },
+  { label: '12 周', value: 12 }
 ]
 
 const selectedWeeks = ref(12)
@@ -278,6 +299,7 @@ const learningInsights = ref<LearningInsights>({
   categoryChanges: [],
   bestStudyHours: []
 })
+const { theme } = useTheme()
 
 const trendChartRef = ref<HTMLElement | null>(null)
 const interviewTrendChartRef = ref<HTMLElement | null>(null)
@@ -289,16 +311,14 @@ let efChart: echarts.ECharts | null = null
 let frChart: echarts.ECharts | null = null
 
 const ratingLabels: Record<number, string> = { 1: '重来', 2: '困难', 3: '良好', 4: '轻松' }
-const chartColors = ['#b56a12', '#2f7f77', '#365ab0', '#c55349', '#5d89c9', '#8c6f2d', '#4a7a49']
-
 const ratingColor = (key: number) => {
   const map: Record<number, string> = {
     1: 'bg-[var(--bc-coral)]',
     2: 'bg-[var(--bc-amber)]',
     3: 'bg-[var(--bc-cyan)]',
-    4: 'bg-[var(--bc-lime)]',
+    4: 'bg-[var(--bc-lime)]'
   }
-  return map[key] || 'bg-slate-400'
+  return map[key] || 'bg-[var(--text-tertiary)]'
 }
 
 const hasMasteryData = computed(() => {
@@ -349,7 +369,7 @@ const masteryItems = computed(() => {
       description: '',
       toneClass: 'mastery-card-coral',
       textClass: 'text-[var(--bc-coral)]',
-      fillClass: 'mastery-fill-coral',
+      fillClass: 'mastery-fill-coral'
     },
     {
       label: '复习中',
@@ -358,7 +378,7 @@ const masteryItems = computed(() => {
       description: '',
       toneClass: 'mastery-card-amber',
       textClass: 'text-[var(--bc-amber)]',
-      fillClass: 'mastery-fill-amber',
+      fillClass: 'mastery-fill-amber'
     },
     {
       label: '已掌握',
@@ -367,8 +387,8 @@ const masteryItems = computed(() => {
       description: '',
       toneClass: 'mastery-card-lime',
       textClass: 'text-[var(--bc-lime)]',
-      fillClass: 'mastery-fill-lime',
-    },
+      fillClass: 'mastery-fill-lime'
+    }
   ]
 })
 
@@ -379,26 +399,26 @@ const summarySignals = computed(() => [
     label: '观察周数',
     value: selectedWeeks.value,
     detail: '',
-    toneClass: '',
+    toneClass: ''
   },
   {
     label: '当前完成率',
     value: `${formatPercent(latestCompletionRate.value)}%`,
     detail: '',
-    toneClass: 'summary-slab-cyan',
+    toneClass: 'summary-slab-cyan'
   },
   {
     label: '总复习次数',
     value: efficiencyData.value.totalReviews,
     detail: '',
-    toneClass: 'summary-slab-lime',
+    toneClass: 'summary-slab-lime'
   },
   {
     label: '连续复习',
     value: `${efficiencyData.value.currentStreak} 天`,
     detail: '',
-    toneClass: 'summary-slab-amber',
-  },
+    toneClass: 'summary-slab-amber'
+  }
 ])
 
 const formatPercent = (value?: number | null) => {
@@ -420,30 +440,34 @@ const toggleCategory = (catId: number) => {
   }
 }
 
+const disposeTrendCharts = () => {
+  trendChart?.dispose()
+  interviewTrendChart?.dispose()
+  trendChart = null
+  interviewTrendChart = null
+}
+
 const loadTrend = async () => {
   trendLoading.value = true
+  disposeTrendCharts()
   try {
     const res = await fetchAbilityTrendApi(
       selectedWeeks.value,
       selectedCategories.value.length > 0 ? selectedCategories.value : undefined
     )
     trendData.value = res.data
-    nextTick(() => {
-      renderTrendChart()
-      renderInterviewTrendChart()
-    })
   } finally {
     trendLoading.value = false
+    await nextTick()
+    renderTrendChart()
+    renderInterviewTrendChart()
   }
 }
 
 const loadEfficiency = async () => {
   efficiencyLoading.value = true
   try {
-    const [efficiencyRes, insightsRes] = await Promise.all([
-      fetchEfficiencyApi(),
-      fetchLearningInsightsApi(),
-    ])
+    const [efficiencyRes, insightsRes] = await Promise.all([fetchEfficiencyApi(), fetchLearningInsightsApi()])
     efficiencyData.value = efficiencyRes.data
     learningInsights.value = insightsRes.data
     nextTick(() => {
@@ -455,27 +479,27 @@ const loadEfficiency = async () => {
   }
 }
 
-const chartTextColor = '#6b7b8d'
-const chartGridColor = 'rgba(16, 35, 58, 0.08)'
-
-const buildChartBase = () => ({
-  textStyle: { color: chartTextColor, fontFamily: 'JetBrains Mono, monospace' },
-  grid: { left: 36, right: 18, top: 24, bottom: 38 },
-  tooltip: {
-    trigger: 'axis',
-    backgroundColor: 'rgba(255, 255, 255, 0.96)',
-    borderColor: 'rgba(16, 35, 58, 0.08)',
-    textStyle: { color: '#10233a' },
-  },
-  xAxis: {
-    axisLine: { lineStyle: { color: chartGridColor } },
-    axisLabel: { color: chartTextColor, fontSize: 11 },
-  },
-  yAxis: {
-    splitLine: { lineStyle: { color: chartGridColor } },
-    axisLabel: { color: chartTextColor, fontSize: 11 },
-  },
-})
+const buildChartBase = () => {
+  const palette = readThemePalette()
+  return {
+    textStyle: { color: palette.textSecondary, fontFamily: 'JetBrains Mono, monospace' },
+    grid: { left: 44, right: 48, top: 24, bottom: 38, containLabel: true },
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: palette.surfaceCard,
+      borderColor: palette.borderSubtle,
+      textStyle: { color: palette.textPrimary }
+    },
+    xAxis: {
+      axisLine: { lineStyle: { color: palette.borderSubtle } },
+      axisLabel: { color: palette.textSecondary, fontSize: 11 }
+    },
+    yAxis: {
+      splitLine: { lineStyle: { color: palette.borderSubtle } },
+      axisLabel: { color: palette.textSecondary, fontSize: 11 }
+    }
+  }
+}
 
 const renderTrendChart = () => {
   if (!trendChartRef.value) return
@@ -490,68 +514,80 @@ const renderTrendChart = () => {
   }
 
   const xAxisData = weeks.length ? weeks : completion.map((item) => item.week)
-  trendChart.setOption({
-    ...buildChartBase(),
-    legend: {
-      data: ['完成率', '复习负债', '已掌握卡片'],
-      bottom: 0,
-      textStyle: { fontSize: 11, color: chartTextColor },
-    },
-    xAxis: {
-      ...(buildChartBase().xAxis as object),
-      type: 'category',
-      data: xAxisData,
-    },
-    yAxis: [
-      {
-        ...(buildChartBase().yAxis as object),
-        type: 'value',
-        min: 0,
-        max: 100,
-        axisLabel: { color: chartTextColor, fontSize: 11, formatter: '{value}%' },
+  const palette = readThemePalette()
+  const base = buildChartBase()
+  trendChart.setOption(
+    {
+      ...base,
+      legend: {
+        data: ['完成率', '复习负债', '已掌握卡片'],
+        bottom: 0,
+        textStyle: { fontSize: 11, color: palette.textSecondary }
       },
-      {
-        ...(buildChartBase().yAxis as object),
-        type: 'value',
-        min: 0,
-        splitLine: { show: false },
+      xAxis: {
+        ...(base.xAxis as object),
+        type: 'category',
+        data: xAxisData
       },
-    ],
-    series: [
-      {
-        name: '完成率',
-        type: 'line',
-        smooth: true,
-        symbol: 'circle',
-        data: xAxisData.map((week) => completion.find((item) => item.week === week)?.value ?? null),
-        lineStyle: { width: 3, color: '#2f7f77' },
-        itemStyle: { color: '#2f7f77' },
-      },
-      {
-        name: '复习负债',
-        type: 'bar',
-        yAxisIndex: 1,
-        data: xAxisData.map((week) => debts.find((item) => item.week === week)?.value ?? null),
-        itemStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: '#d77b70' },
-            { offset: 1, color: 'rgba(197,83,73,0.28)' },
-          ]),
-          borderRadius: [8, 8, 0, 0]
+      yAxis: [
+        {
+          ...(base.yAxis as object),
+          type: 'value',
+          min: 0,
+          max: 100,
+          axisLabel: { color: palette.textSecondary, fontSize: 11, formatter: '{value}%', margin: 10 }
+        },
+        {
+          ...(base.yAxis as object),
+          type: 'value',
+          min: 0,
+          position: 'right',
+          splitLine: { show: false },
+          axisLabel: {
+            color: palette.textSecondary,
+            fontSize: 11,
+            margin: 12,
+            formatter: (value: number) => Number(value).toLocaleString('zh-CN')
+          }
         }
-      },
-      {
-        name: '已掌握卡片',
-        type: 'line',
-        yAxisIndex: 1,
-        smooth: true,
-        symbol: 'circle',
-        data: xAxisData.map((week) => mastered.find((item) => item.week === week)?.value ?? null),
-        lineStyle: { width: 2, color: '#365ab0' },
-        itemStyle: { color: '#365ab0' },
-      }
-    ]
-  }, true)
+      ],
+      series: [
+        {
+          name: '完成率',
+          type: 'line',
+          smooth: true,
+          symbol: 'circle',
+          data: xAxisData.map((week) => completion.find((item) => item.week === week)?.value ?? null),
+          lineStyle: { width: 3, color: palette.cyan },
+          itemStyle: { color: palette.cyan }
+        },
+        {
+          name: '复习负债',
+          type: 'bar',
+          yAxisIndex: 1,
+          data: xAxisData.map((week) => debts.find((item) => item.week === week)?.value ?? null),
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: palette.coral },
+              { offset: 1, color: `${palette.coral}48` }
+            ]),
+            borderRadius: [8, 8, 0, 0]
+          }
+        },
+        {
+          name: '已掌握卡片',
+          type: 'line',
+          yAxisIndex: 1,
+          smooth: true,
+          symbol: 'circle',
+          data: xAxisData.map((week) => mastered.find((item) => item.week === week)?.value ?? null),
+          lineStyle: { width: 2, color: palette.lime },
+          itemStyle: { color: palette.lime }
+        }
+      ]
+    },
+    true
+  )
 }
 
 const renderInterviewTrendChart = () => {
@@ -561,6 +597,9 @@ const renderInterviewTrendChart = () => {
     interviewTrendChart = echarts.init(interviewTrendChartRef.value)
   }
 
+  const palette = readThemePalette()
+  const chartColors = palette.chartColors
+  const base = buildChartBase()
   const weeks = trendData.value.weeks || []
   const series: echarts.SeriesOption[] = [
     {
@@ -571,13 +610,14 @@ const renderInterviewTrendChart = () => {
       symbol: 'circle',
       symbolSize: 6,
       lineStyle: { width: 3, color: chartColors[0] },
-      itemStyle: { color: chartColors[0] },
-    },
+      itemStyle: { color: chartColors[0] }
+    }
   ]
 
-  const catTrends = selectedCategories.value.length > 0
-    ? normalizedCategoryTrends.value.filter((c) => selectedCategories.value.includes(c.categoryId))
-    : normalizedCategoryTrends.value
+  const catTrends =
+    selectedCategories.value.length > 0
+      ? normalizedCategoryTrends.value.filter((c) => selectedCategories.value.includes(c.categoryId))
+      : normalizedCategoryTrends.value
 
   catTrends.forEach((cat, idx) => {
     series.push({
@@ -588,30 +628,33 @@ const renderInterviewTrendChart = () => {
       symbol: 'circle',
       symbolSize: 4,
       lineStyle: { width: 2, color: chartColors[(idx + 1) % chartColors.length] },
-      itemStyle: { color: chartColors[(idx + 1) % chartColors.length] },
+      itemStyle: { color: chartColors[(idx + 1) % chartColors.length] }
     })
   })
 
-  interviewTrendChart.setOption({
-    ...buildChartBase(),
-    legend: {
-      data: series.map((item) => item.name as string),
-      bottom: 0,
-      textStyle: { fontSize: 11, color: chartTextColor },
+  interviewTrendChart.setOption(
+    {
+      ...base,
+      legend: {
+        data: series.map((item) => item.name as string),
+        bottom: 0,
+        textStyle: { fontSize: 11, color: palette.textSecondary }
+      },
+      xAxis: {
+        ...(base.xAxis as object),
+        type: 'category',
+        data: weeks
+      },
+      yAxis: {
+        ...(base.yAxis as object),
+        type: 'value',
+        min: 0,
+        max: 100
+      },
+      series
     },
-    xAxis: {
-      ...(buildChartBase().xAxis as object),
-      type: 'category',
-      data: weeks,
-    },
-    yAxis: {
-      ...(buildChartBase().yAxis as object),
-      type: 'value',
-      min: 0,
-      max: 100,
-    },
-    series,
-  }, true)
+    true
+  )
 }
 
 const renderEFChart = () => {
@@ -620,41 +663,46 @@ const renderEFChart = () => {
     efChart = echarts.init(efChartRef.value)
   }
 
+  const palette = readThemePalette()
+  const base = buildChartBase()
   const data = efficiencyData.value.efTrend
-  efChart.setOption({
-    ...buildChartBase(),
-    xAxis: {
-      ...(buildChartBase().xAxis as object),
-      type: 'category',
-      data: data.map((d) => d.week),
-      axisLabel: { color: chartTextColor, fontSize: 10, rotate: 24 },
-    },
-    yAxis: {
-      ...(buildChartBase().yAxis as object),
-      type: 'value',
-      min: 1.3,
-      max: 3.2,
-    },
-    series: [
-      {
-        type: 'line',
-        data: data.map((d) => d.avgEF),
-        smooth: true,
-        symbol: 'circle',
-        symbolSize: 6,
-        lineStyle: { color: '#55d6be', width: 3 },
-        itemStyle: { color: '#55d6be' },
-        markLine: {
-          symbol: 'none',
-          lineStyle: { type: 'dashed', color: 'rgba(181, 106, 18, 0.28)' },
-          data: [
-            { yAxis: 2.5, label: { formatter: '2.5', color: '#b56a12' } },
-            { yAxis: 1.3, label: { formatter: '1.3', color: '#c55349' }, lineStyle: { color: 'rgba(197,83,73,0.35)' } },
-          ],
-        },
+  efChart.setOption(
+    {
+      ...base,
+      xAxis: {
+        ...(base.xAxis as object),
+        type: 'category',
+        data: data.map((d) => d.week),
+        axisLabel: { color: palette.textSecondary, fontSize: 10, rotate: 24 }
       },
-    ],
-  }, true)
+      yAxis: {
+        ...(base.yAxis as object),
+        type: 'value',
+        min: 1.3,
+        max: 3.2
+      },
+      series: [
+        {
+          type: 'line',
+          data: data.map((d) => d.avgEF),
+          smooth: true,
+          symbol: 'circle',
+          symbolSize: 6,
+          lineStyle: { color: palette.cyan, width: 3 },
+          itemStyle: { color: palette.cyan },
+          markLine: {
+            symbol: 'none',
+            lineStyle: { type: 'dashed', color: palette.borderStrong },
+            data: [
+              { yAxis: 2.5, label: { formatter: '2.5', color: palette.amber } },
+              { yAxis: 1.3, label: { formatter: '1.3', color: palette.coral }, lineStyle: { color: palette.coral } }
+            ]
+          }
+        }
+      ]
+    },
+    true
+  )
 }
 
 const renderFRChart = () => {
@@ -663,48 +711,53 @@ const renderFRChart = () => {
     frChart = echarts.init(frChartRef.value)
   }
 
+  const palette = readThemePalette()
+  const base = buildChartBase()
   const data = efficiencyData.value.forgettingRateTrend
-  frChart.setOption({
-    ...buildChartBase(),
-    xAxis: {
-      ...(buildChartBase().xAxis as object),
-      type: 'category',
-      data: data.map((d) => d.week),
-      axisLabel: { color: chartTextColor, fontSize: 10, rotate: 24 },
-    },
-    yAxis: {
-      ...(buildChartBase().yAxis as object),
-      type: 'value',
-      min: 0,
-      max: 100,
-      axisLabel: { color: chartTextColor, fontSize: 11, formatter: '{value}%' },
-    },
-    series: [
-      {
-        name: '遗忘率',
-        type: 'bar',
-        data: data.map((d) => +(d.forgettingRate * 100).toFixed(1)),
-        barWidth: '48%',
-        itemStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: '#d77b70' },
-            { offset: 1, color: 'rgba(197,83,73,0.3)' },
-          ]),
-          borderRadius: [8, 8, 0, 0],
+  frChart.setOption(
+    {
+      ...base,
+      xAxis: {
+        ...(base.xAxis as object),
+        type: 'category',
+        data: data.map((d) => d.week),
+        axisLabel: { color: palette.textSecondary, fontSize: 10, rotate: 24 }
+      },
+      yAxis: {
+        ...(base.yAxis as object),
+        type: 'value',
+        min: 0,
+        max: 100,
+        axisLabel: { color: palette.textSecondary, fontSize: 11, formatter: '{value}%' }
+      },
+      series: [
+        {
+          name: '遗忘率',
+          type: 'bar',
+          data: data.map((d) => +(d.forgettingRate * 100).toFixed(1)),
+          barWidth: '48%',
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: palette.coral },
+              { offset: 1, color: `${palette.coral}4d` }
+            ]),
+            borderRadius: [8, 8, 0, 0]
+          }
         },
-      },
-      {
-        name: '重来次数',
-        type: 'line',
-        data: data.map((d) => d.againCount),
-        smooth: true,
-        symbol: 'circle',
-        symbolSize: 5,
-        lineStyle: { width: 2, color: '#b56a12' },
-        itemStyle: { color: '#b56a12' },
-      },
-    ],
-  }, true)
+        {
+          name: '重来次数',
+          type: 'line',
+          data: data.map((d) => d.againCount),
+          smooth: true,
+          symbol: 'circle',
+          symbolSize: 5,
+          lineStyle: { width: 2, color: palette.amber },
+          itemStyle: { color: palette.amber }
+        }
+      ]
+    },
+    true
+  )
 }
 
 const handleResize = () => {
@@ -735,18 +788,27 @@ onBeforeUnmount(() => {
 watch(selectedCategories, () => {
   void loadTrend()
 })
+
+watch(theme, () => {
+  nextTick(() => {
+    renderTrendChart()
+    renderInterviewTrendChart()
+    renderEFChart()
+    renderFRChart()
+  })
+})
 </script>
 
 <style scoped>
 .mode-switch {
   border: 1px solid var(--bc-border-subtle);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--interactive-bg);
   padding: 4px;
 }
 
 .dark .mode-switch {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--interactive-bg);
 }
 
 .mode-switch__item {
@@ -780,7 +842,7 @@ watch(selectedCategories, () => {
 .analytics-overview-card {
   border-radius: calc(var(--radius-md) - 4px);
   border: 1px solid var(--bc-border-subtle);
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--panel-muted);
   padding: 0.95rem 1rem;
 }
 
@@ -805,7 +867,7 @@ watch(selectedCategories, () => {
 .insight-card {
   border-radius: calc(var(--radius-md) + 2px);
   border: 1px solid var(--bc-line);
-  background: rgba(255, 255, 255, 0.45);
+  background: var(--panel-muted);
   padding: 20px;
 }
 
@@ -824,23 +886,21 @@ watch(selectedCategories, () => {
 .signal-lane {
   border-radius: calc(var(--radius-sm) + 2px);
   border: 1px solid var(--bc-line);
-  background: rgba(255, 255, 255, 0.26);
+  background: var(--panel-muted);
   padding: 14px 16px;
 }
 
 .chart-shell {
   border-radius: calc(var(--radius-md) - 2px);
   border: 1px solid var(--bc-border-subtle);
-  background:
-    radial-gradient(circle at top left, rgba(var(--bc-accent-rgb), 0.04), transparent 24%),
-    linear-gradient(180deg, rgba(250, 247, 242, 0.96), rgba(255, 255, 255, 0.92));
+  background: linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.04), transparent 26%), var(--panel-bg);
 }
 
 .category-chip {
   min-height: 36px;
   border-radius: 999px;
   border: 1px solid var(--bc-border-subtle);
-  background: rgba(255, 255, 255, 0.68);
+  background: var(--interactive-bg);
   padding: 0 14px;
   font-size: 12px;
   font-weight: 700;
@@ -859,7 +919,7 @@ watch(selectedCategories, () => {
   gap: 8px;
   border-radius: 999px;
   border: 1px solid var(--bc-border-subtle);
-  background: rgba(255, 255, 255, 0.68);
+  background: var(--interactive-bg);
   padding: 8px 12px;
   font-size: 12px;
   font-weight: 700;
@@ -869,7 +929,7 @@ watch(selectedCategories, () => {
 .mastery-card {
   border-radius: calc(var(--radius-md) - 2px);
   border: 1px solid var(--bc-border-subtle);
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--panel-bg);
   padding: 18px;
 }
 
@@ -911,6 +971,6 @@ watch(selectedCategories, () => {
 }
 
 .mastery-fill-cyan {
-  background: linear-gradient(90deg, rgba(54, 90, 176, 0.78), rgba(85, 214, 190, 0.95));
+  background: linear-gradient(90deg, rgba(var(--bc-cyan-rgb), 0.62), var(--bc-cyan));
 }
 </style>

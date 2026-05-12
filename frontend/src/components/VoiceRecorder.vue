@@ -1,10 +1,10 @@
 <template>
   <div class="space-y-4">
     <!-- Waveform Visualization -->
-    <div class="relative h-24 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800">
+    <div class="relative h-24 overflow-hidden rounded-xl bg-[var(--panel-muted)]">
       <canvas ref="canvasRef" class="h-full w-full"></canvas>
       <div v-if="!isRecording && !audioUrl" class="absolute inset-0 flex items-center justify-center">
-        <span class="text-sm text-slate-400 dark:text-slate-500">点击下方按钮开始录音</span>
+        <span class="text-sm text-tertiary">点击下方按钮开始录音</span>
       </div>
       <div v-if="isRecording" class="absolute top-3 right-3 flex items-center gap-2">
         <span class="h-2 w-2 animate-pulse rounded-full bg-red-500"></span>
@@ -30,7 +30,7 @@
       <button
         v-if="isRecording"
         type="button"
-        class="flex h-14 w-14 items-center justify-center rounded-full bg-slate-700 text-white shadow-lg transition hover:bg-slate-800 active:scale-95"
+        class="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--interactive-bg)] text-primary shadow-lg transition hover:bg-[var(--interactive-hover)] active:scale-95"
         @click="stopRecording"
       >
         <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
@@ -55,7 +55,7 @@
 
         <button
           type="button"
-          class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-slate-600 transition hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+          class="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--interactive-bg)] text-secondary transition hover:bg-[var(--interactive-hover)]"
           title="重新录制"
           @click="resetRecording"
         >
@@ -68,7 +68,7 @@
     </div>
 
     <!-- Status -->
-    <p v-if="statusText" class="text-center text-xs text-slate-500 dark:text-slate-400">
+    <p v-if="statusText" class="text-center text-xs text-secondary">
       {{ statusText }}
     </p>
   </div>
@@ -99,6 +99,8 @@ let animationFrame: number | null = null
 let durationTimer: ReturnType<typeof setInterval> | null = null
 let audioElement: HTMLAudioElement | null = null
 let recordedChunks: Blob[] = []
+
+const readThemeToken = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 
 const statusText = computed(() => {
   if (isRecording.value) return '正在录音...'
@@ -139,7 +141,7 @@ const drawWaveform = () => {
 
     // Draw waveform
     ctx.lineWidth = 2
-    ctx.strokeStyle = '#2f4f9d'
+    ctx.strokeStyle = readThemeToken('--bc-cyan') || '#2f7f77'
       ctx.beginPath()
 
       const sliceWidth = rect.width / bufferLength
@@ -161,7 +163,8 @@ const drawWaveform = () => {
     ctx.stroke()
 
     // Draw center line
-    ctx.strokeStyle = 'rgba(47, 79, 157, 0.15)'
+    const cyanRgb = readThemeToken('--bc-cyan-rgb') || '47 127 119'
+    ctx.strokeStyle = `rgb(${cyanRgb} / 0.15)`
     ctx.lineWidth = 1
     ctx.beginPath()
     ctx.moveTo(0, rect.height / 2)

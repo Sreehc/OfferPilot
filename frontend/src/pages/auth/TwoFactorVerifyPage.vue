@@ -9,7 +9,7 @@
 
         <div class="mt-8 max-w-2xl">
           <h1 class="auth-hero-title">完成最后一步验证</h1>
-          <p class="mt-5 text-sm leading-8 text-slate-600 dark:text-slate-300 sm:text-base">
+          <p class="mt-5 text-sm leading-8 text-secondary sm:text-base">
             输入验证码或恢复码以完成登录。
           </p>
         </div>
@@ -21,7 +21,7 @@
           <div>
             <p class="section-kicker">验证</p>
             <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">输入验证码继续</h2>
-            <p class="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            <p class="mt-3 text-sm leading-7 text-secondary">
               {{ useRecovery ? '请输入恢复码完成登录。' : '请输入身份验证器里的 6 位验证码。' }}
             </p>
           </div>
@@ -126,9 +126,9 @@ const handleVerify = async () => {
   gap: 3rem;
   background:
     radial-gradient(circle at 18% 18%, rgba(var(--bc-accent-rgb), 0.12), transparent 30%),
-    radial-gradient(circle at 82% 14%, rgba(47, 127, 119, 0.08), transparent 24%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.18), transparent 42%),
-    var(--bc-panel);
+    radial-gradient(circle at 82% 14%, rgba(var(--bc-cyan-rgb), 0.08), transparent 24%),
+    linear-gradient(145deg, rgba(var(--bc-ink-rgb), 0.04), transparent 42%),
+    var(--panel-bg);
 }
 
 .auth-hero-title {

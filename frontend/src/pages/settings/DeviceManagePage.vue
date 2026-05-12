@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <section class="shell-section-card p-4 sm:p-6">
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <div class="text-sm text-slate-500 dark:text-slate-400">当前 {{ devices.length }} 台</div>
+        <div class="text-sm text-secondary">当前 {{ devices.length }} 台</div>
         <div class="flex flex-wrap items-center gap-3">
           <el-button :loading="loading" type="primary" size="large" class="action-button" @click="loadDevices">
             刷新
@@ -26,8 +26,8 @@
 
     <section v-if="loading && devices.length === 0" class="shell-section-card p-6">
       <div class="flex items-center justify-center py-8">
-        <el-icon class="is-loading text-slate-400" :size="24"><i class="el-icon-loading" /></el-icon>
-        <span class="ml-3 text-sm text-slate-400">正在加载...</span>
+        <el-icon class="is-loading text-tertiary" :size="24"><i class="el-icon-loading" /></el-icon>
+        <span class="ml-3 text-sm text-tertiary">正在加载...</span>
       </div>
     </section>
 
@@ -50,7 +50,7 @@
           <div class="flex items-center gap-3">
             <div
               class="flex h-10 w-10 items-center justify-center rounded-lg"
-              :class="device.current ? 'bg-accent/10 text-accent' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'"
+              :class="device.current ? 'bg-accent/10 text-accent' : 'bg-[var(--panel-muted)] text-secondary'"
             >
               <svg v-if="deviceIcon(device.deviceName) === 'phone'" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
@@ -72,7 +72,7 @@
                   当前设备
                 </span>
               </div>
-              <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              <p class="mt-1 text-xs text-secondary">
                 {{ device.ip || '未知 IP' }}
                 <span v-if="device.city"> · {{ device.city }}</span>
               </p>
@@ -91,7 +91,7 @@
           </el-button>
         </div>
 
-        <div class="mt-4 flex items-center justify-between text-xs uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
+        <div class="mt-4 flex items-center justify-between text-xs uppercase tracking-[0.22em] text-tertiary">
           <span>最后活跃 {{ formatTime(device.lastActiveTime) }}</span>
           <span>登录于 {{ formatTime(device.createTime) }}</span>
         </div>

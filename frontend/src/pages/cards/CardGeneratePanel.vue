@@ -220,7 +220,7 @@ const handleActivateExisting = async () => {
 }
 
 .dark .generate-panel__metric {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--panel-muted);
 }
 
 .generate-panel__metric span {

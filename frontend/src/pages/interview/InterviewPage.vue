@@ -32,20 +32,20 @@
 
         <div class="mt-6 space-y-4">
           <div class="data-slab p-4">
-            <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">方向</div>
+            <div class="text-xs uppercase tracking-[0.24em] text-tertiary">方向</div>
             <el-select v-model="direction" size="large" class="mt-2 w-full">
               <el-option v-for="d in directions" :key="d.name" :label="d.name" :value="d.name">
                 <span>{{ d.name }}</span>
-                <span class="ml-2 text-xs text-slate-400">{{ d.desc }}</span>
+                <span class="ml-2 text-xs text-tertiary">{{ d.desc }}</span>
               </el-option>
             </el-select>
           </div>
           <div class="data-slab p-4">
-            <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">题量</div>
+            <div class="text-xs uppercase tracking-[0.24em] text-tertiary">题量</div>
             <el-input-number v-model="questionCount" :min="3" :max="5" size="large" class="mt-2 w-full" />
           </div>
           <div v-if="voiceAvailable" class="data-slab p-4">
-            <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">作答模式</div>
+            <div class="text-xs uppercase tracking-[0.24em] text-tertiary">作答模式</div>
             <div class="mt-3 grid grid-cols-2 gap-3">
               <button
                 type="button"
@@ -53,7 +53,7 @@
                 :class="
                   interviewMode === 'text'
                     ? 'border-[var(--bc-line-hot)] bg-accent/10 text-ink'
-                    : 'border-[var(--bc-line)] text-slate-600 hover:bg-white/40 dark:text-slate-300 dark:hover:bg-white/5'
+                    : 'border-[var(--bc-line)] text-secondary hover:bg-[var(--interactive-hover)]'
                 "
                 @click="interviewMode = 'text'"
               >
@@ -65,7 +65,7 @@
                 :class="
                   interviewMode === 'voice'
                     ? 'border-[var(--bc-line-hot)] bg-accent/10 text-ink'
-                    : 'border-[var(--bc-line)] text-slate-600 hover:bg-white/40 dark:text-slate-300 dark:hover:bg-white/5'
+                    : 'border-[var(--bc-line)] text-secondary hover:bg-[var(--interactive-hover)]'
                 "
                 @click="interviewMode = 'voice'"
               >
@@ -98,15 +98,15 @@
           </RouterLink>
         </div>
 
-        <div v-if="loadingHistory" class="py-8 text-center text-sm text-slate-400">加载中...</div>
+        <div v-if="loadingHistory" class="py-8 text-center text-sm text-tertiary">加载中...</div>
 
         <div v-else-if="recentInterviews.length === 0" class="interview-history-empty py-6 text-center">
-          <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 dark:bg-white/5">
-            <svg class="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--panel-muted)]">
+            <svg class="h-6 w-6 text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
             </svg>
           </div>
-          <p class="text-sm leading-6 text-slate-500 dark:text-slate-400">
+          <p class="text-sm leading-6 text-secondary">
             还没有面试记录。AI 面试官会针对你的知识薄弱点出题，回答后即时评分并给出标准答案和追问。
           </p>
         </div>
@@ -127,16 +127,16 @@
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-2">
                 <span class="font-semibold text-ink">{{ item.direction }}</span>
-                <span class="text-xs text-slate-400">{{ item.questionCount }} 题</span>
+                <span class="text-xs text-tertiary">{{ item.questionCount }} 题</span>
                 <span v-if="item.mode === 'voice'" class="rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
                   语音
                 </span>
               </div>
-              <div class="mt-1 text-xs text-slate-400">
+              <div class="mt-1 text-xs text-tertiary">
                 {{ formatRelativeTime(item.endTime || item.startTime) }}
               </div>
             </div>
-            <svg class="h-4 w-4 shrink-0 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <svg class="h-4 w-4 shrink-0 text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
             </svg>
           </RouterLink>
@@ -162,12 +162,12 @@
         <div class="mt-6 space-y-4">
           <div class="data-slab p-4">
             <div
-              class="flex items-center justify-between text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400"
+              class="flex items-center justify-between text-xs uppercase tracking-[0.22em] text-tertiary"
             >
               <span>进度</span>
               <span>{{ currentQuestion?.currentIndex ?? 0 }} / {{ currentQuestion?.questionCount ?? 0 }}</span>
             </div>
-            <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-200/80 dark:bg-white/10">
+            <div class="mt-3 h-2 overflow-hidden rounded-full bg-[var(--panel-muted)]">
               <div
                 class="h-full rounded-full bg-accent transition-all duration-500"
                 :style="{ width: `${progressPercent}%` }"
@@ -177,11 +177,11 @@
 
           <div class="grid grid-cols-2 gap-3">
             <div class="data-slab p-4">
-              <div class="text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">方向</div>
+              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">方向</div>
               <div class="mt-2 font-semibold text-ink">{{ direction }}</div>
             </div>
             <div class="data-slab p-4">
-              <div class="text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">模式</div>
+              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">模式</div>
               <div class="mt-2 font-semibold text-ink">
                 {{ interviewMode === 'voice' && voiceAvailable ? '语音' : '文字' }}
               </div>
@@ -235,7 +235,7 @@
 
           <template v-if="interviewMode !== 'voice' || !voiceAvailable">
             <div class="mt-5 flex items-center justify-between gap-3">
-              <span class="text-xs text-slate-400 dark:text-slate-500">`Ctrl + Enter` 快速提交</span>
+              <span class="text-xs text-tertiary">`Ctrl + Enter` 快速提交</span>
             </div>
             <el-input
               v-model="answerText"
@@ -294,12 +294,12 @@
         <div v-else-if="phase === 'result'" class="space-y-4">
           <div v-if="voiceTranscript" class="data-slab p-4">
             <div class="flex items-center justify-between">
-              <div class="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">语音转录</div>
-              <div v-if="lastVoiceResult?.transcriptConfidence" class="font-mono text-xs text-slate-400">
+              <div class="text-xs uppercase tracking-[0.24em] text-tertiary">语音转录</div>
+              <div v-if="lastVoiceResult?.transcriptConfidence" class="font-mono text-xs text-tertiary">
                 {{ Math.round(lastVoiceResult.transcriptConfidence * 100) }}%
               </div>
             </div>
-            <p class="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">{{ voiceTranscript }}</p>
+            <p class="mt-2 text-sm leading-6 text-primary">{{ voiceTranscript }}</p>
           </div>
 
           <div class="score-card p-6" :class="(lastResult?.score ?? 0) >= 60 ? 'score-card-pass' : 'score-card-risk'">
@@ -321,7 +321,7 @@
                   朗读
                 </button>
               </div>
-              <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+              <p class="mt-2 text-sm leading-6 text-secondary">
                 {{ lastResult?.standardAnswer || '暂无' }}
               </p>
             </div>
@@ -337,7 +337,7 @@
                   朗读
                 </button>
               </div>
-              <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+              <p class="mt-2 text-sm leading-6 text-secondary">
                 {{ lastResult?.followUp || '无' }}
               </p>
             </div>
@@ -345,7 +345,7 @@
 
           <div
             v-if="lastResult?.addedToWrongBook"
-            class="rounded-2xl border border-coral/30 bg-coral/10 p-4 text-sm text-slate-600 dark:text-slate-300"
+            class="rounded-2xl border border-coral/30 bg-coral/10 p-4 text-sm text-secondary"
           >
             <span class="font-semibold text-ink">已加入错题本</span>：该题得分低于 60 分，后续会进入间隔复习。
           </div>
@@ -391,11 +391,11 @@
             >
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0 flex-1">
-                  <div class="text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                  <div class="text-xs uppercase tracking-[0.22em] text-tertiary">
                     Q{{ index + 1 }}
                   </div>
                   <div class="mt-1 font-semibold text-ink">{{ record.questionTitle }}</div>
-                  <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300 line-clamp-2">
+                  <p class="mt-2 text-sm leading-6 text-secondary line-clamp-2">
                     {{ record.comment || '暂无点评' }}
                   </p>
                 </div>
@@ -407,7 +407,7 @@
                     {{ record.score ?? '-' }}
                   </div>
                   <svg
-                    class="h-4 w-4 text-slate-400 transition-transform"
+                    class="h-4 w-4 text-tertiary transition-transform"
                     :class="expandedQuestions.has(record.questionId) ? 'rotate-180' : ''"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -424,26 +424,26 @@
                 class="mt-4 space-y-3 border-t border-[var(--bc-line)] pt-4"
               >
                 <div v-if="record.userAnswer">
-                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">
                     我的回答
                   </div>
-                  <p class="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">
+                  <p class="mt-1 whitespace-pre-wrap text-sm leading-6 text-primary">
                     {{ record.userAnswer }}
                   </p>
                 </div>
                 <div v-if="record.standardAnswer">
-                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">
                     标准答案
                   </div>
-                  <p class="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">
+                  <p class="mt-1 whitespace-pre-wrap text-sm leading-6 text-primary">
                     {{ record.standardAnswer }}
                   </p>
                 </div>
                 <div v-if="record.followUp">
-                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">
                     追问
                   </div>
-                  <p class="mt-1 text-sm leading-6 text-slate-700 dark:text-slate-200">{{ record.followUp }}</p>
+                  <p class="mt-1 text-sm leading-6 text-primary">{{ record.followUp }}</p>
                 </div>
               </div>
             </div>
@@ -936,17 +936,17 @@ onMounted(() => {
   padding: 22px 22px 20px;
   background:
     radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.18), transparent 34%),
-    rgba(255, 255, 255, 0.82);
+    var(--panel-bg);
   box-shadow: none;
 }
 
 .dark .question-spotlight {
   background:
     radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.22), transparent 34%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+    var(--panel-bg);
   box-shadow:
     0 24px 50px rgba(0, 0, 0, 0.26),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    inset 0 1px 0 rgba(var(--bc-ink-rgb), 0.04);
 }
 
 .question-spotlight::after {
@@ -1044,7 +1044,7 @@ onMounted(() => {
   margin-top: 18px;
   height: 8px;
   border-radius: 999px;
-  background: rgba(226, 232, 240, 0.78);
+  background: var(--panel-muted);
 }
 
 .question-spotlight__progress-bar {
@@ -1059,7 +1059,7 @@ onMounted(() => {
   border: 1px solid rgba(var(--bc-accent-rgb), 0.14);
   background:
     radial-gradient(circle, rgba(var(--bc-accent-rgb), 0.18), transparent 58%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.08), transparent);
+    var(--panel-bg);
   box-shadow: none;
 }
 
@@ -1087,20 +1087,20 @@ onMounted(() => {
 .score-card {
   overflow: hidden;
   border-radius: var(--radius-lg);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(var(--bc-accent-rgb), 0.2);
   box-shadow: none;
 }
 
 .score-card-pass {
   background:
-    radial-gradient(circle at 88% 14%, rgba(85, 214, 190, 0.34), transparent 32%),
-    linear-gradient(135deg, #123b48 0%, #10243a 55%, #07111f 100%);
+    radial-gradient(circle at 88% 14%, rgba(var(--bc-cyan-rgb), 0.32), transparent 32%),
+    linear-gradient(135deg, rgba(var(--bc-accent-rgb), 0.92), rgba(54, 48, 42, 0.98));
 }
 
 .score-card-risk {
   background:
     radial-gradient(circle at 88% 14%, rgba(255, 107, 107, 0.34), transparent 32%),
-    linear-gradient(135deg, #4a1d23 0%, #10243a 60%, #07111f 100%);
+    linear-gradient(135deg, rgba(74, 29, 35, 0.96), rgba(44, 34, 31, 0.98));
 }
 
 @keyframes orbit-spin {

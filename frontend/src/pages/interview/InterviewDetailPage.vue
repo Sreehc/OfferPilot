@@ -3,7 +3,7 @@
     <div>
       <button
         type="button"
-        class="flex items-center gap-1 text-sm text-slate-500 transition hover:text-accent dark:text-slate-400"
+        class="flex items-center gap-1 text-sm text-secondary transition hover:text-accent"
         @click="router.back()"
       >
         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -15,7 +15,7 @@
 
     <section v-if="loading" class="shell-section-card p-8 text-center">
       <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-      <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">正在加载...</p>
+      <p class="mt-4 text-sm text-secondary">正在加载...</p>
     </section>
 
     <section v-else-if="!detail" class="shell-section-card p-8 text-center">
@@ -32,7 +32,7 @@
                 {{ detail.direction }} 方向面试诊断
               </h3>
             </div>
-            <div class="mt-2 flex flex-wrap items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
+            <div class="mt-2 flex flex-wrap items-center gap-4 text-sm text-secondary">
               <span>{{ detail.mode === 'voice' ? '语音面试' : '文本面试' }}</span>
               <span>{{ detail.questionCount }} 题</span>
               <span>{{ detail.cardsGenerated ? `已生成 ${detail.generatedCardCount || 0} 张复习卡片` : '未生成复习卡片' }}</span>
@@ -41,10 +41,7 @@
             </div>
           </div>
           <div class="flex flex-col gap-3 lg:items-end">
-            <div
-              class="p-6 text-white shadow-[0_16px_36px_rgba(47,79,157,0.18)]"
-              style="border-radius: var(--radius-lg); background: linear-gradient(135deg, #365ab0 0%, #233d79 100%);"
-            >
+            <div class="interview-score-card p-6 text-white">
               <div class="text-xs uppercase tracking-[0.24em] text-white/60">总分</div>
               <div class="mt-2 text-5xl font-semibold tracking-[-0.03em]">
                 {{ formatScore(detail.totalScore) }}
@@ -108,19 +105,19 @@
         </div>
 
         <div class="surface-muted mx-6 mt-4 rounded-lg p-4">
-          <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">本题点评</div>
-          <p class="mt-1 text-sm leading-6 text-slate-700 dark:text-slate-200">{{ record.comment || '暂无点评' }}</p>
+          <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">本题点评</div>
+          <p class="mt-1 text-sm leading-6 text-primary">{{ record.comment || '暂无点评' }}</p>
         </div>
 
         <div v-if="record.voiceTranscript" class="mx-6 mt-4 surface-card p-4">
           <div class="flex items-center gap-2">
             <div class="h-2 w-2 rounded-full bg-purple-400"></div>
-            <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">语音转录</span>
-            <span v-if="record.voiceConfidence" class="ml-auto text-xs text-slate-400">
+            <span class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">语音转录</span>
+            <span v-if="record.voiceConfidence" class="ml-auto text-xs text-tertiary">
               置信度 {{ Math.round(record.voiceConfidence * 100) }}%
             </span>
           </div>
-          <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">
+          <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-primary">
             {{ record.voiceTranscript }}
           </p>
         </div>
@@ -129,11 +126,11 @@
           <div class="surface-card p-4">
             <div class="flex items-center gap-2">
               <div class="h-2 w-2 rounded-full bg-amber-400"></div>
-              <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+              <span class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">
                 {{ record.voiceTranscript ? '转录文本' : '我的回答' }}
               </span>
             </div>
-            <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">
+            <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-primary">
               {{ record.userAnswer || '未作答' }}
             </p>
           </div>
@@ -141,9 +138,9 @@
           <div class="surface-card p-4">
             <div class="flex items-center gap-2">
               <div class="h-2 w-2 rounded-full bg-green-400"></div>
-              <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">标准答案</span>
+              <span class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">标准答案</span>
             </div>
-            <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">
+            <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-primary">
               {{ record.standardAnswer || '暂无标准答案' }}
             </p>
           </div>
@@ -153,39 +150,39 @@
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
               <div class="text-xs font-semibold uppercase tracking-[0.2em] text-coral">推荐复习卡片</div>
-              <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              <p class="mt-1 text-sm text-secondary">
                 会进入 {{ detail.interviewDeckTitle || '面试诊断卡片' }}。
               </p>
             </div>
             <span
               class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"
-              :class="record.generatedCardId ? 'bg-emerald-100 text-emerald-700' : 'bg-white text-coral'"
+              :class="record.generatedCardId ? 'generated-status generated-status-ready' : 'generated-status generated-status-pending'"
             >
               {{ record.generatedCardId ? '已生成' : '待生成' }}
             </span>
           </div>
           <div class="mt-4 grid gap-3 md:grid-cols-2">
             <div class="surface-card p-4">
-              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">正面问题</div>
-              <p class="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
+              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">正面问题</div>
+              <p class="mt-2 text-sm leading-6 text-primary">
                 {{ record.recommendedCardFront || record.questionTitle }}
               </p>
             </div>
             <div class="surface-card p-4">
-              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">背面答案</div>
-              <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">
+              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">背面答案</div>
+              <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-primary">
                 {{ record.recommendedCardBack || '暂无标准答案' }}
               </p>
             </div>
             <div class="surface-card p-4 md:col-span-2">
-              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">解释</div>
-              <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">
+              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">解释</div>
+              <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-primary">
                 {{ record.recommendedCardExplanation || '暂无说明' }}
               </p>
             </div>
             <div v-if="record.recommendedCardFollowUp" class="surface-card p-4 md:col-span-2">
-              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">追问点</div>
-              <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">
+              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">追问点</div>
+              <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-primary">
                 {{ record.recommendedCardFollowUp }}
               </p>
             </div>
@@ -193,8 +190,8 @@
         </div>
 
         <div v-else-if="record.followUp" class="border-t border-slate-200/60 px-6 py-4 dark:border-slate-700/60">
-          <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">追问</div>
-          <p class="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ record.followUp }}</p>
+          <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">追问</div>
+          <p class="mt-1 text-sm leading-6 text-secondary">{{ record.followUp }}</p>
         </div>
       </section>
 
@@ -292,3 +289,27 @@ onMounted(() => {
   void loadData()
 })
 </script>
+
+<style scoped>
+.interview-score-card {
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at 86% 18%, rgba(var(--bc-cyan-rgb), 0.28), transparent 34%),
+    linear-gradient(135deg, rgba(var(--bc-accent-rgb), 0.94), rgba(75, 64, 49, 0.96));
+  box-shadow: 0 16px 36px rgba(var(--bc-accent-rgb), 0.16);
+}
+
+.generated-status {
+  border: 1px solid var(--bc-border-subtle);
+}
+
+.generated-status-ready {
+  background: rgba(74, 122, 73, 0.12);
+  color: var(--bc-lime);
+}
+
+.generated-status-pending {
+  background: var(--interactive-bg);
+  color: var(--bc-coral);
+}
+</style>

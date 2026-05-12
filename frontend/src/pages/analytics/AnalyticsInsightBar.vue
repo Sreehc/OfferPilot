@@ -13,7 +13,7 @@
           <span class="insight-card__icon" :class="item.iconClass">{{ item.icon }}</span>
           <div class="min-w-0">
             <p class="text-sm font-semibold text-ink">{{ item.title }}</p>
-            <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ item.description }}</p>
+            <p class="mt-1 text-xs leading-5 text-secondary">{{ item.description }}</p>
           </div>
         </div>
       </RouterLink>
@@ -115,7 +115,7 @@ const insights = computed<Insight[]>(() => {
   display: block;
   border-radius: calc(var(--radius-md) - 2px);
   border: 1px solid var(--bc-border-subtle);
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--panel-bg);
   padding: 14px 16px;
   transition: transform 160ms var(--ease-hard), box-shadow 160ms var(--ease-hard);
   text-decoration: none;
@@ -135,7 +135,7 @@ const insights = computed<Insight[]>(() => {
 }
 
 .insight-card--info {
-  border-color: rgba(77, 163, 255, 0.25);
+  border-color: rgba(var(--bc-accent-rgb), 0.25);
 }
 
 .insight-card__icon {
@@ -161,7 +161,7 @@ const insights = computed<Insight[]>(() => {
 }
 
 .insight-icon--info {
-  background: rgba(77, 163, 255, 0.12);
-  color: #2563eb;
+  background: rgba(var(--bc-accent-rgb), 0.12);
+  color: var(--bc-amber);
 }
 </style>

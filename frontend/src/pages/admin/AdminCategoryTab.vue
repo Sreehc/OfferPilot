@@ -20,18 +20,18 @@
     </div>
 
     <div class="space-y-3">
-      <div class="text-sm text-slate-500 dark:text-slate-400">共 {{ categories.length }} 个分类</div>
+      <div class="text-sm text-secondary">共 {{ categories.length }} 个分类</div>
       <article v-for="item in categories" :key="item.id" class="surface-card p-4">
         <div class="flex items-start justify-between gap-3">
           <div>
             <div class="font-semibold text-ink">{{ item.name }}</div>
-            <div class="mt-1 text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+            <div class="mt-1 text-xs uppercase tracking-[0.22em] text-secondary">
               {{ item.type === 'question' ? '题目' : item.type === 'knowledge' ? '知识文档' : '面试' }}
             </div>
           </div>
           <div class="flex gap-2">
             <button type="button" class="accent-link text-sm font-semibold" @click="emit('edit', item)">编辑</button>
-            <button type="button" class="text-sm text-slate-500 dark:text-slate-400 transition hover:text-red-500" @click="emit('remove', item.id)">删除</button>
+            <button type="button" class="text-sm text-secondary transition hover:text-red-500" @click="emit('remove', item.id)">删除</button>
           </div>
         </div>
       </article>

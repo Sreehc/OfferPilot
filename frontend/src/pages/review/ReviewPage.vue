@@ -31,7 +31,7 @@
               <div class="flex items-center gap-2">
                 <p class="section-kicker">复习工作台</p>
                 <el-tooltip content="系统根据遗忘曲线自动安排复习时间，逾期越久优先级越高。" placement="top">
-                  <span class="inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full bg-slate-200 text-[10px] font-bold text-slate-500 dark:bg-slate-700 dark:text-slate-400">?</span>
+                  <span class="inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full bg-[var(--interactive-bg)] text-[10px] font-bold text-tertiary">?</span>
                 </el-tooltip>
               </div>
               <p class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink sm:text-3xl">{{ heroTitle }}</p>
@@ -74,7 +74,7 @@
       <section v-if="started && currentReviewItem" class="review-session-layout">
         <div class="space-y-4">
           <div class="shell-section-card p-4 sm:p-5">
-            <div class="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
+            <div class="flex items-center justify-between text-sm text-secondary">
               <span class="font-mono">{{ currentIndex + 1 }} / {{ reviewItems.length }}</span>
               <div class="flex flex-wrap items-center gap-2">
                 <span class="hard-chip" :class="contentChipClass(currentReviewItem.contentType)">
@@ -89,7 +89,7 @@
               </div>
             </div>
 
-            <div class="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
+            <div class="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-[var(--panel-muted)]">
               <div
                 class="h-full rounded-full bg-accent transition-all duration-300"
                 :style="{ width: `${((currentIndex + 1) / Math.max(reviewItems.length, 1)) * 100}%` }"
@@ -97,7 +97,7 @@
             </div>
           </div>
 
-          <p class="text-center text-xs text-slate-400 dark:text-slate-500 sm:hidden">
+          <p class="text-center text-xs text-tertiary sm:hidden">
             左滑重来 · 右滑良好 · 点击翻转
           </p>
 
@@ -112,7 +112,7 @@
             <div class="flashcard">
               <div class="flashcard-front memory-card p-5 sm:p-8">
                 <div class="flex items-center justify-between gap-4">
-                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-secondary">
                     先回忆问题
                   </div>
                   <span class="hard-chip">{{ masteryLabel(currentReviewItem.masteryLevel) }}</span>
@@ -126,24 +126,24 @@
                 <h3 class="mt-8 text-xl font-semibold leading-relaxed text-ink sm:text-2xl">
                   {{ currentReviewItem.title }}
                 </h3>
-                <p class="mt-8 text-sm text-slate-400 dark:text-slate-500">点击翻转查看答案与解释</p>
+                <p class="mt-8 text-sm text-tertiary">点击翻转查看答案与解释</p>
               </div>
 
               <div class="flashcard-back memory-card p-5 sm:p-8">
-                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-secondary">
                   标准答案
                 </div>
-                <p class="mt-4 whitespace-pre-wrap text-sm leading-7 text-slate-700 dark:text-slate-200">
+                <p class="mt-4 whitespace-pre-wrap text-sm leading-7 text-primary">
                   {{ currentReviewItem.answer || '暂无标准答案' }}
                 </p>
                 <div
                   v-if="currentReviewItem.explanation"
                   class="mt-4 border-t border-slate-200/60 pt-4 dark:border-slate-700/60"
                 >
-                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-secondary">
                     {{ currentReviewItem.contentType === 'knowledge_card' ? '解释说明' : '之前错误原因' }}
                   </div>
-                  <p class="mt-1 text-sm text-slate-700 dark:text-slate-200">
+                  <p class="mt-1 text-sm text-primary">
                     {{ currentReviewItem.explanation }}
                   </p>
                 </div>
@@ -151,14 +151,14 @@
                   v-if="currentReviewItem.sourceQuote && currentReviewItem.contentType === 'knowledge_card'"
                   class="mt-4 border-t border-[var(--bc-line)] pt-4"
                 >
-                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-secondary">
                     来源片段
                   </div>
-                  <p class="mt-1 text-sm leading-7 text-slate-600 dark:text-slate-300">
+                  <p class="mt-1 text-sm leading-7 text-secondary">
                     {{ currentReviewItem.sourceQuote }}
                   </p>
                 </div>
-                <div class="mt-4 border-t border-[var(--bc-line)] pt-4 text-xs text-slate-500 dark:text-slate-400">
+                <div class="mt-4 border-t border-[var(--bc-line)] pt-4 text-xs text-secondary">
                   记忆系数 {{ formatEaseFactor(currentReviewItem.easeFactor) }} · 间隔
                   {{ currentReviewItem.intervalDays ?? 0 }} 天
                 </div>
@@ -249,7 +249,7 @@
                   <span v-if="item.deckTitle" class="detail-pill">{{ item.deckTitle }}</span>
                 </div>
                 <h4 class="repair-card__title text-lg font-semibold leading-snug text-ink">{{ item.title }}</h4>
-                <p class="repair-card__summary mt-2 text-sm text-slate-500 dark:text-slate-400">
+                <p class="repair-card__summary mt-2 text-sm text-secondary">
                   {{ reviewItemSummary(item) }}
                 </p>
               </div>
@@ -376,7 +376,7 @@ const masteryLabel = (level: string) => {
 const masteryChipClass = (level: string) => {
   if (level === 'mastered') return '!bg-accent !text-white'
   if (level === 'reviewing') return '!bg-amber-100 !text-amber-700'
-  return '!bg-white/80 dark:!bg-slate-700/80 !text-slate-600 dark:!text-slate-300'
+  return '!bg-[var(--interactive-bg)] !text-secondary'
 }
 
 const repairCardClass = (item: UnifiedReviewItem) => {
@@ -568,7 +568,7 @@ onMounted(() => {
   min-height: 40px;
   border: 1px solid var(--bc-line);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.42);
+  background: var(--interactive-bg);
   padding: 0 16px;
   color: var(--bc-ink-secondary);
   font-size: 13px;
@@ -580,7 +580,7 @@ onMounted(() => {
 }
 
 .dark .repair-filter-chip {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--interactive-bg);
 }
 
 .repair-filter-chip-active {
@@ -601,14 +601,14 @@ onMounted(() => {
   border-radius: 24px;
   background:
     radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.1), transparent 32%),
-    rgba(255, 255, 255, 0.28);
+    var(--panel-muted);
   padding: 22px;
 }
 
 .dark .review-launch {
   background:
     radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.12), transparent 32%),
-    rgba(255, 255, 255, 0.03);
+    var(--panel-muted);
 }
 
 .review-launch__head,
@@ -727,10 +727,10 @@ onMounted(() => {
   border-radius: var(--radius-lg);
   background:
     radial-gradient(circle at 80% 20%, rgba(85, 214, 190, 0.1), transparent 30%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.08), transparent 34%), var(--bc-panel);
+    linear-gradient(145deg, rgba(var(--bc-accent-rgb), 0.04), transparent 34%), var(--panel-bg);
   box-shadow:
     var(--bc-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    inset 0 1px 0 rgba(var(--bc-ink-rgb), 0.04);
 }
 
 .rating-button {
@@ -786,14 +786,14 @@ onMounted(() => {
   padding: 16px 16px 15px;
   background:
     radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.08), transparent 36%),
-    rgba(255, 255, 255, 0.42);
+    var(--panel-muted);
   border: 1px solid rgba(var(--bc-accent-rgb), 0.12);
 }
 
 .dark .repair-card__answer {
   background:
     radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.12), transparent 42%),
-    rgba(255, 255, 255, 0.04);
+    var(--panel-muted);
 }
 
 .repair-card__answer-label,

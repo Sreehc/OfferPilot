@@ -9,35 +9,33 @@
     </AppShellHeader>
 
     <section class="forum-panel shell-section-card p-4 sm:p-5">
-      <div class="forum-header-bar">
-        <div class="forum-header-bar__tabs">
-          <button
-            v-for="board in boardOptions"
-            :key="board.id"
-            type="button"
-            class="forum-board-chip"
-            :class="{ 'forum-board-chip-active': selectedCategoryId === board.id }"
-            @click="selectBoard(board.id)"
-          >
-            {{ board.name }}
-          </button>
-        </div>
-      </div>
+      <div class="forum-toolbar forum-toolbar-head">
+        <div class="forum-toolbar__filters">
+          <div class="forum-header-bar__tabs">
+            <button
+              v-for="board in boardOptions"
+              :key="board.id"
+              type="button"
+              class="forum-board-chip"
+              :class="{ 'forum-board-chip-active': selectedCategoryId === board.id }"
+              @click="selectBoard(board.id)"
+            >
+              {{ board.name }}
+            </button>
+          </div>
 
-      <div class="forum-panel__divider"></div>
-
-      <div class="forum-toolbar">
-        <div class="mode-switch">
-          <button
-            v-for="s in sorts"
-            :key="s.value"
-            type="button"
-            class="mode-switch__item"
-            :class="{ 'mode-switch__item-active': sort === s.value }"
-            @click="sort = s.value"
-          >
-            {{ s.label }}
-          </button>
+          <div class="mode-switch">
+            <button
+              v-for="s in sorts"
+              :key="s.value"
+              type="button"
+              class="mode-switch__item"
+              :class="{ 'mode-switch__item-active': sort === s.value }"
+              @click="sort = s.value"
+            >
+              {{ s.label }}
+            </button>
+          </div>
         </div>
 
         <div class="community-search">
@@ -58,15 +56,15 @@
       </div>
 
       <div v-if="loading" class="mt-5 grid gap-3">
-        <article v-for="index in 4" :key="index" class="forum-thread forum-thread-skeleton animate-pulse">
+        <article v-for="index in 4" :key="index" class="forum-thread forum-thread-skeleton">
           <div class="forum-thread__body">
-            <div class="h-4 w-24 rounded bg-slate-200 dark:bg-slate-700"></div>
-            <div class="mt-4 h-6 w-3/5 rounded bg-slate-100 dark:bg-slate-800"></div>
-            <div class="mt-3 h-4 w-full rounded bg-slate-100 dark:bg-slate-800"></div>
-            <div class="mt-2 h-4 w-2/3 rounded bg-slate-100 dark:bg-slate-800"></div>
+            <div class="skeleton-line h-4 w-24"></div>
+            <div class="skeleton-line mt-4 h-6 w-3/5"></div>
+            <div class="skeleton-line mt-3 h-4 w-full"></div>
+            <div class="skeleton-line mt-2 h-4 w-2/3"></div>
           </div>
           <div class="forum-thread__aside">
-            <div class="h-16 w-16 rounded-2xl bg-slate-100 dark:bg-slate-800"></div>
+            <div class="skeleton-line h-16 w-16 rounded-2xl"></div>
           </div>
         </article>
       </div>
@@ -285,47 +283,11 @@ onMounted(async () => {
   position: relative;
 }
 
-.forum-panel__divider {
-  height: 1px;
-  margin: 18px -16px 0;
-  background: rgba(148, 163, 184, 0.16);
-}
-
-@media (min-width: 640px) {
-  .forum-panel__divider {
-    margin-inline: -20px;
-  }
-}
-
-.forum-header-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px 18px;
-}
-
-.forum-header-bar__title {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-width: max-content;
-}
-
-.forum-header-bar__heading {
-  color: var(--bc-ink);
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -0.04em;
-  line-height: 1.1;
-}
-
 .forum-header-bar__tabs {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  flex: 1;
-  min-width: min(100%, 420px);
+  min-width: 0;
 }
 
 .forum-header-bar__action {
@@ -340,7 +302,7 @@ onMounted(async () => {
   min-height: 40px;
   border: 1px solid var(--bc-line);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.42);
+  background: var(--interactive-bg);
   padding: 0 16px;
   color: var(--bc-ink-secondary);
   font-size: 13px;
@@ -353,26 +315,33 @@ onMounted(async () => {
     box-shadow var(--motion-base) var(--ease-hard);
 }
 
-.dark .forum-board-chip {
-  background: rgba(255, 255, 255, 0.05);
-}
-
 .forum-board-chip:hover {
   border-color: rgba(var(--bc-accent-rgb), 0.26);
   color: var(--bc-ink);
+  background: var(--interactive-hover);
 }
 
 .forum-board-chip-active {
   border-color: rgba(var(--bc-accent-rgb), 0.36);
   box-shadow: inset 0 0 0 1px rgba(var(--bc-accent-rgb), 0.14);
   color: var(--bc-ink);
-  background: linear-gradient(180deg, rgba(255, 222, 173, 0.84), rgba(255, 247, 235, 0.68));
+  background: rgba(var(--bc-accent-rgb), 0.14);
 }
 
 .forum-toolbar {
   display: grid;
   gap: 14px;
-  margin-top: 18px;
+}
+
+.forum-toolbar-head {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.forum-toolbar__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
 }
 
 .mode-switch {
@@ -382,12 +351,8 @@ onMounted(async () => {
   width: fit-content;
   border: 1px solid var(--bc-line);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.32);
+  background: var(--interactive-bg);
   padding: 4px;
-}
-
-.dark .mode-switch {
-  background: rgba(255, 255, 255, 0.04);
 }
 
 .mode-switch__item {
@@ -462,19 +427,13 @@ onMounted(async () => {
   align-items: center;
   border: 1px solid var(--bc-line);
   border-radius: 24px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.42));
+  background: linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.05), transparent 42%), var(--panel-bg);
   padding: 20px;
   cursor: pointer;
   transition:
     transform var(--motion-base) var(--ease-hard),
     border-color var(--motion-base) var(--ease-hard),
     box-shadow var(--motion-base) var(--ease-hard);
-}
-
-.dark .forum-thread {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.03));
 }
 
 .forum-thread:hover {
@@ -532,15 +491,11 @@ onMounted(async () => {
   display: -webkit-box;
   margin-top: 10px;
   overflow: hidden;
-  color: rgb(71 85 105);
+  color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.8;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-}
-
-.dark .forum-thread__excerpt {
-  color: rgb(203 213 225);
 }
 
 .forum-thread__meta {
@@ -612,14 +567,10 @@ onMounted(async () => {
   height: 42px;
   border-radius: 14px;
   border: 1px solid var(--bc-line);
-  background: rgba(255, 255, 255, 0.4);
+  background: var(--interactive-bg);
   color: var(--bc-ink-secondary);
   font-size: 14px;
   font-weight: 600;
-}
-
-.dark .community-page-button {
-  background: rgba(255, 255, 255, 0.05);
 }
 
 .community-page-button-active {
@@ -629,18 +580,22 @@ onMounted(async () => {
 }
 
 @media (min-width: 1024px) {
-  .forum-toolbar {
-    grid-template-columns: auto minmax(320px, 440px);
-    align-items: center;
-    justify-content: space-between;
+  .forum-toolbar-head {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+    align-items: start;
   }
 }
 
 @media (max-width: 1024px) {
-  .forum-header-bar__tabs {
-    order: 3;
-    flex-basis: 100%;
+  .forum-toolbar__filters {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .forum-header-bar__tabs,
+  .mode-switch {
     min-width: 0;
+    width: 100%;
   }
 }
 
@@ -657,14 +612,6 @@ onMounted(async () => {
 @media (max-width: 640px) {
   .community-search {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .forum-header-bar {
-    align-items: stretch;
-  }
-
-  .forum-header-bar__heading {
-    font-size: 24px;
   }
 
   .forum-header-bar__action {

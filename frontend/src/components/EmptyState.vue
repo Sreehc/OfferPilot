@@ -79,7 +79,7 @@
     <!-- Description -->
     <p
       :class="compact ? 'mt-1 text-xs max-w-xs' : 'mt-2 text-sm max-w-md'"
-      class="leading-6 text-slate-500 dark:text-slate-400"
+      class="leading-6 text-secondary"
     >
       {{ description }}
     </p>
@@ -101,8 +101,19 @@ withDefaults(defineProps<{
   compact?: boolean
 }>(), {
   icon: 'inbox',
-  iconBg: 'bg-slate-100 dark:bg-slate-800',
-  iconColor: 'text-slate-400 dark:text-slate-500',
+  iconBg: 'empty-state-icon-shell',
+  iconColor: 'empty-state-icon-color',
   compact: false,
 })
 </script>
+
+<style scoped>
+.empty-state-icon-shell {
+  background: var(--panel-muted);
+  border: 1px solid var(--border-subtle);
+}
+
+.empty-state-icon-color {
+  color: var(--text-tertiary);
+}
+</style>

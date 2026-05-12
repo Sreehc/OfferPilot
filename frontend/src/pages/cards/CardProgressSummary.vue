@@ -90,7 +90,7 @@ const title = computed(() => {
 }
 
 .dark .progress-summary__grid article {
-  background: rgba(255, 255, 255, 0.035);
+  background: var(--panel-muted);
 }
 
 .progress-summary__grid span {

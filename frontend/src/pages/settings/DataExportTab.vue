@@ -9,9 +9,9 @@
       </el-button>
     </div>
 
-    <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-4">
+    <div class="rounded-lg border border-[var(--border-subtle)] bg-[var(--panel-muted)] p-4">
       <h4 class="mb-2 text-sm font-semibold text-ink">包含内容</h4>
-      <p class="text-xs text-slate-500 dark:text-slate-400">
+      <p class="text-xs text-secondary">
         面试记录、错题本和复习记录。
       </p>
     </div>

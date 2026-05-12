@@ -12,17 +12,17 @@
 
         <div class="mt-5 grid gap-3 sm:grid-cols-2">
           <article class="data-slab p-4">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">最近一天新增</p>
+            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-tertiary">最近一天新增</p>
             <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ latestPoint?.newUsers ?? 0 }}</p>
           </article>
           <article class="data-slab p-4">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">最近一天活跃</p>
+            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-tertiary">最近一天活跃</p>
             <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ latestPoint?.activeUsers ?? 0 }}</p>
           </article>
         </div>
 
         <div v-if="trend.length" ref="chartRef" class="chart-shell mt-5 h-[320px] w-full"></div>
-        <div v-else class="mt-5 flex h-[320px] items-center justify-center text-sm text-slate-500">
+        <div v-else class="mt-5 flex h-[320px] items-center justify-center text-sm text-secondary">
           暂无趋势数据
         </div>
       </section>
@@ -43,11 +43,11 @@
           <p class="section-kicker">业务负载</p>
           <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
             <article class="data-slab p-4">
-              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">总面试次数</p>
+              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-tertiary">总面试次数</p>
               <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ overview?.totalInterviews ?? '-' }}</p>
             </article>
             <article class="data-slab p-4">
-              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">总复习次数</p>
+              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-tertiary">总复习次数</p>
               <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ overview?.totalReviews ?? '-' }}</p>
             </article>
           </div>
@@ -58,9 +58,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
+import { useTheme } from '@/composables/useTheme'
+import { readThemePalette } from '@/utils/theme'
 import { fetchAdminOverviewApi, fetchAdminTrendApi } from '@/api/admin'
 import type { AdminOverview, AdminTrendItem } from '@/api/admin'
 
@@ -69,6 +71,7 @@ const overview = ref<AdminOverview | null>(null)
 const trend = ref<AdminTrendItem[]>([])
 const chartRef = ref<HTMLElement | null>(null)
 let chart: echarts.ECharts | null = null
+const { theme } = useTheme()
 
 const latestPoint = computed(() => trend.value.at(-1) ?? null)
 const spotlightCards = computed(() => [
@@ -97,28 +100,29 @@ const renderChart = () => {
     chart = echarts.init(chartRef.value)
   }
 
+  const palette = readThemePalette()
   chart.setOption({
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'rgba(255, 255, 255, 0.96)',
-      borderColor: 'rgba(16, 35, 58, 0.08)',
-      textStyle: { color: '#10233a' }
+      backgroundColor: palette.surfaceCard,
+      borderColor: palette.borderSubtle,
+      textStyle: { color: palette.textPrimary }
     },
-    legend: { data: ['新增用户', '活跃用户'], bottom: 0, textStyle: { color: '#6b7b8d' } },
+    legend: { data: ['新增用户', '活跃用户'], bottom: 0, textStyle: { color: palette.textSecondary } },
     grid: { left: '3%', right: '4%', bottom: '14%', top: '6%', containLabel: true },
     xAxis: {
       type: 'category',
       data: trend.value.map((t) => t.date),
       boundaryGap: false,
-      axisLine: { lineStyle: { color: 'rgba(16, 35, 58, 0.12)' } },
-      axisLabel: { color: '#6b7b8d' }
+      axisLine: { lineStyle: { color: palette.borderSubtle } },
+      axisLabel: { color: palette.textSecondary }
     },
     yAxis: {
       type: 'value',
       minInterval: 1,
       axisLine: { show: false },
-      axisLabel: { color: '#6b7b8d' },
-      splitLine: { lineStyle: { color: 'rgba(16, 35, 58, 0.08)' } }
+      axisLabel: { color: palette.textSecondary },
+      splitLine: { lineStyle: { color: palette.borderSubtle } }
     },
     series: [
       {
@@ -126,9 +130,9 @@ const renderChart = () => {
         type: 'line',
         smooth: true,
         symbolSize: 8,
-        lineStyle: { width: 3, color: '#b56a12' },
-        itemStyle: { color: '#b56a12' },
-        areaStyle: { color: 'rgba(181, 106, 18, 0.12)' },
+        lineStyle: { width: 3, color: palette.amber },
+        itemStyle: { color: palette.amber },
+        areaStyle: { color: `rgba(${palette.accentRgb}, 0.12)` },
         data: trend.value.map((t) => t.newUsers)
       },
       {
@@ -136,9 +140,9 @@ const renderChart = () => {
         type: 'line',
         smooth: true,
         symbolSize: 8,
-        lineStyle: { width: 3, color: '#2f7f77' },
-        itemStyle: { color: '#2f7f77' },
-        areaStyle: { color: 'rgba(47, 127, 119, 0.08)' },
+        lineStyle: { width: 3, color: palette.cyan },
+        itemStyle: { color: palette.cyan },
+        areaStyle: { color: `rgba(${palette.cyanRgb}, 0.08)` },
         data: trend.value.map((t) => t.activeUsers)
       }
     ]
@@ -152,6 +156,10 @@ const handleResize = () => {
 onMounted(() => {
   void loadData()
   window.addEventListener('resize', handleResize)
+})
+
+watch(theme, () => {
+  nextTick(renderChart)
 })
 
 onUnmounted(() => {
@@ -214,6 +222,7 @@ onUnmounted(() => {
 
 .chart-shell {
   border-radius: 24px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.34));
+  border: 1px solid var(--bc-border-subtle);
+  background: linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.04), transparent 26%), var(--panel-bg);
 }
 </style>
