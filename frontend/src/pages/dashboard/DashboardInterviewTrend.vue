@@ -1,5 +1,5 @@
 <template>
-  <article class="paper-panel p-6">
+  <article class="shell-section-card p-6">
     <p class="section-kicker">成绩趋势</p>
     <h3 class="mt-3 text-lg font-semibold text-ink">分数变化</h3>
 

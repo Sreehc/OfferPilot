@@ -4,7 +4,7 @@
       v-if="visible"
       class="fixed inset-0 z-[9999] flex items-center justify-center bg-[rgba(247,244,238,0.82)] backdrop-blur-md dark:bg-slate-900/92"
     >
-      <div class="paper-panel max-w-md px-8 py-10 text-center">
+      <div class="shell-section-card max-w-md px-8 py-10 text-center">
         <!-- Wifi off icon -->
         <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-red-50 dark:bg-red-900/20">
           <svg class="h-10 w-10 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">

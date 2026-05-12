@@ -1,5 +1,5 @@
 <template>
-  <article class="paper-panel p-6">
+  <article class="shell-section-card p-6">
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
         <p class="section-kicker">诊断记录</p>

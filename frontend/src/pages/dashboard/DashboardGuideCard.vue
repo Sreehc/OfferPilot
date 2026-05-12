@@ -1,6 +1,6 @@
 <template>
   <section
-    class="paper-panel relative overflow-hidden bg-[linear-gradient(135deg,rgba(47,79,157,0.08),rgba(255,255,255,0.94))] p-5 sm:p-6"
+    class="shell-section-card relative overflow-hidden bg-[linear-gradient(135deg,rgba(47,79,157,0.08),rgba(255,255,255,0.94))] p-5 sm:p-6"
     style="border-radius: var(--radius-lg);"
   >
     <div

@@ -1,6 +1,6 @@
 <template>
   <div v-if="error" class="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900 p-6">
-    <div class="paper-panel max-w-lg p-8 text-center">
+    <div class="shell-section-card max-w-lg p-8 text-center">
       <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
         <svg class="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

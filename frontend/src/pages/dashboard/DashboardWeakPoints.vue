@@ -1,5 +1,5 @@
 <template>
-  <article class="paper-panel p-6">
+  <article class="shell-section-card p-6">
     <p class="section-kicker">分类掌握度</p>
     <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">优先补齐的记忆分类</h3>
 

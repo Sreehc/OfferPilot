@@ -2,7 +2,7 @@
   <div class="dashboard-canvas space-y-6 pb-6">
     <DashboardGuideCard v-if="showGuideCard" :actions="guideActions" @dismiss="dismissGuide" />
 
-    <section v-if="loading" class="paper-panel min-h-[320px] p-6 sm:p-8">
+    <section v-if="loading" class="shell-section-card min-h-[320px] p-6 sm:p-8">
       <div class="h-4 w-24 animate-pulse rounded-full bg-slate-200 dark:bg-slate-700"></div>
       <div class="mt-6 h-14 w-3/4 animate-pulse rounded-[var(--radius-md)] bg-slate-200 dark:bg-slate-700"></div>
       <div class="mt-4 h-4 w-full animate-pulse rounded-full bg-slate-100 dark:bg-slate-800"></div>
@@ -18,7 +18,7 @@
     <template v-else>
       <section class="grid gap-4 xl:grid-cols-[minmax(0,1.48fr)_332px]">
         <div class="space-y-4">
-          <section class="paper-panel relative overflow-hidden p-5 sm:p-6" :class="{ 'border-[var(--bc-line-hot)]': primaryMission.urgent }">
+          <section class="shell-section-card relative overflow-hidden p-5 sm:p-6" :class="{ 'border-[var(--bc-line-hot)]': primaryMission.urgent }">
             <div
               class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(var(--bc-accent-rgb),0.1),transparent_30%),radial-gradient(circle_at_92%_12%,rgba(47,127,119,0.08),transparent_24%)]"
             ></div>
@@ -181,7 +181,7 @@
           </section>
 
           <section class="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-            <article class="paper-panel p-4 sm:p-6">
+            <article class="shell-section-card p-4 sm:p-6">
               <p class="section-kicker">记忆成长摘要</p>
               <h3 class="mt-3 text-xl font-semibold tracking-[-0.03em] text-ink sm:text-2xl">最近的记忆推进状态</h3>
               <div class="mt-4 grid gap-4 sm:grid-cols-2">
@@ -214,7 +214,7 @@
               </div>
             </article>
 
-            <article class="paper-panel p-4 sm:p-6">
+            <article class="shell-section-card p-4 sm:p-6">
               <p class="section-kicker">趋势记录</p>
               <DashboardInterviewTrend :trend-data="trendData" :loading="trendLoading" />
               <DashboardReviewHeatmap

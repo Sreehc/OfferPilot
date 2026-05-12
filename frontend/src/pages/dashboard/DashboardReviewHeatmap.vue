@@ -1,5 +1,5 @@
 <template>
-  <article class="paper-panel p-6">
+  <article class="shell-section-card p-6">
     <div class="flex items-end justify-between">
       <div>
         <p class="section-kicker">复习日历</p>

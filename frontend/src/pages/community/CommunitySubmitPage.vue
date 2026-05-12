@@ -7,7 +7,7 @@
       <span>&larr;</span> 返回社区
     </button>
 
-    <section class="cockpit-panel p-5 sm:p-6">
+    <section class="shell-section-card p-5 sm:p-6">
       <el-form ref="formRef" :model="form" :rules="formRules" label-position="top" @submit.prevent>
         <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div class="space-y-5">
