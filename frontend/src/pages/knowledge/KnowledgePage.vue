@@ -46,8 +46,8 @@
               <strong>{{ docs.length }}</strong>
             </div>
             <div class="knowledge-table-stat">
-              <span>可检索</span>
-              <strong>{{ statusSummary.indexed }}</strong>
+              <span>可学习</span>
+              <strong>{{ statusSummary.indexed + statusSummary.parsed }}</strong>
             </div>
           </div>
         </div>
@@ -108,17 +108,34 @@
                 </div>
               </div>
 
-              <el-popconfirm
-                v-if="activeTab === 'my'"
-                title="确认删除此文档？删除后关联的 chunk 和向量数据将一并清除。"
-                confirm-button-text="删除"
-                cancel-button-text="取消"
-                @confirm="handleDelete(doc.id)"
-              >
-                <template #reference>
-                  <button type="button" class="doc-card__danger">删除</button>
-                </template>
-              </el-popconfirm>
+              <div class="flex shrink-0 items-center gap-2">
+                <RouterLink
+                  v-if="doc.cardDeckId"
+                  to="/cards"
+                  class="hard-button-primary text-xs !min-h-[34px] !px-3"
+                >
+                  去学习
+                </RouterLink>
+                <button
+                  v-else-if="doc.status === 'indexed' || doc.status === 'parsed'"
+                  type="button"
+                  class="hard-button-primary text-xs !min-h-[34px] !px-3"
+                  @click="openGeneratePanel(doc)"
+                >
+                  生成卡片
+                </button>
+                <el-popconfirm
+                  v-if="activeTab === 'my'"
+                  title="确认删除此文档？删除后关联的 chunk 和向量数据将一并清除。"
+                  confirm-button-text="删除"
+                  cancel-button-text="取消"
+                  @confirm="handleDelete(doc.id)"
+                >
+                  <template #reference>
+                    <button type="button" class="doc-card__danger">删除</button>
+                  </template>
+                </el-popconfirm>
+              </div>
             </div>
             <div class="knowledge-row__body">
               <div class="knowledge-row__summary">
@@ -196,7 +213,7 @@
             <div class="upload-dropzone__aside">
               <div class="flex flex-wrap gap-2 text-[11px] text-slate-500 dark:text-slate-400">
                 <span class="hard-chip">当前 {{ docs.length }} 份</span>
-                <span class="rounded-full border border-[var(--bc-line)] px-2.5 py-1">可检索 {{ statusSummary.indexed }}</span>
+                <span class="rounded-full border border-[var(--bc-line)] px-2.5 py-1">可学习 {{ statusSummary.indexed + statusSummary.parsed }}</span>
               </div>
             </div>
           </div>
@@ -209,9 +226,9 @@
               <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
             </el-select>
             <el-select v-model="filters.status" clearable placeholder="文档状态" size="large">
-              <el-option label="草稿" value="draft" />
+              <el-option label="处理中" value="draft" />
               <el-option label="已解析" value="parsed" />
-              <el-option label="已索引" value="indexed" />
+              <el-option label="可学习" value="indexed" />
             </el-select>
             <el-input v-model="filters.keyword" clearable placeholder="搜索标题或摘要" size="large" />
           </div>
@@ -228,20 +245,6 @@
             <el-button size="large" class="hard-button-secondary knowledge-tool-button !ml-0" @click="resetFilters">
               重置
             </el-button>
-          </div>
-          <div class="mt-5 space-y-3">
-            <div class="knowledge-status-row">
-              <span>草稿</span>
-              <strong>{{ statusSummary.draft }}</strong>
-            </div>
-            <div class="knowledge-status-row">
-              <span>已解析</span>
-              <strong>{{ statusSummary.parsed }}</strong>
-            </div>
-            <div class="knowledge-status-row">
-              <span>已索引</span>
-              <strong>{{ statusSummary.indexed }}</strong>
-            </div>
           </div>
         </section>
       </aside>
@@ -394,7 +397,7 @@ const resetFilters = () => {
 }
 
 const statusLabel = (status: KnowledgeDocItem['status']) => {
-  const map: Record<KnowledgeDocItem['status'], string> = { draft: '草稿', parsed: '已解析', indexed: '已索引' }
+  const map: Record<KnowledgeDocItem['status'], string> = { draft: '处理中', parsed: '已解析', indexed: '可学习' }
   return map[status]
 }
 
