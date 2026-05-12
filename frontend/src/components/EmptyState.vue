@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex flex-col items-center justify-center rounded-[24px] border border-dashed border-[var(--bc-line)] bg-white/35 px-4 text-center dark:bg-white/[0.03]"
+    class="flex flex-col items-center justify-center rounded-[24px] border border-[var(--bc-border-subtle)] bg-[var(--bc-surface-soft)] px-4 text-center shadow-[var(--bc-shadow-soft)]"
     :class="compact ? 'py-6' : 'py-9'"
   >
     <!-- Icon -->

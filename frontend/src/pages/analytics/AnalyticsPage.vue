@@ -40,17 +40,17 @@
         </div>
       </div>
 
-      <div v-if="trendLoading" class="mt-5 flex h-[380px] items-center justify-center">
+      <div v-if="trendLoading" class="mt-5 flex h-[340px] items-center justify-center">
         <div class="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
       </div>
       <div
         v-else-if="!trendData.completionRateTrend?.length && !trendData.reviewDebtTrend?.length && !trendData.masteredGrowthTrend?.length"
-        class="mt-5 flex h-[380px] items-center justify-center"
+        class="mt-5 flex h-[340px] items-center justify-center"
       >
         <EmptyState icon="chart" title="暂无记忆趋势数据" description="开始学习后查看趋势。" compact />
       </div>
       <div v-else class="mt-5">
-        <div ref="trendChartRef" class="chart-shell h-[380px] w-full"></div>
+        <div ref="trendChartRef" class="chart-shell h-[340px] w-full"></div>
       </div>
     </section>
 
@@ -60,13 +60,12 @@
           <div>
             <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">记忆强度</h3>
           </div>
-          <span class="detail-pill">2.5 初始值 / 1.3 风险线</span>
         </div>
 
-        <div v-if="efficiencyLoading" class="mt-5 flex h-[300px] items-center justify-center">
+        <div v-if="efficiencyLoading" class="mt-5 flex h-[260px] items-center justify-center">
           <div class="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
         </div>
-        <div v-else-if="!efficiencyData.efTrend?.length" class="mt-5 flex h-[300px] items-center justify-center">
+        <div v-else-if="!efficiencyData.efTrend?.length" class="mt-5 flex h-[260px] items-center justify-center">
           <EmptyState icon="review" title="暂无复习数据" description="完成复习后查看记忆系数。" compact />
         </div>
         <div v-else class="mt-5">
@@ -75,16 +74,16 @@
               <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">平均记忆系数</p>
               <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ efficiencyData.avgEaseFactor }}</p>
             </article>
-            <article class="data-slab border-l-[var(--bc-cyan)] p-4">
+            <article class="data-slab p-4">
               <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">复习完成率</p>
               <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ formatPercent(efficiencyData.reviewCompletionRate) }}%</p>
             </article>
-            <article class="data-slab border-l-[var(--bc-lime)] p-4">
+            <article class="data-slab p-4">
               <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">连续天数</p>
               <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ efficiencyData.currentStreak }} 天</p>
             </article>
           </div>
-          <div ref="efChartRef" class="chart-shell mt-4 h-[280px] w-full"></div>
+          <div ref="efChartRef" class="chart-shell mt-4 h-[240px] w-full"></div>
         </div>
       </article>
 
@@ -93,13 +92,12 @@
           <div>
             <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">遗忘率</h3>
           </div>
-          <span class="detail-pill">重来次数 / 总评分</span>
         </div>
 
-        <div v-if="efficiencyLoading" class="mt-5 flex h-[300px] items-center justify-center">
+        <div v-if="efficiencyLoading" class="mt-5 flex h-[260px] items-center justify-center">
           <div class="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
         </div>
-        <div v-else-if="!efficiencyData.forgettingRateTrend?.length" class="mt-5 flex h-[300px] items-center justify-center">
+        <div v-else-if="!efficiencyData.forgettingRateTrend?.length" class="mt-5 flex h-[260px] items-center justify-center">
           <EmptyState icon="review" title="暂无复习数据" description="完成复习后查看遗忘率。" compact />
         </div>
         <div v-else class="mt-5">
@@ -110,7 +108,7 @@
               <span class="font-mono text-ink">{{ efficiencyData.ratingDistribution?.[key] ?? 0 }}</span>
             </div>
           </div>
-          <div ref="frChartRef" class="chart-shell mt-4 h-[280px] w-full"></div>
+          <div ref="frChartRef" class="chart-shell mt-4 h-[240px] w-full"></div>
         </div>
       </article>
     </section>
@@ -167,7 +165,6 @@
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p class="text-lg font-semibold text-ink">{{ item.label }}</p>
-                <p v-if="item.description" class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ item.description }}</p>
               </div>
               <div class="text-right">
                 <p class="font-mono text-3xl font-semibold text-ink">{{ item.count }}</p>
@@ -190,10 +187,10 @@
         </div>
       </div>
 
-      <div v-if="trendLoading" class="mt-5 flex h-[320px] items-center justify-center">
+      <div v-if="trendLoading" class="mt-5 flex h-[300px] items-center justify-center">
         <div class="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
       </div>
-      <div v-else-if="!trendData.overallTrend?.length" class="mt-5 flex h-[320px] items-center justify-center">
+      <div v-else-if="!trendData.overallTrend?.length" class="mt-5 flex h-[300px] items-center justify-center">
         <EmptyState icon="chart" title="暂无面试数据" description="完成面试后查看趋势。" compact />
       </div>
       <div v-else class="mt-5">
@@ -217,7 +214,7 @@
             {{ cat.displayName }}
           </button>
         </div>
-        <div ref="interviewTrendChartRef" class="chart-shell h-[320px] w-full"></div>
+        <div ref="interviewTrendChartRef" class="chart-shell h-[300px] w-full"></div>
       </div>
     </section>
   </div>
@@ -287,7 +284,7 @@ let efChart: echarts.ECharts | null = null
 let frChart: echarts.ECharts | null = null
 
 const ratingLabels: Record<number, string> = { 1: '重来', 2: '困难', 3: '良好', 4: '轻松' }
-const chartColors = ['#365ab0', '#55d6be', '#ff6b6b', '#9fe870', '#76b4ff', '#f59e0b', '#22c55e']
+const chartColors = ['#b56a12', '#2f7f77', '#365ab0', '#c55349', '#5d89c9', '#8c6f2d', '#4a7a49']
 
 const ratingColor = (key: number) => {
   const map: Record<number, string> = {
@@ -344,7 +341,7 @@ const masteryItems = computed(() => {
       label: '未开始',
       count: d.not_started ?? 0,
       percent: Math.round(((d.not_started ?? 0) / total) * 100),
-      description: '还没开始',
+      description: '',
       toneClass: 'mastery-card-coral',
       textClass: 'text-[var(--bc-coral)]',
       fillClass: 'mastery-fill-coral',
@@ -353,7 +350,7 @@ const masteryItems = computed(() => {
       label: '复习中',
       count: d.reviewing ?? 0,
       percent: Math.round(((d.reviewing ?? 0) / total) * 100),
-      description: '还在复习',
+      description: '',
       toneClass: 'mastery-card-amber',
       textClass: 'text-[var(--bc-amber)]',
       fillClass: 'mastery-fill-amber',
@@ -453,17 +450,17 @@ const loadEfficiency = async () => {
   }
 }
 
-const chartTextColor = '#8ca6bf'
-const chartGridColor = 'rgba(142, 196, 255, 0.12)'
+const chartTextColor = '#6b7b8d'
+const chartGridColor = 'rgba(16, 35, 58, 0.08)'
 
 const buildChartBase = () => ({
   textStyle: { color: chartTextColor, fontFamily: 'JetBrains Mono, monospace' },
-  grid: { left: 42, right: 20, top: 24, bottom: 42 },
+  grid: { left: 36, right: 18, top: 24, bottom: 38 },
   tooltip: {
     trigger: 'axis',
-    backgroundColor: 'rgba(7, 17, 31, 0.96)',
-    borderColor: 'rgba(142, 196, 255, 0.18)',
-    textStyle: { color: '#eef6ff' },
+    backgroundColor: 'rgba(255, 255, 255, 0.96)',
+    borderColor: 'rgba(16, 35, 58, 0.08)',
+    textStyle: { color: '#10233a' },
   },
   xAxis: {
     axisLine: { lineStyle: { color: chartGridColor } },
@@ -522,8 +519,8 @@ const renderTrendChart = () => {
         smooth: true,
         symbol: 'circle',
         data: xAxisData.map((week) => completion.find((item) => item.week === week)?.value ?? null),
-        lineStyle: { width: 3, color: '#55d6be' },
-        itemStyle: { color: '#55d6be' },
+        lineStyle: { width: 3, color: '#2f7f77' },
+        itemStyle: { color: '#2f7f77' },
       },
       {
         name: '复习负债',
@@ -532,8 +529,8 @@ const renderTrendChart = () => {
         data: xAxisData.map((week) => debts.find((item) => item.week === week)?.value ?? null),
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: '#ff6b6b' },
-            { offset: 1, color: 'rgba(255,107,107,0.4)' },
+            { offset: 0, color: '#d77b70' },
+            { offset: 1, color: 'rgba(197,83,73,0.28)' },
           ]),
           borderRadius: [8, 8, 0, 0]
         }
@@ -644,10 +641,10 @@ const renderEFChart = () => {
         itemStyle: { color: '#55d6be' },
         markLine: {
           symbol: 'none',
-          lineStyle: { type: 'dashed', color: 'rgba(255, 183, 77, 0.55)' },
+          lineStyle: { type: 'dashed', color: 'rgba(181, 106, 18, 0.28)' },
           data: [
-            { yAxis: 2.5, label: { formatter: '初始值 2.5', color: '#ffb74d' } },
-            { yAxis: 1.3, label: { formatter: '风险线 1.3', color: '#ff6b6b' }, lineStyle: { color: 'rgba(255,107,107,0.55)' } },
+            { yAxis: 2.5, label: { formatter: '2.5', color: '#b56a12' } },
+            { yAxis: 1.3, label: { formatter: '1.3', color: '#c55349' }, lineStyle: { color: 'rgba(197,83,73,0.35)' } },
           ],
         },
       },
@@ -685,8 +682,8 @@ const renderFRChart = () => {
         barWidth: '48%',
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: '#ff6b6b' },
-            { offset: 1, color: 'rgba(255,107,107,0.42)' },
+            { offset: 0, color: '#d77b70' },
+            { offset: 1, color: 'rgba(197,83,73,0.3)' },
           ]),
           borderRadius: [8, 8, 0, 0],
         },
@@ -698,8 +695,8 @@ const renderFRChart = () => {
         smooth: true,
         symbol: 'circle',
         symbolSize: 5,
-        lineStyle: { width: 2, color: '#ffb74d' },
-        itemStyle: { color: '#ffb74d' },
+        lineStyle: { width: 2, color: '#b56a12' },
+        itemStyle: { color: '#b56a12' },
       },
     ],
   }, true)
@@ -737,9 +734,9 @@ watch(selectedCategories, () => {
 
 <style scoped>
 .mode-switch {
-  border: 1px solid var(--bc-line);
-  border-radius: calc(var(--radius-md) + 4px);
-  background: rgba(255, 255, 255, 0.32);
+  border: 1px solid var(--bc-border-subtle);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
   padding: 4px;
 }
 
@@ -748,9 +745,9 @@ watch(selectedCategories, () => {
 }
 
 .mode-switch__item {
-  min-height: 44px;
+  min-height: 36px;
   border: 0;
-  border-radius: calc(var(--radius-sm) + 2px);
+  border-radius: 999px;
   background: transparent;
   color: var(--bc-ink-secondary);
   font-size: 13px;
@@ -760,12 +757,12 @@ watch(selectedCategories, () => {
 }
 
 .mode-switch__item:hover {
-  background: rgba(54, 90, 176, 0.08);
+  background: rgba(var(--bc-accent-rgb), 0.08);
   color: var(--bc-ink);
 }
 
 .mode-switch__item-active {
-  background: linear-gradient(135deg, rgba(54, 90, 176, 0.18), rgba(85, 214, 190, 0.18));
+  background: rgba(var(--bc-accent-rgb), 0.12);
   color: var(--bc-ink);
 }
 
@@ -795,31 +792,19 @@ watch(selectedCategories, () => {
   padding: 14px 16px;
 }
 
-.summary-slab-cyan {
-  border-left: 3px solid var(--bc-cyan);
-}
-
-.summary-slab-lime {
-  border-left: 3px solid var(--bc-lime);
-}
-
-.summary-slab-amber {
-  border-left: 3px solid var(--bc-amber);
-}
-
 .chart-shell {
-  border-radius: calc(var(--radius-md) + 2px);
-  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: calc(var(--radius-md) - 2px);
+  border: 1px solid var(--bc-border-subtle);
   background:
-    radial-gradient(circle at top left, rgba(85, 214, 190, 0.08), transparent 32%),
-    linear-gradient(180deg, rgba(247, 250, 252, 0.96), rgba(255, 255, 255, 0.88));
+    radial-gradient(circle at top left, rgba(var(--bc-accent-rgb), 0.05), transparent 28%),
+    linear-gradient(180deg, rgba(250, 247, 242, 0.96), rgba(255, 255, 255, 0.92));
 }
 
 .category-chip {
   min-height: 36px;
   border-radius: 999px;
-  border: 1px solid var(--bc-line);
-  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--bc-border-subtle);
+  background: rgba(255, 255, 255, 0.68);
   padding: 0 14px;
   font-size: 12px;
   font-weight: 700;
@@ -827,8 +812,8 @@ watch(selectedCategories, () => {
 }
 
 .category-chip-active {
-  border-color: rgba(54, 90, 176, 0.35);
-  background: rgba(54, 90, 176, 0.12);
+  border-color: rgba(var(--bc-accent-rgb), 0.18);
+  background: rgba(var(--bc-accent-rgb), 0.12);
   color: var(--bc-ink);
 }
 
@@ -837,8 +822,8 @@ watch(selectedCategories, () => {
   align-items: center;
   gap: 8px;
   border-radius: 999px;
-  border: 1px solid var(--bc-line);
-  background: rgba(255, 255, 255, 0.38);
+  border: 1px solid var(--bc-border-subtle);
+  background: rgba(255, 255, 255, 0.68);
   padding: 8px 12px;
   font-size: 12px;
   font-weight: 700;
@@ -846,9 +831,9 @@ watch(selectedCategories, () => {
 }
 
 .mastery-card {
-  border-radius: calc(var(--radius-md) + 2px);
-  border: 1px solid var(--bc-line);
-  background: rgba(255, 255, 255, 0.38);
+  border-radius: calc(var(--radius-md) - 2px);
+  border: 1px solid var(--bc-border-subtle);
+  background: rgba(255, 255, 255, 0.7);
   padding: 18px;
 }
 

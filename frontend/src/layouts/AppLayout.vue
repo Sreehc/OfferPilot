@@ -15,16 +15,10 @@
 
         <RouterLink to="/dashboard" class="global-topbar__brand">
           <span class="global-topbar__brand-mark">
-            <span class="global-topbar__brand-angle global-topbar__brand-angle-left">&lt;</span>
-            <span class="global-topbar__brand-cup">
-              <span class="global-topbar__brand-steam global-topbar__brand-steam-one"></span>
-              <span class="global-topbar__brand-steam global-topbar__brand-steam-two"></span>
-              <span class="global-topbar__brand-cup-body"></span>
-              <span class="global-topbar__brand-cup-handle"></span>
-            </span>
-            <span class="global-topbar__brand-angle global-topbar__brand-angle-right">/&gt;</span>
+            <span class="global-topbar__brand-core"></span>
+            <span class="global-topbar__brand-dot"></span>
           </span>
-          <span class="global-topbar__brand-name">BYTE COACH</span>
+          <span class="global-topbar__brand-name">ByteCoach</span>
         </RouterLink>
       </div>
 
@@ -43,12 +37,12 @@
     </header>
 
     <div
-      class="pt-[73px] lg:mt-[73px] lg:grid lg:h-[calc(100dvh-73px)] lg:pt-0 lg:overflow-hidden"
+      class="pt-[64px] lg:mt-[64px] lg:grid lg:h-[calc(100dvh-64px)] lg:pt-0 lg:overflow-hidden"
       :class="sidebarVisible ? 'lg:grid-cols-[292px_minmax(0,1fr)]' : 'lg:grid-cols-[minmax(0,1fr)]'"
     >
       <NavRail
         v-show="sidebarVisible"
-        class="hidden min-h-[280px] border-r border-[var(--bc-line)] lg:block lg:h-full lg:min-h-0 lg:overflow-y-auto"
+        class="hidden min-h-[280px] border-r border-[var(--bc-border-subtle)] lg:block lg:h-full lg:min-h-0 lg:overflow-y-auto"
       />
 
       <Transition name="mobile-rail-fade">
@@ -68,14 +62,16 @@
       </Transition>
 
       <main
-        class="relative z-[1] flex min-w-0 flex-col px-4 py-4 md:px-6 md:py-6 lg:h-full lg:min-h-0 lg:overflow-hidden lg:px-8 lg:py-6"
+        class="relative z-[1] flex min-w-0 flex-col px-4 py-5 md:px-6 md:py-7 lg:h-full lg:min-h-0 lg:overflow-hidden lg:px-8 lg:py-7"
       >
         <section class="min-h-0 flex-1 lg:overflow-y-auto">
-          <RouterView v-slot="{ Component, route: viewRoute }">
-            <Transition name="page-slide" mode="out-in">
-              <component :is="Component" :key="viewRoute.path" />
-            </Transition>
-          </RouterView>
+          <div class="app-canvas mx-auto w-full max-w-[1480px]">
+            <RouterView v-slot="{ Component, route: viewRoute }">
+              <Transition name="page-slide" mode="out-in">
+                <component :is="Component" :key="viewRoute.path" />
+              </Transition>
+            </RouterView>
+          </div>
         </section>
       </main>
     </div>
@@ -121,7 +117,7 @@
             v-for="item in filteredSearchItems"
             :key="item.path"
             type="button"
-            class="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm transition hover:bg-slate-100 dark:hover:bg-slate-800"
+            class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition hover:bg-[rgba(var(--bc-accent-rgb),0.08)]"
             @click="navigateTo(item.path)"
           >
             <span class="font-medium text-ink dark:text-slate-200">{{ item.label }}</span>
@@ -138,13 +134,13 @@
       <template #footer>
         <div class="flex items-center justify-between px-1 text-xs text-slate-400 dark:text-slate-500">
           <span
-            ><kbd class="rounded border border-slate-300 px-1 py-0.5 text-[10px] dark:border-slate-600">/</kbd> 或
-            <kbd class="rounded border border-slate-300 px-1 py-0.5 text-[10px] dark:border-slate-600">⌘K</kbd>
+            ><kbd class="search-kbd">/</kbd> 或
+            <kbd class="search-kbd">⌘K</kbd>
             搜索</span
           >
           <span
-            ><kbd class="rounded border border-slate-300 px-1 py-0.5 text-[10px] dark:border-slate-600">Esc</kbd> 关闭 ·
-            <kbd class="rounded border border-slate-300 px-1 py-0.5 text-[10px] dark:border-slate-600">回车</kbd>
+            ><kbd class="search-kbd">Esc</kbd> 关闭 ·
+            <kbd class="search-kbd">回车</kbd>
             跳转</span
           >
         </div>
@@ -276,20 +272,21 @@ const handleLogout = async () => {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  height: 73px;
+  height: 64px;
   padding: 0 16px;
-  border-bottom: 1px solid rgba(120, 223, 214, 0.16);
+  border-bottom: 1px solid var(--bc-border-subtle);
   background:
-    radial-gradient(circle at top left, rgba(76, 201, 240, 0.18), transparent 28%),
-    linear-gradient(90deg, #0f172a 0%, #10243a 52%, #0d1f33 100%);
-  box-shadow: 0 10px 32px rgba(5, 12, 24, 0.24);
+    radial-gradient(circle at 12% 20%, rgba(var(--bc-accent-rgb), 0.08), transparent 18%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 244, 238, 0.88));
+  box-shadow: 0 8px 24px rgba(32, 40, 53, 0.05);
+  backdrop-filter: blur(18px);
 }
 
 .global-topbar__left,
 .global-topbar__right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 .global-topbar__menu {
@@ -300,21 +297,25 @@ const handleLogout = async () => {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  transition: background-color var(--motion-base) var(--ease-hard);
+  border: 1px solid var(--bc-border-subtle);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.56);
+  box-shadow: var(--bc-shadow-soft);
+  transition:
+    background-color var(--motion-base) var(--ease-hard),
+    box-shadow var(--motion-base) var(--ease-hard);
 }
 
 .global-topbar__menu:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(var(--bc-accent-rgb), 0.08);
+  box-shadow: var(--bc-shadow-hover);
 }
 
 .global-topbar__menu span {
-  width: 24px;
-  height: 2.5px;
+  width: 18px;
+  height: 2px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.88);
+  background: var(--bc-ink);
 }
 
 .global-topbar__brand {
@@ -327,91 +328,46 @@ const handleLogout = async () => {
 .global-topbar__brand-mark {
   position: relative;
   display: inline-flex;
-  width: 58px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  overflow: hidden;
-  border: 1px solid rgba(120, 223, 214, 0.28);
-  border-radius: 16px;
-  background:
-    radial-gradient(circle at top, rgba(76, 201, 240, 0.22), transparent 52%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 12px 24px rgba(6, 18, 35, 0.28);
-}
-
-.global-topbar__brand-angle {
-  position: relative;
-  z-index: 1;
-  font-family: theme('fontFamily.mono');
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: -0.08em;
-  color: rgba(120, 223, 214, 0.9);
-}
-
-.global-topbar__brand-cup {
-  position: relative;
-  display: inline-flex;
-  width: 20px;
-  height: 24px;
-  align-items: flex-end;
-  justify-content: center;
-}
-
-.global-topbar__brand-steam {
-  position: absolute;
-  top: 1px;
-  width: 5px;
-  height: 9px;
-  border-top: 1.5px solid rgba(255, 205, 86, 0.92);
-  border-left: 1.5px solid transparent;
-  border-right: 1.5px solid transparent;
+  border: 1px solid rgba(var(--bc-accent-rgb), 0.14);
   border-radius: 999px;
-  opacity: 0.95;
+  background:
+    radial-gradient(circle at 32% 32%, rgba(var(--bc-accent-rgb), 0.22), transparent 48%),
+    linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.14), rgba(var(--bc-accent-rgb), 0.06));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.48),
+    0 8px 16px rgba(var(--bc-accent-rgb), 0.12);
 }
 
-.global-topbar__brand-steam-one {
-  left: 4px;
-  transform: rotate(-10deg);
+.global-topbar__brand-core {
+  position: relative;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--bc-ink);
+  border-radius: 4px;
+  transform: rotate(45deg);
 }
 
-.global-topbar__brand-steam-two {
-  right: 4px;
-  transform: rotate(10deg);
-}
-
-.global-topbar__brand-cup-body {
+.global-topbar__brand-dot {
   position: absolute;
-  bottom: 3px;
-  width: 13px;
-  height: 8px;
-  border-radius: 0 0 5px 5px;
-  background: linear-gradient(180deg, #ffd166 0%, #f59e0b 100%);
-}
-
-.global-topbar__brand-cup-handle {
-  position: absolute;
-  right: 0;
-  bottom: 5px;
-  width: 5px;
-  height: 5px;
-  border: 1.5px solid rgba(255, 205, 86, 0.92);
-  border-left: 0;
-  border-radius: 0 999px 999px 0;
+  right: 8px;
+  top: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bc-accent);
 }
 
 .global-topbar__brand-name {
-  color: rgba(241, 245, 249, 0.96);
-  font-size: 1.85rem;
+  color: var(--bc-ink);
+  font-size: 1.15rem;
   font-weight: 700;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
   white-space: nowrap;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .global-topbar__login {
@@ -419,42 +375,44 @@ const handleLogout = async () => {
   align-items: center;
   justify-content: center;
   min-height: 40px;
-  border-radius: 10px;
-  padding: 0 18px;
-  background: linear-gradient(135deg, #4cc9f0 0%, #2a9dce 100%);
-  color: #062131;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid var(--bc-border-subtle);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--bc-ink);
   font-size: 14px;
   font-weight: 700;
+  box-shadow: var(--bc-shadow-soft);
   transition:
     transform var(--motion-base) var(--ease-hard),
-    opacity var(--motion-base) var(--ease-hard);
+    box-shadow var(--motion-base) var(--ease-hard);
 }
 
 .global-topbar__login:hover {
   transform: translateY(-1px);
-  opacity: 0.94;
+  box-shadow: var(--bc-shadow-hover);
 }
 
 .mobile-rail-overlay {
   position: fixed;
-  inset: 73px 0 0;
+  inset: 64px 0 0;
   z-index: 38;
-  background: rgba(8, 15, 26, 0.42);
-  backdrop-filter: blur(4px);
+  background: rgba(16, 35, 58, 0.14);
+  backdrop-filter: blur(6px);
 }
 
 .mobile-rail-panel {
   position: fixed;
-  top: 73px;
+  top: 64px;
   left: 0;
   z-index: 39;
   width: min(84vw, 320px);
-  height: calc(100dvh - 73px);
-  border-right: 1px solid var(--bc-line);
+  height: calc(100dvh - 64px);
+  border-right: 1px solid var(--bc-border-subtle);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(248, 250, 252, 0.92)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 244, 238, 0.96)),
     var(--bc-panel);
-  box-shadow: 24px 0 48px rgba(8, 15, 26, 0.18);
+  box-shadow: 24px 0 48px rgba(32, 40, 53, 0.12);
 }
 
 .mobile-rail-nav {
@@ -484,13 +442,17 @@ const handleLogout = async () => {
   transform: translateX(-18px);
 }
 
-:deep(.global-topbar__right .relative > button) {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(120, 223, 214, 0.12);
-}
-
-:deep(.global-topbar__right .relative > button:hover) {
-  background: rgba(255, 255, 255, 0.14);
+.search-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  border-radius: 8px;
+  border: 1px solid var(--bc-border-subtle);
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.15rem 0.4rem;
+  color: var(--bc-ink-secondary);
+  box-shadow: var(--bc-shadow-soft);
 }
 
 @media (min-width: 1024px) {
@@ -510,13 +472,12 @@ const handleLogout = async () => {
   }
 
   .global-topbar__brand-name {
-    font-size: 1.15rem;
+    font-size: 1.02rem;
   }
 
   .global-topbar__brand-mark {
-    width: 50px;
-    height: 38px;
-    border-radius: 14px;
+    width: 34px;
+    height: 34px;
   }
 }
 

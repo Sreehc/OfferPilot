@@ -3,7 +3,7 @@
     <!-- Avatar trigger -->
     <button
       type="button"
-      class="flex h-10 w-10 items-center justify-center rounded-full bg-accent text-sm font-semibold text-white transition hover:ring-2 hover:ring-accent/30"
+      class="shell-avatar-trigger text-sm font-semibold"
       @click="open = !open"
     >
       <img v-if="avatarUrl" :src="avatarUrl" alt="用户头像" class="h-full w-full rounded-full object-cover" />
@@ -14,10 +14,10 @@
     <Transition name="dropdown">
       <div
         v-if="open"
-        class="absolute right-0 top-12 z-50 w-44 overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg"
+        class="shell-popover absolute right-0 top-12 z-50 w-48 overflow-hidden"
       >
         <!-- User info -->
-        <div class="border-b border-slate-200 dark:border-slate-700 px-3 py-2">
+        <div class="border-b border-[var(--bc-border-subtle)] px-3 py-2">
           <div class="text-sm font-semibold text-ink">{{ name }}</div>
           <div class="text-xs text-slate-400">{{ roleLabel }}</div>
         </div>
@@ -26,7 +26,7 @@
         <div class="py-1">
           <RouterLink
             to="/settings"
-            class="flex items-center gap-3 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+            class="flex items-center gap-3 px-3 py-2 text-sm text-slate-700 transition hover:bg-[rgba(var(--bc-accent-rgb),0.08)] dark:text-slate-200"
             @click="open = false"
           >
             <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -38,7 +38,7 @@
 
           <button
             type="button"
-            class="flex w-full items-center gap-3 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+            class="flex w-full items-center gap-3 px-3 py-2 text-sm text-slate-700 transition hover:bg-[rgba(var(--bc-accent-rgb),0.08)] dark:text-slate-200"
             @click="handleToggleTheme"
           >
             <svg v-if="theme === 'light'" class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -52,7 +52,7 @@
         </div>
 
         <!-- Logout -->
-        <div class="border-t border-slate-200 dark:border-slate-700 py-1">
+        <div class="border-t border-[var(--bc-border-subtle)] py-1">
           <button
             type="button"
             class="flex w-full items-center gap-3 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition"

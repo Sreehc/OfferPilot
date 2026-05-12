@@ -257,14 +257,13 @@ onMounted(async () => { await loadCategories(); await Promise.all([loadQuestions
 }
 
 .admin-tab-shell {
-  border-radius: 28px;
-  border: 1px solid var(--bc-line);
-  background: rgba(255, 255, 255, 0.26);
-  padding: 12px;
+  border-radius: 24px;
+  background: transparent;
+  padding: 4px 0 0;
 }
 
 .dark .admin-tab-shell {
-  background: rgba(255, 255, 255, 0.04);
+  background: transparent;
 }
 
 :deep(.admin-tabs .el-tabs__nav-wrap::after) {
@@ -283,6 +282,10 @@ onMounted(async () => { await loadCategories(); await Promise.all([loadQuestions
 
 :deep(.admin-tabs .el-tabs__active-bar) {
   background: var(--bc-accent);
+}
+
+:deep(.admin-tabs > .el-tabs__header) {
+  margin-bottom: 16px;
 }
 
 @media (max-width: 1023px) {

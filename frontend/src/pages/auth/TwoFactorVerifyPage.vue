@@ -122,19 +122,20 @@ const handleVerify = async () => {
 .auth-brand-panel {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 3rem;
   background:
-    radial-gradient(circle at 18% 18%, rgba(var(--bc-accent-rgb), 0.14), transparent 34%),
-    radial-gradient(circle at 82% 14%, rgba(85, 214, 190, 0.14), transparent 30%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.06), transparent 42%),
+    radial-gradient(circle at 18% 18%, rgba(var(--bc-accent-rgb), 0.12), transparent 30%),
+    radial-gradient(circle at 82% 14%, rgba(47, 127, 119, 0.08), transparent 24%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.18), transparent 42%),
     var(--bc-panel);
 }
 
 .auth-hero-title {
   font-family: theme('fontFamily.display');
-  font-size: clamp(2.5rem, 4vw, 4.4rem);
-  line-height: 0.94;
-  letter-spacing: -0.05em;
+  font-size: clamp(2.2rem, 3.3vw, 3.7rem);
+  line-height: 0.98;
+  letter-spacing: -0.04em;
   color: var(--bc-ink);
 }
 

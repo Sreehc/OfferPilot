@@ -1,5 +1,5 @@
 <template>
-  <header class="cockpit-panel app-shell-header p-5 sm:p-6" :class="compact ? 'app-shell-header-compact' : ''">
+  <header class="app-shell-header shell-section-card p-5 sm:p-6" :class="compact ? 'app-shell-header-compact' : ''">
     <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
       <div class="min-w-0">
         <p v-if="resolvedKicker" class="section-kicker">{{ resolvedKicker }}</p>
@@ -48,6 +48,10 @@ const showResolvedSubtitle = computed(() => props.showSubtitle && Boolean(resolv
 <style scoped>
 .app-shell-header {
   overflow: visible;
+  background:
+    linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.05), transparent 26%),
+    var(--bc-surface-card);
+  box-shadow: var(--bc-shadow-soft);
 }
 
 .page-title {

@@ -2,9 +2,9 @@
   <Transition name="fade">
     <div
       v-if="visible"
-      class="fixed inset-0 z-[9999] flex items-center justify-center bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm"
+      class="fixed inset-0 z-[9999] flex items-center justify-center bg-[rgba(247,244,238,0.82)] backdrop-blur-md dark:bg-slate-900/92"
     >
-      <div class="text-center px-6">
+      <div class="paper-panel max-w-md px-8 py-10 text-center">
         <!-- Wifi off icon -->
         <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-red-50 dark:bg-red-900/20">
           <svg class="h-10 w-10 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -17,11 +17,7 @@
           无法连接到服务器，请检查网络连接后重试。
         </p>
 
-        <button
-          type="button"
-          class="hard-button-primary mt-6"
-          @click="handleRetry"
-        >
+        <button type="button" class="hard-button-primary mt-6" @click="handleRetry">
           <svg v-if="retrying" class="mr-2 h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>

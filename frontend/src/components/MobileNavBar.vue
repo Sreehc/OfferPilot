@@ -1,5 +1,5 @@
 <template>
-  <nav class="safe-area-bottom fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--bc-line)] bg-white/88 backdrop-blur-xl dark:bg-[#07111f]/86 md:hidden">
+  <nav class="safe-area-bottom fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--bc-border-subtle)] bg-[rgba(247,244,238,0.92)] backdrop-blur-xl dark:bg-[#07111f]/88 md:hidden">
     <div class="flex items-center justify-around px-2 py-1.5">
       <component
         v-for="item in items"
@@ -7,7 +7,7 @@
         :is="item.path ? 'RouterLink' : 'button'"
         v-bind="item.path ? { to: item.path } : { type: 'button' }"
         class="flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-2 transition-all"
-        :class="isActive(item.path) ? 'bg-accent/12 text-accent shadow-[0_0_22px_rgba(var(--bc-accent-rgb),0.16)]' : 'text-slate-500 dark:text-slate-400'"
+        :class="isActive(item.path) ? 'bg-[rgba(var(--bc-accent-rgb),0.12)] text-ink' : 'text-slate-500 dark:text-slate-400'"
         @click="item.action?.()"
       >
         <component :is="item.icon" class="h-5 w-5 shrink-0" />
@@ -51,7 +51,7 @@ const openSidebar = () => {
 
 const items = [
   { path: '/dashboard', label: '首页', icon: IconHome },
-  { path: '/cards', label: '今日卡片', icon: IconCards },
+  { path: '/cards', label: '卡片', icon: IconCards },
   { path: '/review', label: '复习', icon: IconReview },
   { path: '/knowledge', label: '知识库', icon: IconKnowledge },
   { path: '', label: '更多', icon: IconMore, action: openSidebar },

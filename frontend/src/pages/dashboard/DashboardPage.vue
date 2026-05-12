@@ -16,11 +16,11 @@
     </section>
 
     <template v-else>
-      <section class="paper-panel relative overflow-hidden p-6 sm:p-8" :class="{ 'border-[var(--bc-line-hot)]': primaryMission.urgent }">
+      <section class="paper-panel relative overflow-hidden p-5 sm:p-6" :class="{ 'border-[var(--bc-line-hot)]': primaryMission.urgent }">
         <div
-          class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(var(--bc-accent-rgb),0.16),transparent_34%),radial-gradient(circle_at_92%_12%,rgba(85,214,190,0.12),transparent_28%)]"
+          class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(var(--bc-accent-rgb),0.1),transparent_30%),radial-gradient(circle_at_92%_12%,rgba(47,127,119,0.08),transparent_24%)]"
         ></div>
-        <div class="relative flex h-full flex-col gap-8">
+        <div class="relative flex h-full flex-col gap-6">
           <div class="flex flex-wrap items-center gap-2">
             <span class="hard-chip">连续 {{ reviewStats.currentStreak }} 天</span>
             <span class="hard-chip">待复习 {{ todayReviewCards }} 张</span>

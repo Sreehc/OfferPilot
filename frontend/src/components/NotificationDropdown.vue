@@ -3,7 +3,7 @@
     <!-- Bell trigger -->
     <button
       type="button"
-      class="relative flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-slate-200 dark:hover:bg-slate-700"
+      class="shell-icon-button relative"
       title="通知"
       @click="toggleDropdown"
     >
@@ -22,10 +22,10 @@
     <Transition name="dropdown">
       <div
         v-if="open"
-        class="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800 sm:w-96"
+        class="shell-popover absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden sm:w-96"
       >
         <!-- Header -->
-        <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-700">
+        <div class="flex items-center justify-between border-b border-[var(--bc-border-subtle)] px-4 py-3">
           <h3 class="text-sm font-semibold text-ink">通知</h3>
           <button
             v-if="unreadCount > 0"
@@ -62,10 +62,10 @@
             >
               <!-- Type icon -->
               <div
-                class="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs"
+                class="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold"
                 :class="typeIconClass(n.type)"
               >
-                {{ typeEmoji(n.type) }}
+                {{ typeGlyph(n.type) }}
               </div>
 
               <div class="min-w-0 flex-1">
@@ -73,7 +73,7 @@
                   <span class="truncate text-sm font-medium text-ink">{{ n.title }}</span>
                   <span
                     v-if="!n.isRead"
-                    class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-blue-500"
+                    class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[var(--bc-accent)]"
                   ></span>
                 </div>
                 <p class="mt-0.5 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
@@ -86,7 +86,7 @@
         </div>
 
         <!-- Footer -->
-        <div v-if="notifications.length > 0" class="border-t border-slate-100 px-4 py-2.5 text-center dark:border-slate-700">
+        <div v-if="notifications.length > 0" class="border-t border-[var(--bc-border-subtle)] px-4 py-2.5 text-center">
           <button
             type="button"
             class="text-xs font-medium text-accent hover:underline"
@@ -184,24 +184,24 @@ const handleViewAll = () => {
   // For now, just close. A full notification page can be added in V2.
 }
 
-const typeEmoji = (type: string) => {
+const typeGlyph = (type: string) => {
   const map: Record<string, string> = {
-    interview: '📝',
-    review: '📖',
-    community: '💬',
-    rank: '🏆',
+    interview: '面',
+    review: '复',
+    community: '社',
+    rank: '榜',
   }
-  return map[type] || '🔔'
+  return map[type] || '通'
 }
 
 const typeIconClass = (type: string) => {
   const map: Record<string, string> = {
-    interview: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
-    review: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
-    community: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
-    rank: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400',
+    interview: 'bg-[rgba(47,127,119,0.12)] text-[var(--bc-cyan)]',
+    review: 'bg-[rgba(var(--bc-accent-rgb),0.12)] text-[var(--bc-accent)]',
+    community: 'bg-[rgba(16,35,58,0.08)] text-[var(--bc-ink)]',
+    rank: 'bg-[rgba(74,122,73,0.12)] text-[var(--bc-lime)]',
   }
-  return map[type] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
+  return map[type] || 'bg-[rgba(16,35,58,0.08)] text-[var(--bc-ink)]'
 }
 
 const formatTime = (time: string) => {

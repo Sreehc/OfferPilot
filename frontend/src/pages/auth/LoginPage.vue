@@ -209,26 +209,27 @@ const handleLogin = async () => {
 .auth-brand-panel {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 3rem;
   background:
-    radial-gradient(circle at 18% 18%, rgba(var(--bc-accent-rgb), 0.16), transparent 34%),
-    radial-gradient(circle at 82% 16%, rgba(85, 214, 190, 0.14), transparent 30%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.06), transparent 42%),
+    radial-gradient(circle at 18% 18%, rgba(var(--bc-accent-rgb), 0.12), transparent 30%),
+    radial-gradient(circle at 82% 16%, rgba(47, 127, 119, 0.08), transparent 24%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.18), transparent 42%),
     var(--bc-panel);
 }
 
 .auth-hero-title {
   font-family: theme('fontFamily.display');
-  font-size: clamp(2.6rem, 4vw, 4.8rem);
-  line-height: 0.94;
-  letter-spacing: -0.05em;
+  font-size: clamp(2.25rem, 3.4vw, 4rem);
+  line-height: 0.98;
+  letter-spacing: -0.04em;
   color: var(--bc-ink);
 }
 
 .captcha-panel {
   border-radius: 22px;
-  border: 1px solid var(--bc-line);
-  background: rgba(255, 255, 255, 0.34);
+  border: 1px solid var(--bc-border-subtle);
+  background: rgba(255, 255, 255, 0.72);
 }
 
 .dark .captcha-panel {

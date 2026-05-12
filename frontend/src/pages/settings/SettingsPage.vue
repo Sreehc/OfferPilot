@@ -44,19 +44,18 @@ const activeTab = ref('devices')
 
 <style scoped>
 .settings-tab-shell {
-  border-radius: 28px;
-  border: 1px solid var(--bc-line);
-  background: rgba(255, 255, 255, 0.26);
-  padding: 12px;
+  border-radius: 24px;
+  background: transparent;
+  padding: 4px 0 0;
 }
 
 .dark .settings-tab-shell {
-  background: rgba(255, 255, 255, 0.04);
+  background: transparent;
 }
 
 :deep(.settings-tabs > .el-tabs__header) {
   margin-bottom: 0;
-  padding: 0 8px;
+  padding: 0 0 16px;
 }
 
 :deep(.settings-tabs .el-tabs__nav-wrap::after) {
@@ -79,6 +78,6 @@ const activeTab = ref('devices')
 
 .settings-tab-content {
   min-height: 420px;
-  padding: 20px 8px 8px;
+  padding: 12px 0 0;
 }
 </style>
