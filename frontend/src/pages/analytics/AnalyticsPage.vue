@@ -1,5 +1,5 @@
 <template>
-  <div class="analytics-cockpit space-y-6">
+  <div class="analytics-cockpit space-y-5">
     <AppShellHeader>
       <template #actions>
         <div class="mode-switch grid grid-cols-3 gap-2">
@@ -17,15 +17,15 @@
       </template>
     </AppShellHeader>
 
-    <section class="shell-section-card p-5 sm:p-6">
-      <div class="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)] xl:items-stretch">
+    <section class="shell-section-card p-4 sm:p-5">
+      <div class="grid gap-4 xl:grid-cols-[288px_minmax(0,1fr)] xl:items-stretch">
         <aside class="analytics-overview">
           <div>
             <p class="section-kicker">学习概览</p>
             <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">先看整体节奏</h3>
           </div>
 
-          <div class="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+          <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
             <article v-for="signal in summarySignals" :key="signal.label" class="analytics-overview-card" :class="signal.toneClass">
               <p class="analytics-overview-card__label">{{ signal.label }}</p>
               <p class="analytics-overview-card__value">{{ signal.value }}</p>
@@ -41,16 +41,16 @@
             </div>
           </div>
 
-          <div v-if="trendLoading" class="mt-5 flex h-[340px] items-center justify-center">
+          <div v-if="trendLoading" class="mt-4 flex h-[340px] items-center justify-center">
             <div class="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
           </div>
           <div
             v-else-if="!trendData.completionRateTrend?.length && !trendData.reviewDebtTrend?.length && !trendData.masteredGrowthTrend?.length"
-            class="mt-5 flex h-[340px] items-center justify-center"
+            class="mt-4 flex h-[340px] items-center justify-center"
           >
             <EmptyState icon="chart" title="暂无记忆趋势数据" description="开始学习后查看趋势。" compact />
           </div>
-          <div v-else class="mt-5">
+          <div v-else class="mt-4">
             <div ref="trendChartRef" class="chart-shell h-[340px] w-full"></div>
           </div>
         </div>
@@ -58,7 +58,7 @@
     </section>
 
     <section class="grid gap-4 xl:grid-cols-2">
-      <article class="shell-section-card p-5 sm:p-6">
+      <article class="shell-section-card p-4 sm:p-5">
         <div class="flex items-center justify-between gap-3">
           <div>
             <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">记忆强度</h3>
@@ -90,7 +90,7 @@
         </div>
       </article>
 
-      <article class="shell-section-card p-5 sm:p-6">
+      <article class="shell-section-card p-4 sm:p-5">
         <div class="flex items-center justify-between gap-3">
           <div>
             <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">遗忘率</h3>
@@ -117,7 +117,7 @@
     </section>
 
     <section class="grid gap-4 xl:grid-cols-2">
-      <article class="shell-section-card p-5 sm:p-6">
+      <article class="shell-section-card p-4 sm:p-5">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">分类掌握度</h3>
@@ -152,7 +152,7 @@
         </div>
       </article>
 
-      <article class="shell-section-card p-5 sm:p-6">
+      <article class="shell-section-card p-4 sm:p-5">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">掌握分布</h3>
@@ -182,7 +182,7 @@
       </article>
     </section>
 
-    <section class="shell-section-card p-5 sm:p-6">
+    <section class="shell-section-card p-4 sm:p-5">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div class="min-w-0">
           <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">面试趋势</h3>
@@ -771,13 +771,14 @@ watch(selectedCategories, () => {
 .analytics-overview {
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
 
 .analytics-overview-card {
   border-radius: calc(var(--radius-md) - 4px);
   border: 1px solid var(--bc-border-subtle);
   background: rgba(255, 255, 255, 0.72);
-  padding: 1rem 1.1rem;
+  padding: 0.95rem 1rem;
 }
 
 .analytics-overview-card__label {
@@ -828,7 +829,7 @@ watch(selectedCategories, () => {
   border-radius: calc(var(--radius-md) - 2px);
   border: 1px solid var(--bc-border-subtle);
   background:
-    radial-gradient(circle at top left, rgba(var(--bc-accent-rgb), 0.05), transparent 28%),
+    radial-gradient(circle at top left, rgba(var(--bc-accent-rgb), 0.04), transparent 24%),
     linear-gradient(180deg, rgba(250, 247, 242, 0.96), rgba(255, 255, 255, 0.92));
 }
 
