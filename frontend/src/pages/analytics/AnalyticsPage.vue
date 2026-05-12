@@ -17,6 +17,8 @@
       </template>
     </AppShellHeader>
 
+    <AnalyticsInsightBar :data="learningInsights" />
+
     <section class="shell-section-card p-4 sm:p-5">
       <div class="grid gap-4 xl:grid-cols-[288px_minmax(0,1fr)] xl:items-stretch">
         <aside class="analytics-overview">
@@ -227,6 +229,7 @@ import * as echarts from 'echarts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AppShellHeader from '@/components/AppShellHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import AnalyticsInsightBar from './AnalyticsInsightBar.vue'
 import { fetchAbilityTrendApi, fetchEfficiencyApi, fetchLearningInsightsApi } from '@/api/analytics'
 import type { AbilityTrend, EfficiencyData, LearningInsights } from '@/types/api'
 
