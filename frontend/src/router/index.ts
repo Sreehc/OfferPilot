@@ -133,6 +133,12 @@ const router = createRouter({
           meta: pageMeta.applications
         },
         {
+          path: 'applications/:id',
+          name: 'application-detail',
+          component: () => import('@/pages/applications/ApplicationDetailPage.vue'),
+          meta: { title: '投递详情', kicker: '投递', subtitle: '查看 JD 分析、真实面试事件和复盘建议。' }
+        },
+        {
           path: 'interview/history',
           name: 'interview-history',
           component: () => import('@/pages/interview/InterviewHistoryPage.vue'),

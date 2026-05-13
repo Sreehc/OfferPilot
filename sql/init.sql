@@ -479,6 +479,50 @@ CREATE TABLE IF NOT EXISTS resume_project (
 );
 
 -- ============================================================
+-- 岗位投递表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS job_application (
+    id BIGINT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    resume_file_id BIGINT DEFAULT NULL,
+    company VARCHAR(128) NOT NULL,
+    job_title VARCHAR(128) NOT NULL,
+    city VARCHAR(64) DEFAULT NULL,
+    source VARCHAR(64) DEFAULT NULL,
+    jd_text TEXT DEFAULT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'saved' COMMENT 'saved / applied / written / interview / offer / rejected',
+    match_score DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    jd_keywords VARCHAR(500) DEFAULT NULL,
+    missing_keywords VARCHAR(500) DEFAULT NULL,
+    analysis_summary VARCHAR(1000) DEFAULT NULL,
+    apply_date DATE DEFAULT NULL,
+    next_step_date DATE DEFAULT NULL,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_job_application_user_status (user_id, status),
+    KEY idx_job_application_user_update (user_id, update_time),
+    KEY idx_job_application_resume (resume_file_id)
+);
+
+-- ============================================================
+-- 岗位投递事件表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS job_application_event (
+    id BIGINT PRIMARY KEY,
+    application_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    event_type VARCHAR(32) NOT NULL COMMENT 'status_change / interview / review / note / analysis',
+    title VARCHAR(255) NOT NULL,
+    content TEXT DEFAULT NULL,
+    event_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    result VARCHAR(255) DEFAULT NULL,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_job_application_event_app (application_id),
+    KEY idx_job_application_event_user_time (user_id, event_time)
+);
+
+-- ============================================================
 -- 社区问题表
 -- ============================================================
 CREATE TABLE IF NOT EXISTS community_question (

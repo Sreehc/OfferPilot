@@ -395,6 +395,40 @@ export interface ResumeFileDetail extends ResumeSummaryItem {
   projects: ResumeProjectItem[]
 }
 
+export type JobApplicationStatus = 'saved' | 'applied' | 'written' | 'interview' | 'offer' | 'rejected'
+
+export interface JobApplicationEventItem {
+  id: string
+  eventType: string
+  title: string
+  content?: string
+  eventTime: string
+  result?: string
+}
+
+export interface JobApplicationItem {
+  id: string
+  resumeFileId?: string
+  resumeTitle?: string
+  company: string
+  jobTitle: string
+  city?: string
+  source?: string
+  jdText?: string
+  status: JobApplicationStatus | string
+  matchScore: number
+  jdKeywords: string[]
+  missingKeywords: string[]
+  analysisSummary: string
+  applyDate?: string
+  nextStepDate?: string
+  updateTime?: string
+}
+
+export interface JobApplicationDetail extends JobApplicationItem {
+  events: JobApplicationEventItem[]
+}
+
 export interface WrongQuestionItem {
   id: number
   questionId: number
