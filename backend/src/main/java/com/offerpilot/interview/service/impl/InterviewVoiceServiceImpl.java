@@ -55,6 +55,11 @@ public class InterviewVoiceServiceImpl implements InterviewVoiceService {
         // Reuse the existing start logic, then set mode to 'voice'
         InterviewStartRequest startRequest = new InterviewStartRequest();
         startRequest.setDirection(request.getDirection());
+        startRequest.setJobRole(request.getJobRole());
+        startRequest.setExperienceLevel(request.getExperienceLevel());
+        startRequest.setTechStack(request.getTechStack());
+        startRequest.setDurationMinutes(request.getDurationMinutes());
+        startRequest.setIncludeResumeProject(request.getIncludeResumeProject());
         startRequest.setQuestionCount(request.getQuestionCount());
         startRequest.setReanswerQuestionId(request.getReanswerQuestionId());
 
@@ -144,6 +149,13 @@ public class InterviewVoiceServiceImpl implements InterviewVoiceService {
             answerRequest.setStandardAnswer(question.getStandardAnswer());
             answerRequest.setScoreStandard(question.getScoreStandard());
         }
+        answerRequest.setDirection(session.getDirection());
+        answerRequest.setJobRole(session.getJobRole());
+        answerRequest.setExperienceLevel(session.getExperienceLevel());
+        answerRequest.setTechStack(session.getTechStack());
+        answerRequest.setIncludeResumeProject(session.getIncludeResumeProject() != null && session.getIncludeResumeProject() == 1);
+
+        boolean hasNext = session.getCurrentIndex() < session.getQuestionCount();
 
         // Call AI orchestrator (outside transaction — LLM call)
         InterviewAnswerVO aiResult = aiOrchestratorService.scoreInterviewAnswer(answerRequest);
@@ -155,9 +167,6 @@ public class InterviewVoiceServiceImpl implements InterviewVoiceService {
         boolean addedToWrong = interviewServiceImpl.persistAnswerAndAdvance(
                 userId, session, currentRecord, records, answerRequest, aiResult);
 
-        int currentIndex = session.getCurrentIndex();
-        boolean hasNext = currentIndex < session.getQuestionCount();
-
         return VoiceSubmitVO.builder()
                 .transcript(transcript)
                 .transcriptConfidence(sttResult.confidence())
@@ -166,6 +175,9 @@ public class InterviewVoiceServiceImpl implements InterviewVoiceService {
                 .comment(aiResult.getComment())
                 .standardAnswer(aiResult.getStandardAnswer())
                 .followUp(aiResult.getFollowUp())
+                .scoreBreakdown(aiResult.getScoreBreakdown())
+                .weakPointTags(aiResult.getWeakPointTags())
+                .reviewSummary(aiResult.getReviewSummary())
                 .addedToWrongBook(addedToWrong)
                 .hasNextQuestion(hasNext)
                 .build();

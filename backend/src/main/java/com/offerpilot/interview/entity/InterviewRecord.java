@@ -17,5 +17,8 @@ public class InterviewRecord extends BaseEntity {
     private BigDecimal score;
     private String comment;
     private String followUp;
+    private String scoreDimensionsJson;
+    private String weakPointTags;
+    private String reviewSummary;
     private Integer isWrong;
 }

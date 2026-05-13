@@ -15,4 +15,10 @@ public class InterviewCurrentQuestionVO {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long questionId;
     private String questionTitle;
+    private String direction;
+    private String jobRole;
+    private String experienceLevel;
+    private String techStack;
+    private Integer durationMinutes;
+    private Boolean includeResumeProject;
 }

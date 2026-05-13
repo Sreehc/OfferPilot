@@ -19,5 +19,9 @@ public class InterviewAnswerRequest {
     private String questionTitle;
     private String standardAnswer;
     private String scoreStandard;
+    private String direction;
+    private String jobRole;
+    private String experienceLevel;
+    private String techStack;
+    private Boolean includeResumeProject;
 }
-

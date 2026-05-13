@@ -54,6 +54,10 @@
               </div>
               <div class="mt-3 text-lg font-semibold text-ink">{{ item.direction }} 方向诊断</div>
               <div class="mt-2 flex flex-wrap items-center gap-4 text-xs text-tertiary">
+                <span>{{ item.jobRole || '未设置岗位' }}</span>
+                <span>{{ experienceLabel(item.experienceLevel) }}</span>
+                <span>{{ item.durationMinutes || 20 }} 分钟</span>
+                <span>{{ item.includeResumeProject ? '结合项目' : '通用训练' }}</span>
                 <span v-if="item.startTime">{{ formatTime(item.startTime) }}</span>
                 <span v-if="item.endTime">结束于 {{ formatTime(item.endTime) }}</span>
               </div>
@@ -141,6 +145,21 @@ const formatTime = (time: string): string => {
   if (!time) return ''
   const d = new Date(time)
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+const experienceLabel = (value?: string) => {
+  switch (value) {
+    case 'intern':
+      return '在校 / 实习准备'
+    case 'junior':
+      return '0-1 年'
+    case 'mid':
+      return '1-3 年'
+    case 'senior':
+      return '3 年以上'
+    default:
+      return '经验未设置'
+  }
 }
 
 const loadData = async () => {

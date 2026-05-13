@@ -31,6 +31,9 @@ import com.offerpilot.question.entity.Question;
 import com.offerpilot.question.mapper.QuestionMapper;
 import com.offerpilot.wrong.entity.WrongQuestion;
 import com.offerpilot.wrong.mapper.WrongQuestionMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -69,6 +72,7 @@ public class InterviewServiceImpl implements InterviewService {
     private final NotificationService notificationService;
     private final KnowledgeCardService knowledgeCardService;
     private final OfferPilotProperties props;
+    private final ObjectMapper objectMapper;
 
     @Lazy
     @Autowired
@@ -77,7 +81,7 @@ public class InterviewServiceImpl implements InterviewService {
     @Override
     @Transactional
     public InterviewCurrentQuestionVO start(Long userId, InterviewStartRequest request) {
-        List<Question> questions = pickQuestions(request.getDirection(), request.getQuestionCount());
+        List<Question> questions = pickQuestions(request.getDirection(), request.getTechStack(), request.getQuestionCount());
 
         // If reanswerQuestionId is set, ensure it's the first question
         if (request.getReanswerQuestionId() != null) {
@@ -96,6 +100,11 @@ public class InterviewServiceImpl implements InterviewService {
         InterviewSession session = new InterviewSession();
         session.setUserId(userId);
         session.setDirection(request.getDirection());
+        session.setJobRole(request.getJobRole());
+        session.setExperienceLevel(request.getExperienceLevel());
+        session.setTechStack(request.getTechStack());
+        session.setDurationMinutes(request.getDurationMinutes());
+        session.setIncludeResumeProject(Boolean.TRUE.equals(request.getIncludeResumeProject()) ? 1 : 0);
         session.setStatus("in_progress");
         session.setQuestionCount(questions.size());
         session.setCurrentIndex(1);
@@ -119,6 +128,12 @@ public class InterviewServiceImpl implements InterviewService {
                 .questionCount(questions.size())
                 .questionId(first.getId())
                 .questionTitle(first.getTitle())
+                .direction(session.getDirection())
+                .jobRole(session.getJobRole())
+                .experienceLevel(session.getExperienceLevel())
+                .techStack(session.getTechStack())
+                .durationMinutes(session.getDurationMinutes())
+                .includeResumeProject(includeResumeProject(session))
                 .build();
     }
 
@@ -141,6 +156,12 @@ public class InterviewServiceImpl implements InterviewService {
                 .questionCount(session.getQuestionCount())
                 .questionId(record.getQuestionId())
                 .questionTitle(title)
+                .direction(session.getDirection())
+                .jobRole(session.getJobRole())
+                .experienceLevel(session.getExperienceLevel())
+                .techStack(session.getTechStack())
+                .durationMinutes(session.getDurationMinutes())
+                .includeResumeProject(includeResumeProject(session))
                 .build();
     }
 
@@ -164,6 +185,13 @@ public class InterviewServiceImpl implements InterviewService {
             request.setStandardAnswer(question.getStandardAnswer());
             request.setScoreStandard(question.getScoreStandard());
         }
+        request.setDirection(session.getDirection());
+        request.setJobRole(session.getJobRole());
+        request.setExperienceLevel(session.getExperienceLevel());
+        request.setTechStack(session.getTechStack());
+        request.setIncludeResumeProject(session.getIncludeResumeProject() != null && session.getIncludeResumeProject() == 1);
+
+        boolean hasNext = session.getCurrentIndex() < session.getQuestionCount();
 
         // Phase 2: call LLM outside any transaction
         InterviewAnswerVO aiResult = aiOrchestratorService.scoreInterviewAnswer(request);
@@ -171,14 +199,14 @@ public class InterviewServiceImpl implements InterviewService {
         // Phase 3: persist result and advance session (in transaction)
         boolean addedToWrong = self.persistAnswerAndAdvance(userId, session, currentRecord, records, request, aiResult);
 
-        int currentIndex = session.getCurrentIndex();
-        boolean hasNext = currentIndex < session.getQuestionCount();
-
         return InterviewAnswerVO.builder()
                 .score(aiResult.getScore())
                 .comment(aiResult.getComment())
                 .standardAnswer(aiResult.getStandardAnswer())
                 .followUp(aiResult.getFollowUp())
+                .scoreBreakdown(aiResult.getScoreBreakdown())
+                .weakPointTags(aiResult.getWeakPointTags())
+                .reviewSummary(aiResult.getReviewSummary())
                 .addedToWrongBook(addedToWrong)
                 .hasNextQuestion(hasNext)
                 .build();
@@ -192,6 +220,9 @@ public class InterviewServiceImpl implements InterviewService {
         currentRecord.setScore(aiResult.getScore());
         currentRecord.setComment(aiResult.getComment());
         currentRecord.setFollowUp(aiResult.getFollowUp());
+        currentRecord.setScoreDimensionsJson(writeScoreBreakdown(aiResult.getScoreBreakdown()));
+        currentRecord.setWeakPointTags(writeWeakPointTags(aiResult.getWeakPointTags()));
+        currentRecord.setReviewSummary(aiResult.getReviewSummary());
         recordMapper.updateById(currentRecord);
 
         boolean addedToWrong = false;
@@ -262,6 +293,9 @@ public class InterviewServiceImpl implements InterviewService {
                             .comment(record.getComment())
                             .standardAnswer(q != null ? q.getStandardAnswer() : null)
                             .followUp(record.getFollowUp())
+                            .scoreBreakdown(parseScoreBreakdown(record.getScoreDimensionsJson()))
+                            .weakPointTags(parseWeakPointTags(record.getWeakPointTags()))
+                            .reviewSummary(record.getReviewSummary())
                             .isLowScore(Integer.valueOf(1).equals(record.getIsWrong()))
                             .recommendedCardFront(q != null ? q.getTitle() : "Unknown")
                             .recommendedCardBack(q != null ? q.getStandardAnswer() : null)
@@ -277,6 +311,11 @@ public class InterviewServiceImpl implements InterviewService {
         return InterviewDetailVO.builder()
                 .sessionId(sessionId)
                 .direction(session.getDirection())
+                .jobRole(session.getJobRole())
+                .experienceLevel(session.getExperienceLevel())
+                .techStack(session.getTechStack())
+                .durationMinutes(session.getDurationMinutes())
+                .includeResumeProject(includeResumeProject(session))
                 .status(session.getStatus())
                 .mode(session.getMode())
                 .totalScore(session.getTotalScore())
@@ -309,6 +348,11 @@ public class InterviewServiceImpl implements InterviewService {
                     return InterviewHistoryVO.builder()
                             .sessionId(s.getId())
                             .direction(s.getDirection())
+                            .jobRole(s.getJobRole())
+                            .experienceLevel(s.getExperienceLevel())
+                            .techStack(s.getTechStack())
+                            .durationMinutes(s.getDurationMinutes())
+                            .includeResumeProject(includeResumeProject(s))
                             .status(s.getStatus())
                             .mode(s.getMode())
                             .totalScore(s.getTotalScore())
@@ -344,6 +388,11 @@ public class InterviewServiceImpl implements InterviewService {
                 .map(s -> InterviewHistoryVO.builder()
                         .sessionId(s.getId())
                         .direction(s.getDirection())
+                        .jobRole(s.getJobRole())
+                        .experienceLevel(s.getExperienceLevel())
+                        .techStack(s.getTechStack())
+                        .durationMinutes(s.getDurationMinutes())
+                        .includeResumeProject(includeResumeProject(s))
                         .status(s.getStatus())
                         .mode(s.getMode())
                         .totalScore(s.getTotalScore())
@@ -380,7 +429,7 @@ public class InterviewServiceImpl implements InterviewService {
     // Private helpers
     // ──────────────────────────────────────────────
 
-    private List<Question> pickQuestions(String direction, int count) {
+    private List<Question> pickQuestions(String direction, String techStack, int count) {
         // Try matching category by name — first look for 'interview' type, then 'question' type
         Category category = categoryService.lambdaQuery()
                 .eq(Category::getName, direction)
@@ -403,12 +452,27 @@ public class InterviewServiceImpl implements InterviewService {
                     .like(Question::getTitle, direction));
         }
 
+        if (techStack != null && !techStack.isBlank()) {
+            List<String> techKeywords = java.util.Arrays.stream(techStack.split("[,，/\\s]+"))
+                    .map(String::trim)
+                    .filter(keyword -> !keyword.isBlank())
+                    .toList();
+            if (!techKeywords.isEmpty()) {
+                pool = pool.stream()
+                        .sorted((left, right) -> Integer.compare(
+                                techMatchScore(right, techKeywords),
+                                techMatchScore(left, techKeywords)))
+                        .toList();
+            }
+        }
+
         if (pool.isEmpty()) {
             // Last resort: grab any questions
             pool = questionMapper.selectList(new LambdaQueryWrapper<Question>()
                     .last("LIMIT 20"));
         }
 
+        pool = new ArrayList<>(pool);
         Collections.shuffle(pool);
         List<Question> selected = new ArrayList<>(pool.stream().limit(count).toList());
         if (selected.size() >= count) {
@@ -566,6 +630,70 @@ public class InterviewServiceImpl implements InterviewService {
                 ? "未作答"
                 : record.getUserAnswer();
         return comment + "\n\n回答问题点：\n" + userAnswer;
+    }
+
+    private int techMatchScore(Question question, List<String> techKeywords) {
+        String haystack = String.join("\n",
+                question.getTitle() == null ? "" : question.getTitle(),
+                question.getTags() == null ? "" : question.getTags(),
+                question.getJobDirection() == null ? "" : question.getJobDirection(),
+                question.getApplicableScope() == null ? "" : question.getApplicableScope()).toLowerCase();
+        int score = 0;
+        for (String keyword : techKeywords) {
+            if (haystack.contains(keyword.toLowerCase())) {
+                score += 3;
+            }
+        }
+        return score;
+    }
+
+    private boolean includeResumeProject(InterviewSession session) {
+        return session.getIncludeResumeProject() != null && session.getIncludeResumeProject() == 1;
+    }
+
+    private String writeScoreBreakdown(List<InterviewAnswerVO.ScoreDimensionVO> scoreBreakdown) {
+        return writeJson(scoreBreakdown);
+    }
+
+    private String writeWeakPointTags(List<String> weakPointTags) {
+        if (weakPointTags == null || weakPointTags.isEmpty()) {
+            return null;
+        }
+        return String.join(",", weakPointTags);
+    }
+
+    private List<InterviewAnswerVO.ScoreDimensionVO> parseScoreBreakdown(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return List.of();
+        }
+        try {
+            return objectMapper.readValue(raw, new TypeReference<List<InterviewAnswerVO.ScoreDimensionVO>>() {});
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to parse score breakdown json: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    private List<String> parseWeakPointTags(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return List.of();
+        }
+        return java.util.Arrays.stream(raw.split(","))
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .toList();
+    }
+
+    private String writeJson(Object value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to serialize interview metadata: {}", e.getMessage());
+            return null;
+        }
     }
 
     private record InterviewDeckSnapshot(

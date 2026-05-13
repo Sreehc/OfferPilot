@@ -14,6 +14,11 @@ public class InterviewDetailVO {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long sessionId;
     private String direction;
+    private String jobRole;
+    private String experienceLevel;
+    private String techStack;
+    private Integer durationMinutes;
+    private Boolean includeResumeProject;
     private String status;
     private String mode;
     private BigDecimal totalScore;
@@ -37,6 +42,9 @@ public class InterviewDetailVO {
         private String comment;
         private String standardAnswer;
         private String followUp;
+        private List<InterviewAnswerVO.ScoreDimensionVO> scoreBreakdown;
+        private List<String> weakPointTags;
+        private String reviewSummary;
         private Boolean isLowScore;
         private String recommendedCardFront;
         private String recommendedCardBack;

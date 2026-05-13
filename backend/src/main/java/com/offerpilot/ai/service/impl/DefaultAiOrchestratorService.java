@@ -15,6 +15,7 @@ import com.offerpilot.knowledge.vo.KnowledgeSearchVO;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
@@ -141,6 +142,21 @@ public class DefaultAiOrchestratorService implements AiOrchestratorService {
         if (request.getScoreStandard() != null && !request.getScoreStandard().isBlank()) {
             sb.append("\n\n## Scoring Criteria\n").append(request.getScoreStandard());
         }
+        if (request.getDirection() != null && !request.getDirection().isBlank()) {
+            sb.append("\n\n## Interview Direction\n").append(request.getDirection());
+        }
+        if (request.getJobRole() != null && !request.getJobRole().isBlank()) {
+            sb.append("\n\n## Target Role\n").append(request.getJobRole());
+        }
+        if (request.getExperienceLevel() != null && !request.getExperienceLevel().isBlank()) {
+            sb.append("\n\n## Experience Level\n").append(request.getExperienceLevel());
+        }
+        if (request.getTechStack() != null && !request.getTechStack().isBlank()) {
+            sb.append("\n\n## Tech Stack Focus\n").append(request.getTechStack());
+        }
+        if (Boolean.TRUE.equals(request.getIncludeResumeProject())) {
+            sb.append("\n\n## Resume Context\nPlease evaluate whether the answer can connect to real project experience.");
+        }
         return sb.toString();
     }
 
@@ -161,6 +177,11 @@ public class DefaultAiOrchestratorService implements AiOrchestratorService {
             String standardAnswer = node.has("standardAnswer") ? node.get("standardAnswer").asText()
                     : (request.getStandardAnswer() != null ? request.getStandardAnswer() : "暂无标准答案。");
             String followUp = node.has("followUp") ? node.get("followUp").asText() : "能否进一步展开说明？";
+            List<InterviewAnswerVO.ScoreDimensionVO> scoreBreakdown = parseScoreBreakdown(node.get("scoreBreakdown"), score.intValue());
+            List<String> weakPointTags = parseWeakPointTags(node.get("weakPointTags"));
+            String reviewSummary = node.has("reviewSummary")
+                    ? node.get("reviewSummary").asText()
+                    : "建议围绕关键原理、表达结构和工程落地补齐这道题。";
 
             // Clamp score to 0-100
             if (score.compareTo(BigDecimal.ZERO) < 0) score = BigDecimal.ZERO;
@@ -171,6 +192,9 @@ public class DefaultAiOrchestratorService implements AiOrchestratorService {
                     .comment(comment)
                     .standardAnswer(standardAnswer)
                     .followUp(followUp)
+                    .scoreBreakdown(scoreBreakdown)
+                    .weakPointTags(weakPointTags)
+                    .reviewSummary(reviewSummary)
                     .addedToWrongBook(false) // will be set by InterviewServiceImpl
                     .hasNextQuestion(true)   // will be set by InterviewServiceImpl
                     .build();
@@ -202,9 +226,46 @@ public class DefaultAiOrchestratorService implements AiOrchestratorService {
                 .comment("AI 评分暂时不可用，已给出默认分数。请稍后重试。")
                 .standardAnswer(standardAnswer)
                 .followUp("能否从另一个角度谈谈你的理解？")
+                .scoreBreakdown(List.of(
+                        InterviewAnswerVO.ScoreDimensionVO.builder().dimension("概念准确性").score(60).summary("基础概念待进一步核对").build(),
+                        InterviewAnswerVO.ScoreDimensionVO.builder().dimension("结构表达").score(60).summary("建议先结论后展开").build(),
+                        InterviewAnswerVO.ScoreDimensionVO.builder().dimension("工程落地").score(60).summary("可以补充真实项目场景").build()))
+                .weakPointTags(List.of("表达结构", "原理细节"))
+                .reviewSummary("建议回到标准答案，先补齐核心知识点，再练习 1 分钟表达。")
                 .addedToWrongBook(false)
                 .hasNextQuestion(true)
                 .build();
+    }
+
+    private List<InterviewAnswerVO.ScoreDimensionVO> parseScoreBreakdown(JsonNode node, int fallbackScore) {
+        if (node == null || !node.isArray() || node.isEmpty()) {
+            return List.of(
+                    InterviewAnswerVO.ScoreDimensionVO.builder().dimension("概念准确性").score(fallbackScore).summary("请继续核对关键概念").build(),
+                    InterviewAnswerVO.ScoreDimensionVO.builder().dimension("结构表达").score(fallbackScore).summary("建议先给结论再展开").build(),
+                    InterviewAnswerVO.ScoreDimensionVO.builder().dimension("工程落地").score(fallbackScore).summary("可以补充项目场景与权衡").build());
+        }
+        List<InterviewAnswerVO.ScoreDimensionVO> dimensions = new ArrayList<>();
+        for (JsonNode item : node) {
+            dimensions.add(InterviewAnswerVO.ScoreDimensionVO.builder()
+                    .dimension(item.has("dimension") ? item.get("dimension").asText() : "维度")
+                    .score(item.has("score") ? item.get("score").asInt(fallbackScore) : fallbackScore)
+                    .summary(item.has("summary") ? item.get("summary").asText() : "建议继续补充")
+                    .build());
+        }
+        return dimensions;
+    }
+
+    private List<String> parseWeakPointTags(JsonNode node) {
+        if (node == null || !node.isArray() || node.isEmpty()) {
+            return List.of("原理细节", "表达结构");
+        }
+        List<String> tags = new ArrayList<>();
+        for (JsonNode item : node) {
+            if (item != null && !item.asText().isBlank()) {
+                tags.add(item.asText());
+            }
+        }
+        return tags.isEmpty() ? List.of("原理细节", "表达结构") : tags.stream().distinct().limit(3).toList();
     }
 
     private AiChatResponse callModel(String systemPrompt, String userPrompt, List<KnowledgeSearchVO.Reference> references) {

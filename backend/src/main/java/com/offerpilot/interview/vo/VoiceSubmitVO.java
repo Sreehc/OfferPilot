@@ -1,6 +1,7 @@
 package com.offerpilot.interview.vo;
 
 import java.math.BigDecimal;
+import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 
@@ -21,6 +22,9 @@ public class VoiceSubmitVO {
     private String comment;
     private String standardAnswer;
     private String followUp;
+    private List<InterviewAnswerVO.ScoreDimensionVO> scoreBreakdown;
+    private List<String> weakPointTags;
+    private String reviewSummary;
     private Boolean addedToWrongBook;
     private Boolean hasNextQuestion;
 }

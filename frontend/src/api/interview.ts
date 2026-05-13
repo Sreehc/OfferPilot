@@ -11,6 +11,11 @@ import type { PageResult } from '@/types/api'
 
 export interface InterviewStartPayload {
   direction: string
+  jobRole?: string
+  experienceLevel?: string
+  techStack?: string
+  durationMinutes?: number
+  includeResumeProject?: boolean
   questionCount?: number
   reanswerQuestionId?: number
 }
@@ -23,6 +28,11 @@ export interface InterviewAnswerPayload {
 
 export interface VoiceStartPayload {
   direction: string
+  jobRole?: string
+  experienceLevel?: string
+  techStack?: string
+  durationMinutes?: number
+  includeResumeProject?: boolean
   questionCount?: number
   reanswerQuestionId?: number
 }

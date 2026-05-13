@@ -41,6 +41,62 @@
             </el-select>
           </div>
           <div class="data-slab p-4">
+            <div class="text-xs uppercase tracking-[0.24em] text-tertiary">目标岗位</div>
+            <el-input
+              v-model="jobRole"
+              size="large"
+              class="mt-2"
+              placeholder="例如：Java 后端开发 / 实习生 / 初级开发"
+            />
+          </div>
+          <div class="grid gap-4 md:grid-cols-2">
+            <div class="data-slab p-4">
+              <div class="text-xs uppercase tracking-[0.24em] text-tertiary">经验阶段</div>
+              <el-select v-model="experienceLevel" size="large" class="mt-2 w-full">
+                <el-option
+                  v-for="item in experienceLevels"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value"
+                />
+              </el-select>
+            </div>
+            <div class="data-slab p-4">
+              <div class="text-xs uppercase tracking-[0.24em] text-tertiary">面试时长</div>
+              <el-select v-model="durationMinutes" size="large" class="mt-2 w-full">
+                <el-option
+                  v-for="minutes in durationOptions"
+                  :key="minutes"
+                  :label="`${minutes} 分钟`"
+                  :value="minutes"
+                />
+              </el-select>
+            </div>
+          </div>
+          <div class="data-slab p-4">
+            <div class="text-xs uppercase tracking-[0.24em] text-tertiary">技术范围</div>
+            <el-input
+              v-model="techStack"
+              size="large"
+              class="mt-2"
+              placeholder="例如：Spring Boot, MySQL, Redis, MQ"
+            />
+            <p class="mt-2 text-xs leading-5 text-tertiary">
+              支持逗号分隔，系统会优先抽取与你当前技术栈更贴近的问题。
+            </p>
+          </div>
+          <div class="data-slab p-4">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <div class="text-xs uppercase tracking-[0.24em] text-tertiary">结合简历项目</div>
+                <p class="mt-2 text-xs leading-5 text-tertiary">
+                  开启后，AI 会更关注真实项目落地、业务表达和工程权衡。
+                </p>
+              </div>
+              <el-switch v-model="includeResumeProject" />
+            </div>
+          </div>
+          <div class="data-slab p-4">
             <div class="text-xs uppercase tracking-[0.24em] text-tertiary">题量</div>
             <el-input-number v-model="questionCount" :min="3" :max="5" size="large" class="mt-2 w-full" />
           </div>
@@ -178,12 +234,37 @@
           <div class="grid grid-cols-2 gap-3">
             <div class="data-slab p-4">
               <div class="text-xs uppercase tracking-[0.22em] text-tertiary">方向</div>
-              <div class="mt-2 font-semibold text-ink">{{ direction }}</div>
+              <div class="mt-2 font-semibold text-ink">{{ sessionDirection }}</div>
             </div>
             <div class="data-slab p-4">
               <div class="text-xs uppercase tracking-[0.22em] text-tertiary">模式</div>
               <div class="mt-2 font-semibold text-ink">
                 {{ interviewMode === 'voice' && voiceAvailable ? '语音' : '文字' }}
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="data-slab p-4">
+              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">目标岗位</div>
+              <div class="mt-2 font-semibold text-ink">{{ sessionJobRole || '未设置' }}</div>
+            </div>
+            <div class="data-slab p-4">
+              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">经验阶段</div>
+              <div class="mt-2 font-semibold text-ink">{{ experienceLabel(sessionExperienceLevel) }}</div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="data-slab p-4">
+              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">技术范围</div>
+              <div class="mt-2 text-sm font-semibold leading-6 text-ink">
+                {{ sessionTechStack || '通用方向题' }}
+              </div>
+            </div>
+            <div class="data-slab p-4">
+              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">面试配置</div>
+              <div class="mt-2 space-y-1 text-sm font-semibold text-ink">
+                <div>{{ sessionDurationMinutes }} 分钟 / {{ currentQuestion?.questionCount ?? questionCount }} 题</div>
+                <div>{{ sessionIncludeResumeProject ? '结合项目追问' : '纯知识与表达训练' }}</div>
               </div>
             </div>
           </div>
@@ -308,6 +389,39 @@
             <p class="mt-4 text-sm leading-7 text-white/82">{{ lastResult?.comment }}</p>
           </div>
 
+          <div v-if="lastResult?.scoreBreakdown?.length" class="grid gap-3 md:grid-cols-3">
+            <div
+              v-for="item in lastResult.scoreBreakdown"
+              :key="`${item.dimension}-${item.score}`"
+              class="data-slab p-4"
+            >
+              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">{{ item.dimension }}</div>
+              <div class="mt-2 font-mono text-3xl font-semibold tracking-[-0.03em] text-ink">
+                {{ item.score }}
+              </div>
+              <p class="mt-2 text-sm leading-6 text-secondary">{{ item.summary }}</p>
+            </div>
+          </div>
+
+          <div v-if="lastResult?.weakPointTags?.length || lastResult?.reviewSummary" class="grid gap-3 md:grid-cols-2">
+            <div v-if="lastResult?.weakPointTags?.length" class="data-slab p-4">
+              <div class="text-xs uppercase tracking-[0.24em] text-tertiary">薄弱点标签</div>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <span
+                  v-for="tag in lastResult.weakPointTags"
+                  :key="tag"
+                  class="rounded-full bg-coral/10 px-3 py-1 text-xs font-semibold text-coral"
+                >
+                  {{ tag }}
+                </span>
+              </div>
+            </div>
+            <div v-if="lastResult?.reviewSummary" class="data-slab p-4">
+              <div class="text-xs uppercase tracking-[0.24em] text-tertiary">复盘建议</div>
+              <p class="mt-2 text-sm leading-6 text-secondary">{{ lastResult.reviewSummary }}</p>
+            </div>
+          </div>
+
           <div class="grid gap-3 md:grid-cols-2">
             <div class="data-slab p-4">
               <div class="flex items-center justify-between">
@@ -382,6 +496,30 @@
             </p>
           </div>
 
+          <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div class="data-slab p-4">
+              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">目标岗位</div>
+              <div class="mt-2 text-sm font-semibold leading-6 text-ink">{{ detail?.jobRole || '未设置' }}</div>
+            </div>
+            <div class="data-slab p-4">
+              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">经验阶段</div>
+              <div class="mt-2 text-sm font-semibold leading-6 text-ink">
+                {{ experienceLabel(detail?.experienceLevel) }}
+              </div>
+            </div>
+            <div class="data-slab p-4">
+              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">技术范围</div>
+              <div class="mt-2 text-sm font-semibold leading-6 text-ink">{{ detail?.techStack || '通用方向题' }}</div>
+            </div>
+            <div class="data-slab p-4">
+              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">面试配置</div>
+              <div class="mt-2 space-y-1 text-sm font-semibold text-ink">
+                <div>{{ detail?.durationMinutes || durationMinutes }} 分钟</div>
+                <div>{{ detail?.includeResumeProject ? '结合项目复盘' : '通用问答训练' }}</div>
+              </div>
+            </div>
+          </div>
+
           <div v-if="detail?.records?.length" class="space-y-3">
             <div
               v-for="(record, index) in detail.records"
@@ -445,6 +583,43 @@
                   </div>
                   <p class="mt-1 text-sm leading-6 text-primary">{{ record.followUp }}</p>
                 </div>
+                <div v-if="record.scoreBreakdown?.length" class="grid gap-3 md:grid-cols-3">
+                  <div
+                    v-for="item in record.scoreBreakdown"
+                    :key="`${record.questionId}-${item.dimension}`"
+                    class="rounded-2xl bg-[var(--panel-muted)] p-3"
+                  >
+                    <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">
+                      {{ item.dimension }}
+                    </div>
+                    <div class="mt-2 font-mono text-2xl font-semibold tracking-[-0.03em] text-ink">
+                      {{ item.score }}
+                    </div>
+                    <p class="mt-2 text-sm leading-6 text-secondary">{{ item.summary }}</p>
+                  </div>
+                </div>
+                <div v-if="record.weakPointTags?.length">
+                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">
+                    薄弱点标签
+                  </div>
+                  <div class="mt-2 flex flex-wrap gap-2">
+                    <span
+                      v-for="tag in record.weakPointTags"
+                      :key="`${record.questionId}-${tag}`"
+                      class="rounded-full bg-coral/10 px-3 py-1 text-xs font-semibold text-coral"
+                    >
+                      {{ tag }}
+                    </span>
+                  </div>
+                </div>
+                <div v-if="record.reviewSummary">
+                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">
+                    复盘摘要
+                  </div>
+                  <p class="mt-1 whitespace-pre-wrap text-sm leading-6 text-primary">
+                    {{ record.reviewSummary }}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -499,9 +674,21 @@ const directions = [
   { name: '并发', desc: '线程池、锁、CAS、AQS' },
   { name: '微服务', desc: '网关、注册中心、限流' }
 ]
+const experienceLevels = [
+  { label: '在校 / 实习准备', value: 'intern' },
+  { label: '0-1 年', value: 'junior' },
+  { label: '1-3 年', value: 'mid' },
+  { label: '3 年以上', value: 'senior' }
+]
+const durationOptions = [10, 15, 20, 30, 45]
 
 const phase = ref<Phase>('idle')
 const direction = ref('Spring')
+const jobRole = ref('Java 后端开发')
+const experienceLevel = ref('junior')
+const techStack = ref('Spring Boot, MySQL, Redis')
+const durationMinutes = ref(20)
+const includeResumeProject = ref(false)
 const questionCount = ref(3)
 const interviewMode = ref<'text' | 'voice'>('text')
 const voiceAvailable = ref(false)
@@ -528,9 +715,33 @@ const toggleQuestion = (questionId: string) => {
   }
 }
 
-// Countdown timer (5 minutes per question)
-const COUNTDOWN_SECONDS = 300
-const countdown = ref(COUNTDOWN_SECONDS)
+const sessionDirection = computed(() => currentQuestion.value?.direction || detail.value?.direction || direction.value)
+const sessionJobRole = computed(() => currentQuestion.value?.jobRole || detail.value?.jobRole || jobRole.value)
+const sessionExperienceLevel = computed(
+  () => currentQuestion.value?.experienceLevel || detail.value?.experienceLevel || experienceLevel.value
+)
+const sessionTechStack = computed(() => currentQuestion.value?.techStack || detail.value?.techStack || techStack.value)
+const sessionDurationMinutes = computed(
+  () => currentQuestion.value?.durationMinutes || detail.value?.durationMinutes || durationMinutes.value
+)
+const sessionIncludeResumeProject = computed(
+  () =>
+    currentQuestion.value?.includeResumeProject ??
+    detail.value?.includeResumeProject ??
+    includeResumeProject.value
+)
+
+const experienceLabel = (value?: string) => {
+  return experienceLevels.find((item) => item.value === value)?.label || '未设置'
+}
+
+const getCountdownSeconds = () => {
+  const totalMinutes = currentQuestion.value?.durationMinutes || durationMinutes.value || 20
+  const totalQuestions = currentQuestion.value?.questionCount || questionCount.value || 3
+  return Math.max(90, Math.round((totalMinutes * 60) / totalQuestions))
+}
+
+const countdown = ref(getCountdownSeconds())
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 
 const formatCountdown = (seconds: number) => {
@@ -541,7 +752,7 @@ const formatCountdown = (seconds: number) => {
 
 const startCountdown = () => {
   stopCountdown()
-  countdown.value = COUNTDOWN_SECONDS
+  countdown.value = getCountdownSeconds()
   countdownTimer = setInterval(() => {
     countdown.value--
     if (countdown.value <= 0) {
@@ -598,7 +809,10 @@ const progressPercent = computed(() => {
   return Math.round(((currentIndex - 1) / total) * 100)
 })
 
-const countdownPercent = computed(() => Math.max(0, Math.round((countdown.value / COUNTDOWN_SECONDS) * 100)))
+const countdownPercent = computed(() => {
+  const total = getCountdownSeconds()
+  return Math.max(0, Math.round((countdown.value / total) * 100))
+})
 const countdownUrgent = computed(() => countdown.value <= 30)
 
 const handleStart = async (reanswerQuestionId?: number) => {
@@ -607,6 +821,11 @@ const handleStart = async (reanswerQuestionId?: number) => {
     const isVoice = interviewMode.value === 'voice' && voiceAvailable.value
     const payload = {
       direction: direction.value,
+      jobRole: jobRole.value.trim() || undefined,
+      experienceLevel: experienceLevel.value,
+      techStack: techStack.value.trim() || undefined,
+      durationMinutes: durationMinutes.value,
+      includeResumeProject: includeResumeProject.value,
       questionCount: reanswerQuestionId ? 1 : questionCount.value,
       ...(reanswerQuestionId ? { reanswerQuestionId } : {})
     }
@@ -676,6 +895,9 @@ const handleVoiceSubmit = async () => {
       comment: response.data.comment,
       standardAnswer: response.data.standardAnswer,
       followUp: response.data.followUp,
+      scoreBreakdown: response.data.scoreBreakdown,
+      weakPointTags: response.data.weakPointTags,
+      reviewSummary: response.data.reviewSummary,
       addedToWrongBook: response.data.addedToWrongBook,
       hasNextQuestion: response.data.hasNextQuestion
     }

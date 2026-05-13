@@ -223,6 +223,18 @@ export interface InterviewCurrentQuestion {
   questionCount: number
   questionId: string
   questionTitle: string
+  direction: string
+  jobRole?: string
+  experienceLevel?: string
+  techStack?: string
+  durationMinutes?: number
+  includeResumeProject?: boolean
+}
+
+export interface InterviewScoreDimension {
+  dimension: string
+  score: number
+  summary: string
 }
 
 export interface InterviewAnswerResult {
@@ -230,6 +242,9 @@ export interface InterviewAnswerResult {
   comment: string
   standardAnswer: string
   followUp: string
+  scoreBreakdown?: InterviewScoreDimension[]
+  weakPointTags?: string[]
+  reviewSummary?: string
   addedToWrongBook: boolean
   hasNextQuestion: boolean
 }
@@ -242,6 +257,9 @@ export interface InterviewRecordItem {
   comment: string
   standardAnswer: string
   followUp: string
+  scoreBreakdown?: InterviewScoreDimension[]
+  weakPointTags?: string[]
+  reviewSummary?: string
   isLowScore?: boolean
   recommendedCardFront?: string
   recommendedCardBack?: string
@@ -255,6 +273,11 @@ export interface InterviewRecordItem {
 export interface InterviewDetail {
   sessionId: string
   direction: string
+  jobRole?: string
+  experienceLevel?: string
+  techStack?: string
+  durationMinutes?: number
+  includeResumeProject?: boolean
   status: string
   mode?: string
   totalScore: number
@@ -276,6 +299,9 @@ export interface VoiceSubmitResult {
   comment: string
   standardAnswer: string
   followUp: string
+  scoreBreakdown?: InterviewScoreDimension[]
+  weakPointTags?: string[]
+  reviewSummary?: string
   addedToWrongBook: boolean
   hasNextQuestion: boolean
 }
@@ -283,6 +309,11 @@ export interface VoiceSubmitResult {
 export interface InterviewHistoryItem {
   sessionId: string
   direction: string
+  jobRole?: string
+  experienceLevel?: string
+  techStack?: string
+  durationMinutes?: number
+  includeResumeProject?: boolean
   status: string
   mode?: string
   totalScore: number

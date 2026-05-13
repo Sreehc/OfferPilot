@@ -35,6 +35,8 @@
             <div class="mt-2 flex flex-wrap items-center gap-4 text-sm text-secondary">
               <span>{{ detail.mode === 'voice' ? '语音面试' : '文本面试' }}</span>
               <span>{{ detail.questionCount }} 题</span>
+              <span>{{ detail.durationMinutes || 20 }} 分钟</span>
+              <span>{{ detail.includeResumeProject ? '结合项目追问' : '通用知识问答' }}</span>
               <span>{{ detail.cardsGenerated ? `已生成 ${detail.generatedCardCount || 0} 张复习卡片` : '未生成复习卡片' }}</span>
               <span v-if="detail.startTime">{{ formatTime(detail.startTime) }}</span>
               <span v-if="detail.endTime">~ {{ formatTime(detail.endTime) }}</span>
@@ -74,6 +76,27 @@
         </div>
       </section>
 
+      <section class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <article class="shell-section-card p-5">
+          <div class="text-xs uppercase tracking-[0.22em] text-tertiary">目标岗位</div>
+          <div class="mt-2 text-base font-semibold text-ink">{{ detail.jobRole || '未设置' }}</div>
+        </article>
+        <article class="shell-section-card p-5">
+          <div class="text-xs uppercase tracking-[0.22em] text-tertiary">经验阶段</div>
+          <div class="mt-2 text-base font-semibold text-ink">{{ experienceLabel(detail.experienceLevel) }}</div>
+        </article>
+        <article class="shell-section-card p-5">
+          <div class="text-xs uppercase tracking-[0.22em] text-tertiary">技术范围</div>
+          <div class="mt-2 text-sm font-semibold leading-6 text-ink">{{ detail.techStack || '通用方向题' }}</div>
+        </article>
+        <article class="shell-section-card p-5">
+          <div class="text-xs uppercase tracking-[0.22em] text-tertiary">面试策略</div>
+          <div class="mt-2 text-sm font-semibold leading-6 text-ink">
+            {{ detail.includeResumeProject ? '结合项目表达与工程权衡' : '聚焦基础原理与结构化表达' }}
+          </div>
+        </article>
+      </section>
+
       <section
         v-for="(record, index) in sortedRecords"
         :key="record.questionId"
@@ -107,6 +130,37 @@
         <div class="surface-muted mx-6 mt-4 rounded-lg p-4">
           <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">本题点评</div>
           <p class="mt-1 text-sm leading-6 text-primary">{{ record.comment || '暂无点评' }}</p>
+        </div>
+
+        <div v-if="record.scoreBreakdown?.length" class="mx-6 mt-4 grid gap-3 md:grid-cols-3">
+          <div
+            v-for="item in record.scoreBreakdown"
+            :key="`${record.questionId}-${item.dimension}`"
+            class="surface-card p-4"
+          >
+            <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">{{ item.dimension }}</div>
+            <div class="mt-2 text-3xl font-semibold tracking-[-0.03em] text-ink">{{ item.score }}</div>
+            <p class="mt-2 text-sm leading-6 text-secondary">{{ item.summary }}</p>
+          </div>
+        </div>
+
+        <div v-if="record.weakPointTags?.length || record.reviewSummary" class="mx-6 mt-4 grid gap-4 md:grid-cols-2">
+          <div v-if="record.weakPointTags?.length" class="surface-card p-4">
+            <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">薄弱点标签</div>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <span
+                v-for="tag in record.weakPointTags"
+                :key="`${record.questionId}-${tag}`"
+                class="inline-flex items-center rounded-full bg-coral/10 px-3 py-1 text-xs font-semibold text-coral"
+              >
+                {{ tag }}
+              </span>
+            </div>
+          </div>
+          <div v-if="record.reviewSummary" class="surface-card p-4">
+            <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">复盘建议</div>
+            <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-primary">{{ record.reviewSummary }}</p>
+          </div>
         </div>
 
         <div v-if="record.voiceTranscript" class="mx-6 mt-4 surface-card p-4">
@@ -235,6 +289,21 @@ const formatTime = (time: string): string => {
   if (!time) return ''
   const d = new Date(time)
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+const experienceLabel = (value?: string) => {
+  switch (value) {
+    case 'intern':
+      return '在校 / 实习准备'
+    case 'junior':
+      return '0-1 年'
+    case 'mid':
+      return '1-3 年'
+    case 'senior':
+      return '3 年以上'
+    default:
+      return '未设置'
+  }
 }
 
 const sessionId = () => String(route.params.id || '')
