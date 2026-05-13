@@ -12,8 +12,13 @@ public class KnowledgeDoc extends BaseEntity {
     private String title;
     private Long categoryId;
     private Long userId;
+    private String libraryScope;
+    private String businessType;
     private String sourceType;
+    private String fileType;
     private String fileUrl;
     private String summary;
+    private String parseStatus;
+    private String indexStatus;
     private String status;
 }

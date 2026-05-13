@@ -88,6 +88,11 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
         Page<KnowledgeDoc> page = new Page<>(query.getPageNum(), query.getPageSize());
         LambdaQueryWrapper<KnowledgeDoc> queryWrapper = new LambdaQueryWrapper<KnowledgeDoc>()
                 .eq(query.getCategoryId() != null, KnowledgeDoc::getCategoryId, query.getCategoryId())
+                .eq(StringUtils.hasText(query.getLibraryScope()), KnowledgeDoc::getLibraryScope, query.getLibraryScope())
+                .eq(StringUtils.hasText(query.getBusinessType()), KnowledgeDoc::getBusinessType, query.getBusinessType())
+                .eq(StringUtils.hasText(query.getFileType()), KnowledgeDoc::getFileType, query.getFileType())
+                .eq(StringUtils.hasText(query.getParseStatus()), KnowledgeDoc::getParseStatus, query.getParseStatus())
+                .eq(StringUtils.hasText(query.getIndexStatus()), KnowledgeDoc::getIndexStatus, query.getIndexStatus())
                 .eq(StringUtils.hasText(query.getStatus()), KnowledgeDoc::getStatus, query.getStatus())
                 .and(StringUtils.hasText(query.getKeyword()), keywordWrapper -> keywordWrapper
                         .like(KnowledgeDoc::getTitle, query.getKeyword())
@@ -133,16 +138,20 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
         }
         if (doc == null) {
             doc = new KnowledgeDoc();
+            doc.setLibraryScope("system");
+            doc.setBusinessType("system_knowledge");
             doc.setSourceType("seed");
+            doc.setFileType(fileTypeFromName(metadata.getFileName()));
             doc.setFileUrl(fileUrl(metadata.getFileName()));
         }
         doc.setTitle(metadata.getTitle());
         doc.setCategoryId(categoryId);
         doc.setSummary(metadata.getSummary());
-        doc.setStatus("draft");
+        doc.setParseStatus("parsed");
+        doc.setIndexStatus("indexed");
+        doc.setStatus("indexed");
         saveOrUpdate(doc);
         rebuildChunks(doc, metadata.getFileName());
-        doc.setStatus("indexed");
         updateById(doc);
         return buildDocVOs(List.of(doc)).get(0);
     }
@@ -152,7 +161,9 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
     public KnowledgeDocVO rechunk(Long docId) {
         KnowledgeDoc doc = getRequiredDoc(docId);
         rebuildChunks(doc, fileNameFromUrl(doc.getFileUrl()));
-        doc.setStatus("parsed");
+        doc.setParseStatus("parsed");
+        doc.setIndexStatus("indexed");
+        doc.setStatus("indexed");
         updateById(doc);
         return buildDocVOs(List.of(doc)).get(0);
     }
@@ -166,6 +177,8 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
                         .eq(KnowledgeChunk::getDocId, docId)) == 0) {
             rebuildChunks(doc, fileNameFromUrl(doc.getFileUrl()));
         }
+        doc.setParseStatus("parsed");
+        doc.setIndexStatus("indexed");
         doc.setStatus("indexed");
         updateById(doc);
         return buildDocVOs(List.of(doc)).get(0);
@@ -209,10 +222,15 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
         doc.setTitle(stripExtension(originalFilename));
         doc.setCategoryId(categoryId);
         doc.setUserId(userId);
+        doc.setLibraryScope("personal");
+        doc.setBusinessType("user_note");
         doc.setSourceType("user_upload");
+        doc.setFileType(fileTypeFromName(originalFilename));
         doc.setFileUrl(storedFile.getStorageKey());
         doc.setSummary(chunks.get(0).length() > 200 ? chunks.get(0).substring(0, 200) + "..." : chunks.get(0));
-        doc.setStatus("indexed");
+        doc.setParseStatus("parsed");
+        doc.setIndexStatus("pending");
+        doc.setStatus("parsed");
         save(doc);
 
         // Insert chunks into DB
@@ -228,7 +246,7 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
         }
 
         // Async vectorization
-        self.vectorizeChunksAsync(insertedChunks, chunks);
+        self.vectorizeChunksAsync(doc.getId(), insertedChunks, chunks);
 
         log.info("User {} uploaded document '{}', {} chunks", userId, originalFilename, chunks.size());
         return buildDocVOs(List.of(doc)).get(0);
@@ -239,6 +257,11 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
         Page<KnowledgeDoc> page = new Page<>(query.getPageNum(), query.getPageSize());
         LambdaQueryWrapper<KnowledgeDoc> queryWrapper = new LambdaQueryWrapper<KnowledgeDoc>()
                 .eq(KnowledgeDoc::getUserId, userId)
+                .eq(StringUtils.hasText(query.getLibraryScope()), KnowledgeDoc::getLibraryScope, query.getLibraryScope())
+                .eq(StringUtils.hasText(query.getBusinessType()), KnowledgeDoc::getBusinessType, query.getBusinessType())
+                .eq(StringUtils.hasText(query.getFileType()), KnowledgeDoc::getFileType, query.getFileType())
+                .eq(StringUtils.hasText(query.getParseStatus()), KnowledgeDoc::getParseStatus, query.getParseStatus())
+                .eq(StringUtils.hasText(query.getIndexStatus()), KnowledgeDoc::getIndexStatus, query.getIndexStatus())
                 .eq(StringUtils.hasText(query.getStatus()), KnowledgeDoc::getStatus, query.getStatus())
                 .and(StringUtils.hasText(query.getKeyword()), keywordWrapper -> keywordWrapper
                         .like(KnowledgeDoc::getTitle, query.getKeyword())
@@ -273,8 +296,8 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
     }
 
     @Async
-    public void vectorizeChunksAsync(List<KnowledgeChunk> chunks, List<String> texts) {
-        vectorizeChunks(chunks, texts);
+    public void vectorizeChunksAsync(Long docId, List<KnowledgeChunk> chunks, List<String> texts) {
+        vectorizeChunks(docId, chunks, texts);
     }
 
     private KnowledgeDoc getRequiredDoc(Long docId) {
@@ -327,8 +350,13 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
                             .title(doc.getTitle())
                             .categoryId(doc.getCategoryId())
                             .categoryName(category == null ? null : category.getName())
+                            .libraryScope(doc.getLibraryScope())
+                            .businessType(doc.getBusinessType())
                             .sourceType(doc.getSourceType())
+                            .fileType(doc.getFileType())
                             .fileUrl(doc.getFileUrl())
+                            .parseStatus(doc.getParseStatus())
+                            .indexStatus(doc.getIndexStatus())
                             .status(doc.getStatus())
                             .summary(doc.getSummary())
                             .chunkCount(chunkCountMap.getOrDefault(doc.getId(), 0L).intValue())
@@ -367,10 +395,10 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
         }
 
         // Vectorize chunks in batch (if embedding is enabled)
-        vectorizeChunks(insertedChunks, chunkTexts);
+        vectorizeChunks(doc.getId(), insertedChunks, chunkTexts);
     }
 
-    private void vectorizeChunks(List<KnowledgeChunk> chunks, List<String> texts) {
+    private void vectorizeChunks(Long docId, List<KnowledgeChunk> chunks, List<String> texts) {
         try {
             List<float[]> embeddings = embeddingGateway.embedBatch(texts);
             for (int i = 0; i < chunks.size(); i++) {
@@ -381,10 +409,22 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
                     knowledgeChunkMapper.updateById(chunks.get(i));
                 }
             }
+            lambdaUpdate()
+                    .eq(KnowledgeDoc::getId, docId)
+                    .set(KnowledgeDoc::getParseStatus, "parsed")
+                    .set(KnowledgeDoc::getIndexStatus, "indexed")
+                    .set(KnowledgeDoc::getStatus, "indexed")
+                    .update();
             log.info("Vectorized {} chunks for doc {}", chunks.size(), chunks.get(0).getDocId());
         } catch (Exception e) {
+            lambdaUpdate()
+                    .eq(KnowledgeDoc::getId, docId)
+                    .set(KnowledgeDoc::getParseStatus, "parsed")
+                    .set(KnowledgeDoc::getIndexStatus, "failed")
+                    .set(KnowledgeDoc::getStatus, "parsed")
+                    .update();
             log.warn("Vectorization failed for doc {}, chunks stored without vectors: {}",
-                    chunks.isEmpty() ? "?" : chunks.get(0).getDocId(), e.getMessage());
+                    chunks.isEmpty() ? docId : chunks.get(0).getDocId(), e.getMessage());
         }
     }
 
@@ -456,6 +496,13 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
     private String stripExtension(String fileName) {
         int dotIndex = fileName.lastIndexOf('.');
         return dotIndex > 0 ? fileName.substring(0, dotIndex) : fileName;
+    }
+
+    private String fileTypeFromName(String fileName) {
+        if (!StringUtils.hasText(fileName) || !fileName.contains(".")) {
+            return "unknown";
+        }
+        return fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
     }
 
     private String fileNameFromUrl(String fileUrl) {

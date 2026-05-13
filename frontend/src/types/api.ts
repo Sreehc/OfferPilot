@@ -153,8 +153,13 @@ export interface KnowledgeDocItem {
   title: string
   categoryId?: number
   categoryName?: string
+  libraryScope?: 'system' | 'personal' | string
+  businessType?: string
   sourceType?: string
+  fileType?: string
   fileUrl?: string
+  parseStatus?: 'pending' | 'parsed' | 'failed' | string
+  indexStatus?: 'pending' | 'indexed' | 'failed' | string
   status: 'draft' | 'parsed' | 'indexed'
   summary?: string
   chunkCount?: number

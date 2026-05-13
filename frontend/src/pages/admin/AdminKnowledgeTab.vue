@@ -7,10 +7,34 @@
           <el-select v-model="filter.categoryId" clearable placeholder="按分类" size="large">
             <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
           </el-select>
+          <el-select v-model="filter.businessType" clearable placeholder="按业务归属" size="large">
+            <el-option label="系统知识" value="system_knowledge" />
+            <el-option label="个人笔记" value="user_note" />
+            <el-option label="简历资料" value="resume" />
+            <el-option label="JD 资料" value="jd" />
+            <el-option label="项目资料" value="project_doc" />
+          </el-select>
+          <el-select v-model="filter.fileType" clearable placeholder="按文件类型" size="large">
+            <el-option label="Markdown" value="md" />
+            <el-option label="TXT" value="txt" />
+            <el-option label="PDF" value="pdf" />
+            <el-option label="DOC" value="doc" />
+            <el-option label="DOCX" value="docx" />
+          </el-select>
           <el-select v-model="filter.status" clearable placeholder="按状态" size="large">
             <el-option label="草稿" value="draft" />
             <el-option label="已解析" value="parsed" />
             <el-option label="已索引" value="indexed" />
+          </el-select>
+          <el-select v-model="filter.parseStatus" clearable placeholder="解析状态" size="large">
+            <el-option label="处理中" value="pending" />
+            <el-option label="已完成" value="parsed" />
+            <el-option label="失败" value="failed" />
+          </el-select>
+          <el-select v-model="filter.indexStatus" clearable placeholder="索引状态" size="large">
+            <el-option label="处理中" value="pending" />
+            <el-option label="已完成" value="indexed" />
+            <el-option label="失败" value="failed" />
           </el-select>
           <el-input v-model="filter.keyword" clearable placeholder="搜索文档" size="large" />
         </div>
@@ -101,7 +125,14 @@
               <div class="font-semibold text-ink">{{ doc.title }}</div>
               <div class="mt-2 flex flex-wrap gap-2 text-xs uppercase tracking-[0.2em] text-secondary">
                 <span>{{ doc.status === 'draft' ? '草稿' : doc.status === 'parsed' ? '已解析' : '已索引' }}</span>
+                <span>{{ doc.libraryScope === 'personal' ? '个人库' : '系统库' }}</span>
+                <span>{{ businessTypeLabel(doc.businessType) }}</span>
+                <span v-if="doc.fileType">{{ doc.fileType.toUpperCase() }}</span>
                 <span>{{ doc.chunkCount ?? 0 }} 个分块</span>
+              </div>
+              <div class="mt-2 flex flex-wrap gap-2 text-xs text-secondary">
+                <span>解析 {{ processLabel(doc.parseStatus) }}</span>
+                <span>索引 {{ indexLabel(doc.indexStatus) }}</span>
               </div>
               <p class="mt-3 text-sm leading-6 text-secondary">{{ doc.summary || '暂无摘要' }}</p>
             </div>
@@ -141,6 +172,10 @@ import type { CategoryItem, KnowledgeDocItem, KnowledgeSearchResult } from '@/ty
 
 interface KnowledgeFilter {
   categoryId?: number
+  businessType?: string
+  fileType?: string
+  parseStatus?: KnowledgeDocItem['parseStatus']
+  indexStatus?: KnowledgeDocItem['indexStatus']
   status?: KnowledgeDocItem['status']
   keyword: string
 }
@@ -215,6 +250,26 @@ const confidenceClass = (score?: number) => {
   if (score >= 0.82) return 'text-[var(--bc-cyan)]'
   if (score >= 0.66) return 'text-[var(--bc-amber)]'
   return 'text-[var(--bc-coral)]'
+}
+
+const businessTypeLabel = (type?: string) => {
+  if (type === 'user_note') return '个人笔记'
+  if (type === 'resume') return '简历资料'
+  if (type === 'jd') return 'JD 资料'
+  if (type === 'project_doc') return '项目资料'
+  return '系统知识'
+}
+
+const processLabel = (status?: string) => {
+  if (status === 'failed') return '失败'
+  if (status === 'parsed') return '已完成'
+  return '处理中'
+}
+
+const indexLabel = (status?: string) => {
+  if (status === 'failed') return '失败'
+  if (status === 'indexed') return '已完成'
+  return '处理中'
 }
 </script>
 

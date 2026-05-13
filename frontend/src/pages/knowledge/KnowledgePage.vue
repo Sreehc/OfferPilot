@@ -6,7 +6,7 @@
           :show-file-list="false"
           :before-upload="handleBeforeUpload"
           :http-request="handleUpload"
-          accept=".md,.markdown,.txt,.text,.pdf"
+          accept=".md,.markdown,.txt,.text,.pdf,.doc,.docx"
         >
           <el-button :loading="uploading" type="primary" size="large" class="action-button !min-h-11 !px-5">
             {{ uploading ? '上传中...' : '添加文档' }}
@@ -105,13 +105,18 @@
                   </svg>
                 </div>
                 <div class="min-w-0">
-                  <span
-                    class="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em]"
-                    :class="statusTextClass(doc.status)"
-                  >
-                    <span class="h-2 w-2 rounded-full" :class="statusDotClass(doc.status)"></span>
-                    {{ statusLabel(doc.status) }}
-                  </span>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span
+                      class="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em]"
+                      :class="statusTextClass(doc.status)"
+                    >
+                      <span class="h-2 w-2 rounded-full" :class="statusDotClass(doc.status)"></span>
+                      {{ statusLabel(doc.status) }}
+                    </span>
+                    <span class="detail-pill">{{ libraryScopeLabel(doc.libraryScope) }}</span>
+                    <span v-if="doc.businessType" class="detail-pill">{{ businessTypeLabel(doc.businessType) }}</span>
+                    <span v-if="doc.fileType" class="detail-pill">{{ doc.fileType.toUpperCase() }}</span>
+                  </div>
                   <h4 class="mt-3 line-clamp-2 text-lg font-semibold text-ink">{{ doc.title }}</h4>
                 </div>
               </div>
@@ -137,6 +142,11 @@
                 <p class="line-clamp-3 text-sm leading-7 text-secondary">
                   {{ doc.summary || '暂无摘要。' }}
                 </p>
+                <div class="mt-3 flex flex-wrap gap-2 text-xs text-secondary">
+                  <span class="detail-pill">解析 {{ parseStatusLabel(doc.parseStatus) }}</span>
+                  <span class="detail-pill">索引 {{ indexStatusLabel(doc.indexStatus) }}</span>
+                  <span v-if="doc.categoryName" class="detail-pill">{{ doc.categoryName }}</span>
+                </div>
               </div>
 
               <div class="doc-card__memory">
@@ -200,7 +210,7 @@
               <div class="min-w-0">
                 <p class="text-sm font-semibold text-ink">拖拽文档到这里上传</p>
                 <p class="mt-1 text-sm text-secondary">
-                  支持 <span class="font-semibold text-ink">md / txt / pdf</span>，单文件不超过 20MB。
+                  支持 <span class="font-semibold text-ink">md / txt / pdf / doc / docx</span>，单文件不超过 20MB。
                 </p>
               </div>
             </div>
@@ -219,6 +229,20 @@
           <div class="mt-5 grid gap-3">
             <el-select v-model="filters.categoryId" clearable placeholder="知识分类" size="large">
               <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
+            </el-select>
+            <el-select v-model="filters.businessType" clearable placeholder="业务归属" size="large">
+              <el-option label="系统知识" value="system_knowledge" />
+              <el-option label="个人笔记" value="user_note" />
+              <el-option label="简历资料" value="resume" />
+              <el-option label="JD 资料" value="jd" />
+              <el-option label="项目资料" value="project_doc" />
+            </el-select>
+            <el-select v-model="filters.fileType" clearable placeholder="文件类型" size="large">
+              <el-option label="Markdown" value="md" />
+              <el-option label="TXT" value="txt" />
+              <el-option label="PDF" value="pdf" />
+              <el-option label="DOC" value="doc" />
+              <el-option label="DOCX" value="docx" />
             </el-select>
             <el-select v-model="filters.status" clearable placeholder="文档状态" size="large">
               <el-option label="处理中" value="draft" />
@@ -280,10 +304,14 @@ const total = ref(0)
 const totalPages = ref(0)
 const filters = reactive<{
   categoryId?: number
+  businessType?: string
+  fileType?: string
   keyword: string
   status?: KnowledgeDocItem['status']
 }>({
   categoryId: undefined,
+  businessType: undefined,
+  fileType: undefined,
   keyword: '',
   status: undefined
 })
@@ -313,6 +341,9 @@ const loadDocs = async () => {
   try {
     const params = {
       categoryId: filters.categoryId,
+      libraryScope: activeTab.value === 'my' ? 'personal' : 'system',
+      businessType: filters.businessType,
+      fileType: filters.fileType,
       keyword: filters.keyword || undefined,
       status: filters.status,
       pageNum: currentPage.value,
@@ -387,6 +418,8 @@ const handleDelete = async (docId: number) => {
 
 const resetFilters = () => {
   filters.categoryId = undefined
+  filters.businessType = undefined
+  filters.fileType = undefined
   filters.keyword = ''
   filters.status = undefined
   currentPage.value = 1
@@ -423,6 +456,30 @@ const statusToneClass = (status: KnowledgeDocItem['status']) => {
     indexed: 'doc-card-cyan'
   }
   return map[status]
+}
+
+const libraryScopeLabel = (scope?: string) => {
+  return scope === 'personal' ? '个人库' : '系统库'
+}
+
+const businessTypeLabel = (type?: string) => {
+  if (type === 'user_note') return '个人笔记'
+  if (type === 'resume') return '简历资料'
+  if (type === 'jd') return 'JD 资料'
+  if (type === 'project_doc') return '项目资料'
+  return '系统知识'
+}
+
+const parseStatusLabel = (status?: string) => {
+  if (status === 'failed') return '失败'
+  if (status === 'parsed') return '已完成'
+  return '处理中'
+}
+
+const indexStatusLabel = (status?: string) => {
+  if (status === 'failed') return '失败'
+  if (status === 'indexed') return '已完成'
+  return '处理中'
 }
 
 const docType = (fileUrl?: string): 'pdf' | 'text' => {

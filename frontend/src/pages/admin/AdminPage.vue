@@ -185,7 +185,23 @@ const questionFilter = reactive<{ categoryId?: number; type?: string; difficulty
   jobDirection: '',
   keyword: ''
 })
-const knowledgeFilter = reactive<{ categoryId?: number; status?: KnowledgeDocItem['status']; keyword: string }>({ categoryId: undefined, status: undefined, keyword: '' })
+const knowledgeFilter = reactive<{
+  categoryId?: number
+  businessType?: string
+  fileType?: string
+  parseStatus?: KnowledgeDocItem['parseStatus']
+  indexStatus?: KnowledgeDocItem['indexStatus']
+  status?: KnowledgeDocItem['status']
+  keyword: string
+}>({
+  categoryId: undefined,
+  businessType: undefined,
+  fileType: undefined,
+  parseStatus: undefined,
+  indexStatus: undefined,
+  status: undefined,
+  keyword: ''
+})
 
 const questionCategories = computed(() => categories.value.filter((item) => item.type === 'question'))
 const knowledgeCategories = computed(() => categories.value.filter((item) => item.type === 'knowledge'))
@@ -199,7 +215,7 @@ const builtInSeeds = [
 const loadCategories = async () => { const r = await fetchCategoriesApi(); categories.value = r.data }
 const loadQuestions = async () => { questionLoading.value = true; try { const r = await fetchQuestionsApi({ categoryId: questionFilter.categoryId, type: questionFilter.type, difficulty: questionFilter.difficulty, jobDirection: questionFilter.jobDirection || undefined, keyword: questionFilter.keyword || undefined, pageNum: questionPage.value, pageSize: questionPageSize.value }); questions.value = r.data.records; questionTotal.value = r.data.total; questionTotalPages.value = r.data.totalPages } catch { ElMessage.error('题库加载失败') } finally { questionLoading.value = false } }
 const handleQuestionPageChange = (p: number) => { questionPage.value = p; void loadQuestions() }
-const loadKnowledgeDocs = async () => { knowledgeLoading.value = true; try { const r = await fetchKnowledgeDocsApi({ categoryId: knowledgeFilter.categoryId, status: knowledgeFilter.status, keyword: knowledgeFilter.keyword || undefined, pageNum: knowledgePage.value, pageSize: knowledgePageSize.value }); knowledgeDocs.value = r.data.records; knowledgeTotal.value = r.data.total; knowledgeTotalPages.value = r.data.totalPages } catch { ElMessage.error('知识文档加载失败') } finally { knowledgeLoading.value = false } }
+const loadKnowledgeDocs = async () => { knowledgeLoading.value = true; try { const r = await fetchKnowledgeDocsApi({ categoryId: knowledgeFilter.categoryId, libraryScope: 'system', businessType: knowledgeFilter.businessType, fileType: knowledgeFilter.fileType, parseStatus: knowledgeFilter.parseStatus, indexStatus: knowledgeFilter.indexStatus, status: knowledgeFilter.status, keyword: knowledgeFilter.keyword || undefined, pageNum: knowledgePage.value, pageSize: knowledgePageSize.value }); knowledgeDocs.value = r.data.records; knowledgeTotal.value = r.data.total; knowledgeTotalPages.value = r.data.totalPages } catch { ElMessage.error('知识文档加载失败') } finally { knowledgeLoading.value = false } }
 const handleKnowledgePageChange = (p: number) => { knowledgePage.value = p; void loadKnowledgeDocs() }
 
 const saveCategory = async () => { if (!categoryForm.name.trim()) { ElMessage.warning('请输入分类名称'); return } categorySaving.value = true; try { if (categoryForm.id) { await updateCategoryApi(categoryForm); ElMessage.success('分类已更新') } else { await addCategoryApi(categoryForm); ElMessage.success('分类已新增') } resetCategoryForm(); await loadCategories() } catch { ElMessage.error('分类保存失败') } finally { categorySaving.value = false } }
@@ -278,7 +294,7 @@ const resetQuestionFilter = () => { questionFilter.categoryId = undefined; quest
 const importSeed = async (seedKey: string) => { knowledgeImporting.value = seedKey; try { await importKnowledgeSeedApi({ seedKey }); ElMessage.success('知识资料已导入'); await Promise.all([loadCategories(), loadKnowledgeDocs()]) } catch { ElMessage.error('知识资料导入失败') } finally { knowledgeImporting.value = null } }
 const rechunkDoc = async (id: number) => { knowledgeActionId.value = `rechunk-${id}`; try { await rechunkKnowledgeDocApi(id); ElMessage.success('文档已重新切分'); await loadKnowledgeDocs() } catch { ElMessage.error('重新切分失败') } finally { knowledgeActionId.value = null } }
 const reindexDoc = async (id: number) => { knowledgeActionId.value = `reindex-${id}`; try { await reindexKnowledgeDocApi(id); ElMessage.success('索引已重建'); await loadKnowledgeDocs() } catch { ElMessage.error('重建索引失败') } finally { knowledgeActionId.value = null } }
-const resetKnowledgeFilter = () => { knowledgeFilter.categoryId = undefined; knowledgeFilter.status = undefined; knowledgeFilter.keyword = ''; void loadKnowledgeDocs() }
+const resetKnowledgeFilter = () => { knowledgeFilter.categoryId = undefined; knowledgeFilter.businessType = undefined; knowledgeFilter.fileType = undefined; knowledgeFilter.parseStatus = undefined; knowledgeFilter.indexStatus = undefined; knowledgeFilter.status = undefined; knowledgeFilter.keyword = ''; void loadKnowledgeDocs() }
 
 const downloadBlob = (blob: BlobPart, filename: string) => {
   const url = URL.createObjectURL(blob instanceof Blob ? blob : new Blob([blob]))

@@ -44,10 +44,10 @@ public class KnowledgeController {
         return Result.success(knowledgeService.search(request));
     }
 
-    @Operation(summary = "上传文档", description = "上传 Markdown/TXT 文档到个人知识库，自动切分并入库")
+    @Operation(summary = "上传文档", description = "上传 Markdown/TXT/PDF/Word 文档到个人知识库，自动切分并入库")
     @PostMapping("/upload")
     public Result<KnowledgeDocVO> upload(
-            @Parameter(description = "文件（支持 .md / .txt）") @RequestParam("file") MultipartFile file,
+            @Parameter(description = "文件（支持 .md / .txt / .pdf / .doc / .docx）") @RequestParam("file") MultipartFile file,
             @Parameter(description = "分类 ID（可选）") @RequestParam(value = "categoryId", required = false) Long categoryId) {
         Long userId = SecurityUtils.getCurrentUserId();
         return Result.success(knowledgeService.upload(userId, file, categoryId));

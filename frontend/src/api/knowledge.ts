@@ -4,6 +4,11 @@ import type { KnowledgeDocItem, KnowledgeSearchResult, PageResult } from '@/type
 export interface KnowledgeListQuery {
   categoryId?: number
   keyword?: string
+  libraryScope?: KnowledgeDocItem['libraryScope']
+  businessType?: string
+  fileType?: string
+  parseStatus?: KnowledgeDocItem['parseStatus']
+  indexStatus?: KnowledgeDocItem['indexStatus']
   status?: KnowledgeDocItem['status']
   pageNum?: number
   pageSize?: number

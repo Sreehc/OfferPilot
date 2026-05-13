@@ -26,7 +26,7 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class DocumentParserServiceImpl implements DocumentParserService {
 
-    private static final Set<String> SUPPORTED_EXTENSIONS = Set.of("md", "markdown", "txt", "text", "pdf");
+    private static final Set<String> SUPPORTED_EXTENSIONS = Set.of("md", "markdown", "txt", "text", "pdf", "doc", "docx");
     private static final int MIN_CHUNK_SIZE = 50;
 
     private final OfferPilotProperties props;
@@ -43,8 +43,8 @@ public class DocumentParserServiceImpl implements DocumentParserService {
                 String content = readAll(inputStream);
                 yield StringUtils.hasText(content) ? splitPlainText(content) : List.of();
             }
-            case "pdf" -> {
-                String content = extractPdfText(inputStream);
+            case "pdf", "doc", "docx" -> {
+                String content = extractRichText(inputStream);
                 yield StringUtils.hasText(content) ? splitPlainText(content) : List.of();
             }
             default -> {
@@ -65,19 +65,19 @@ public class DocumentParserServiceImpl implements DocumentParserService {
     }
 
     /**
-     * Extract text from PDF using Apache Tika.
+     * Extract text from PDF/Word using Apache Tika.
      */
-    private String extractPdfText(InputStream inputStream) {
+    private String extractRichText(InputStream inputStream) {
         try {
             BodyContentHandler handler = new BodyContentHandler(props.getDocument().getTikaMaxChars());
             Metadata metadata = new Metadata();
             AutoDetectParser parser = new AutoDetectParser();
             parser.parse(inputStream, handler, metadata, new ParseContext());
             String text = handler.toString();
-            log.info("PDF parsed: {} chars extracted, metadata={}", text.length(), metadata.toString());
+            log.info("Document parsed: {} chars extracted, metadata={}", text.length(), metadata.toString());
             return text;
         } catch (Exception e) {
-            log.error("PDF parsing failed: {}", e.getMessage());
+            log.error("Document parsing failed: {}", e.getMessage());
             return "";
         }
     }

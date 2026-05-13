@@ -86,13 +86,21 @@ CREATE TABLE IF NOT EXISTS knowledge_doc (
     title VARCHAR(128) NOT NULL,
     category_id BIGINT DEFAULT NULL,
     user_id BIGINT DEFAULT NULL COMMENT '上传用户ID，NULL表示系统内置',
+    library_scope VARCHAR(32) NOT NULL DEFAULT 'system' COMMENT 'system / personal',
+    business_type VARCHAR(32) NOT NULL DEFAULT 'system_knowledge' COMMENT 'system_knowledge / user_note / resume / jd / project_doc',
     source_type VARCHAR(32) NOT NULL DEFAULT 'system' COMMENT 'system=系统内置, user_upload=用户上传',
+    file_type VARCHAR(16) DEFAULT NULL,
     file_url VARCHAR(255) DEFAULT NULL,
     summary VARCHAR(500) DEFAULT NULL,
+    parse_status VARCHAR(32) NOT NULL DEFAULT 'pending' COMMENT 'pending / parsed / failed',
+    index_status VARCHAR(32) NOT NULL DEFAULT 'pending' COMMENT 'pending / indexed / failed',
     status VARCHAR(32) NOT NULL DEFAULT 'draft',
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    KEY idx_knowledge_doc_user_id (user_id)
+    KEY idx_knowledge_doc_user_id (user_id),
+    KEY idx_knowledge_doc_scope (library_scope),
+    KEY idx_knowledge_doc_business_type (business_type),
+    KEY idx_knowledge_doc_status (status)
 );
 
 -- ============================================================

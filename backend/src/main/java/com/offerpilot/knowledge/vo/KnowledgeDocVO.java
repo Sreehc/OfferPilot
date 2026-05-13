@@ -11,8 +11,13 @@ public class KnowledgeDocVO {
     private String title;
     private Long categoryId;
     private String categoryName;
+    private String libraryScope;
+    private String businessType;
     private String sourceType;
+    private String fileType;
     private String fileUrl;
+    private String parseStatus;
+    private String indexStatus;
     private String status;
     private String summary;
     private Integer chunkCount;
