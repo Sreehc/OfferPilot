@@ -383,6 +383,57 @@ CREATE TABLE IF NOT EXISTS review_log (
 );
 
 -- ============================================================
+-- 学习计划表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS study_plan (
+    id BIGINT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    title VARCHAR(128) NOT NULL,
+    duration_days INT NOT NULL,
+    focus_direction VARCHAR(64) DEFAULT NULL,
+    target_role VARCHAR(128) DEFAULT NULL,
+    tech_stack VARCHAR(255) DEFAULT NULL,
+    weak_points VARCHAR(255) DEFAULT NULL,
+    review_suggestion VARCHAR(500) DEFAULT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'active' COMMENT 'active / completed / archived',
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    current_day INT NOT NULL DEFAULT 1,
+    progress_rate DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    total_task_count INT NOT NULL DEFAULT 0,
+    completed_task_count INT NOT NULL DEFAULT 0,
+    daily_target_minutes INT NOT NULL DEFAULT 60,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_study_plan_user_status (user_id, status),
+    KEY idx_study_plan_user_dates (user_id, start_date, end_date)
+);
+
+-- ============================================================
+-- 学习计划任务表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS study_plan_task (
+    id BIGINT PRIMARY KEY,
+    plan_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    day_index INT NOT NULL,
+    task_date DATE NOT NULL,
+    module VARCHAR(32) NOT NULL COMMENT 'question / chat / review / interview',
+    title VARCHAR(128) NOT NULL,
+    description VARCHAR(500) DEFAULT NULL,
+    action_path VARCHAR(128) DEFAULT NULL,
+    estimated_minutes INT NOT NULL DEFAULT 0,
+    priority VARCHAR(16) NOT NULL DEFAULT 'medium' COMMENT 'high / medium / low',
+    status VARCHAR(32) NOT NULL DEFAULT 'pending' COMMENT 'pending / completed',
+    completed_at DATETIME DEFAULT NULL,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_study_plan_task_plan (plan_id),
+    KEY idx_study_plan_task_user_day (user_id, task_date),
+    KEY idx_study_plan_task_status (plan_id, status)
+);
+
+-- ============================================================
 -- 社区问题表
 -- ============================================================
 CREATE TABLE IF NOT EXISTS community_question (

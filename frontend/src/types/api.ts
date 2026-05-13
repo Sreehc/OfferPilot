@@ -325,6 +325,41 @@ export interface InterviewHistoryItem {
   interviewDeckId?: string
 }
 
+export interface StudyPlanTaskItem {
+  id: string
+  dayIndex: number
+  taskDate: string
+  module: 'question' | 'chat' | 'review' | 'interview' | string
+  title: string
+  description: string
+  actionPath: string
+  estimatedMinutes: number
+  priority: 'high' | 'medium' | 'low' | string
+  status: 'pending' | 'completed' | string
+  completedAt?: string
+}
+
+export interface StudyPlan {
+  id: string
+  title: string
+  durationDays: number
+  focusDirection: string
+  targetRole: string
+  techStack: string
+  weakPoints: string[]
+  reviewSuggestion: string
+  status: 'active' | 'completed' | 'archived' | string
+  startDate: string
+  endDate: string
+  currentDay: number
+  progressRate: number
+  totalTaskCount: number
+  completedTaskCount: number
+  todayTaskCount: number
+  dailyTargetMinutes: number
+  tasks: StudyPlanTaskItem[]
+}
+
 export interface WrongQuestionItem {
   id: number
   questionId: number
