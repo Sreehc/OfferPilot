@@ -8,17 +8,20 @@
           aria-label="切换侧边栏"
           @click="sidebarVisible = !sidebarVisible"
         >
-          <span></span>
-          <span></span>
-          <span></span>
+          <span />
+          <span />
+          <span />
         </button>
 
-        <RouterLink to="/dashboard" class="global-topbar__brand">
+        <RouterLink
+          to="/dashboard"
+          class="global-topbar__brand"
+        >
           <span class="global-topbar__brand-mark">
-            <span class="global-topbar__brand-core"></span>
-            <span class="global-topbar__brand-dot"></span>
+            <span class="global-topbar__brand-core" />
+            <span class="global-topbar__brand-dot" />
           </span>
-          <span class="global-topbar__brand-name">ByteCoach</span>
+          <span class="global-topbar__brand-name">OfferPilot</span>
         </RouterLink>
       </div>
 
@@ -32,7 +35,13 @@
             @logout="handleLogout"
           />
         </template>
-        <RouterLink v-else to="/login" class="global-topbar__login">登录</RouterLink>
+        <RouterLink
+          v-else
+          to="/login"
+          class="global-topbar__login"
+        >
+          登录
+        </RouterLink>
       </div>
     </header>
 
@@ -52,7 +61,11 @@
       </div>
 
       <Transition name="mobile-rail-fade">
-        <div v-if="sidebarVisible" class="mobile-rail-overlay lg:hidden" @click="sidebarVisible = false"></div>
+        <div
+          v-if="sidebarVisible"
+          class="mobile-rail-overlay lg:hidden"
+          @click="sidebarVisible = false"
+        />
       </Transition>
 
       <Transition name="mobile-rail-slide">
@@ -73,8 +86,15 @@
         <section class="min-h-0 flex flex-1 lg:overflow-y-auto">
           <div class="app-canvas w-full max-w-[1720px]">
             <RouterView v-slot="{ Component, route: viewRoute }">
-              <Transition name="page-slide" mode="out-in">
-                <component :is="Component" :key="viewRoute.path" class="app-canvas-page" />
+              <Transition
+                name="page-slide"
+                mode="out-in"
+              >
+                <component
+                  :is="Component"
+                  :key="viewRoute.path"
+                  class="app-canvas-page"
+                />
               </Transition>
             </RouterView>
           </div>
@@ -101,7 +121,7 @@
           ref="searchInputRef"
           v-model="searchQuery"
           size="large"
-          placeholder="搜索页面或操作..."
+          placeholder="搜索训练模块、页面或操作..."
           clearable
           @keydown.escape="searchVisible = false"
           @keydown.enter="handleSearchNavigate"
@@ -114,7 +134,11 @@
               stroke="currentColor"
               stroke-width="2"
             >
-              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
           </template>
         </el-input>
@@ -139,16 +163,12 @@
       </div>
       <template #footer>
         <div class="flex items-center justify-between px-1 text-xs text-tertiary">
-          <span
-            ><kbd class="search-kbd">/</kbd> 或
+          <span><kbd class="search-kbd">/</kbd> 或
             <kbd class="search-kbd">⌘K</kbd>
-            搜索</span
-          >
-          <span
-            ><kbd class="search-kbd">Esc</kbd> 关闭 ·
+            搜索</span>
+          <span><kbd class="search-kbd">Esc</kbd> 关闭 ·
             <kbd class="search-kbd">回车</kbd>
-            跳转</span
-          >
+            跳转</span>
         </div>
       </template>
     </el-dialog>
@@ -178,15 +198,19 @@ const searchQuery = ref('')
 const searchInputRef = ref<ComponentPublicInstance | null>(null)
 
 const allSearchItems = [
-  { label: '首页概览', path: '/dashboard' },
-  { label: '今日卡片', path: '/cards' },
+  { label: '求职训练工作台', path: '/dashboard' },
+  { label: '题库训练', path: '/question' },
   { label: '知识库', path: '/knowledge' },
-  { label: '复习', path: '/review' },
   { label: '问答', path: '/chat' },
-  { label: '面试诊断', path: '/interview' },
+  { label: '模拟面试', path: '/interview' },
+  { label: '学习计划', path: '/study-plan' },
+  { label: '简历助手', path: '/resume' },
+  { label: '投递管理', path: '/applications' },
+  { label: '卡片强化', path: '/cards' },
+  { label: '复习巩固', path: '/review' },
   { label: '数据分析', path: '/analytics' },
   { label: '社区', path: '/community' },
-  { label: '面试诊断历史', path: '/interview/history' },
+  { label: '模拟面试历史', path: '/interview/history' },
   { label: '排行榜', path: '/community/leaderboard' },
   { label: '管理后台', path: '/admin', adminOnly: true },
   { label: '账户设置', path: '/settings' }
@@ -250,7 +274,7 @@ const openSidebar = () => {
 
 onMounted(() => {
   document.addEventListener('keydown', handleKeydown)
-  window.addEventListener('bytecoach:open-sidebar', openSidebar)
+  window.addEventListener('offerpilot:open-sidebar', openSidebar)
   if (window.innerWidth >= 1024) {
     sidebarVisible.value = true
   }
@@ -258,7 +282,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
-  window.removeEventListener('bytecoach:open-sidebar', openSidebar)
+  window.removeEventListener('offerpilot:open-sidebar', openSidebar)
 })
 
 const displayName = computed(() => authStore.user?.nickname || '访客')

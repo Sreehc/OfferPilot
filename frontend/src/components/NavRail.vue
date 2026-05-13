@@ -1,7 +1,11 @@
 <template>
   <aside class="relative z-[1] h-full min-h-0 overflow-y-auto bg-transparent px-3 py-4">
     <div class="space-y-6 pb-5">
-      <section v-for="group in groups" :key="group.label" class="space-y-2">
+      <section
+        v-for="group in groups"
+        :key="group.label"
+        class="space-y-2"
+      >
         <p class="px-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-tertiary">
           {{ group.label }}
         </p>
@@ -26,9 +30,11 @@
                     ? 'bg-accent'
                     : 'rail-link-dot group-hover:bg-accent/60'
                 "
-              ></span>
+              />
               <div class="min-w-0">
-                <div class="font-semibold text-ink">{{ item.label }}</div>
+                <div class="font-semibold text-ink">
+                  {{ item.label }}
+                </div>
                 <div class="truncate text-[11px] text-tertiary">
                   {{ item.hint }}
                 </div>
@@ -54,24 +60,28 @@ type NavItem = {
   label: string
   hint: string
   adminOnly?: boolean
-  group: '主任务' | '辅助' | '外部' | '管理'
+  group: '主线训练' | '辅助强化' | '外部' | '管理'
 }
 
 const allItems: NavItem[] = [
-  { path: '/dashboard', label: '首页', hint: '今日任务与进展', group: '主任务' },
-  { path: '/cards', label: '今日卡片', hint: '新卡学习 + 每日循环复习', group: '主任务' },
-  { path: '/review', label: '复习', hint: '间隔复习：到期卡片 + 错题', group: '主任务' },
-  { path: '/knowledge', label: '知识库', hint: '上传和管理资料', group: '主任务' },
-  { path: '/chat', label: '问答', hint: '提问并查看资料引用', group: '辅助' },
-  { path: '/interview', label: '面试诊断', hint: '做一次进阶练习', group: '辅助' },
-  { path: '/analytics', label: '数据分析', hint: '查看节奏和趋势', group: '辅助' },
+  { path: '/dashboard', label: '首页', hint: '求职训练总览与下一步动作', group: '主线训练' },
+  { path: '/question', label: '题库', hint: '按分类、难度和岗位方向训练', group: '主线训练' },
+  { path: '/knowledge', label: '知识库', hint: '管理资料、语料和学习来源', group: '主线训练' },
+  { path: '/chat', label: '问答', hint: '基于资料做带引用的知识问答', group: '主线训练' },
+  { path: '/interview', label: '模拟面试', hint: '启动一场文字或语音模拟面试', group: '主线训练' },
+  { path: '/study-plan', label: '学习计划', hint: '规划 7/14/30 天训练路线', group: '主线训练' },
+  { path: '/resume', label: '简历助手', hint: '承接简历解析与项目问答', group: '主线训练' },
+  { path: '/applications', label: '投递管理', hint: '跟踪投递、JD 和真实面试进度', group: '主线训练' },
+  { path: '/cards', label: '卡片强化', hint: '作为专项巩固的辅助入口保留', group: '辅助强化' },
+  { path: '/review', label: '复习巩固', hint: '清理到期复习、错题与弱项', group: '辅助强化' },
+  { path: '/analytics', label: '数据分析', hint: '观察训练结果和趋势变化', group: '辅助强化' },
   { path: '/community', label: '社区', hint: '浏览问题和发布回答', group: '外部' },
   { path: '/admin', label: '管理后台', hint: '内容与数据管理', adminOnly: true, group: '管理' }
 ]
 
 const items = computed(() => allItems.filter((item) => !item.adminOnly || authStore.user?.role === 'ADMIN'))
 const groups = computed(() =>
-  ['主任务', '辅助', '外部', '管理']
+  ['主线训练', '辅助强化', '外部', '管理']
     .map((label) => ({ label, items: items.value.filter((item) => item.group === label) }))
     .filter((group) => group.items.length > 0)
 )
