@@ -15,6 +15,7 @@ public class UploadPolicyService {
 
     private static final Set<String> IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp", "gif");
     private static final Set<String> KNOWLEDGE_EXTENSIONS = Set.of("md", "markdown", "txt", "text", "pdf");
+    private static final Set<String> RESUME_EXTENSIONS = Set.of("pdf", "doc", "docx");
     private static final Set<String> AUDIO_EXTENSIONS = Set.of("webm", "wav", "mp3", "m4a", "ogg", "mpeg");
 
     private final OfferPilotProperties offerPilotProperties;
@@ -28,6 +29,7 @@ public class UploadPolicyService {
         switch (directory) {
             case AVATAR -> validateAvatar(extension, contentType, size);
             case KNOWLEDGE -> validateKnowledge(extension, size);
+            case RESUME -> validateResume(extension, size);
             case INTERVIEW_AUDIO -> validateInterviewAudio(extension, contentType, size);
             default -> {
                 // Reserved directories keep default platform multipart limits for now.
@@ -50,6 +52,15 @@ public class UploadPolicyService {
         }
         if (size > offerPilotProperties.getStorage().getKnowledgeMaxBytes()) {
             throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "知识文档大小不能超过 20MB");
+        }
+    }
+
+    private void validateResume(String extension, long size) {
+        if (!RESUME_EXTENSIONS.contains(extension)) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "简历文件仅支持 pdf、doc、docx");
+        }
+        if (size > offerPilotProperties.getStorage().getResumeMaxBytes()) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "简历文件大小不能超过 10MB");
         }
     }
 

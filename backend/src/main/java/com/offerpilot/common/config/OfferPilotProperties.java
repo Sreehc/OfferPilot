@@ -136,6 +136,7 @@ public class OfferPilotProperties {
         /** Upload safety limits by asset type. */
         private long avatarMaxBytes = 2L * 1024 * 1024;
         private long knowledgeMaxBytes = 20L * 1024 * 1024;
+        private long resumeMaxBytes = 10L * 1024 * 1024;
         private long interviewAudioMaxBytes = 15L * 1024 * 1024;
     }
 }

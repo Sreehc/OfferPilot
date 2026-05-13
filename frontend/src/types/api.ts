@@ -360,6 +360,41 @@ export interface StudyPlan {
   tasks: StudyPlanTaskItem[]
 }
 
+export interface ResumeProjectQuestionItem {
+  question: string
+  intent: string
+}
+
+export interface ResumeProjectItem {
+  id: string
+  projectName: string
+  roleName: string
+  techStack: string
+  responsibility: string
+  achievement: string
+  projectSummary: string
+  followUpQuestions: ResumeProjectQuestionItem[]
+  riskHints: string[]
+}
+
+export interface ResumeSummaryItem {
+  id: string
+  title: string
+  fileType: string
+  parseStatus: string
+  summary: string
+  skills: string[]
+  education: string
+  selfIntro: string
+  interviewResumeText: string
+  lastParsedAt?: string
+  updateTime?: string
+}
+
+export interface ResumeFileDetail extends ResumeSummaryItem {
+  projects: ResumeProjectItem[]
+}
+
 export interface WrongQuestionItem {
   id: number
   questionId: number

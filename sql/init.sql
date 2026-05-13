@@ -434,6 +434,51 @@ CREATE TABLE IF NOT EXISTS study_plan_task (
 );
 
 -- ============================================================
+-- 简历文件表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS resume_file (
+    id BIGINT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    title VARCHAR(128) NOT NULL,
+    file_url VARCHAR(255) NOT NULL,
+    file_type VARCHAR(16) NOT NULL,
+    parse_status VARCHAR(32) NOT NULL DEFAULT 'parsed' COMMENT 'pending / parsed / failed',
+    raw_text LONGTEXT DEFAULT NULL,
+    summary VARCHAR(500) DEFAULT NULL,
+    skills VARCHAR(255) DEFAULT NULL,
+    education VARCHAR(500) DEFAULT NULL,
+    self_intro TEXT DEFAULT NULL,
+    interview_resume_text TEXT DEFAULT NULL,
+    last_parsed_at DATETIME DEFAULT NULL,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_resume_file_user (user_id),
+    KEY idx_resume_file_status (user_id, parse_status)
+);
+
+-- ============================================================
+-- 简历项目表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS resume_project (
+    id BIGINT PRIMARY KEY,
+    resume_file_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    project_name VARCHAR(128) NOT NULL,
+    role_name VARCHAR(128) DEFAULT NULL,
+    tech_stack VARCHAR(255) DEFAULT NULL,
+    responsibility TEXT DEFAULT NULL,
+    achievement TEXT DEFAULT NULL,
+    project_summary VARCHAR(500) DEFAULT NULL,
+    follow_up_questions_json JSON DEFAULT NULL,
+    risk_hints VARCHAR(500) DEFAULT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_resume_project_file (resume_file_id),
+    KEY idx_resume_project_user (user_id)
+);
+
+-- ============================================================
 -- 社区问题表
 -- ============================================================
 CREATE TABLE IF NOT EXISTS community_question (
