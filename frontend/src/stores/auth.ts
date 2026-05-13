@@ -73,7 +73,11 @@ export const useAuthStore = defineStore('auth', () => {
       await logoutApi()
     } finally {
       clear()
-      window.location.replace('/login')
+      try {
+        window.location.replace('/login')
+      } catch {
+        // Ignore navigation errors in non-browser test environments.
+      }
     }
   }
 

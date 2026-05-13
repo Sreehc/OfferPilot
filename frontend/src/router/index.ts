@@ -212,6 +212,17 @@ const router = createRouter({
       meta: { guestOnly: true }
     },
     {
+      path: '/forgot-password',
+      name: 'forgot-password',
+      component: () => import('@/pages/auth/ForgotPasswordPage.vue'),
+      meta: {
+        guestOnly: true,
+        title: '找回密码',
+        kicker: '认证',
+        subtitle: '通过邮箱验证码重置密码，当前作为账号增强链路接入。'
+      }
+    },
+    {
       path: '/verify-2fa',
       name: 'verify-2fa',
       component: () => import('@/pages/auth/TwoFactorVerifyPage.vue'),

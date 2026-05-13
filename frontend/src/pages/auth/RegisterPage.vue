@@ -3,26 +3,63 @@
     <div class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1180px] items-stretch gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(380px,1.05fr)]">
       <section class="shell-section-card auth-brand-panel p-6 sm:p-8">
         <div class="flex items-center gap-3">
-          <span class="state-pulse" aria-hidden="true"></span>
-          <p class="section-kicker">创建账号</p>
-        </div>
-
-        <div class="mt-8 max-w-2xl">
-          <h1 class="auth-hero-title">用一个账号开始学习</h1>
-          <p class="mt-5 text-sm leading-8 text-secondary sm:text-base">
-            创建账号后开始学习。
+          <span
+            class="state-pulse"
+            aria-hidden="true"
+          />
+          <p class="section-kicker">
+            创建账号
           </p>
         </div>
 
+        <div class="mt-8 max-w-2xl">
+          <h1 class="auth-hero-title">
+            先建好账号，把后续资料与训练沉淀到同一处
+          </h1>
+          <p class="mt-5 text-sm leading-8 text-secondary sm:text-base">
+            Phase 1 已把邮箱验证和找回密码链路接进账号体系。现在注册时就带上邮箱，后续简历、知识文档和语音面试资料都会复用同一账号基础。
+          </p>
+        </div>
+
+        <div class="mt-10 grid gap-4 sm:grid-cols-3">
+          <div class="auth-feature-card">
+            <div class="auth-feature-card__title">
+              邮箱预留
+            </div>
+            <p class="auth-feature-card__desc">
+              注册后可在设置页完成邮箱验证，为找回密码和后续资料安全做准备。
+            </p>
+          </div>
+          <div class="auth-feature-card">
+            <div class="auth-feature-card__title">
+              统一资料归档
+            </div>
+            <p class="auth-feature-card__desc">
+              知识文档、头像、语音面试音频会逐步统一到同一套文件存储策略下。
+            </p>
+          </div>
+          <div class="auth-feature-card">
+            <div class="auth-feature-card__title">
+              第三方入口预留
+            </div>
+            <p class="auth-feature-card__desc">
+              GitHub 登录入口已预留，后续接入时不会再重做整套认证心智。
+            </p>
+          </div>
+        </div>
       </section>
 
       <section class="shell-section-card auth-form-panel p-6 sm:p-8 md:p-10">
         <div class="flex items-start justify-between gap-4">
           <div>
-            <p class="section-kicker">注册</p>
-            <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">填写三个字段即可</h2>
+            <p class="section-kicker">
+              注册
+            </p>
+            <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">
+              补齐基础信息后开始使用
+            </h2>
             <p class="mt-3 text-sm leading-7 text-secondary">
-              填写昵称、用户名和密码。
+              当前注册会同步保存邮箱，方便后续验证和找回密码。
             </p>
           </div>
         </div>
@@ -35,7 +72,10 @@
           label-position="top"
           @submit.prevent
         >
-          <el-form-item label="昵称" prop="nickname">
+          <el-form-item
+            label="昵称"
+            prop="nickname"
+          >
             <el-input
               v-model="form.nickname"
               placeholder="例如：Spring猎人"
@@ -43,7 +83,10 @@
               maxlength="32"
             />
           </el-form-item>
-          <el-form-item label="用户名" prop="username">
+          <el-form-item
+            label="用户名"
+            prop="username"
+          >
             <el-input
               v-model="form.username"
               placeholder="请输入用户名"
@@ -51,7 +94,22 @@
               maxlength="32"
             />
           </el-form-item>
-          <el-form-item label="密码" prop="password">
+          <el-form-item
+            label="邮箱"
+            prop="email"
+          >
+            <el-input
+              v-model="form.email"
+              placeholder="you@example.com"
+              size="large"
+              maxlength="128"
+              autocomplete="email"
+            />
+          </el-form-item>
+          <el-form-item
+            label="密码"
+            prop="password"
+          >
             <el-input
               v-model="form.password"
               type="password"
@@ -76,7 +134,10 @@
             <div class="auth-links">
               <span class="text-sm text-secondary">
                 已有账号？
-                <RouterLink to="/login" class="accent-link font-semibold">返回登录</RouterLink>
+                <RouterLink
+                  to="/login"
+                  class="accent-link font-semibold"
+                >返回登录</RouterLink>
               </span>
             </div>
           </div>
@@ -102,6 +163,7 @@ const loading = ref(false)
 const form = reactive<RegisterPayload>({
   nickname: '',
   username: '',
+  email: '',
   password: '',
 })
 
@@ -114,6 +176,11 @@ const rules: FormRules<typeof form> = {
     { required: true, message: '请输入用户名', trigger: 'blur' },
     { min: 2, message: '用户名至少 2 个字符', trigger: 'blur' },
     { max: 32, message: '用户名不能超过 32 个字符', trigger: 'blur' },
+  ],
+  email: [
+    { required: true, message: '请输入邮箱', trigger: 'blur' },
+    { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' },
+    { max: 128, message: '邮箱不能超过 128 个字符', trigger: 'blur' },
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
@@ -130,6 +197,7 @@ const handleRegister = async () => {
     await authStore.register({
       nickname: form.nickname.trim(),
       username: form.username.trim(),
+      email: form.email.trim(),
       password: form.password,
     })
     ElMessage.success('注册成功，已自动登录')
@@ -170,6 +238,26 @@ const handleRegister = async () => {
   line-height: 0.98;
   letter-spacing: -0.04em;
   color: var(--bc-ink);
+}
+
+.auth-feature-card {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--bc-surface-muted);
+  padding: 1rem;
+}
+
+.auth-feature-card__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--bc-ink);
+}
+
+.auth-feature-card__desc {
+  margin-top: 0.6rem;
+  font-size: 0.88rem;
+  line-height: 1.75;
+  color: var(--bc-ink-secondary);
 }
 
 .auth-links {

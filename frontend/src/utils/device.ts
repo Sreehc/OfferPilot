@@ -4,13 +4,22 @@
  */
 export function generateDeviceFingerprint(): string {
   const canvas = document.createElement('canvas')
-  const ctx = canvas.getContext('2d')
-  if (ctx) {
-    ctx.textBaseline = 'top'
-    ctx.font = '14px Arial'
-    ctx.fillText('ByteCoach', 2, 2)
+  let canvasData = 'canvas-unavailable'
+
+  try {
+    const ctx = canvas.getContext('2d')
+    if (ctx) {
+      ctx.textBaseline = 'top'
+      ctx.font = '14px Arial'
+      ctx.fillText('OfferPilot', 2, 2)
+    }
+    const encoded = canvas.toDataURL()
+    if (encoded) {
+      canvasData = encoded
+    }
+  } catch {
+    // jsdom and some privacy modes may not expose canvas APIs.
   }
-  const canvasData = canvas.toDataURL()
 
   const components = [
     navigator.userAgent,
@@ -83,8 +92,8 @@ export function localizeDeviceName(name?: string): string {
     .trim()
 }
 
-const DEVICE_ID_KEY = 'bytecoach_device_id'
-const DEVICE_FP_KEY = 'bytecoach_device_fp'
+const DEVICE_ID_KEY = 'offerpilot_device_id'
+const DEVICE_FP_KEY = 'offerpilot_device_fp'
 
 export function getStoredDeviceId(): string | null {
   return localStorage.getItem(DEVICE_ID_KEY)

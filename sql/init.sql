@@ -1,8 +1,8 @@
--- ByteCoach Database Schema
+-- OfferPilot Database Schema
 -- Run this file to create the database and all tables.
 
-CREATE DATABASE IF NOT EXISTS bytecoach DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE bytecoach;
+CREATE DATABASE IF NOT EXISTS offerpilot DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE offerpilot;
 
 -- ============================================================
 -- 用户表
@@ -14,6 +14,10 @@ CREATE TABLE IF NOT EXISTS user (
     nickname VARCHAR(64) NOT NULL,
     avatar VARCHAR(255) DEFAULT NULL,
     email VARCHAR(128) DEFAULT NULL,
+    email_verified TINYINT(1) NOT NULL DEFAULT 0,
+    email_verified_at DATETIME DEFAULT NULL,
+    github_id VARCHAR(128) DEFAULT NULL,
+    github_username VARCHAR(128) DEFAULT NULL,
     role VARCHAR(32) NOT NULL DEFAULT 'USER',
     status TINYINT NOT NULL DEFAULT 1,
     source VARCHAR(32) DEFAULT 'system',
@@ -23,7 +27,9 @@ CREATE TABLE IF NOT EXISTS user (
     totp_enabled TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否启用两步验证',
     recovery_codes TEXT DEFAULT NULL COMMENT '恢复码 JSON 数组（AES 加密存储）',
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_user_email (email),
+    UNIQUE KEY uk_user_github_id (github_id)
 );
 
 -- ============================================================

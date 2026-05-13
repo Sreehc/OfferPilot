@@ -3,44 +3,72 @@
     <div class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1180px] items-stretch gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(380px,1.05fr)]">
       <section class="shell-section-card auth-brand-panel p-6 sm:p-8">
         <div class="flex items-center gap-3">
-          <span class="state-pulse" aria-hidden="true"></span>
-          <p class="section-kicker">账号登录</p>
+          <span
+            class="state-pulse"
+            aria-hidden="true"
+          />
+          <p class="section-kicker">
+            账号登录
+          </p>
         </div>
 
         <div class="mt-8 max-w-2xl">
-          <h1 class="auth-hero-title">用 AI 记得更牢，面试更从容</h1>
+          <h1 class="auth-hero-title">
+            账号已经不只服务学习，还要承接求职资料和训练记录
+          </h1>
           <p class="mt-5 text-sm leading-8 text-secondary sm:text-base">
-            ByteCoach 帮你用间隔记忆法掌握知识点，AI 模拟面试检验学习效果。
+            登录后继续进入题库、知识库、模拟面试与后续的简历、投递工作流。Phase 1 已补入邮箱验证、忘记密码和第三方登录入口预留。
           </p>
         </div>
 
         <div class="mt-10 grid gap-4 sm:grid-cols-3">
           <div class="auth-feature-card">
-            <div class="auth-feature-card__icon">🧠</div>
-            <p class="auth-feature-card__title">AI 间隔记忆</p>
-            <p class="auth-feature-card__desc">根据遗忘曲线自动安排复习，科学高效。</p>
+            <div class="auth-feature-card__icon">
+              🧠
+            </div>
+            <p class="auth-feature-card__title">
+              AI 间隔记忆
+            </p>
+            <p class="auth-feature-card__desc">
+              根据遗忘曲线自动安排复习，科学高效。
+            </p>
           </div>
           <div class="auth-feature-card">
-            <div class="auth-feature-card__icon">🎯</div>
-            <p class="auth-feature-card__title">模拟面试</p>
-            <p class="auth-feature-card__desc">AI 评分 + 标准答案 + 追问，查漏补缺。</p>
+            <div class="auth-feature-card__icon">
+              🎯
+            </div>
+            <p class="auth-feature-card__title">
+              模拟面试
+            </p>
+            <p class="auth-feature-card__desc">
+              AI 评分 + 标准答案 + 追问，查漏补缺。
+            </p>
           </div>
           <div class="auth-feature-card">
-            <div class="auth-feature-card__icon">📚</div>
-            <p class="auth-feature-card__title">知识卡片</p>
-            <p class="auth-feature-card__desc">上传资料，自动生成结构化学习卡片。</p>
+            <div class="auth-feature-card__icon">
+              📚
+            </div>
+            <p class="auth-feature-card__title">
+              知识卡片
+            </p>
+            <p class="auth-feature-card__desc">
+              上传资料，自动生成结构化学习卡片。
+            </p>
           </div>
         </div>
-
       </section>
 
       <section class="shell-section-card auth-form-panel p-6 sm:p-8 md:p-10">
         <div class="flex items-start justify-between gap-4">
           <div>
-            <p class="section-kicker">登录</p>
-            <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">输入账号继续</h2>
+            <p class="section-kicker">
+              登录
+            </p>
+            <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">
+              输入账号继续
+            </h2>
             <p class="mt-3 text-sm leading-7 text-secondary">
-              输入用户名和密码。
+              输入用户名和密码，若忘记密码可走邮箱验证码重置。
             </p>
           </div>
         </div>
@@ -53,7 +81,10 @@
           label-position="top"
           @submit.prevent
         >
-          <el-form-item label="用户名" prop="username">
+          <el-form-item
+            label="用户名"
+            prop="username"
+          >
             <el-input
               v-model="form.username"
               placeholder="请输入用户名"
@@ -61,7 +92,10 @@
               autocomplete="username"
             />
           </el-form-item>
-          <el-form-item label="密码" prop="password">
+          <el-form-item
+            label="密码"
+            prop="password"
+          >
             <el-input
               v-model="form.password"
               type="password"
@@ -73,7 +107,11 @@
             />
           </el-form-item>
 
-          <el-form-item v-if="showCaptcha" label="验证码" prop="captchaCode">
+          <el-form-item
+            v-if="showCaptcha"
+            label="验证码"
+            prop="captchaCode"
+          >
             <div class="captcha-console">
               <el-input
                 v-model="form.captchaCode"
@@ -92,8 +130,11 @@
                   :src="captchaImage"
                   alt="验证码"
                   class="h-14 w-[148px] object-cover"
-                />
-                <div v-else class="flex h-14 w-[148px] items-center justify-center text-xs text-tertiary">
+                >
+                <div
+                  v-else
+                  class="flex h-14 w-[148px] items-center justify-center text-xs text-tertiary"
+                >
                   加载中...
                 </div>
                 <span class="captcha-panel__hint">点击刷新</span>
@@ -114,8 +155,36 @@
             <div class="auth-links">
               <span class="text-sm text-secondary">
                 还没有账号？
-                <RouterLink class="accent-link font-semibold" to="/register">立即注册</RouterLink>
+                <RouterLink
+                  class="accent-link font-semibold"
+                  to="/register"
+                >立即注册</RouterLink>
               </span>
+              <RouterLink
+                to="/forgot-password"
+                class="accent-link text-sm font-semibold"
+              >
+                忘记密码
+              </RouterLink>
+            </div>
+            <div class="auth-provider-card">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <p class="text-sm font-semibold text-ink">
+                    第三方登录入口
+                  </p>
+                  <p class="mt-1 text-xs leading-6 text-secondary">
+                    当前预留 GitHub 登录入口，启用前保持占位。
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  class="hard-button-secondary text-sm"
+                  :disabled="!githubProvider?.enabled"
+                >
+                  {{ githubProvider?.enabled ? 'GitHub 登录' : 'GitHub 登录（预留）' }}
+                </button>
+              </div>
             </div>
           </div>
         </el-form>
@@ -127,10 +196,11 @@
 <script setup lang="ts">
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { fetchCaptchaApi, type LoginPayload } from '@/api/auth'
+import { fetchCaptchaApi, fetchOAuthProvidersApi, type LoginPayload } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
+import type { OAuthProviderInfo } from '@/types/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -140,9 +210,11 @@ const loading = ref(false)
 const failCount = ref(0)
 const captchaImage = ref('')
 const captchaKey = ref('')
+const oauthProviders = ref<OAuthProviderInfo[]>([])
 
 const showCaptcha = computed(() => failCount.value >= 3)
 const redirectTarget = computed(() => (route.query.redirect as string) || '/dashboard')
+const githubProvider = computed(() => oauthProviders.value.find((item) => item.provider === 'github') ?? null)
 const form = reactive({
   username: '',
   password: '',
@@ -161,6 +233,15 @@ const refreshCaptcha = async () => {
     captchaImage.value = response.data.image
   } catch {
     // Silently fail
+  }
+}
+
+const loadOAuthProviders = async () => {
+  try {
+    const response = await fetchOAuthProvidersApi()
+    oauthProviders.value = response.data
+  } catch {
+    oauthProviders.value = []
   }
 }
 
@@ -208,6 +289,10 @@ const handleLogin = async () => {
     loading.value = false
   }
 }
+
+onMounted(() => {
+  void loadOAuthProviders()
+})
 </script>
 
 <style scoped>
@@ -277,7 +362,21 @@ const handleLogin = async () => {
 
 .auth-links {
   display: flex;
-  justify-content: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.auth-provider-card {
+  border-radius: 18px;
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--bc-surface-muted);
+  padding: 0.95rem 1rem;
+}
+
+.auth-provider-card :deep(button[disabled]) {
+  cursor: not-allowed;
+  opacity: 0.72;
 }
 
 .auth-feature-card {
@@ -311,7 +410,20 @@ const handleLogin = async () => {
     grid-template-columns: 1fr;
   }
 
+  .auth-links {
+    justify-content: center;
+  }
+
   .captcha-panel {
+    width: 100%;
+  }
+
+  .auth-provider-card > div {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .auth-provider-card :deep(button) {
     width: 100%;
   }
 }

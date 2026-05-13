@@ -4,23 +4,46 @@
 
     <section class="shell-section-card p-5 sm:p-6">
       <section class="settings-tab-shell">
-        <el-tabs v-model="activeTab" class="settings-tabs">
-          <el-tab-pane label="两步验证" name="twoFactor">
+        <el-tabs
+          v-model="activeTab"
+          class="settings-tabs"
+        >
+          <el-tab-pane
+            label="账号状态"
+            name="account"
+          >
+            <div class="settings-tab-content">
+              <AccountProfileTab />
+            </div>
+          </el-tab-pane>
+          <el-tab-pane
+            label="两步验证"
+            name="twoFactor"
+          >
             <div class="settings-tab-content">
               <TwoFactorTab />
             </div>
           </el-tab-pane>
-          <el-tab-pane label="数据导出" name="dataExport">
+          <el-tab-pane
+            label="数据导出"
+            name="dataExport"
+          >
             <div class="settings-tab-content">
               <DataExportTab />
             </div>
           </el-tab-pane>
-          <el-tab-pane label="设备管理" name="devices">
+          <el-tab-pane
+            label="设备管理"
+            name="devices"
+          >
             <div class="settings-tab-content">
               <DeviceManagePage />
             </div>
           </el-tab-pane>
-          <el-tab-pane label="登录历史" name="loginHistory">
+          <el-tab-pane
+            label="登录历史"
+            name="loginHistory"
+          >
             <div class="settings-tab-content">
               <LoginHistoryTab />
             </div>
@@ -34,12 +57,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import AppShellHeader from '@/components/AppShellHeader.vue'
+import AccountProfileTab from './AccountProfileTab.vue'
 import DeviceManagePage from './DeviceManagePage.vue'
 import LoginHistoryTab from './LoginHistoryTab.vue'
 import TwoFactorTab from './TwoFactorTab.vue'
 import DataExportTab from './DataExportTab.vue'
 
-const activeTab = ref('twoFactor')
+const activeTab = ref('account')
 </script>
 
 <style scoped>

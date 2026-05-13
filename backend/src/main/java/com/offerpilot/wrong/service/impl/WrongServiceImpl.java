@@ -1,0 +1,168 @@
+package com.offerpilot.wrong.service.impl;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.offerpilot.common.api.ResultCode;
+import com.offerpilot.common.dto.PageResult;
+import com.offerpilot.common.exception.BusinessException;
+import com.offerpilot.cards.service.KnowledgeCardService;
+import com.offerpilot.dashboard.service.DashboardService;
+import com.offerpilot.question.entity.Question;
+import com.offerpilot.question.mapper.QuestionMapper;
+import com.offerpilot.wrong.dto.WrongMasteryUpdateRequest;
+import com.offerpilot.wrong.entity.WrongQuestion;
+import com.offerpilot.wrong.mapper.WrongQuestionMapper;
+import com.offerpilot.wrong.service.WrongService;
+import com.offerpilot.wrong.vo.WrongQuestionVO;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class WrongServiceImpl implements WrongService {
+
+    private final WrongQuestionMapper wrongQuestionMapper;
+    private final QuestionMapper questionMapper;
+    private final DashboardService dashboardService;
+    private final KnowledgeCardService knowledgeCardService;
+
+    @Override
+    public PageResult<WrongQuestionVO> list(Long userId, int pageNum, int pageSize) {
+        long total = wrongQuestionMapper.selectCount(
+                new LambdaQueryWrapper<WrongQuestion>().eq(WrongQuestion::getUserId, userId));
+
+        int offset = (Math.max(pageNum, 1) - 1) * Math.max(pageSize, 1);
+        List<WrongQuestion> wrongs = wrongQuestionMapper.selectList(
+                new LambdaQueryWrapper<WrongQuestion>()
+                        .eq(WrongQuestion::getUserId, userId)
+                        .orderByDesc(WrongQuestion::getUpdateTime)
+                        .last("LIMIT " + Math.max(pageSize, 1) + " OFFSET " + offset));
+
+        List<WrongQuestionVO> voList;
+        if (wrongs.isEmpty()) {
+            voList = List.of();
+        } else {
+            Set<Long> questionIds = wrongs.stream()
+                    .map(WrongQuestion::getQuestionId)
+                    .collect(Collectors.toSet());
+            Map<Long, Question> questionMap = questionMapper.selectBatchIds(questionIds)
+                    .stream()
+                    .collect(Collectors.toMap(Question::getId, Function.identity(), (a, b) -> a));
+            voList = wrongs.stream()
+                    .map(wrong -> {
+                        Question q = questionMap.get(wrong.getQuestionId());
+                        return WrongQuestionVO.builder()
+                                .id(wrong.getId())
+                                .questionId(wrong.getQuestionId())
+                                .title(q != null ? q.getTitle() : "Unknown")
+                                .masteryLevel(wrong.getMasteryLevel())
+                                .standardAnswer(wrong.getStandardAnswer())
+                                .errorReason(wrong.getErrorReason())
+                                .easeFactor(wrong.getEaseFactor())
+                                .intervalDays(wrong.getIntervalDays())
+                                .nextReviewDate(wrong.getNextReviewDate())
+                                .streak(wrong.getStreak())
+                                .reviewCount(wrong.getReviewCount())
+                                .build();
+                    })
+                    .toList();
+        }
+
+        return PageResult.<WrongQuestionVO>builder()
+                .records(voList)
+                .total(total)
+                .pageNum(pageNum)
+                .pageSize(pageSize)
+                .totalPages((int) Math.ceil((double) total / Math.max(pageSize, 1)))
+                .build();
+    }
+
+    @Override
+    public List<WrongQuestionVO> listAll(Long userId) {
+        List<WrongQuestion> wrongs = wrongQuestionMapper.selectList(new LambdaQueryWrapper<WrongQuestion>()
+                .eq(WrongQuestion::getUserId, userId)
+                .orderByAsc(WrongQuestion::getMasteryLevel)
+                .orderByDesc(WrongQuestion::getCreateTime));
+
+        if (wrongs.isEmpty()) {
+            return List.of();
+        }
+
+        Set<Long> questionIds = wrongs.stream()
+                .map(WrongQuestion::getQuestionId)
+                .collect(Collectors.toSet());
+        Map<Long, Question> questionMap = questionMapper.selectBatchIds(questionIds)
+                .stream()
+                .collect(Collectors.toMap(Question::getId, Function.identity(), (a, b) -> a));
+
+        return wrongs.stream()
+                .map(w -> {
+                    Question q = questionMap.get(w.getQuestionId());
+                    return WrongQuestionVO.builder()
+                            .id(w.getId())
+                            .questionId(w.getQuestionId())
+                            .title(q != null ? q.getTitle() : "Unknown")
+                            .masteryLevel(w.getMasteryLevel())
+                            .standardAnswer(q != null ? q.getStandardAnswer() : null)
+                            .errorReason(w.getErrorReason())
+                            .easeFactor(w.getEaseFactor())
+                            .intervalDays(w.getIntervalDays())
+                            .nextReviewDate(w.getNextReviewDate())
+                            .streak(w.getStreak())
+                            .reviewCount(w.getReviewCount())
+                            .build();
+                })
+                .toList();
+    }
+
+    @Override
+    public WrongQuestionVO detail(Long userId, Long id) {
+        WrongQuestion wrong = getOwnedWrong(userId, id);
+        Question q = questionMapper.selectById(wrong.getQuestionId());
+        return WrongQuestionVO.builder()
+                .id(wrong.getId())
+                .questionId(wrong.getQuestionId())
+                .title(q != null ? q.getTitle() : "Unknown")
+                .masteryLevel(wrong.getMasteryLevel())
+                .standardAnswer(wrong.getStandardAnswer())
+                .errorReason(wrong.getErrorReason())
+                .easeFactor(wrong.getEaseFactor())
+                .intervalDays(wrong.getIntervalDays())
+                .nextReviewDate(wrong.getNextReviewDate())
+                .streak(wrong.getStreak())
+                .reviewCount(wrong.getReviewCount())
+                .build();
+    }
+
+    @Override
+    public void updateMastery(Long userId, Long id, WrongMasteryUpdateRequest request) {
+        WrongQuestion wrong = getOwnedWrong(userId, id);
+        wrong.setMasteryLevel(request.getMasteryLevel());
+        wrong.setReviewCount((wrong.getReviewCount() == null ? 0 : wrong.getReviewCount()) + 1);
+        wrong.setLastReviewTime(LocalDateTime.now());
+        wrongQuestionMapper.updateById(wrong);
+        knowledgeCardService.syncWrongDeck(userId);
+        dashboardService.evictCache(userId);
+    }
+
+    @Override
+    public void delete(Long userId, Long id) {
+        WrongQuestion wrong = getOwnedWrong(userId, id);
+        wrongQuestionMapper.deleteById(wrong.getId());
+        knowledgeCardService.syncWrongDeck(userId);
+        dashboardService.evictCache(userId);
+    }
+
+    private WrongQuestion getOwnedWrong(Long userId, Long id) {
+        WrongQuestion wrong = wrongQuestionMapper.selectById(id);
+        if (wrong == null || !wrong.getUserId().equals(userId)) {
+            throw new BusinessException(ResultCode.NOT_FOUND.getCode(), "wrong question not found");
+        }
+        return wrong;
+    }
+}

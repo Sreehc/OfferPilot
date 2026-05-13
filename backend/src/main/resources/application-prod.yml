@@ -1,69 +1,87 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${BYTECOACH_DB_HOST:mysql}:${BYTECOACH_DB_PORT:3306}/${BYTECOACH_DB_NAME:bytecoach}?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
-    username: ${BYTECOACH_DB_USERNAME:bytecoach}
-    password: ${BYTECOACH_DB_PASSWORD:?BYTECOACH_DB_PASSWORD is required}
+    url: jdbc:mysql://${OFFERPILOT_DB_HOST:mysql}:${OFFERPILOT_DB_PORT:3306}/${OFFERPILOT_DB_NAME:offerpilot}?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: ${OFFERPILOT_DB_USERNAME:offerpilot}
+    password: ${OFFERPILOT_DB_PASSWORD:?OFFERPILOT_DB_PASSWORD is required}
   data:
     redis:
-      host: ${BYTECOACH_REDIS_HOST:redis}
-      port: ${BYTECOACH_REDIS_PORT:6379}
-      database: ${BYTECOACH_REDIS_DB:0}
-      password: ${BYTECOACH_REDIS_PASSWORD:}
+      host: ${OFFERPILOT_REDIS_HOST:redis}
+      port: ${OFFERPILOT_REDIS_PORT:6379}
+      database: ${OFFERPILOT_REDIS_DB:0}
+      password: ${OFFERPILOT_REDIS_PASSWORD:}
       timeout: 5s
   servlet:
     multipart:
       max-file-size: 20MB
       max-request-size: 20MB
 
-bytecoach:
+offerpilot:
   security:
-    jwt-secret: ${BYTECOACH_JWT_SECRET:?BYTECOACH_JWT_SECRET is required}
-    jwt-expire-seconds: ${BYTECOACH_JWT_EXPIRE_SECONDS:86400}
+    jwt-secret: ${OFFERPILOT_JWT_SECRET:?OFFERPILOT_JWT_SECRET is required}
+    jwt-expire-seconds: ${OFFERPILOT_JWT_EXPIRE_SECONDS:86400}
   cors:
-    origins: ${BYTECOACH_CORS_ORIGINS:?BYTECOACH_CORS_ORIGINS is required}
+    origins: ${OFFERPILOT_CORS_ORIGINS:?OFFERPILOT_CORS_ORIGINS is required}
   ai:
     llm:
-      enabled: ${BYTECOACH_LLM_ENABLED:true}
-      base-url: ${BYTECOACH_LLM_BASE_URL:https://api.openai.com/v1}
-      api-key: ${BYTECOACH_LLM_API_KEY:}
-      model: ${BYTECOACH_LLM_MODEL:gpt-4.1-mini}
-      timeout-seconds: ${BYTECOACH_LLM_TIMEOUT_SECONDS:30}
+      enabled: ${OFFERPILOT_LLM_ENABLED:true}
+      base-url: ${OFFERPILOT_LLM_BASE_URL:https://api.openai.com/v1}
+      api-key: ${OFFERPILOT_LLM_API_KEY:}
+      model: ${OFFERPILOT_LLM_MODEL:gpt-4.1-mini}
+      timeout-seconds: ${OFFERPILOT_LLM_TIMEOUT_SECONDS:30}
     embedding:
-      enabled: ${BYTECOACH_EMBEDDING_ENABLED:false}
-      base-url: ${BYTECOACH_EMBEDDING_BASE_URL:${BYTECOACH_LLM_BASE_URL:https://api.openai.com/v1}}
-      api-key: ${BYTECOACH_EMBEDDING_API_KEY:${BYTECOACH_LLM_API_KEY:}}
-      model: ${BYTECOACH_EMBEDDING_MODEL:text-embedding-3-small}
-      dimensions: ${BYTECOACH_EMBEDDING_DIMENSIONS:1536}
+      enabled: ${OFFERPILOT_EMBEDDING_ENABLED:false}
+      base-url: ${OFFERPILOT_EMBEDDING_BASE_URL:${OFFERPILOT_LLM_BASE_URL:https://api.openai.com/v1}}
+      api-key: ${OFFERPILOT_EMBEDDING_API_KEY:${OFFERPILOT_LLM_API_KEY:}}
+      model: ${OFFERPILOT_EMBEDDING_MODEL:text-embedding-3-small}
+      dimensions: ${OFFERPILOT_EMBEDDING_DIMENSIONS:1536}
     vector:
-      index-name: bytecoach_chunks
-      similarity-threshold: ${BYTECOACH_VECTOR_THRESHOLD:0.3}
+      index-name: offerpilot_chunks
+      similarity-threshold: ${OFFERPILOT_VECTOR_THRESHOLD:0.3}
   review:
-    init-fixed-rate-ms: ${BYTECOACH_REVIEW_INIT_RATE_MS:600000}
-    init-batch-limit: ${BYTECOACH_REVIEW_INIT_BATCH:500}
-    cache-ttl-hours: ${BYTECOACH_REVIEW_CACHE_TTL:24}
-    daily-limit: ${BYTECOACH_REVIEW_DAILY_LIMIT:30}
-    cron-daily-cache: ${BYTECOACH_REVIEW_CRON:0 5 0 * * ?}
+    init-fixed-rate-ms: ${OFFERPILOT_REVIEW_INIT_RATE_MS:600000}
+    init-batch-limit: ${OFFERPILOT_REVIEW_INIT_BATCH:500}
+    cache-ttl-hours: ${OFFERPILOT_REVIEW_CACHE_TTL:24}
+    daily-limit: ${OFFERPILOT_REVIEW_DAILY_LIMIT:30}
+    cron-daily-cache: ${OFFERPILOT_REVIEW_CRON:0 5 0 * * ?}
   notification:
-    cron-daily-reminder: ${BYTECOACH_NOTIFICATION_CRON:0 0 8 * * ?}
+    cron-daily-reminder: ${OFFERPILOT_NOTIFICATION_CRON:0 0 8 * * ?}
   community:
-    cron-rank-refresh: ${BYTECOACH_RANK_CRON:0 5 0 * * ?}
+    cron-rank-refresh: ${OFFERPILOT_RANK_CRON:0 5 0 * * ?}
   adaptive:
-    cache-ttl-hours: ${BYTECOACH_ADAPTIVE_CACHE_TTL:24}
-    weak-threshold: ${BYTECOACH_ADAPTIVE_WEAK_THRESHOLD:50.0}
-    cron-refresh: ${BYTECOACH_ADAPTIVE_CRON:0 10 0 * * ?}
+    cache-ttl-hours: ${OFFERPILOT_ADAPTIVE_CACHE_TTL:24}
+    weak-threshold: ${OFFERPILOT_ADAPTIVE_WEAK_THRESHOLD:50.0}
+    cron-refresh: ${OFFERPILOT_ADAPTIVE_CRON:0 10 0 * * ?}
   interview:
-    wrong-threshold: ${BYTECOACH_WRONG_THRESHOLD:60}
+    wrong-threshold: ${OFFERPILOT_WRONG_THRESHOLD:60}
   dashboard:
-    cache-ttl-minutes: ${BYTECOACH_DASHBOARD_CACHE_TTL:5}
+    cache-ttl-minutes: ${OFFERPILOT_DASHBOARD_CACHE_TTL:5}
   rate-limit:
-    max-requests: ${BYTECOACH_RATE_LIMIT:60}
-    window-seconds: ${BYTECOACH_RATE_WINDOW:60}
+    max-requests: ${OFFERPILOT_RATE_LIMIT:60}
+    window-seconds: ${OFFERPILOT_RATE_WINDOW:60}
   ai-quota:
-    daily-limit: ${BYTECOACH_AI_QUOTA:100}
+    daily-limit: ${OFFERPILOT_AI_QUOTA:100}
   document:
-    tika-max-chars: ${BYTECOACH_TIKA_MAX_CHARS:1000000}
-    max-chunk-size: ${BYTECOACH_CHUNK_SIZE:800}
+    tika-max-chars: ${OFFERPILOT_TIKA_MAX_CHARS:1000000}
+    max-chunk-size: ${OFFERPILOT_CHUNK_SIZE:800}
+  auth:
+    email-verification-code-ttl-minutes: ${OFFERPILOT_EMAIL_VERIFY_TTL:10}
+    password-reset-code-ttl-minutes: ${OFFERPILOT_PASSWORD_RESET_TTL:15}
+    expose-debug-codes: ${OFFERPILOT_AUTH_EXPOSE_DEBUG_CODES:false}
+    github-enabled: ${OFFERPILOT_GITHUB_ENABLED:false}
+    github-client-id: ${OFFERPILOT_GITHUB_CLIENT_ID:}
+    github-client-secret: ${OFFERPILOT_GITHUB_CLIENT_SECRET:}
+  storage:
+    provider: ${OFFERPILOT_STORAGE_PROVIDER:local}
+    local-root: ${OFFERPILOT_STORAGE_LOCAL_ROOT:/var/lib/offerpilot/storage}
+    public-base-url: ${OFFERPILOT_STORAGE_PUBLIC_BASE_URL:/api/files/public}
+    minio-endpoint: ${OFFERPILOT_STORAGE_MINIO_ENDPOINT:}
+    minio-access-key: ${OFFERPILOT_STORAGE_MINIO_ACCESS_KEY:}
+    minio-secret-key: ${OFFERPILOT_STORAGE_MINIO_SECRET_KEY:}
+    minio-bucket: ${OFFERPILOT_STORAGE_MINIO_BUCKET:offerpilot}
+    avatar-max-bytes: ${OFFERPILOT_STORAGE_AVATAR_MAX_BYTES:2097152}
+    knowledge-max-bytes: ${OFFERPILOT_STORAGE_KNOWLEDGE_MAX_BYTES:20971520}
+    interview-audio-max-bytes: ${OFFERPILOT_STORAGE_INTERVIEW_AUDIO_MAX_BYTES:15728640}
 
 mybatis-plus:
   configuration:

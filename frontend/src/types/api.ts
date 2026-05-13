@@ -17,7 +17,15 @@ export interface UserInfo {
   username: string
   nickname: string
   avatar?: string
+  email?: string
+  emailVerified?: boolean
+  emailVerifiedAt?: string
+  githubLinked?: boolean
+  githubUsername?: string
   role: string
+  status?: number
+  createTime?: string
+  lastLoginTime?: string
 }
 
 export interface LoginResponse {
@@ -36,6 +44,21 @@ export interface TwoFactorStatus {
 export interface TwoFactorSetup {
   otpauthUri: string
   secret: string
+}
+
+export interface AuthDelivery {
+  message: string
+  maskedEmail?: string
+  expiresInMinutes?: number
+  debugCode?: string
+}
+
+export interface OAuthProviderInfo {
+  provider: string
+  displayName: string
+  enabled: boolean
+  configured: boolean
+  authUrl?: string | null
 }
 
 export interface TwoFactorEnable {

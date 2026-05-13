@@ -1,5 +1,16 @@
 import { request } from '@/utils/http'
-import type { LoginDeviceItem, LoginLogItem, LoginResponse, PageResult, TwoFactorEnable, TwoFactorSetup, TwoFactorStatus, UserInfo } from '@/types/api'
+import type {
+  AuthDelivery,
+  LoginDeviceItem,
+  LoginLogItem,
+  LoginResponse,
+  OAuthProviderInfo,
+  PageResult,
+  TwoFactorEnable,
+  TwoFactorSetup,
+  TwoFactorStatus,
+  UserInfo
+} from '@/types/api'
 
 export interface LoginPayload {
   username: string
@@ -12,6 +23,7 @@ export interface LoginPayload {
 
 export interface RegisterPayload extends LoginPayload {
   nickname: string
+  email: string
 }
 
 export const loginApi = (payload: LoginPayload) => {
@@ -28,6 +40,26 @@ export const fetchCurrentUserApi = () => {
 
 export const logoutApi = () => {
   return request<null>({ url: '/auth/logout', method: 'post' })
+}
+
+export const sendEmailVerificationCodeApi = () => {
+  return request<AuthDelivery>({ url: '/auth/email/send-verification-code', method: 'post' })
+}
+
+export const verifyEmailCodeApi = (code: string) => {
+  return request<UserInfo>({ url: '/auth/email/verify', method: 'post', data: { code } })
+}
+
+export const forgotPasswordApi = (email: string) => {
+  return request<AuthDelivery>({ url: '/auth/password/forgot', method: 'post', data: { email } })
+}
+
+export const resetPasswordApi = (payload: { email: string; code: string; newPassword: string }) => {
+  return request<null>({ url: '/auth/password/reset', method: 'post', data: payload })
+}
+
+export const fetchOAuthProvidersApi = () => {
+  return request<OAuthProviderInfo[]>({ url: '/auth/oauth/providers', method: 'get' })
 }
 
 export const uploadAvatarApi = (file: File) => {

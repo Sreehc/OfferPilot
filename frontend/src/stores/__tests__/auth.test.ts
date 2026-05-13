@@ -20,8 +20,10 @@ vi.mock('@/utils/storage', () => ({
   }
 }))
 
-vi.mock('@/router', () => ({
-  default: { push: vi.fn() }
+vi.mock('@/utils/device', () => ({
+  getOrCreateDeviceFingerprint: vi.fn(() => 'fp_test'),
+  getDeviceName: vi.fn(() => '测试设备'),
+  setStoredDeviceId: vi.fn()
 }))
 
 import { loginApi, logoutApi, registerApi, fetchCurrentUserApi } from '@/api/auth'
@@ -73,7 +75,7 @@ describe('AuthStore', () => {
     vi.mocked(registerApi).mockResolvedValue(mockResponse as any)
 
     const store = useAuthStore()
-    await store.register({ username: 'newuser', password: 'pass', nickname: 'New' })
+    await store.register({ username: 'newuser', password: 'pass', nickname: 'New', email: 'new@example.com' })
 
     expect(store.isLoggedIn).toBe(true)
     expect(store.token).toBe('jwt-token-456')
