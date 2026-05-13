@@ -1,9 +1,18 @@
 import { request } from '@/utils/http'
-import type { ChatMessageItem, ChatSendResult, ChatSessionItem, PageResult } from '@/types/api'
+import type {
+  ChatAnswerMode,
+  ChatKnowledgeScope,
+  ChatMessageItem,
+  ChatSendResult,
+  ChatSessionItem,
+  PageResult
+} from '@/types/api'
 
 export interface ChatSendPayload {
   sessionId?: number
   mode: 'chat' | 'rag'
+  answerMode: ChatAnswerMode
+  knowledgeScope?: ChatKnowledgeScope
   message: string
 }
 

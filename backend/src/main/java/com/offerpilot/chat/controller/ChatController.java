@@ -80,7 +80,10 @@ public class ChatController {
                         .data(Map.of(
                                 "sessionId", result.getSessionId(),
                                 "sessionTitle", result.getSessionTitle() != null ? result.getSessionTitle() : "",
-                                "references", result.getReferences() != null ? result.getReferences() : List.of()
+                                "references", result.getReferences() != null ? result.getReferences() : List.of(),
+                                "suggestedQuestions", result.getSuggestedQuestions() != null ? result.getSuggestedQuestions() : List.of(),
+                                "answerMode", result.getAnswerMode() != null ? result.getAnswerMode() : "",
+                                "knowledgeScope", result.getKnowledgeScope() != null ? result.getKnowledgeScope() : ""
                         )));
                 emitter.complete();
             } catch (Exception e) {

@@ -39,13 +39,18 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
 
     @Override
     public List<KnowledgeSearchVO.Reference> searchReferences(String query, int limit) {
+        return searchReferences(query, limit, "all", null);
+    }
+
+    @Override
+    public List<KnowledgeSearchVO.Reference> searchReferences(String query, int limit, String knowledgeScope, Long userId) {
         if (!StringUtils.hasText(query)) {
             return List.of();
         }
 
         // Strategy: try vector search first, merge with keyword search for hybrid results
-        List<ScoredChunk> vectorResults = vectorSearch(query, limit * 2);
-        List<ScoredChunk> keywordResults = keywordSearch(query, limit * 2);
+        List<ScoredChunk> vectorResults = vectorSearch(query, limit * 2, knowledgeScope, userId);
+        List<ScoredChunk> keywordResults = keywordSearch(query, limit * 2, knowledgeScope, userId);
 
         List<ScoredChunk> merged = mergeResults(vectorResults, keywordResults);
         return merged.stream()
@@ -54,7 +59,7 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
                 .toList();
     }
 
-    private List<ScoredChunk> vectorSearch(String query, int limit) {
+    private List<ScoredChunk> vectorSearch(String query, int limit, String knowledgeScope, Long userId) {
         float[] queryEmbedding = embeddingGateway.embed(query);
         if (queryEmbedding.length == 0) {
             log.debug("Embedding disabled or failed, skipping vector search");
@@ -89,7 +94,7 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
             KnowledgeChunk chunk = chunkMap.get(hit.chunkId());
             if (chunk == null) continue;
             KnowledgeDoc doc = docMap.get(chunk.getDocId());
-            if (doc == null || !"indexed".equals(doc.getStatus())) continue;
+            if (doc == null || !"indexed".equals(doc.getStatus()) || !matchesScope(doc, knowledgeScope, userId)) continue;
 
             String docTitle = buildDocTitle(doc, categoryMap);
             String snippet = snippet(chunk.getContent(), 120);
@@ -100,13 +105,16 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
                             .docTitle(docTitle)
                             .snippet(snippet)
                             .score(hit.score())
+                            .libraryScope(doc.getLibraryScope())
+                            .businessType(doc.getBusinessType())
+                            .fileType(doc.getFileType())
                             .build()));
         }
         log.info("Vector search: query='{}', hits={}, aboveThreshold={}", query, vectorHits.size(), results.size());
         return results;
     }
 
-    private List<ScoredChunk> keywordSearch(String query, int limit) {
+    private List<ScoredChunk> keywordSearch(String query, int limit, String knowledgeScope, Long userId) {
         List<String> keywords = extractKeywords(query);
         if (keywords.isEmpty()) {
             return List.of();
@@ -138,7 +146,7 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
         List<ScoredChunk> scored = new ArrayList<>();
         for (KnowledgeChunk chunk : chunks) {
             KnowledgeDoc doc = docMap.get(chunk.getDocId());
-            if (doc == null || !"indexed".equals(doc.getStatus())) {
+            if (doc == null || !"indexed".equals(doc.getStatus()) || !matchesScope(doc, knowledgeScope, userId)) {
                 continue;
             }
             String haystack = (doc.getTitle() == null ? "" : doc.getTitle()) + "\n"
@@ -158,6 +166,9 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
                             .docTitle(docTitle)
                             .snippet(snippet(chunk.getContent(), keywords))
                             .score(normalizedScore)
+                            .libraryScope(doc.getLibraryScope())
+                            .businessType(doc.getBusinessType())
+                            .fileType(doc.getFileType())
                             .build()));
         }
         return scored.stream()
@@ -203,6 +214,29 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
     private String buildDocTitle(KnowledgeDoc doc, Map<Long, Category> categoryMap) {
         Category category = categoryMap.get(doc.getCategoryId());
         return category == null ? doc.getTitle() : category.getName() + " · " + doc.getTitle();
+    }
+
+    private boolean matchesScope(KnowledgeDoc doc, String knowledgeScope, Long userId) {
+        if (!StringUtils.hasText(knowledgeScope) || "all".equalsIgnoreCase(knowledgeScope)) {
+            return isSystemDoc(doc) || isOwnedPersonalDoc(doc, userId);
+        }
+        if ("system".equalsIgnoreCase(knowledgeScope)) {
+            return isSystemDoc(doc);
+        }
+        if ("personal".equalsIgnoreCase(knowledgeScope)) {
+            return isOwnedPersonalDoc(doc, userId);
+        }
+        return isSystemDoc(doc) || isOwnedPersonalDoc(doc, userId);
+    }
+
+    private boolean isSystemDoc(KnowledgeDoc doc) {
+        return "system".equalsIgnoreCase(doc.getLibraryScope()) || doc.getUserId() == null;
+    }
+
+    private boolean isOwnedPersonalDoc(KnowledgeDoc doc, Long userId) {
+        return userId != null
+                && "personal".equalsIgnoreCase(doc.getLibraryScope())
+                && userId.equals(doc.getUserId());
     }
 
     private List<String> extractKeywords(String query) {

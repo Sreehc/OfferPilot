@@ -11,6 +11,13 @@ public class ChatSendRequest {
     private String mode;
 
     @NotBlank(message = "cannot be blank")
+    private String answerMode = "learning";
+
+    private String knowledgeScope = "all";
+
+    /** Populated by service layer when the current user is known. */
+    private Long userId;
+
+    @NotBlank(message = "cannot be blank")
     private String message;
 }
-

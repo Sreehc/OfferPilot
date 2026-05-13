@@ -2,23 +2,49 @@
   <div class="chat-page">
     <section class="chat-toolbar shell-section-card p-4 sm:p-5">
       <div class="chat-toolbar__actions">
-        <div class="mode-toggle mode-toggle-page" role="tablist" aria-label="问答模式">
-          <button
-            type="button"
-            class="mode-toggle__item"
-            :class="{ 'mode-toggle__item-active': mode === 'rag' }"
-            @click="mode = 'rag'"
-          >
-            基于资料回答
-          </button>
-          <button
-            type="button"
-            class="mode-toggle__item"
-            :class="{ 'mode-toggle__item-active': mode === 'chat' }"
-            @click="mode = 'chat'"
-          >
-            自由提问
-          </button>
+        <div class="chat-toolbar__selectors">
+          <div class="mode-toggle mode-toggle-page" role="tablist" aria-label="问答模式">
+            <button
+              type="button"
+              class="mode-toggle__item"
+              :class="{ 'mode-toggle__item-active': mode === 'rag' }"
+              @click="mode = 'rag'"
+            >
+              基于资料回答
+            </button>
+            <button
+              type="button"
+              class="mode-toggle__item"
+              :class="{ 'mode-toggle__item-active': mode === 'chat' }"
+              @click="mode = 'chat'"
+            >
+              自由提问
+            </button>
+          </div>
+          <div class="mode-toggle mode-toggle-page" role="tablist" aria-label="回答模式">
+            <button
+              v-for="item in answerModes"
+              :key="item.value"
+              type="button"
+              class="mode-toggle__item"
+              :class="{ 'mode-toggle__item-active': answerMode === item.value }"
+              @click="answerMode = item.value"
+            >
+              {{ item.label }}
+            </button>
+          </div>
+          <div v-if="mode === 'rag'" class="scope-toggle" role="tablist" aria-label="知识库范围">
+            <button
+              v-for="item in knowledgeScopes"
+              :key="item.value"
+              type="button"
+              class="scope-toggle__item"
+              :class="{ 'scope-toggle__item-active': knowledgeScope === item.value }"
+              @click="knowledgeScope = item.value"
+            >
+              {{ item.label }}
+            </button>
+          </div>
         </div>
         <div class="flex flex-wrap gap-3">
           <button type="button" class="session-toggle" @click="toggleSessionPanel">
@@ -236,8 +262,9 @@
               <footer class="composer-shell">
                 <div class="composer-shell__meta">
                   <span class="composer-hint">
-                    {{ mode === 'rag' ? '引用知识库' : '自由问答' }}
+                    {{ mode === 'rag' ? `资料问答 · ${knowledgeScopeLabel(knowledgeScope)}` : '自由问答' }}
                   </span>
+                  <span class="composer-hint">{{ answerModeLabel(answerMode) }}</span>
                   <span class="composer-shortcut">Enter 发送 · Shift + Enter 换行</span>
                 </div>
 
@@ -267,6 +294,19 @@
                       发送
                     </el-button>
                   </div>
+                </div>
+
+                <div v-if="suggestedQuestions.length" class="follow-up-strip">
+                  <span class="follow-up-strip__label">推荐追问</span>
+                  <button
+                    v-for="question in suggestedQuestions"
+                    :key="question"
+                    type="button"
+                    class="prompt-chip"
+                    @click="applyPromptSuggestion(question)"
+                  >
+                    {{ question }}
+                  </button>
                 </div>
               </footer>
             </div>
@@ -385,6 +425,8 @@
             <div class="reference-card__meta">
               <span>片段 #{{ reference.chunkId }}</span>
               <span>{{ confidenceLabel(reference.score) }}</span>
+              <span v-if="reference.libraryScope">{{ knowledgeScopeLabel(reference.libraryScope) }}</span>
+              <span v-if="reference.fileType">{{ reference.fileType.toUpperCase() }}</span>
             </div>
             <p>{{ reference.snippet }}</p>
           </article>
@@ -402,7 +444,13 @@ import DOMPurify from 'dompurify'
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { deleteChatSessionApi, fetchChatMessagesApi, fetchChatSessionsApi } from '@/api/chat'
-import type { ChatMessageItem, ChatSessionItem, KnowledgeReferenceItem } from '@/types/api'
+import type {
+  ChatAnswerMode,
+  ChatKnowledgeScope,
+  ChatMessageItem,
+  ChatSessionItem,
+  KnowledgeReferenceItem
+} from '@/types/api'
 import { storage } from '@/utils/storage'
 import { getStoredDeviceId } from '@/utils/device'
 
@@ -413,6 +461,8 @@ const sessions = ref<ChatSessionItem[]>([])
 const messages = ref<ChatMessageItem[]>([])
 const activeSessionId = ref<number | null>(null)
 const mode = ref<'chat' | 'rag'>('rag')
+const answerMode = ref<ChatAnswerMode>('learning')
+const knowledgeScope = ref<ChatKnowledgeScope>('all')
 const prompt = ref('')
 const loadingMessages = ref(false)
 const sending = ref(false)
@@ -432,6 +482,7 @@ const sessionDrawerVisible = ref(false)
 const referenceDrawerVisible = ref(false)
 const focusedReferenceMessageId = ref<number | null>(null)
 const lastQuestion = ref('')
+const suggestedQuestions = ref<string[]>([])
 const autoStickToBottom = ref(true)
 const isDesktopViewport = ref(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true)
 
@@ -439,6 +490,19 @@ const sessionFilters: Array<{ label: string; value: SessionFilterValue }> = [
   { label: '全部', value: 'all' },
   { label: '资料问答', value: 'rag' },
   { label: '自由提问', value: 'chat' }
+]
+
+const answerModes: Array<{ label: string; value: ChatAnswerMode }> = [
+  { label: '学习版', value: 'learning' },
+  { label: '面试版', value: 'interview' },
+  { label: '简短版', value: 'concise' },
+  { label: '项目结合', value: 'project' }
+]
+
+const knowledgeScopes: Array<{ label: string; value: ChatKnowledgeScope }> = [
+  { label: '全部资料', value: 'all' },
+  { label: '系统库', value: 'system' },
+  { label: '个人库', value: 'personal' }
 ]
 
 const promptSuggestions = ['帮我梳理这次学习的重点', '解释一下这个知识点的核心原理', '给我一份更容易复习的总结']
@@ -499,6 +563,19 @@ const confidenceLabel = (score?: number) => {
   return '弱相关'
 }
 
+const answerModeLabel = (value: ChatAnswerMode) => {
+  if (value === 'interview') return '回答口径：面试版'
+  if (value === 'concise') return '回答口径：简短版'
+  if (value === 'project') return '回答口径：项目结合版'
+  return '回答口径：学习版'
+}
+
+const knowledgeScopeLabel = (value?: string) => {
+  if (value === 'system') return '系统库'
+  if (value === 'personal') return '个人库'
+  return '全部资料'
+}
+
 const renderMarkdown = (value: string) => DOMPurify.sanitize(marked.parse(value || '') as string)
 
 const focusComposer = () => {
@@ -557,6 +634,7 @@ const handleSessionPageChange = (page: number) => {
 const loadMessages = async (sessionId: number) => {
   loadingMessages.value = true
   focusedReferenceMessageId.value = null
+  suggestedQuestions.value = []
   try {
     const response = await fetchChatMessagesApi(sessionId)
     messages.value = response.data
@@ -611,6 +689,7 @@ const startNewSession = () => {
   messages.value = []
   prompt.value = ''
   focusedReferenceMessageId.value = null
+  suggestedQuestions.value = []
   referenceDrawerVisible.value = false
   sessionDrawerVisible.value = false
   autoStickToBottom.value = true
@@ -650,7 +729,11 @@ const stopStreaming = () => {
 const parseSseChunk = (
   chunkText: string,
   onToken: (token: string) => void,
-  onDone: (payload: { sessionId?: number | null; references?: KnowledgeReferenceItem[] }) => void
+  onDone: (payload: {
+    sessionId?: number | null
+    references?: KnowledgeReferenceItem[]
+    suggestedQuestions?: string[]
+  }) => void
 ) => {
   let eventName = 'message'
   const dataLines: string[] = []
@@ -683,7 +766,8 @@ const parseSseChunk = (
     if (eventName === 'done' || 'sessionId' in parsed) {
       onDone({
         sessionId: parsed.sessionId ?? null,
-        references: parsed.references || []
+        references: parsed.references || [],
+        suggestedQuestions: Array.isArray(parsed.suggestedQuestions) ? parsed.suggestedQuestions : []
       })
       return true
     }
@@ -718,6 +802,7 @@ const runChat = async (userMessage: string) => {
 
   streaming.value = true
   streamingContent.value = ''
+  suggestedQuestions.value = []
   abortController = new AbortController()
 
   try {
@@ -735,6 +820,8 @@ const runChat = async (userMessage: string) => {
       body: JSON.stringify({
         sessionId: activeSessionId.value,
         mode: mode.value,
+        answerMode: answerMode.value,
+        knowledgeScope: knowledgeScope.value,
         message: userMessage
       }),
       signal: abortController.signal
@@ -751,6 +838,7 @@ const runChat = async (userMessage: string) => {
     let buffer = ''
     let finalSessionId: number | null = null
     let finalReferences: KnowledgeReferenceItem[] = []
+    let finalSuggestedQuestions: string[] = []
     let streamCompleted = false
 
     while (!streamCompleted) {
@@ -769,9 +857,10 @@ const runChat = async (userMessage: string) => {
             streamingContent.value += token
             scrollToBottom()
           },
-          ({ sessionId, references }) => {
+          ({ sessionId, references, suggestedQuestions: nextSuggestedQuestions }) => {
             finalSessionId = sessionId ?? null
             finalReferences = references || []
+            finalSuggestedQuestions = nextSuggestedQuestions || []
           }
         )
         if (completed) {
@@ -789,9 +878,10 @@ const runChat = async (userMessage: string) => {
           streamingContent.value += token
           scrollToBottom()
         },
-        ({ sessionId, references }) => {
+        ({ sessionId, references, suggestedQuestions: nextSuggestedQuestions }) => {
           finalSessionId = sessionId ?? null
           finalReferences = references || []
+          finalSuggestedQuestions = nextSuggestedQuestions || []
           streamCompleted = true
         }
       )
@@ -814,6 +904,7 @@ const runChat = async (userMessage: string) => {
       if (finalSessionId) {
         activeSessionId.value = finalSessionId
       }
+      suggestedQuestions.value = finalSuggestedQuestions
     }
 
     await loadSessions()
@@ -919,6 +1010,38 @@ onUnmounted(() => {
   gap: 0.85rem;
 }
 
+.chat-toolbar__selectors {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.scope-toggle {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.scope-toggle__item {
+  min-height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--bc-line);
+  padding: 0 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--bc-ink-secondary);
+  background: var(--interactive-bg);
+  transition:
+    border-color var(--motion-base) var(--ease-hard),
+    color var(--motion-base) var(--ease-hard),
+    background-color var(--motion-base) var(--ease-hard);
+}
+
+.scope-toggle__item-active {
+  border-color: rgba(var(--bc-accent-rgb), 0.32);
+  background: rgba(var(--bc-accent-rgb), 0.12);
+  color: var(--bc-ink);
+}
+
 .chat-shell {
   overflow: hidden;
   display: flex;
@@ -926,6 +1049,20 @@ onUnmounted(() => {
   flex-direction: column;
   min-height: 0;
   width: 100%;
+}
+
+.follow-up-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.9rem;
+  align-items: center;
+}
+
+.follow-up-strip__label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--bc-ink-secondary);
 }
 
 .chat-main__workspace {

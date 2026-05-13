@@ -10,5 +10,8 @@ public class ChatSendVO {
     private Long sessionId;
     private String sessionTitle;
     private String answer;
+    private String answerMode;
+    private String knowledgeScope;
     private List<ChatMessageReferenceVO> references;
+    private List<String> suggestedQuestions;
 }

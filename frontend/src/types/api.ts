@@ -177,6 +177,9 @@ export interface KnowledgeReferenceItem {
   docTitle: string
   snippet: string
   score?: number
+  libraryScope?: 'system' | 'personal' | string
+  businessType?: string
+  fileType?: string
 }
 
 export interface KnowledgeSearchResult {
@@ -192,6 +195,9 @@ export interface ChatSessionItem {
   updateTime?: string
 }
 
+export type ChatAnswerMode = 'learning' | 'interview' | 'concise' | 'project'
+export type ChatKnowledgeScope = 'all' | 'system' | 'personal'
+
 export interface ChatMessageItem {
   id: number
   role: 'user' | 'assistant'
@@ -205,7 +211,10 @@ export interface ChatSendResult {
   sessionId: number
   sessionTitle: string
   answer: string
+  answerMode?: ChatAnswerMode
+  knowledgeScope?: ChatKnowledgeScope
   references: KnowledgeReferenceItem[]
+  suggestedQuestions?: string[]
 }
 
 export interface InterviewCurrentQuestion {

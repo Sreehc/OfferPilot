@@ -42,6 +42,7 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public ChatSendVO send(Long userId, ChatSendRequest request) {
+        request.setUserId(userId);
         // Phase 1: persist user message in its own transaction (via proxy)
         ChatSession session = self.persistUserMessage(userId, request);
 
@@ -57,6 +58,7 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public ChatSendVO streamChat(Long userId, ChatSendRequest request, Consumer<String> onToken) {
+        request.setUserId(userId);
         // Phase 1: persist user message
         ChatSession session = self.persistUserMessage(userId, request);
 

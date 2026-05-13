@@ -5,4 +5,6 @@ import java.util.List;
 
 public interface KnowledgeRetrievalService {
     List<KnowledgeSearchVO.Reference> searchReferences(String query, int limit);
+
+    List<KnowledgeSearchVO.Reference> searchReferences(String query, int limit, String knowledgeScope, Long userId);
 }

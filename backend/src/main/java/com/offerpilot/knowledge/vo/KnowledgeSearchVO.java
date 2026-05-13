@@ -18,6 +18,8 @@ public class KnowledgeSearchVO {
         private String docTitle;
         private String snippet;
         private Float score;
+        private String libraryScope;
+        private String businessType;
+        private String fileType;
     }
 }
-
