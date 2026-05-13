@@ -97,12 +97,119 @@ export interface AdminTrendItem {
   activeUsers: number
 }
 
+export interface AdminAiLogItem {
+  id: string
+  userId?: string
+  provider: string
+  model: string
+  callType: string
+  scene: string
+  inputTokens?: number
+  outputTokens?: number
+  latencyMs?: number
+  success: number
+  errorMessage?: string
+  createTime: string
+}
+
+export interface AdminAiLogSummary {
+  totalCalls: number
+  successCalls: number
+  failedCalls: number
+  avgLatencyMs: number
+  chatCalls: number
+  embeddingCalls: number
+}
+
+export interface AdminSystemConfigItem {
+  configGroup: string
+  configKey: string
+  displayName: string
+  description: string
+  valueType: string
+  configValue: string
+  enabled: boolean
+  runtimeDefault?: string
+}
+
+export interface AdminSystemConfigUpdatePayload {
+  configValue?: string
+  enabled: boolean
+}
+
+export interface AdminInterviewGovernanceItem {
+  sessionId: string
+  userId: string
+  direction: string
+  jobRole?: string
+  experienceLevel?: string
+  techStack?: string
+  mode?: string
+  status: string
+  totalScore?: number
+  questionCount: number
+  durationMinutes?: number
+  includeResumeProject: boolean
+  lowScoreCount: number
+  startTime?: string
+  endTime?: string
+}
+
+export interface AdminInterviewGovernanceSummary {
+  totalSessions: number
+  finishedSessions: number
+  voiceSessions: number
+  resumeProjectSessions: number
+  averageScore: number
+}
+
 export const fetchAdminOverviewApi = () => {
   return request<AdminOverview>({ url: '/admin/overview', method: 'get' })
 }
 
 export const fetchAdminTrendApi = () => {
   return request<AdminTrendItem[]>({ url: '/admin/overview/trend', method: 'get' })
+}
+
+export const fetchAdminAiLogSummaryApi = () => {
+  return request<AdminAiLogSummary>({ url: '/admin/ai-logs/summary', method: 'get' })
+}
+
+export const fetchAdminAiLogsApi = (params: {
+  scene?: string
+  callType?: string
+  success?: number
+  keyword?: string
+  pageNum?: number
+  pageSize?: number
+}) => {
+  return request<PageResult<AdminAiLogItem>>({ url: '/admin/ai-logs', method: 'get', params })
+}
+
+export const fetchAdminSystemConfigsApi = () => {
+  return request<AdminSystemConfigItem[]>({ url: '/admin/system-config', method: 'get' })
+}
+
+export const updateAdminSystemConfigApi = (configKey: string, payload: AdminSystemConfigUpdatePayload) => {
+  return request<AdminSystemConfigItem>({
+    url: `/admin/system-config/${encodeURIComponent(configKey)}`,
+    method: 'put',
+    data: payload
+  })
+}
+
+export const fetchAdminInterviewGovernanceSummaryApi = () => {
+  return request<AdminInterviewGovernanceSummary>({ url: '/admin/interviews/summary', method: 'get' })
+}
+
+export const fetchAdminInterviewGovernanceApi = (params: {
+  status?: string
+  mode?: string
+  keyword?: string
+  pageNum?: number
+  pageSize?: number
+}) => {
+  return request<PageResult<AdminInterviewGovernanceItem>>({ url: '/admin/interviews', method: 'get', params })
 }
 
 // ─── Data export ───

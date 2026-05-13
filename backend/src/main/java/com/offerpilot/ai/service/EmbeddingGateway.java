@@ -9,9 +9,13 @@ public interface EmbeddingGateway {
      */
     float[] embed(String text);
 
+    float[] embed(String text, String scene);
+
     /**
      * Generate embedding vectors for multiple texts in one batch call.
      * @return list of float arrays, same order as input
      */
     List<float[]> embedBatch(List<String> texts);
+
+    List<float[]> embedBatch(List<String> texts, String scene);
 }

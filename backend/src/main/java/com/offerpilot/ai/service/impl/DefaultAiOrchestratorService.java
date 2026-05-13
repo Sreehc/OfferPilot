@@ -76,6 +76,7 @@ public class DefaultAiOrchestratorService implements AiOrchestratorService {
                             .references(references.stream()
                                     .map(r -> r.getDocTitle() + ": " + r.getSnippet())
                                     .toList())
+                            .scene("chat.stream." + (request.getMode() == null ? "chat" : request.getMode().toLowerCase()))
                             .build(),
                     onToken);
 
@@ -113,6 +114,7 @@ public class DefaultAiOrchestratorService implements AiOrchestratorService {
                     .systemPrompt(promptTemplateService.interviewScorePrompt())
                     .userPrompt(userPrompt)
                     .references(List.of())
+                    .scene("interview.score")
                     .build());
             rawContent = scoreResponse.getContent();
             log.debug("LLM scoring raw response length: {}", rawContent.length());
@@ -277,6 +279,7 @@ public class DefaultAiOrchestratorService implements AiOrchestratorService {
                     .references(references.stream()
                             .map(reference -> reference.getDocTitle() + ": " + reference.getSnippet())
                             .toList())
+                    .scene("chat.answer." + (references.isEmpty() ? "chat" : "rag"))
                     .build());
             log.debug("LLM chat response length: {}", response.getContent().length());
             return response;

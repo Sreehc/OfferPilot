@@ -93,6 +93,18 @@
           />
         </el-tab-pane>
 
+        <el-tab-pane label="AI 日志" name="aiLogs">
+          <AdminAiLogTab />
+        </el-tab-pane>
+
+        <el-tab-pane label="系统配置" name="systemConfig">
+          <AdminSystemConfigTab />
+        </el-tab-pane>
+
+        <el-tab-pane label="面试治理" name="interviewGovernance">
+          <AdminInterviewGovernanceTab />
+        </el-tab-pane>
+
         <el-tab-pane label="登录日志" name="loginLogs">
           <AdminLoginLogTab />
         </el-tab-pane>
@@ -113,6 +125,9 @@ import AdminCategoryTab from './AdminCategoryTab.vue'
 import AdminQuestionTab from './AdminQuestionTab.vue'
 import AdminKnowledgeTab from './AdminKnowledgeTab.vue'
 import AdminLoginLogTab from './AdminLoginLogTab.vue'
+import AdminAiLogTab from './AdminAiLogTab.vue'
+import AdminSystemConfigTab from './AdminSystemConfigTab.vue'
+import AdminInterviewGovernanceTab from './AdminInterviewGovernanceTab.vue'
 import { exportQuestionsApi, exportUsersApi } from '@/api/admin'
 import { addCategoryApi, deleteCategoryApi, fetchCategoriesApi, updateCategoryApi } from '@/api/category'
 import { fetchKnowledgeDocsApi, importKnowledgeSeedApi, rechunkKnowledgeDocApi, reindexKnowledgeDocApi } from '@/api/knowledge'

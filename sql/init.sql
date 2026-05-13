@@ -523,6 +523,45 @@ CREATE TABLE IF NOT EXISTS job_application_event (
 );
 
 -- ============================================================
+-- AI 调用日志表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS ai_call_log (
+    id BIGINT PRIMARY KEY,
+    user_id BIGINT DEFAULT NULL,
+    provider VARCHAR(64) NOT NULL,
+    model VARCHAR(128) NOT NULL,
+    call_type VARCHAR(32) NOT NULL COMMENT 'chat / stream / embedding',
+    scene VARCHAR(128) DEFAULT NULL,
+    input_tokens INT DEFAULT NULL,
+    output_tokens INT DEFAULT NULL,
+    latency_ms BIGINT DEFAULT NULL,
+    success TINYINT NOT NULL DEFAULT 1 COMMENT '1=success, 0=failed',
+    error_message VARCHAR(1000) DEFAULT NULL,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_ai_call_log_scene_time (scene, create_time),
+    KEY idx_ai_call_log_success_time (success, create_time),
+    KEY idx_ai_call_log_user_time (user_id, create_time)
+);
+
+-- ============================================================
+-- 系统配置表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS system_config (
+    id BIGINT PRIMARY KEY,
+    config_group VARCHAR(64) NOT NULL,
+    config_key VARCHAR(128) NOT NULL,
+    config_value TEXT DEFAULT NULL,
+    value_type VARCHAR(32) NOT NULL DEFAULT 'text',
+    description VARCHAR(500) DEFAULT NULL,
+    enabled TINYINT NOT NULL DEFAULT 1,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_system_config_key (config_key),
+    KEY idx_system_config_group (config_group, enabled)
+);
+
+-- ============================================================
 -- 社区问题表
 -- ============================================================
 CREATE TABLE IF NOT EXISTS community_question (
