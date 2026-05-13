@@ -7,11 +7,18 @@
           <el-select v-model="filter.categoryId" clearable placeholder="按分类" size="large">
             <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
           </el-select>
+          <el-select v-model="filter.type" clearable placeholder="按题型" size="large">
+            <el-option label="八股题" value="concept" />
+            <el-option label="场景题" value="scenario" />
+            <el-option label="项目题" value="project" />
+            <el-option label="算法题" value="coding" />
+          </el-select>
           <el-select v-model="filter.difficulty" clearable placeholder="按难度" size="large">
             <el-option label="简单" value="easy" />
             <el-option label="中等" value="medium" />
             <el-option label="困难" value="hard" />
           </el-select>
+          <el-input v-model="filter.jobDirection" clearable placeholder="岗位方向，如 Java 后端" size="large" />
           <el-input v-model="filter.keyword" clearable placeholder="搜索题目" size="large" />
         </div>
 
@@ -38,13 +45,34 @@
           <el-select v-model="form.categoryId" placeholder="分类" size="large" class="w-full">
             <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
           </el-select>
+          <el-select v-model="form.type" placeholder="题目类型" size="large" class="w-full">
+            <el-option label="八股题" value="concept" />
+            <el-option label="场景题" value="scenario" />
+            <el-option label="项目题" value="project" />
+            <el-option label="算法题" value="coding" />
+          </el-select>
           <el-select v-model="form.difficulty" placeholder="难度" size="large" class="w-full">
             <el-option label="简单" value="easy" />
             <el-option label="中等" value="medium" />
             <el-option label="困难" value="hard" />
           </el-select>
+          <el-input-number
+            v-model="form.frequency"
+            :min="0"
+            :max="100"
+            placeholder="高频度"
+            size="large"
+            class="w-full"
+          />
+          <el-input v-model="form.jobDirection" placeholder="岗位方向，如 Java 后端 / 校招" size="large" />
+          <el-input v-model="form.applicableScope" placeholder="适用范围，如 实习 / 初级社招 / 中间件专项" size="large" />
           <el-input v-model="form.tags" placeholder="标签" size="large" />
+          <el-input v-model="form.source" placeholder="题目来源，如 真题整理 / AI 扩写" size="large" />
           <el-input v-model="form.standardAnswer" type="textarea" :rows="8" placeholder="标准答案" />
+          <el-input v-model="form.interviewAnswer" type="textarea" :rows="6" placeholder="面试版回答" />
+          <el-input v-model="form.followUpSuggestions" type="textarea" :rows="5" placeholder="追问建议" />
+          <el-input v-model="form.commonMistakes" type="textarea" :rows="5" placeholder="常见错误回答" />
+          <el-input v-model="form.scoreStandard" type="textarea" :rows="5" placeholder="评分标准" />
         </div>
         <div class="mt-4 flex flex-wrap gap-3">
           <el-button :loading="saving" type="primary" class="action-button" @click="emit('save')">
@@ -73,8 +101,14 @@
               <div class="font-semibold text-ink">{{ item.title }}</div>
               <div class="mt-2 flex flex-wrap gap-2 text-xs uppercase tracking-[0.2em] text-secondary">
                 <span>{{ item.categoryName }}</span>
+                <span>{{ questionTypeLabel(item.type) }}</span>
                 <span>{{ item.difficulty === 'easy' ? '简单' : item.difficulty === 'medium' ? '中等' : '困难' }}</span>
+                <span v-if="item.frequency">高频度 {{ item.frequency }}</span>
+                <span v-if="item.jobDirection">{{ item.jobDirection }}</span>
               </div>
+              <p v-if="item.interviewAnswer" class="mt-3 text-sm leading-6 text-secondary">
+                {{ preview(item.interviewAnswer) }}
+              </p>
             </div>
             <div class="admin-record__actions">
               <button type="button" class="accent-link text-sm font-semibold" @click="emit('edit', item)">编辑</button>
@@ -110,14 +144,25 @@ interface QuestionForm {
   id?: number
   title: string
   categoryId?: number
+  type?: string
   difficulty: QuestionItem['difficulty']
+  frequency: number | null
+  jobDirection: string
+  applicableScope: string
   tags: string
   standardAnswer: string
+  interviewAnswer: string
+  followUpSuggestions: string
+  commonMistakes: string
+  scoreStandard: string
+  source: string
 }
 
 interface QuestionFilter {
   categoryId?: number
+  type?: string
   difficulty?: QuestionItem['difficulty']
+  jobDirection: string
   keyword: string
 }
 
@@ -188,6 +233,19 @@ const handleImport = async (file: File) => {
     importing.value = false
   }
   return false
+}
+
+const questionTypeLabel = (type?: string) => {
+  if (type === 'concept') return '八股题'
+  if (type === 'scenario') return '场景题'
+  if (type === 'project') return '项目题'
+  if (type === 'coding') return '算法题'
+  return '综合题'
+}
+
+const preview = (value?: string) => {
+  if (!value?.trim()) return ''
+  return value.length > 90 ? `${value.slice(0, 90)}...` : value
 }
 </script>
 

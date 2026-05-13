@@ -249,12 +249,20 @@ CREATE TABLE IF NOT EXISTS question (
     type VARCHAR(32) DEFAULT NULL,
     difficulty VARCHAR(32) NOT NULL,
     frequency INT DEFAULT 0,
+    job_direction VARCHAR(128) DEFAULT NULL,
+    applicable_scope VARCHAR(128) DEFAULT NULL,
     tags VARCHAR(255) DEFAULT NULL,
     standard_answer TEXT DEFAULT NULL,
+    interview_answer TEXT DEFAULT NULL,
+    follow_up_suggestions TEXT DEFAULT NULL,
+    common_mistakes TEXT DEFAULT NULL,
     score_standard TEXT DEFAULT NULL,
     source VARCHAR(32) DEFAULT NULL,
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_question_category (category_id),
+    KEY idx_question_difficulty (difficulty),
+    KEY idx_question_type (type)
 );
 
 -- ============================================================

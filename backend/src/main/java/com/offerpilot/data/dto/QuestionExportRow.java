@@ -26,11 +26,32 @@ public class QuestionExportRow {
     @ExcelProperty("难度")
     private String difficulty;
 
+    @ExcelProperty("题目类型")
+    private String type;
+
+    @ExcelProperty("高频度")
+    private Integer frequency;
+
+    @ExcelProperty("岗位方向")
+    private String jobDirection;
+
+    @ExcelProperty("适用范围")
+    private String applicableScope;
+
     @ExcelProperty("标签")
     private String tags;
 
     @ExcelProperty("标准答案")
     private String standardAnswer;
+
+    @ExcelProperty("面试版回答")
+    private String interviewAnswer;
+
+    @ExcelProperty("追问建议")
+    private String followUpSuggestions;
+
+    @ExcelProperty("常见错误回答")
+    private String commonMistakes;
 
     @ExcelProperty("创建时间")
     private String createTime;

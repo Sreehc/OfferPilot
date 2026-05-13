@@ -60,8 +60,15 @@ public class DataImportServiceImpl implements DataImportService {
                         Question q = new Question();
                         q.setTitle(row.getTitle().trim());
                         q.setDifficulty(row.getDifficulty() != null ? row.getDifficulty().trim().toLowerCase() : "medium");
+                        q.setType(row.getType());
+                        q.setFrequency(row.getFrequency() == null ? 0 : row.getFrequency());
+                        q.setJobDirection(row.getJobDirection());
+                        q.setApplicableScope(row.getApplicableScope());
                         q.setTags(row.getTags());
                         q.setStandardAnswer(row.getStandardAnswer());
+                        q.setInterviewAnswer(row.getInterviewAnswer());
+                        q.setFollowUpSuggestions(row.getFollowUpSuggestions());
+                        q.setCommonMistakes(row.getCommonMistakes());
 
                         // Resolve category
                         if (row.getCategoryName() != null && !row.getCategoryName().isBlank()) {

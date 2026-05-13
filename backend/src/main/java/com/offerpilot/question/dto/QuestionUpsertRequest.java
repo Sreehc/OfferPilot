@@ -21,9 +21,19 @@ public class QuestionUpsertRequest {
 
     private Integer frequency;
 
+    private String jobDirection;
+
+    private String applicableScope;
+
     private String tags;
 
     private String standardAnswer;
+
+    private String interviewAnswer;
+
+    private String followUpSuggestions;
+
+    private String commonMistakes;
 
     private String scoreStandard;
 

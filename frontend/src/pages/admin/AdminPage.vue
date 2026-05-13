@@ -145,8 +145,46 @@ const knowledgeTotal = ref(0)
 const knowledgeTotalPages = ref(0)
 
 const categoryForm = reactive<{ id?: number; name: string; type: CategoryItem['type']; sortOrder: number }>({ id: undefined, name: '', type: 'question', sortOrder: 0 })
-const questionForm = reactive<{ id?: number; title: string; categoryId?: number; difficulty: QuestionItem['difficulty']; tags: string; standardAnswer: string }>({ id: undefined, title: '', categoryId: undefined, difficulty: 'medium', tags: '', standardAnswer: '' })
-const questionFilter = reactive<{ categoryId?: number; difficulty?: QuestionItem['difficulty']; keyword: string }>({ categoryId: undefined, difficulty: undefined, keyword: '' })
+const questionForm = reactive<{
+  id?: number
+  title: string
+  categoryId?: number
+  type?: string
+  difficulty: QuestionItem['difficulty']
+  frequency: number | null
+  jobDirection: string
+  applicableScope: string
+  tags: string
+  standardAnswer: string
+  interviewAnswer: string
+  followUpSuggestions: string
+  commonMistakes: string
+  scoreStandard: string
+  source: string
+}>({
+  id: undefined,
+  title: '',
+  categoryId: undefined,
+  type: undefined,
+  difficulty: 'medium',
+  frequency: null,
+  jobDirection: '',
+  applicableScope: '',
+  tags: '',
+  standardAnswer: '',
+  interviewAnswer: '',
+  followUpSuggestions: '',
+  commonMistakes: '',
+  scoreStandard: '',
+  source: ''
+})
+const questionFilter = reactive<{ categoryId?: number; type?: string; difficulty?: QuestionItem['difficulty']; jobDirection: string; keyword: string }>({
+  categoryId: undefined,
+  type: undefined,
+  difficulty: undefined,
+  jobDirection: '',
+  keyword: ''
+})
 const knowledgeFilter = reactive<{ categoryId?: number; status?: KnowledgeDocItem['status']; keyword: string }>({ categoryId: undefined, status: undefined, keyword: '' })
 
 const questionCategories = computed(() => categories.value.filter((item) => item.type === 'question'))
@@ -159,7 +197,7 @@ const builtInSeeds = [
 ]
 
 const loadCategories = async () => { const r = await fetchCategoriesApi(); categories.value = r.data }
-const loadQuestions = async () => { questionLoading.value = true; try { const r = await fetchQuestionsApi({ categoryId: questionFilter.categoryId, difficulty: questionFilter.difficulty, keyword: questionFilter.keyword || undefined, pageNum: questionPage.value, pageSize: questionPageSize.value }); questions.value = r.data.records; questionTotal.value = r.data.total; questionTotalPages.value = r.data.totalPages } catch { ElMessage.error('题库加载失败') } finally { questionLoading.value = false } }
+const loadQuestions = async () => { questionLoading.value = true; try { const r = await fetchQuestionsApi({ categoryId: questionFilter.categoryId, type: questionFilter.type, difficulty: questionFilter.difficulty, jobDirection: questionFilter.jobDirection || undefined, keyword: questionFilter.keyword || undefined, pageNum: questionPage.value, pageSize: questionPageSize.value }); questions.value = r.data.records; questionTotal.value = r.data.total; questionTotalPages.value = r.data.totalPages } catch { ElMessage.error('题库加载失败') } finally { questionLoading.value = false } }
 const handleQuestionPageChange = (p: number) => { questionPage.value = p; void loadQuestions() }
 const loadKnowledgeDocs = async () => { knowledgeLoading.value = true; try { const r = await fetchKnowledgeDocsApi({ categoryId: knowledgeFilter.categoryId, status: knowledgeFilter.status, keyword: knowledgeFilter.keyword || undefined, pageNum: knowledgePage.value, pageSize: knowledgePageSize.value }); knowledgeDocs.value = r.data.records; knowledgeTotal.value = r.data.total; knowledgeTotalPages.value = r.data.totalPages } catch { ElMessage.error('知识文档加载失败') } finally { knowledgeLoading.value = false } }
 const handleKnowledgePageChange = (p: number) => { knowledgePage.value = p; void loadKnowledgeDocs() }
@@ -169,11 +207,73 @@ const editCategory = (item: CategoryItem) => { categoryForm.id = item.id; catego
 const removeCategory = async (id: number) => { try { await deleteCategoryApi(id); ElMessage.success('分类已删除'); await loadCategories() } catch { ElMessage.error('删除分类失败') } }
 const resetCategoryForm = () => { categoryForm.id = undefined; categoryForm.name = ''; categoryForm.type = 'question'; categoryForm.sortOrder = 0 }
 
-const saveQuestion = async () => { if (!questionForm.title.trim() || !questionForm.categoryId) { ElMessage.warning('请补全题目标题和分类'); return } questionSaving.value = true; try { const p = { id: questionForm.id, title: questionForm.title, categoryId: questionForm.categoryId, difficulty: questionForm.difficulty, tags: questionForm.tags, standardAnswer: questionForm.standardAnswer }; if (questionForm.id) { await updateQuestionApi(p); ElMessage.success('题目已更新') } else { await addQuestionApi(p); ElMessage.success('题目已新增') } resetQuestionForm(); await loadQuestions() } catch { ElMessage.error('题目保存失败') } finally { questionSaving.value = false } }
-const editQuestion = (item: QuestionItem) => { questionForm.id = item.id; questionForm.title = item.title; questionForm.categoryId = item.categoryId; questionForm.difficulty = item.difficulty; questionForm.tags = item.tags || ''; questionForm.standardAnswer = item.standardAnswer || ''; activeTab.value = 'question' }
+const saveQuestion = async () => {
+  if (!questionForm.title.trim() || !questionForm.categoryId) { ElMessage.warning('请补全题目标题和分类'); return }
+  questionSaving.value = true
+  try {
+    const p = {
+      id: questionForm.id,
+      title: questionForm.title,
+      categoryId: questionForm.categoryId,
+      type: questionForm.type,
+      difficulty: questionForm.difficulty,
+      frequency: questionForm.frequency ?? 0,
+      jobDirection: questionForm.jobDirection || undefined,
+      applicableScope: questionForm.applicableScope || undefined,
+      tags: questionForm.tags || undefined,
+      standardAnswer: questionForm.standardAnswer || undefined,
+      interviewAnswer: questionForm.interviewAnswer || undefined,
+      followUpSuggestions: questionForm.followUpSuggestions || undefined,
+      commonMistakes: questionForm.commonMistakes || undefined,
+      scoreStandard: questionForm.scoreStandard || undefined,
+      source: questionForm.source || undefined
+    }
+    if (questionForm.id) { await updateQuestionApi(p); ElMessage.success('题目已更新') } else { await addQuestionApi(p); ElMessage.success('题目已新增') }
+    resetQuestionForm()
+    await loadQuestions()
+  } catch {
+    ElMessage.error('题目保存失败')
+  } finally {
+    questionSaving.value = false
+  }
+}
+const editQuestion = (item: QuestionItem) => {
+  questionForm.id = item.id
+  questionForm.title = item.title
+  questionForm.categoryId = item.categoryId
+  questionForm.type = item.type
+  questionForm.difficulty = item.difficulty
+  questionForm.frequency = item.frequency ?? 0
+  questionForm.jobDirection = item.jobDirection || ''
+  questionForm.applicableScope = item.applicableScope || ''
+  questionForm.tags = item.tags || ''
+  questionForm.standardAnswer = item.standardAnswer || ''
+  questionForm.interviewAnswer = item.interviewAnswer || ''
+  questionForm.followUpSuggestions = item.followUpSuggestions || ''
+  questionForm.commonMistakes = item.commonMistakes || ''
+  questionForm.scoreStandard = item.scoreStandard || ''
+  questionForm.source = item.source || ''
+  activeTab.value = 'question'
+}
 const removeQuestion = async (id: number) => { try { await deleteQuestionApi(id); ElMessage.success('题目已删除'); await loadQuestions() } catch { ElMessage.error('删除题目失败') } }
-const resetQuestionForm = () => { questionForm.id = undefined; questionForm.title = ''; questionForm.categoryId = undefined; questionForm.difficulty = 'medium'; questionForm.tags = ''; questionForm.standardAnswer = '' }
-const resetQuestionFilter = () => { questionFilter.categoryId = undefined; questionFilter.difficulty = undefined; questionFilter.keyword = ''; void loadQuestions() }
+const resetQuestionForm = () => {
+  questionForm.id = undefined
+  questionForm.title = ''
+  questionForm.categoryId = undefined
+  questionForm.type = undefined
+  questionForm.difficulty = 'medium'
+  questionForm.frequency = null
+  questionForm.jobDirection = ''
+  questionForm.applicableScope = ''
+  questionForm.tags = ''
+  questionForm.standardAnswer = ''
+  questionForm.interviewAnswer = ''
+  questionForm.followUpSuggestions = ''
+  questionForm.commonMistakes = ''
+  questionForm.scoreStandard = ''
+  questionForm.source = ''
+}
+const resetQuestionFilter = () => { questionFilter.categoryId = undefined; questionFilter.type = undefined; questionFilter.difficulty = undefined; questionFilter.jobDirection = ''; questionFilter.keyword = ''; void loadQuestions() }
 
 const importSeed = async (seedKey: string) => { knowledgeImporting.value = seedKey; try { await importKnowledgeSeedApi({ seedKey }); ElMessage.success('知识资料已导入'); await Promise.all([loadCategories(), loadKnowledgeDocs()]) } catch { ElMessage.error('知识资料导入失败') } finally { knowledgeImporting.value = null } }
 const rechunkDoc = async (id: number) => { knowledgeActionId.value = `rechunk-${id}`; try { await rechunkKnowledgeDocApi(id); ElMessage.success('文档已重新切分'); await loadKnowledgeDocs() } catch { ElMessage.error('重新切分失败') } finally { knowledgeActionId.value = null } }
@@ -193,7 +293,7 @@ const handleExportQuestions = async () => {
   exportingQuestions.value = true
   try {
     const response = await exportQuestionsApi()
-    downloadBlob(response.data as unknown as BlobPart, `bytecoach-questions-${Date.now()}.xlsx`)
+    downloadBlob(response.data as unknown as BlobPart, `offerpilot-questions-${Date.now()}.xlsx`)
     ElMessage.success('题库导出成功')
   } catch {
     ElMessage.error('题库导出失败')
@@ -206,7 +306,7 @@ const handleExportUsers = async () => {
   exportingUsers.value = true
   try {
     const response = await exportUsersApi()
-    downloadBlob(response.data as unknown as BlobPart, `bytecoach-users-${Date.now()}.xlsx`)
+    downloadBlob(response.data as unknown as BlobPart, `offerpilot-users-${Date.now()}.xlsx`)
     ElMessage.success('用户导出成功')
   } catch {
     ElMessage.error('用户导出失败')

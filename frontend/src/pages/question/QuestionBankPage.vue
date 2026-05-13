@@ -20,12 +20,12 @@
     <section class="question-page-grid">
       <section class="space-y-4">
         <section class="shell-section-card p-5 sm:p-6">
-          <div class="grid gap-3 lg:grid-cols-[1.1fr_220px_220px_auto]">
+          <div class="grid gap-3 xl:grid-cols-[1.1fr_180px_180px_220px_220px_auto]">
             <el-input
               v-model="filters.keyword"
               clearable
               size="large"
-              placeholder="搜索题目标题、标签或答案关键词"
+              placeholder="搜索题目标题、标签、答案或错误示例"
               @keyup.enter="applyFilters"
             />
             <el-select
@@ -60,6 +60,24 @@
                 value="hard"
               />
             </el-select>
+            <el-select
+              v-model="filters.type"
+              clearable
+              size="large"
+              placeholder="题目类型"
+            >
+              <el-option label="八股题" value="concept" />
+              <el-option label="场景题" value="scenario" />
+              <el-option label="项目题" value="project" />
+              <el-option label="算法题" value="coding" />
+            </el-select>
+            <el-input
+              v-model="filters.jobDirection"
+              clearable
+              size="large"
+              placeholder="岗位方向，如 Java 后端 / 校招"
+              @keyup.enter="applyFilters"
+            />
             <div class="flex gap-3">
               <el-button
                 type="primary"
@@ -109,8 +127,11 @@
                   >
                     {{ difficultyLabel(item.difficulty) }}
                   </span>
+                  <span v-if="item.type">{{ questionTypeLabel(item.type) }}</span>
                   <span v-if="item.categoryName">{{ item.categoryName }}</span>
                   <span v-if="item.frequency">高频度 {{ item.frequency }}</span>
+                  <span v-if="item.jobDirection">{{ item.jobDirection }}</span>
+                  <span v-if="item.applicableScope">{{ item.applicableScope }}</span>
                 </div>
                 <h3 class="mt-3 text-xl font-semibold leading-8 text-ink">
                   {{ item.title }}
@@ -118,6 +139,13 @@
               </div>
 
               <div class="flex shrink-0 gap-2">
+                <button
+                  type="button"
+                  class="hard-button-secondary text-sm"
+                  @click="openDetail(item)"
+                >
+                  查看详情
+                </button>
                 <RouterLink
                   to="/chat"
                   class="hard-button-secondary text-sm"
@@ -147,6 +175,33 @@
             <p class="mt-5 text-sm leading-7 text-secondary">
               {{ answerPreview(item.standardAnswer) }}
             </p>
+
+            <div
+              v-if="item.interviewAnswer || item.followUpSuggestions || item.commonMistakes"
+              class="question-insight-grid mt-5"
+            >
+              <article
+                v-if="item.interviewAnswer"
+                class="question-insight-card"
+              >
+                <span class="question-insight-title">面试版回答</span>
+                <p>{{ answerPreview(item.interviewAnswer, 120) }}</p>
+              </article>
+              <article
+                v-if="item.followUpSuggestions"
+                class="question-insight-card"
+              >
+                <span class="question-insight-title">追问建议</span>
+                <p>{{ answerPreview(item.followUpSuggestions, 120) }}</p>
+              </article>
+              <article
+                v-if="item.commonMistakes"
+                class="question-insight-card question-insight-card-danger"
+              >
+                <span class="question-insight-title">常见错误回答</span>
+                <p>{{ answerPreview(item.commonMistakes, 120) }}</p>
+              </article>
+            </div>
           </article>
 
           <section
@@ -194,6 +249,10 @@
               <strong>{{ taggedQuestionCount }}</strong>
             </article>
             <article class="question-summary-card">
+              <span>岗位向题目</span>
+              <strong>{{ directionalQuestionCount }}</strong>
+            </article>
+            <article class="question-summary-card">
               <span>总分页</span>
               <strong>{{ totalPages || 1 }}</strong>
             </article>
@@ -211,6 +270,86 @@
         </section>
       </aside>
     </section>
+
+    <el-drawer
+      v-model="detailVisible"
+      title="题目详情"
+      size="min(720px, 100%)"
+    >
+      <template v-if="selectedQuestion">
+        <div class="space-y-5">
+          <section>
+            <div class="flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-tertiary">
+              <span class="question-difficulty" :class="difficultyToneClass(selectedQuestion.difficulty)">
+                {{ difficultyLabel(selectedQuestion.difficulty) }}
+              </span>
+              <span v-if="selectedQuestion.type">{{ questionTypeLabel(selectedQuestion.type) }}</span>
+              <span v-if="selectedQuestion.categoryName">{{ selectedQuestion.categoryName }}</span>
+              <span v-if="selectedQuestion.frequency">高频度 {{ selectedQuestion.frequency }}</span>
+              <span v-if="selectedQuestion.jobDirection">{{ selectedQuestion.jobDirection }}</span>
+            </div>
+            <h3 class="mt-3 text-2xl font-semibold leading-9 text-ink">
+              {{ selectedQuestion.title }}
+            </h3>
+            <p
+              v-if="selectedQuestion.applicableScope || selectedQuestion.source"
+              class="mt-3 text-sm text-secondary"
+            >
+              {{ selectedQuestion.applicableScope || '未设置适用范围' }}
+              <span v-if="selectedQuestion.source"> · 来源：{{ selectedQuestion.source }}</span>
+            </p>
+          </section>
+
+          <section
+            v-if="tagList(selectedQuestion.tags).length"
+            class="flex flex-wrap gap-2"
+          >
+            <span
+              v-for="tag in tagList(selectedQuestion.tags)"
+              :key="tag"
+              class="question-tag"
+            >{{ tag }}</span>
+          </section>
+
+          <section class="question-detail-block">
+            <span class="question-detail-title">标准答案</span>
+            <p>{{ selectedQuestion.standardAnswer || '暂无标准答案。' }}</p>
+          </section>
+
+          <section
+            v-if="selectedQuestion.interviewAnswer"
+            class="question-detail-block"
+          >
+            <span class="question-detail-title">面试版回答</span>
+            <p>{{ selectedQuestion.interviewAnswer }}</p>
+          </section>
+
+          <section
+            v-if="selectedQuestion.followUpSuggestions"
+            class="question-detail-block"
+          >
+            <span class="question-detail-title">追问建议</span>
+            <p>{{ selectedQuestion.followUpSuggestions }}</p>
+          </section>
+
+          <section
+            v-if="selectedQuestion.commonMistakes"
+            class="question-detail-block question-detail-block-danger"
+          >
+            <span class="question-detail-title">常见错误回答</span>
+            <p>{{ selectedQuestion.commonMistakes }}</p>
+          </section>
+
+          <section
+            v-if="selectedQuestion.scoreStandard"
+            class="question-detail-block"
+          >
+            <span class="question-detail-title">评分标准</span>
+            <p>{{ selectedQuestion.scoreStandard }}</p>
+          </section>
+        </div>
+      </template>
+    </el-drawer>
   </div>
 </template>
 
@@ -230,19 +369,26 @@ const total = ref(0)
 const totalPages = ref(0)
 const categories = ref<CategoryItem[]>([])
 const questions = ref<QuestionItem[]>([])
+const detailVisible = ref(false)
+const selectedQuestion = ref<QuestionItem | null>(null)
 
 const filters = reactive<{
   categoryId?: number
+  type?: string
   difficulty?: QuestionItem['difficulty']
+  jobDirection: string
   keyword: string
 }>({
   categoryId: undefined,
+  type: undefined,
   difficulty: undefined,
+  jobDirection: '',
   keyword: ''
 })
 
 const hardQuestionCount = computed(() => questions.value.filter((item) => item.difficulty === 'hard').length)
 const taggedQuestionCount = computed(() => questions.value.filter((item) => tagList(item.tags).length > 0).length)
+const directionalQuestionCount = computed(() => questions.value.filter((item) => Boolean(item.jobDirection?.trim())).length)
 
 const loadCategories = async () => {
   try {
@@ -258,7 +404,9 @@ const loadQuestions = async () => {
   try {
     const { data } = await fetchQuestionsApi({
       categoryId: filters.categoryId,
+      type: filters.type || undefined,
       difficulty: filters.difficulty,
+      jobDirection: filters.jobDirection.trim() || undefined,
       keyword: filters.keyword.trim() || undefined,
       pageNum: currentPage.value,
       pageSize
@@ -283,7 +431,9 @@ const applyFilters = () => {
 
 const resetFilters = () => {
   filters.categoryId = undefined
+  filters.type = undefined
   filters.difficulty = undefined
+  filters.jobDirection = ''
   filters.keyword = ''
   currentPage.value = 1
   void loadQuestions()
@@ -306,6 +456,14 @@ const difficultyToneClass = (difficulty?: string) => {
   return 'question-difficulty-medium'
 }
 
+const questionTypeLabel = (type?: string) => {
+  if (type === 'concept') return '八股题'
+  if (type === 'scenario') return '场景题'
+  if (type === 'project') return '项目题'
+  if (type === 'coding') return '算法题'
+  return '综合题'
+}
+
 function tagList(tags?: string) {
   return (tags ?? '')
     .split(/[,\n]/)
@@ -313,11 +471,16 @@ function tagList(tags?: string) {
     .filter(Boolean)
 }
 
-const answerPreview = (answer?: string) => {
+const answerPreview = (answer?: string, max = 180) => {
   if (!answer?.trim()) {
     return '当前题目还没有补充标准答案，可以先进入模拟面试或问答页继续扩展。'
   }
-  return answer.length > 180 ? `${answer.slice(0, 180)}...` : answer
+  return answer.length > max ? `${answer.slice(0, max)}...` : answer
+}
+
+const openDetail = (question: QuestionItem) => {
+  selectedQuestion.value = question
+  detailVisible.value = true
 }
 
 onMounted(() => {
@@ -400,10 +563,54 @@ onMounted(() => {
   color: var(--bc-ink);
 }
 
+.question-insight-grid {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.question-insight-card,
+.question-detail-block {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--bc-surface-muted);
+  padding: 1rem;
+}
+
+.question-insight-title,
+.question-detail-title {
+  display: inline-flex;
+  margin-bottom: 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bc-ink-secondary);
+}
+
+.question-insight-card p,
+.question-detail-block p {
+  white-space: pre-line;
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: var(--bc-ink-secondary);
+}
+
+.question-insight-card-danger,
+.question-detail-block-danger {
+  border-color: color-mix(in srgb, var(--bc-coral) 24%, var(--bc-border-subtle));
+  background: color-mix(in srgb, var(--bc-coral) 8%, var(--bc-surface-muted));
+}
+
 @media (min-width: 1200px) {
   .question-page-grid {
     grid-template-columns: minmax(0, 1fr) 320px;
     align-items: start;
+  }
+}
+
+@media (min-width: 900px) {
+  .question-insight-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 </style>

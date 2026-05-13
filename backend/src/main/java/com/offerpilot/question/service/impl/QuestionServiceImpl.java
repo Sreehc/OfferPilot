@@ -33,11 +33,20 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         Page<Question> page = new Page<>(query.getPageNum(), query.getPageSize());
         IPage<Question> result = page(page, new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Question>()
                 .eq(query.getCategoryId() != null, Question::getCategoryId, query.getCategoryId())
+                .eq(StringUtils.hasText(query.getType()), Question::getType, query.getType())
                 .eq(StringUtils.hasText(query.getDifficulty()), Question::getDifficulty, query.getDifficulty())
+                .like(StringUtils.hasText(query.getJobDirection()), Question::getJobDirection, query.getJobDirection())
+                .like(StringUtils.hasText(query.getTag()), Question::getTags, query.getTag())
                 .and(StringUtils.hasText(query.getKeyword()), keywordWrapper -> keywordWrapper
                         .like(Question::getTitle, query.getKeyword())
                         .or()
-                        .like(Question::getTags, query.getKeyword()))
+                        .like(Question::getTags, query.getKeyword())
+                        .or()
+                        .like(Question::getStandardAnswer, query.getKeyword())
+                        .or()
+                        .like(Question::getInterviewAnswer, query.getKeyword())
+                        .or()
+                        .like(Question::getCommonMistakes, query.getKeyword()))
                 .orderByDesc(Question::getUpdateTime));
         Map<Long, Category> categoryMap = categoryService.listByIds(
                         result.getRecords().stream().map(Question::getCategoryId).distinct().toList())
@@ -99,8 +108,13 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         question.setType(request.getType());
         question.setDifficulty(request.getDifficulty());
         question.setFrequency(request.getFrequency() == null ? 0 : request.getFrequency());
+        question.setJobDirection(request.getJobDirection());
+        question.setApplicableScope(request.getApplicableScope());
         question.setTags(request.getTags());
         question.setStandardAnswer(request.getStandardAnswer());
+        question.setInterviewAnswer(request.getInterviewAnswer());
+        question.setFollowUpSuggestions(request.getFollowUpSuggestions());
+        question.setCommonMistakes(request.getCommonMistakes());
         question.setScoreStandard(request.getScoreStandard());
         question.setSource(request.getSource());
     }
@@ -114,8 +128,13 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
                 .type(question.getType())
                 .difficulty(question.getDifficulty())
                 .frequency(question.getFrequency())
+                .jobDirection(question.getJobDirection())
+                .applicableScope(question.getApplicableScope())
                 .tags(question.getTags())
                 .standardAnswer(question.getStandardAnswer())
+                .interviewAnswer(question.getInterviewAnswer())
+                .followUpSuggestions(question.getFollowUpSuggestions())
+                .commonMistakes(question.getCommonMistakes())
                 .scoreStandard(question.getScoreStandard())
                 .source(question.getSource())
                 .createTime(question.getCreateTime())

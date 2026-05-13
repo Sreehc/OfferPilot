@@ -3,7 +3,10 @@ import type { PageResult, QuestionItem } from '@/types/api'
 
 export interface QuestionQuery {
   categoryId?: number
+  type?: string
   difficulty?: QuestionItem['difficulty']
+  jobDirection?: string
+  tag?: string
   keyword?: string
   pageNum?: number
   pageSize?: number

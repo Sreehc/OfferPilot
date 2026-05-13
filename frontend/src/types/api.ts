@@ -135,8 +135,13 @@ export interface QuestionItem {
   type?: string
   difficulty: 'easy' | 'medium' | 'hard'
   frequency?: number
+  jobDirection?: string
+  applicableScope?: string
   tags?: string
   standardAnswer?: string
+  interviewAnswer?: string
+  followUpSuggestions?: string
+  commonMistakes?: string
   scoreStandard?: string
   source?: string
   createTime?: string
