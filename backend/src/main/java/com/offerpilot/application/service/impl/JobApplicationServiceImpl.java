@@ -26,10 +26,7 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,9 +66,11 @@ public class JobApplicationServiceImpl implements JobApplicationService {
         application.setMissingKeywords(String.join(",", analysis.missingKeywords()));
         application.setAnalysisSummary(analysis.summary());
         application.setApplyDate(request.getApplyDate());
+        application.setReviewSuggestion(buildReviewSuggestion("saved", analysis, List.of()));
+        application.setNextStepSuggestion(buildNextStepSuggestion("saved", analysis, null, List.of()));
         jobApplicationMapper.insert(application);
 
-        createEvent(application.getId(), userId, "note", "已创建投递记录", "已完成岗位录入和 JD 初步分析。", LocalDateTime.now(), null);
+        createEvent(application.getId(), userId, "note", "已记录岗位并完成初步分析", "这条投递已经建档，接下来先决定什么时候投递。", LocalDateTime.now(), null, null, null, null);
         return detail(userId, application.getId());
     }
 
@@ -100,9 +99,12 @@ public class JobApplicationServiceImpl implements JobApplicationService {
         if (application.getApplyDate() == null && "applied".equals(application.getStatus())) {
             application.setApplyDate(LocalDate.now());
         }
+        application.setReviewSuggestion(buildReviewSuggestion(application.getStatus(), toAnalysisSnapshot(application), loadEvents(applicationId)));
+        application.setNextStepSuggestion(buildNextStepSuggestion(application.getStatus(), toAnalysisSnapshot(application), request.getNextStepDate(), loadEvents(applicationId)));
         jobApplicationMapper.updateById(application);
-        createEvent(applicationId, userId, "status_change", "状态更新为「" + statusLabel(application.getStatus()) + "」",
-                StringUtils.hasText(request.getNote()) ? request.getNote() : "已更新投递状态。", LocalDateTime.now(), application.getStatus());
+        createEvent(applicationId, userId, "status_change", "已推进到「" + statusLabel(application.getStatus()) + "」",
+                StringUtils.hasText(request.getNote()) ? request.getNote() : "已更新当前推进阶段。", LocalDateTime.now(), application.getStatus(), null, null, null);
+        refreshSuggestions(application);
         return detail(userId, applicationId);
     }
 
@@ -117,7 +119,12 @@ public class JobApplicationServiceImpl implements JobApplicationService {
                 request.getTitle(),
                 request.getContent(),
                 request.getEventTime() == null ? LocalDateTime.now() : request.getEventTime(),
-                request.getResult());
+                request.getResult(),
+                request.getInterviewRound(),
+                request.getInterviewer(),
+                request.getFeedbackTags());
+        JobApplication application = getOwnedApplication(userId, applicationId);
+        refreshSuggestions(application);
         return detail(userId, applicationId);
     }
 
@@ -132,8 +139,10 @@ public class JobApplicationServiceImpl implements JobApplicationService {
         application.setJdKeywords(String.join(",", analysis.jdKeywords()));
         application.setMissingKeywords(String.join(",", analysis.missingKeywords()));
         application.setAnalysisSummary(analysis.summary());
+        application.setReviewSuggestion(buildReviewSuggestion(application.getStatus(), analysis, loadEvents(applicationId)));
+        application.setNextStepSuggestion(buildNextStepSuggestion(application.getStatus(), analysis, application.getNextStepDate(), loadEvents(applicationId)));
         jobApplicationMapper.updateById(application);
-        createEvent(applicationId, userId, "analysis", "已刷新 JD 分析", analysis.summary(), LocalDateTime.now(), null);
+        createEvent(applicationId, userId, "analysis", "已刷新 JD 分析", analysis.summary(), LocalDateTime.now(), null, null, null, null);
         return detail(userId, applicationId);
     }
 
@@ -228,7 +237,8 @@ public class JobApplicationServiceImpl implements JobApplicationService {
     }
 
     private void createEvent(Long applicationId, Long userId, String eventType, String title,
-                             String content, LocalDateTime eventTime, String result) {
+                             String content, LocalDateTime eventTime, String result,
+                             Integer interviewRound, String interviewer, List<String> feedbackTags) {
         JobApplicationEvent event = new JobApplicationEvent();
         event.setApplicationId(applicationId);
         event.setUserId(userId);
@@ -237,6 +247,9 @@ public class JobApplicationServiceImpl implements JobApplicationService {
         event.setContent(content);
         event.setEventTime(eventTime);
         event.setResult(result);
+        event.setInterviewRound(interviewRound);
+        event.setInterviewer(interviewer);
+        event.setFeedbackTags(feedbackTags == null ? null : String.join(",", feedbackTags));
         jobApplicationEventMapper.insert(event);
     }
 
@@ -247,11 +260,7 @@ public class JobApplicationServiceImpl implements JobApplicationService {
     private JobApplicationVO buildVo(JobApplication application, boolean includeEvents) {
         ResumeFile resume = application.getResumeFileId() == null ? null : resumeFileMapper.selectById(application.getResumeFileId());
         List<JobApplicationEventVO> events = includeEvents
-                ? jobApplicationEventMapper.selectList(new LambdaQueryWrapper<JobApplicationEvent>()
-                                .eq(JobApplicationEvent::getApplicationId, application.getId())
-                                .orderByDesc(JobApplicationEvent::getEventTime)
-                                .orderByDesc(JobApplicationEvent::getId))
-                        .stream()
+                ? loadEvents(application.getId()).stream()
                         .map(event -> JobApplicationEventVO.builder()
                                 .id(event.getId())
                                 .eventType(event.getEventType())
@@ -259,6 +268,9 @@ public class JobApplicationServiceImpl implements JobApplicationService {
                                 .content(event.getContent())
                                 .eventTime(event.getEventTime())
                                 .result(event.getResult())
+                                .interviewRound(event.getInterviewRound())
+                                .interviewer(event.getInterviewer())
+                                .feedbackTags(splitComma(event.getFeedbackTags()))
                                 .build())
                         .toList()
                 : List.of();
@@ -277,11 +289,91 @@ public class JobApplicationServiceImpl implements JobApplicationService {
                 .jdKeywords(splitComma(application.getJdKeywords()))
                 .missingKeywords(splitComma(application.getMissingKeywords()))
                 .analysisSummary(application.getAnalysisSummary())
+                .reviewSuggestion(application.getReviewSuggestion())
+                .nextStepSuggestion(application.getNextStepSuggestion())
                 .applyDate(application.getApplyDate())
                 .nextStepDate(application.getNextStepDate())
                 .updateTime(application.getUpdateTime())
                 .events(events)
                 .build();
+    }
+
+    private List<JobApplicationEvent> loadEvents(Long applicationId) {
+        return jobApplicationEventMapper.selectList(new LambdaQueryWrapper<JobApplicationEvent>()
+                .eq(JobApplicationEvent::getApplicationId, applicationId)
+                .orderByDesc(JobApplicationEvent::getEventTime)
+                .orderByDesc(JobApplicationEvent::getId));
+    }
+
+    private void refreshSuggestions(JobApplication application) {
+        List<JobApplicationEvent> events = loadEvents(application.getId());
+        AnalysisSnapshot analysis = toAnalysisSnapshot(application);
+        application.setReviewSuggestion(buildReviewSuggestion(application.getStatus(), analysis, events));
+        application.setNextStepSuggestion(buildNextStepSuggestion(application.getStatus(), analysis, application.getNextStepDate(), events));
+        jobApplicationMapper.updateById(application);
+    }
+
+    private AnalysisSnapshot toAnalysisSnapshot(JobApplication application) {
+        return new AnalysisSnapshot(
+                application.getMatchScore(),
+                splitComma(application.getJdKeywords()),
+                splitComma(application.getMissingKeywords()),
+                application.getAnalysisSummary());
+    }
+
+    private String buildReviewSuggestion(String status, AnalysisSnapshot analysis, List<JobApplicationEvent> events) {
+        JobApplicationEvent latestInterview = events.stream()
+                .filter(event -> "interview".equals(event.getEventType()))
+                .findFirst()
+                .orElse(null);
+        String gapText = analysis.missingKeywords().isEmpty()
+                ? "当前没有明显的关键词缺口，重点改成准备项目案例和追问。"
+                : "下一轮前优先补 " + String.join("、", analysis.missingKeywords().stream().limit(3).toList()) + "。";
+        if ("rejected".equals(status)) {
+            return latestInterview != null && StringUtils.hasText(latestInterview.getContent())
+                    ? "这次投递可以重点复盘：" + abbreviate(latestInterview.getContent(), 120)
+                    : "这次投递已经结束，先回看面试过程里暴露出来的短板，再调整下一批岗位准备。";
+        }
+        if ("offer".equals(status)) {
+            return "这条投递已经进入结果阶段，回看面试里最有效的项目表达和关键词命中，复用到下一批岗位。";
+        }
+        if (latestInterview != null) {
+            String feedbackText = splitComma(latestInterview.getFeedbackTags()).isEmpty()
+                    ? gapText
+                    : "本轮反馈集中在 " + String.join("、", splitComma(latestInterview.getFeedbackTags())) + "。";
+            return feedbackText + " 结合这次面试记录，把下一轮要补的项目表达和知识点再收紧一轮。";
+        }
+        if ("applied".equals(status) || "written".equals(status) || "interview".equals(status)) {
+            return gapText + " 在推进中的岗位里，优先准备最可能被追问的项目案例和结果数据。";
+        }
+        return "先把 JD 缺口和项目表达对齐，再决定什么时候正式推进这条投递。";
+    }
+
+    private String buildNextStepSuggestion(String status, AnalysisSnapshot analysis, LocalDate nextStepDate, List<JobApplicationEvent> events) {
+        String nextDateText = nextStepDate == null ? "" : "，目标时间是 " + nextStepDate;
+        if ("saved".equals(status)) {
+            return "先确认简历版本和 JD 缺口，再完成正式投递" + nextDateText + "。";
+        }
+        if ("applied".equals(status)) {
+            return "投递已经发出，下一步去记录反馈窗口，并准备一面最可能问到的项目和缺口关键词" + nextDateText + "。";
+        }
+        if ("written".equals(status)) {
+            return "当前阶段先完成笔试或作业，再把题目和薄弱点沉淀成后续复盘素材" + nextDateText + "。";
+        }
+        if ("interview".equals(status)) {
+            JobApplicationEvent latestInterview = events.stream()
+                    .filter(event -> "interview".equals(event.getEventType()))
+                    .findFirst()
+                    .orElse(null);
+            if (latestInterview != null && latestInterview.getInterviewRound() != null) {
+                return "先围绕第 " + latestInterview.getInterviewRound() + " 轮反馈补准备，再安排下一轮面试前的专项复盘" + nextDateText + "。";
+            }
+            return "当前重点是把最新一轮面试问题和反馈整理出来，确保下一轮前能针对性补准备" + nextDateText + "。";
+        }
+        if ("offer".equals(status)) {
+            return "这条投递已经拿到结果，接下来记录最终结论和关键经验，沉淀到下一批岗位。";
+        }
+        return "这条投递已经结束，先整理淘汰原因和反馈标签，再更新下一批岗位策略。";
     }
 
     private String normalizeStatus(String status) {
@@ -317,6 +409,13 @@ public class JobApplicationServiceImpl implements JobApplicationService {
 
     private boolean containsIgnoreCase(Set<String> values, String keyword) {
         return values.stream().anyMatch(value -> value.equalsIgnoreCase(keyword));
+    }
+
+    private String abbreviate(String text, int limit) {
+        if (!StringUtils.hasText(text)) {
+            return "";
+        }
+        return text.length() <= limit ? text : text.substring(0, limit) + "...";
     }
 
     private record ResumeSnapshot(Long resumeId, String resumeTitle, List<String> resumeSkills, List<String> projectSkills) {

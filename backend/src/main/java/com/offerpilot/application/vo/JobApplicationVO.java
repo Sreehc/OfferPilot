@@ -27,6 +27,8 @@ public class JobApplicationVO {
     private List<String> jdKeywords;
     private List<String> missingKeywords;
     private String analysisSummary;
+    private String reviewSuggestion;
+    private String nextStepSuggestion;
     private LocalDate applyDate;
     private LocalDate nextStepDate;
     private LocalDateTime updateTime;

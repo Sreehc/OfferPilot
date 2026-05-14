@@ -23,6 +23,8 @@ public class JobApplication extends BaseEntity {
     private String jdKeywords;
     private String missingKeywords;
     private String analysisSummary;
+    private String reviewSuggestion;
+    private String nextStepSuggestion;
     private LocalDate applyDate;
     private LocalDate nextStepDate;
 }

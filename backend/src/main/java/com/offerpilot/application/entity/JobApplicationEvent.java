@@ -17,4 +17,7 @@ public class JobApplicationEvent extends BaseEntity {
     private String content;
     private LocalDateTime eventTime;
     private String result;
+    private Integer interviewRound;
+    private String interviewer;
+    private String feedbackTags;
 }

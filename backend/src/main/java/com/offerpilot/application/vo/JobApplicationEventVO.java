@@ -16,4 +16,7 @@ public class JobApplicationEventVO {
     private String content;
     private LocalDateTime eventTime;
     private String result;
+    private Integer interviewRound;
+    private String interviewer;
+    private java.util.List<String> feedbackTags;
 }

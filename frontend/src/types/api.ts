@@ -519,6 +519,9 @@ export interface JobApplicationEventItem {
   content?: string
   eventTime: string
   result?: string
+  interviewRound?: number
+  interviewer?: string
+  feedbackTags?: string[]
 }
 
 export interface JobApplicationItem {
@@ -535,6 +538,8 @@ export interface JobApplicationItem {
   jdKeywords: string[]
   missingKeywords: string[]
   analysisSummary: string
+  reviewSuggestion?: string
+  nextStepSuggestion?: string
   applyDate?: string
   nextStepDate?: string
   updateTime?: string

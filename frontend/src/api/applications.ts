@@ -23,6 +23,9 @@ export interface JobApplicationEventPayload {
   content?: string
   eventTime?: string
   result?: string
+  interviewRound?: number
+  interviewer?: string
+  feedbackTags?: string[]
 }
 
 export const createJobApplicationApi = (payload: JobApplicationCreatePayload) => {
