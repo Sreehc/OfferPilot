@@ -408,6 +408,26 @@ export interface StudyPlanTaskItem {
   completedAt?: string
 }
 
+export interface PlanReasonSummary {
+  title: string
+  summary: string
+  signals: string[]
+}
+
+export interface TodayFocusSummary {
+  state: 'idle' | 'active' | 'completed' | string
+  title: string
+  reason: string
+  expectedOutcome: string
+}
+
+export interface StudyPlanTrendSummary {
+  status: 'on_track' | 'in_progress' | 'not_started' | string
+  title: string
+  summary: string
+  highlights: string[]
+}
+
 export interface StudyPlan {
   id: string
   title: string
@@ -426,6 +446,9 @@ export interface StudyPlan {
   completedTaskCount: number
   todayTaskCount: number
   dailyTargetMinutes: number
+  planReasonSummary?: PlanReasonSummary
+  todayFocusSummary?: TodayFocusSummary
+  trendSummary?: StudyPlanTrendSummary
   tasks: StudyPlanTaskItem[]
 }
 

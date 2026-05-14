@@ -30,6 +30,9 @@ public class StudyPlanCurrentVO {
     private Integer completedTaskCount;
     private Integer todayTaskCount;
     private Integer dailyTargetMinutes;
+    private PlanReasonSummaryVO planReasonSummary;
+    private TodayFocusSummaryVO todayFocusSummary;
+    private TrendSummaryVO trendSummary;
     private List<StudyPlanTaskVO> tasks;
 
     @Data
@@ -47,5 +50,31 @@ public class StudyPlanCurrentVO {
         private String priority;
         private String status;
         private LocalDateTime completedAt;
+    }
+
+    @Data
+    @Builder
+    public static class PlanReasonSummaryVO {
+        private String title;
+        private String summary;
+        private List<String> signals;
+    }
+
+    @Data
+    @Builder
+    public static class TodayFocusSummaryVO {
+        private String state;
+        private String title;
+        private String reason;
+        private String expectedOutcome;
+    }
+
+    @Data
+    @Builder
+    public static class TrendSummaryVO {
+        private String status;
+        private String title;
+        private String summary;
+        private List<String> highlights;
     }
 }

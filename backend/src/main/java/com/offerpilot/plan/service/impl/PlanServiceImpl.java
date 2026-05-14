@@ -70,7 +70,7 @@ public class PlanServiceImpl implements PlanService {
         plan.setTotalTaskCount(tasks.size());
         studyPlanMapper.updateById(plan);
 
-        return toCurrentVO(syncPlanState(plan), loadPlanTasks(plan.getId()));
+        return toCurrentVO(syncPlanState(plan), loadPlanTasks(plan.getId()), overview);
     }
 
     @Override
@@ -84,7 +84,7 @@ public class PlanServiceImpl implements PlanService {
             return null;
         }
         StudyPlan synced = syncPlanState(plan);
-        return toCurrentVO(synced, loadPlanTasks(synced.getId()));
+        return toCurrentVO(synced, loadPlanTasks(synced.getId()), dashboardService.overview());
     }
 
     @Override
@@ -105,7 +105,7 @@ public class PlanServiceImpl implements PlanService {
         studyPlanTaskMapper.updateById(task);
 
         StudyPlan plan = syncPlanState(getOwnedPlan(userId, task.getPlanId()));
-        return toCurrentVO(plan, loadPlanTasks(plan.getId()));
+        return toCurrentVO(plan, loadPlanTasks(plan.getId()), dashboardService.overview());
     }
 
     @Override
@@ -139,7 +139,7 @@ public class PlanServiceImpl implements PlanService {
 
         insertTasks(buildTasks(plan, profile, plan.getCurrentDay()));
         StudyPlan synced = syncPlanState(getOwnedPlan(userId, plan.getId()));
-        return toCurrentVO(synced, loadPlanTasks(synced.getId()));
+        return toCurrentVO(synced, loadPlanTasks(synced.getId()), overview);
     }
 
     private StudyPlan getOwnedPlan(Long userId, Long planId) {
@@ -170,6 +170,7 @@ public class PlanServiceImpl implements PlanService {
         List<String> weakPoints = resolveWeakPoints(overview);
         String focusDirection = firstNonBlank(
                 request.getFocusDirection(),
+                overview.getSuggestedFocus(),
                 overview.getRecentInterviews() != null && !overview.getRecentInterviews().isEmpty()
                         ? overview.getRecentInterviews().get(0).getDirection()
                         : null,
@@ -184,21 +185,35 @@ public class PlanServiceImpl implements PlanService {
                 targetRole,
                 techStack,
                 weakPoints,
-                reviewSuggestion
+                reviewSuggestion,
+                overview.getReviewDebtCount() == null ? 0 : overview.getReviewDebtCount(),
+                overview.getRecentInterviews() == null ? 0 : overview.getRecentInterviews().size(),
+                overview.getApplicationSummary() == null || overview.getApplicationSummary().getActiveCount() == null
+                        ? 0
+                        : overview.getApplicationSummary().getActiveCount()
         );
     }
 
     private List<String> resolveWeakPoints(DashboardOverviewVO overview) {
-        if (overview.getWeakPoints() == null || overview.getWeakPoints().isEmpty()) {
-            return List.of("高频基础题", "项目表达", "追问深挖");
-        }
         LinkedHashSet<String> values = new LinkedHashSet<>();
-        for (WeakPointVO item : overview.getWeakPoints()) {
-            if (item != null && item.getCategoryName() != null && !item.getCategoryName().isBlank()) {
-                values.add(item.getCategoryName());
+        if (overview.getWeakPoints() != null) {
+            for (WeakPointVO item : overview.getWeakPoints()) {
+                if (item != null && item.getCategoryName() != null && !item.getCategoryName().isBlank()) {
+                    values.add(item.getCategoryName());
+                }
+                if (values.size() >= 3) {
+                    break;
+                }
             }
-            if (values.size() >= 3) {
-                break;
+        }
+        if (values.size() < 3 && overview.getWeakCategories() != null) {
+            for (String category : overview.getWeakCategories()) {
+                if (category != null && !category.isBlank()) {
+                    values.add(category.trim());
+                }
+                if (values.size() >= 3) {
+                    break;
+                }
             }
         }
         return values.isEmpty() ? List.of("高频基础题", "项目表达", "追问深挖") : new ArrayList<>(values);
@@ -235,7 +250,12 @@ public class PlanServiceImpl implements PlanService {
 
     private List<StudyPlanTask> buildTasks(StudyPlan plan, PlanProfile profile, int startDay) {
         List<StudyPlanTask> tasks = new ArrayList<>();
+        boolean heavyReviewLoad = profile.reviewDebtCount() >= 6;
+        boolean interviewNeedsCatchUp = profile.recentInterviewCount() == 0 || profile.activeApplicationCount() > 0;
         int interviewInterval = profile.durationDays() <= 7 ? 3 : profile.durationDays() <= 14 ? 4 : 5;
+        if (interviewNeedsCatchUp) {
+            interviewInterval = Math.max(2, interviewInterval - 1);
+        }
         for (int day = startDay; day <= profile.durationDays(); day++) {
             LocalDate taskDate = plan.getStartDate().plusDays(day - 1L);
             tasks.add(buildTask(plan, day, taskDate, "question",
@@ -255,16 +275,22 @@ public class PlanServiceImpl implements PlanService {
             } else {
                 tasks.add(buildTask(plan, day, taskDate, "review",
                         "Day " + day + "：复习与错题回收",
-                        "清理当前待复习项，并把最近低分题整理成下一轮训练前必须回看的清单。",
+                        heavyReviewLoad
+                                ? "先清理积压的待复习项，再把最近低分题整理成下一轮训练前必须回看的清单。"
+                                : "清理当前待复习项，并把最近低分题整理成下一轮训练前必须回看的清单。",
                         "/review",
                         20,
-                        "medium"));
+                        heavyReviewLoad ? "high" : "medium"));
             }
 
             if (day % interviewInterval == 0 || day == profile.durationDays()) {
                 tasks.add(buildTask(plan, day, taskDate, "interview",
                         "Day " + day + "：模拟面试检验",
-                        "安排一场 " + profile.focusDirection() + " 面试，重点验证 " + profile.targetRole() + " 场景下的回答结构和项目表达。",
+                        (interviewNeedsCatchUp ? "优先补一场 " : "安排一场 ")
+                                + profile.focusDirection()
+                                + " 面试，重点验证 "
+                                + profile.targetRole()
+                                + " 场景下的回答结构和项目表达。",
                         "/interview",
                         25,
                         "high"));
@@ -336,11 +362,15 @@ public class PlanServiceImpl implements PlanService {
                 .orderByAsc(StudyPlanTask::getId));
     }
 
-    private StudyPlanCurrentVO toCurrentVO(StudyPlan plan, List<StudyPlanTask> tasks) {
+    private StudyPlanCurrentVO toCurrentVO(StudyPlan plan, List<StudyPlanTask> tasks, DashboardOverviewVO overview) {
         List<String> weakPoints = splitWeakPoints(plan.getWeakPoints());
-        int todayTaskCount = (int) tasks.stream()
+        List<StudyPlanTask> todayTasks = tasks.stream()
                 .filter(task -> task.getDayIndex() != null && task.getDayIndex().equals(plan.getCurrentDay()))
-                .count();
+                .toList();
+        List<StudyPlanTask> todayPendingTasks = todayTasks.stream()
+                .filter(task -> !"completed".equals(task.getStatus()))
+                .toList();
+        int todayTaskCount = todayTasks.size();
         return StudyPlanCurrentVO.builder()
                 .id(plan.getId())
                 .title(plan.getTitle())
@@ -359,6 +389,9 @@ public class PlanServiceImpl implements PlanService {
                 .completedTaskCount(plan.getCompletedTaskCount())
                 .todayTaskCount(todayTaskCount)
                 .dailyTargetMinutes(plan.getDailyTargetMinutes())
+                .planReasonSummary(buildPlanReasonSummary(plan, overview, weakPoints))
+                .todayFocusSummary(buildTodayFocusSummary(plan, todayTasks, todayPendingTasks))
+                .trendSummary(buildTrendSummary(plan, todayTasks, todayPendingTasks))
                 .tasks(tasks.stream().map(task -> StudyPlanCurrentVO.StudyPlanTaskVO.builder()
                         .id(task.getId())
                         .dayIndex(task.getDayIndex())
@@ -372,6 +405,131 @@ public class PlanServiceImpl implements PlanService {
                         .status(task.getStatus())
                         .completedAt(task.getCompletedAt())
                         .build()).toList())
+                .build();
+    }
+
+    private StudyPlanCurrentVO.PlanReasonSummaryVO buildPlanReasonSummary(
+            StudyPlan plan, DashboardOverviewVO overview, List<String> weakPoints) {
+        String weakPointText = weakPoints.isEmpty() ? plan.getFocusDirection() : String.join("、", weakPoints);
+        int reviewDebtCount = overview.getReviewDebtCount() == null ? 0 : overview.getReviewDebtCount();
+        int recentInterviewCount = overview.getRecentInterviews() == null ? 0 : overview.getRecentInterviews().size();
+        int activeApplicationCount = overview.getApplicationSummary() == null || overview.getApplicationSummary().getActiveCount() == null
+                ? 0
+                : overview.getApplicationSummary().getActiveCount();
+        List<String> signals = new ArrayList<>();
+        signals.add("主攻方向放在 " + plan.getFocusDirection());
+        signals.add("当前最该补的是 " + weakPointText);
+        if (reviewDebtCount > 0) {
+            signals.add("还有 " + reviewDebtCount + " 个待复习项要清掉");
+        }
+        if (recentInterviewCount == 0) {
+            signals.add("还没开始模拟面试，先把表达检验排进去");
+        } else {
+            signals.add("最近已完成 " + recentInterviewCount + " 场模拟面试");
+        }
+        if (activeApplicationCount > 0) {
+            signals.add("当前有 " + activeApplicationCount + " 个在推进中的投递");
+        }
+        return StudyPlanCurrentVO.PlanReasonSummaryVO.builder()
+                .title("这轮计划为什么先练这些")
+                .summary(buildPlanReasonText(plan, weakPointText, reviewDebtCount, recentInterviewCount, activeApplicationCount))
+                .signals(signals)
+                .build();
+    }
+
+    private String buildPlanReasonText(
+            StudyPlan plan, String weakPointText, int reviewDebtCount, int recentInterviewCount, int activeApplicationCount) {
+        if (reviewDebtCount > 0) {
+            return "先围绕 " + weakPointText + " 补薄弱点，再把积压的复习项清掉，能更快把回答稳定下来。";
+        }
+        if (recentInterviewCount == 0) {
+            return "先把 " + plan.getFocusDirection() + " 这条线练顺，再尽快插入模拟面试，避免只会看题不会表达。";
+        }
+        if (activeApplicationCount > 0) {
+            return "当前有真实投递在推进，计划会优先安排能直接服务下一轮面试的训练内容。";
+        }
+        return "这轮计划会先补 " + weakPointText + "，再用问答和模拟面试把答案练成能直接说出口的表达。";
+    }
+
+    private StudyPlanCurrentVO.TodayFocusSummaryVO buildTodayFocusSummary(
+            StudyPlan plan, List<StudyPlanTask> todayTasks, List<StudyPlanTask> todayPendingTasks) {
+        if (todayTasks.isEmpty()) {
+            return StudyPlanCurrentVO.TodayFocusSummaryVO.builder()
+                    .state("idle")
+                    .title("今天先刷新一下这轮计划")
+                    .reason("当前这一天还没有可执行任务，先根据最近训练结果更新安排。")
+                    .expectedOutcome("你会拿到一份新的今日清单，知道接下来先练什么。")
+                    .build();
+        }
+        if (todayPendingTasks.isEmpty()) {
+            return StudyPlanCurrentVO.TodayFocusSummaryVO.builder()
+                    .state("completed")
+                    .title("今天的任务已经完成")
+                    .reason("这一天的训练已经收口，可以去复盘结果，或者刷新后续安排。")
+                    .expectedOutcome("你会更清楚下一轮要继续补哪类题、哪段表达。")
+                    .build();
+        }
+
+        StudyPlanTask nextTask = todayPendingTasks.get(0);
+        int pendingCount = todayPendingTasks.size();
+        String weakPointText = joinWeakPoints(splitWeakPoints(plan.getWeakPoints()));
+        return StudyPlanCurrentVO.TodayFocusSummaryVO.builder()
+                .state("active")
+                .title(pendingCount == 1 ? "先完成今天最后 1 项任务" : "先完成今天的 " + pendingCount + " 项任务")
+                .reason(buildTodayReason(nextTask, plan.getFocusDirection(), weakPointText))
+                .expectedOutcome(buildExpectedOutcome(todayTasks, plan.getTargetRole()))
+                .build();
+    }
+
+    private String buildTodayReason(StudyPlanTask nextTask, String focusDirection, String weakPointText) {
+        return switch (nextTask.getModule()) {
+            case "question" -> "先从题库开始，把 " + focusDirection + " 和 " + weakPointText + " 这条线练熟。";
+            case "chat" -> "先用问答把知识点压缩成能直接说出口的回答，再进入下一步训练。";
+            case "review" -> "先把待复习项清掉，避免旧问题反复拖累今天的训练效果。";
+            case "interview" -> "先用一场模拟面试检验今天的准备，确认回答结构能不能真正落地。";
+            default -> "先完成当前这项训练，再继续推进后面的安排。";
+        };
+    }
+
+    private String buildExpectedOutcome(List<StudyPlanTask> todayTasks, String targetRole) {
+        boolean includesInterview = todayTasks.stream().anyMatch(task -> "interview".equals(task.getModule()));
+        boolean includesChat = todayTasks.stream().anyMatch(task -> "chat".equals(task.getModule()));
+        if (includesInterview) {
+            return "做完后你会知道这套准备能不能支撑 " + targetRole + " 的真实面试表达。";
+        }
+        if (includesChat) {
+            return "做完后你会把今天的知识点整理成更稳的口头表达，而不只是停留在理解层。";
+        }
+        return "做完后你会把今天最该补的短板推进一轮，并为下一步训练腾出明确优先级。";
+    }
+
+    private StudyPlanCurrentVO.TrendSummaryVO buildTrendSummary(
+            StudyPlan plan, List<StudyPlanTask> todayTasks, List<StudyPlanTask> todayPendingTasks) {
+        int todayCompletedCount = todayTasks.size() - todayPendingTasks.size();
+        int remainingTaskCount = Math.max((plan.getTotalTaskCount() == null ? 0 : plan.getTotalTaskCount())
+                - (plan.getCompletedTaskCount() == null ? 0 : plan.getCompletedTaskCount()), 0);
+        int remainingDays = Math.max(plan.getDurationDays() - plan.getCurrentDay(), 0);
+        String status = todayTasks.isEmpty()
+                ? "not_started"
+                : todayPendingTasks.isEmpty() ? "on_track" : todayCompletedCount == 0 ? "not_started" : "in_progress";
+        String title = switch (status) {
+            case "on_track" -> "今天这一步已经跟上节奏";
+            case "in_progress" -> "今天已经推进了一部分";
+            default -> "今天还没开始，先从第一项任务动起来";
+        };
+        String summary = switch (status) {
+            case "on_track" -> "把后续几天继续按这个节奏执行，计划会稳定收口。";
+            case "in_progress" -> "先把剩余任务做完，今天的训练闭环才算真正完成。";
+            default -> "先完成第一项高优先任务，页面上的进度和首页摘要会一起更新。";
+        };
+        return StudyPlanCurrentVO.TrendSummaryVO.builder()
+                .status(status)
+                .title(title)
+                .summary(summary)
+                .highlights(List.of(
+                        "总进度 " + plan.getCompletedTaskCount() + " / " + plan.getTotalTaskCount(),
+                        "今天已完成 " + todayCompletedCount + " / " + todayTasks.size(),
+                        "还剩 " + remainingTaskCount + " 项任务，剩余 " + remainingDays + " 天"))
                 .build();
     }
 
@@ -404,7 +562,10 @@ public class PlanServiceImpl implements PlanService {
             String targetRole,
             String techStack,
             List<String> weakPoints,
-            String reviewSuggestion) {
+            String reviewSuggestion,
+            Integer reviewDebtCount,
+            Integer recentInterviewCount,
+            Integer activeApplicationCount) {
     }
 
     private record StudyPlanGenerateRequestBuilder(
