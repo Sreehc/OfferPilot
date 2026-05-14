@@ -14,6 +14,8 @@ export interface InterviewStartPayload {
   jobRole?: string
   experienceLevel?: string
   techStack?: string
+  resumeId?: string
+  projectId?: string
   durationMinutes?: number
   includeResumeProject?: boolean
   questionCount?: number
@@ -31,6 +33,8 @@ export interface VoiceStartPayload {
   jobRole?: string
   experienceLevel?: string
   techStack?: string
+  resumeId?: string
+  projectId?: string
   durationMinutes?: number
   includeResumeProject?: boolean
   questionCount?: number

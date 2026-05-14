@@ -86,15 +86,67 @@
             </p>
           </div>
           <div class="data-slab p-4">
-            <div class="flex items-center justify-between gap-3">
-              <div>
-                <div class="text-xs uppercase tracking-[0.24em] text-tertiary">结合简历项目</div>
-                <p class="mt-2 text-xs leading-5 text-tertiary">
-                  开启后，AI 会更关注真实项目落地、业务表达和工程权衡。
-                </p>
-              </div>
-              <el-switch v-model="includeResumeProject" />
+            <div class="text-xs uppercase tracking-[0.24em] text-tertiary">本轮上下文</div>
+            <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <button
+                type="button"
+                class="interview-context-chip"
+                :class="{ 'interview-context-chip-active': interviewContextPath === 'general' }"
+                @click="applyInterviewContextPath('general')"
+              >
+                通用模拟
+              </button>
+              <button
+                type="button"
+                class="interview-context-chip"
+                :class="{ 'interview-context-chip-active': interviewContextPath === 'resume' }"
+                @click="applyInterviewContextPath('resume')"
+              >
+                基于简历
+              </button>
+              <button
+                type="button"
+                class="interview-context-chip"
+                :class="{ 'interview-context-chip-active': interviewContextPath === 'project' }"
+                @click="applyInterviewContextPath('project')"
+              >
+                基于项目
+              </button>
             </div>
+            <div v-if="interviewContextPath !== 'general'" class="mt-4 grid gap-3 sm:grid-cols-2">
+              <el-select
+                v-model="selectedResumeId"
+                clearable
+                size="large"
+                placeholder="先选一份简历"
+                :loading="loadingResumes"
+              >
+                <el-option
+                  v-for="resume in resumes"
+                  :key="resume.id"
+                  :label="resume.title"
+                  :value="resume.id"
+                />
+              </el-select>
+              <el-select
+                v-if="interviewContextPath === 'project'"
+                v-model="selectedProjectId"
+                clearable
+                size="large"
+                placeholder="再锁定一个项目"
+                :disabled="!selectedResumeId || !resumeProjects.length"
+              >
+                <el-option
+                  v-for="project in resumeProjects"
+                  :key="project.id"
+                  :label="project.projectName"
+                  :value="project.id"
+                />
+              </el-select>
+            </div>
+            <p class="mt-3 text-xs leading-5 text-tertiary">
+              {{ draftContextSource?.summary }}
+            </p>
           </div>
           <div class="data-slab p-4">
             <div class="text-xs uppercase tracking-[0.24em] text-tertiary">题量</div>
@@ -268,6 +320,10 @@
               </div>
             </div>
           </div>
+          <div v-if="activeContextSummary" class="data-slab p-4">
+            <div class="text-xs uppercase tracking-[0.22em] text-tertiary">{{ activeContextSource?.label || '上下文' }}</div>
+            <p class="mt-2 text-sm leading-6 text-secondary">{{ activeContextSummary }}</p>
+          </div>
 
         </div>
       </aside>
@@ -284,6 +340,9 @@
                     <span class="hard-chip">当前问题</span>
                     <span class="question-spotlight__index">
                       Q{{ currentQuestion?.currentIndex ?? 0 }} / {{ currentQuestion?.questionCount ?? 0 }}
+                    </span>
+                    <span v-if="currentQuestion?.contextSource?.label" class="detail-pill">
+                      {{ currentQuestion.contextSource.label }}
                     </span>
                   </div>
                   <h4 class="question-spotlight__title">
@@ -653,11 +712,15 @@ import {
   submitVoiceAnswerApi
 } from '@/api/interview'
 import { fetchRecommendInterviewApi } from '@/api/adaptive'
+import { fetchResumeDetailApi, fetchResumeListApi } from '@/api/resume'
 import type {
+  ContextSource,
   InterviewAnswerResult,
   InterviewCurrentQuestion,
   InterviewDetail,
   InterviewHistoryItem,
+  ResumeProjectItem,
+  ResumeSummaryItem,
   VoiceSubmitResult
 } from '@/types/api'
 import VoiceRecorder from '@/components/VoiceRecorder.vue'
@@ -688,8 +751,13 @@ const jobRole = ref('Java 后端开发')
 const experienceLevel = ref('junior')
 const techStack = ref('Spring Boot, MySQL, Redis')
 const durationMinutes = ref(20)
-const includeResumeProject = ref(false)
 const questionCount = ref(3)
+const interviewContextPath = ref<'general' | 'resume' | 'project'>('general')
+const resumes = ref<ResumeSummaryItem[]>([])
+const loadingResumes = ref(false)
+const selectedResumeId = ref('')
+const selectedProjectId = ref('')
+const resumeProjects = ref<ResumeProjectItem[]>([])
 const interviewMode = ref<'text' | 'voice'>('text')
 const voiceAvailable = ref(false)
 const starting = ref(false)
@@ -706,6 +774,45 @@ const detail = ref<InterviewDetail | null>(null)
 const expandedQuestions = ref<Set<string>>(new Set())
 const recentInterviews = ref<InterviewHistoryItem[]>([])
 const loadingHistory = ref(false)
+
+const draftContextSource = computed<ContextSource | null>(() => {
+  if (interviewContextPath.value === 'project') {
+    const resume = resumes.value.find((item) => item.id === selectedResumeId.value)
+    const project = resumeProjects.value.find((item) => item.id === selectedProjectId.value)
+    return {
+      type: project ? 'project' : 'resume',
+      label: project ? '项目上下文' : '简历上下文',
+      resumeId: selectedResumeId.value || undefined,
+      resumeTitle: resume?.title,
+      projectId: project?.id,
+      projectName: project?.projectName,
+      summary: project
+        ? `本轮会优先围绕项目「${project.projectName}」出题和追问。`
+        : resume
+          ? `本轮会优先结合简历《${resume.title}》里的经历和项目出题。`
+          : '先选一份简历，再决定要不要锁定某个项目。'
+    }
+  }
+  if (interviewContextPath.value === 'resume') {
+    const resume = resumes.value.find((item) => item.id === selectedResumeId.value)
+    return {
+      type: 'resume',
+      label: '简历上下文',
+      resumeId: selectedResumeId.value || undefined,
+      resumeTitle: resume?.title,
+      summary: resume ? `本轮会优先结合简历《${resume.title}》里的经历和项目出题。` : '先选一份简历，再开始这轮面试。'
+    }
+  }
+  return {
+    type: 'general',
+    label: '通用模拟',
+    summary: '本轮以通用方向题为主，不绑定特定简历或项目。'
+  }
+})
+
+const activeContextSource = computed(() => currentQuestion.value?.contextSource || detail.value?.contextSource || draftContextSource.value)
+const activeContextSummary = computed(() => activeContextSource.value?.summary || '')
+const draftIncludeResumeProject = computed(() => interviewContextPath.value !== 'general')
 
 const toggleQuestion = (questionId: string) => {
   if (expandedQuestions.value.has(questionId)) {
@@ -728,7 +835,7 @@ const sessionIncludeResumeProject = computed(
   () =>
     currentQuestion.value?.includeResumeProject ??
     detail.value?.includeResumeProject ??
-    includeResumeProject.value
+    draftIncludeResumeProject.value
 )
 
 const experienceLabel = (value?: string) => {
@@ -816,6 +923,14 @@ const countdownPercent = computed(() => {
 const countdownUrgent = computed(() => countdown.value <= 30)
 
 const handleStart = async (reanswerQuestionId?: number) => {
+  if (interviewContextPath.value !== 'general' && !selectedResumeId.value) {
+    ElMessage.warning('先选一份简历，再开始这轮面试')
+    return
+  }
+  if (interviewContextPath.value === 'project' && !selectedProjectId.value) {
+    ElMessage.warning('先锁定一个项目，再开始这轮面试')
+    return
+  }
   starting.value = true
   try {
     const isVoice = interviewMode.value === 'voice' && voiceAvailable.value
@@ -824,8 +939,10 @@ const handleStart = async (reanswerQuestionId?: number) => {
       jobRole: jobRole.value.trim() || undefined,
       experienceLevel: experienceLevel.value,
       techStack: techStack.value.trim() || undefined,
+      resumeId: selectedResumeId.value || undefined,
+      projectId: selectedProjectId.value || undefined,
       durationMinutes: durationMinutes.value,
-      includeResumeProject: includeResumeProject.value,
+      includeResumeProject: interviewContextPath.value !== 'general',
       questionCount: reanswerQuestionId ? 1 : questionCount.value,
       ...(reanswerQuestionId ? { reanswerQuestionId } : {})
     }
@@ -956,6 +1073,39 @@ const loadRecentInterviews = async () => {
   }
 }
 
+const loadResumes = async () => {
+  loadingResumes.value = true
+  try {
+    const response = await fetchResumeListApi()
+    resumes.value = response.data
+  } catch {
+    resumes.value = []
+  } finally {
+    loadingResumes.value = false
+  }
+}
+
+const loadResumeProjects = async (resumeId: string) => {
+  try {
+    const response = await fetchResumeDetailApi(resumeId)
+    resumeProjects.value = response.data.projects || []
+  } catch {
+    resumeProjects.value = []
+  }
+}
+
+const applyInterviewContextPath = (path: 'general' | 'resume' | 'project') => {
+  interviewContextPath.value = path
+  if (path === 'general') {
+    selectedResumeId.value = ''
+    selectedProjectId.value = ''
+    return
+  }
+  if (!selectedResumeId.value && resumes.value[0]) {
+    selectedResumeId.value = resumes.value[0].id
+  }
+}
+
 const handleNextQuestion = async () => {
   if (!currentQuestion.value) return
 
@@ -1010,6 +1160,7 @@ const handleNewInterview = () => {
 onMounted(() => {
   // Load recent interviews for idle state
   void loadRecentInterviews()
+  void loadResumes()
 
   // Check voice availability
   void fetchVoiceStatusApi()
@@ -1041,6 +1192,15 @@ onMounted(() => {
     questionCount.value = 1
     void handleStart(Number(reanswerId))
   }
+})
+
+watch(selectedResumeId, async (resumeId) => {
+  selectedProjectId.value = ''
+  if (!resumeId) {
+    resumeProjects.value = []
+    return
+  }
+  await loadResumeProjects(resumeId)
 })
 </script>
 
@@ -1107,6 +1267,26 @@ onMounted(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.interview-context-chip {
+  min-height: 2.75rem;
+  border-radius: 1rem;
+  border: 1px solid var(--bc-line);
+  background: var(--panel-muted);
+  color: var(--bc-ink-secondary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition:
+    border-color var(--motion-fast) var(--ease-hard),
+    background var(--motion-fast) var(--ease-hard),
+    color var(--motion-fast) var(--ease-hard);
+}
+
+.interview-context-chip-active {
+  border-color: rgba(var(--bc-accent-rgb), 0.26);
+  background: rgba(var(--bc-accent-rgb), 0.1);
+  color: var(--bc-ink);
 }
 
 .interview-history__heading {

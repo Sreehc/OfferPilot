@@ -43,13 +43,13 @@ public class ChatController {
     private final ObjectMapper objectMapper;
     private final ExecutorService sseExecutor = Executors.newCachedThreadPool();
 
-    @Operation(summary = "发送消息", description = "向会话发送消息并获取 AI 回答")
+    @Operation(summary = "发送消息", description = "向会话发送消息并获取 AI 回答，支持 knowledgeScope、resumeId、projectId 上下文绑定")
     @PostMapping("/send")
     public Result<ChatSendVO> send(@Valid @RequestBody ChatSendRequest request) {
         return Result.success(chatService.send(currentUserId(), request));
     }
 
-    @Operation(summary = "流式发送消息", description = "SSE 流式返回 AI 回答，逐 token 推送")
+    @Operation(summary = "流式发送消息", description = "SSE 流式返回 AI 回答，逐 token 推送，支持 knowledgeScope、resumeId、projectId 上下文绑定")
     @PostMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter stream(@Valid @RequestBody ChatSendRequest request) {
         Long userId = currentUserId();
@@ -83,7 +83,9 @@ public class ChatController {
                                 "references", result.getReferences() != null ? result.getReferences() : List.of(),
                                 "suggestedQuestions", result.getSuggestedQuestions() != null ? result.getSuggestedQuestions() : List.of(),
                                 "answerMode", result.getAnswerMode() != null ? result.getAnswerMode() : "",
-                                "knowledgeScope", result.getKnowledgeScope() != null ? result.getKnowledgeScope() : ""
+                                "knowledgeScope", result.getKnowledgeScope() != null ? result.getKnowledgeScope() : "",
+                                "contextType", result.getContextType() != null ? result.getContextType() : "",
+                                "contextSource", result.getContextSource() != null ? result.getContextSource() : Map.of()
                         )));
                 emitter.complete();
             } catch (Exception e) {

@@ -13,5 +13,9 @@ public class ChatSession extends BaseEntity {
     private Long userId;
     private String title;
     private String mode;
+    private String contextType;
+    private String knowledgeScope;
+    private Long resumeFileId;
+    private Long resumeProjectId;
     private LocalDateTime lastMessageTime;
 }

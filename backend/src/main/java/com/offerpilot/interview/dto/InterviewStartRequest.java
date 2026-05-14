@@ -16,6 +16,10 @@ public class InterviewStartRequest {
 
     private String techStack;
 
+    private Long resumeId;
+
+    private Long projectId;
+
     @Min(value = 5, message = "must be at least 5")
     @Max(value = 60, message = "must be at most 60")
     private Integer durationMinutes = 20;

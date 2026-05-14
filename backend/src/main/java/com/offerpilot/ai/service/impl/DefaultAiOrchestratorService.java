@@ -159,6 +159,12 @@ public class DefaultAiOrchestratorService implements AiOrchestratorService {
         if (Boolean.TRUE.equals(request.getIncludeResumeProject())) {
             sb.append("\n\n## Resume Context\nPlease evaluate whether the answer can connect to real project experience.");
         }
+        if (request.getContextSummary() != null && !request.getContextSummary().isBlank()) {
+            sb.append("\n\n## Bound Context\n").append(request.getContextSummary());
+            if (request.getContextType() != null && !request.getContextType().isBlank()) {
+                sb.append("\nContext type: ").append(request.getContextType());
+            }
+        }
         return sb.toString();
     }
 
@@ -290,6 +296,9 @@ public class DefaultAiOrchestratorService implements AiOrchestratorService {
     }
 
     private String fallbackAnswer(ChatSendRequest request, List<KnowledgeSearchVO.Reference> references) {
+        String contextLead = request.getContextSummary() == null || request.getContextSummary().isBlank()
+                ? ""
+                : "已结合当前绑定上下文：" + request.getContextSummary() + "\n\n";
         if (!references.isEmpty()) {
             String snippets = references.stream()
                     .map(KnowledgeSearchVO.Reference::getSnippet)
@@ -297,19 +306,23 @@ public class DefaultAiOrchestratorService implements AiOrchestratorService {
                     .reduce((left, right) -> left + "\n\n" + right)
                     .orElse("");
             return switch ((request.getAnswerMode() == null ? "learning" : request.getAnswerMode()).toLowerCase()) {
-                case "interview" -> "根据当前知识库命中的片段，先给你一个更适合面试表达的回答骨架：\n\n" + snippets;
-                case "concise" -> "根据当前知识库命中的片段，先给你一个简明版答案：\n\n" + snippets;
-                case "project" -> "根据当前知识库命中的片段，先给你一个偏项目结合的回答版本：\n\n" + snippets;
-                default -> "根据当前知识库命中的片段，先给出一个便于学习理解的版本：\n\n" + snippets;
+                case "interview" -> contextLead + "根据当前知识库命中的片段，先给你一个更适合面试表达的回答骨架：\n\n" + snippets;
+                case "concise" -> contextLead + "根据当前知识库命中的片段，先给你一个简明版答案：\n\n" + snippets;
+                case "project" -> contextLead + "根据当前知识库命中的片段，先给你一个偏项目结合的回答版本：\n\n" + snippets;
+                default -> contextLead + "根据当前知识库命中的片段，先给出一个便于学习理解的版本：\n\n" + snippets;
             };
         }
-        return "当前没有命中足够的知识库上下文。你可以补充更具体的 Java 后端场景、技术关键词，或切换到自由提问模式继续追问。";
+        return contextLead + "当前没有命中足够的知识库上下文。你可以补充更具体的 Java 后端场景、技术关键词，或切换到自由提问模式继续追问。";
     }
 
     private String buildChatPrompt(ChatSendRequest request, List<KnowledgeSearchVO.Reference> references) {
         String basePrompt = references.isEmpty()
                 ? promptTemplateService.chatPrompt()
                 : promptTemplateService.knowledgeChatPrompt() + "\n" + promptTemplateService.referenceConstraintPrompt();
+        if (request.getContextSummary() != null && !request.getContextSummary().isBlank()) {
+            basePrompt += "\n\n## Bound Context\n" + request.getContextSummary()
+                    + "\nUse this context when it is relevant, and make the answer explicit about whether it is drawing from the user's own resume/project or from general资料。";
+        }
         String answerMode = request.getAnswerMode() == null ? "learning" : request.getAnswerMode().toLowerCase();
         return switch (answerMode) {
             case "interview" -> basePrompt + "\nUse an interview-ready structure: conclusion first, then key points, trade-offs, and pitfalls.";
@@ -323,6 +336,20 @@ public class DefaultAiOrchestratorService implements AiOrchestratorService {
         String topic = request.getMessage() == null ? "这个主题" : request.getMessage().trim();
         String normalized = topic.length() > 22 ? topic.substring(0, 22) + "..." : topic;
         String answerMode = request.getAnswerMode() == null ? "learning" : request.getAnswerMode().toLowerCase();
+        boolean projectContext = "project".equalsIgnoreCase(request.getContextType()) || "project".equals(answerMode);
+        boolean resumeContext = "resume".equalsIgnoreCase(request.getContextType());
+        if (projectContext) {
+            return List.of(
+                    "把 `" + normalized + "` 换成我项目里的表达方式",
+                    "围绕当前项目，继续追问 `" + normalized + "` 的取舍和风险",
+                    "如果面试官追问这个项目的结果，你会怎么回答？");
+        }
+        if (resumeContext) {
+            return List.of(
+                    "把 `" + normalized + "` 放进我的简历表达里",
+                    "如果面试官从简历里追问 `" + normalized + "`，我该怎么答？",
+                    "帮我把这段回答压成 1 分钟简历面试版本");
+        }
         return switch (answerMode) {
             case "interview" -> List.of(
                     "如果面试官继续追问 `" + normalized + "` 的底层原理，我该怎么答？",

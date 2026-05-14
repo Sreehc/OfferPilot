@@ -16,6 +16,9 @@ public class InterviewSession extends BaseEntity {
     private String jobRole;
     private String experienceLevel;
     private String techStack;
+    private String contextType;
+    private Long resumeFileId;
+    private Long resumeProjectId;
     private Integer durationMinutes;
     private Integer includeResumeProject;
     private String status;

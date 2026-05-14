@@ -58,6 +58,8 @@ public class InterviewVoiceServiceImpl implements InterviewVoiceService {
         startRequest.setJobRole(request.getJobRole());
         startRequest.setExperienceLevel(request.getExperienceLevel());
         startRequest.setTechStack(request.getTechStack());
+        startRequest.setResumeId(request.getResumeId());
+        startRequest.setProjectId(request.getProjectId());
         startRequest.setDurationMinutes(request.getDurationMinutes());
         startRequest.setIncludeResumeProject(request.getIncludeResumeProject());
         startRequest.setQuestionCount(request.getQuestionCount());
@@ -140,12 +142,19 @@ public class InterviewVoiceServiceImpl implements InterviewVoiceService {
 
         // Step 3: Use transcript as the answer and score via AI
         Question question = questionMapper.selectById(questionId);
+        InterviewCurrentQuestionVO currentQuestion = interviewService.current(userId, sessionId);
         InterviewAnswerRequest answerRequest = new InterviewAnswerRequest();
         answerRequest.setSessionId(sessionId);
         answerRequest.setQuestionId(questionId);
         answerRequest.setAnswer(transcript);
-        if (question != null) {
+        if (currentQuestion != null) {
+            answerRequest.setQuestionTitle(currentQuestion.getQuestionTitle());
+            answerRequest.setContextType(currentQuestion.getContextType());
+            answerRequest.setContextSummary(currentQuestion.getContextSource() != null ? currentQuestion.getContextSource().getSummary() : null);
+        } else if (question != null) {
             answerRequest.setQuestionTitle(question.getTitle());
+        }
+        if (question != null) {
             answerRequest.setStandardAnswer(question.getStandardAnswer());
             answerRequest.setScoreStandard(question.getScoreStandard());
         }

@@ -24,4 +24,6 @@ public class InterviewAnswerRequest {
     private String experienceLevel;
     private String techStack;
     private Boolean includeResumeProject;
+    private String contextType;
+    private String contextSummary;
 }

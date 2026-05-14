@@ -12,6 +12,7 @@ import com.offerpilot.common.api.ResultCode;
 import com.offerpilot.common.config.OfferPilotProperties;
 import com.offerpilot.common.dto.PageResult;
 import com.offerpilot.common.exception.BusinessException;
+import com.offerpilot.common.vo.ContextSourceVO;
 import com.offerpilot.dashboard.service.DashboardService;
 import com.offerpilot.interview.dto.InterviewAnswerRequest;
 import com.offerpilot.notification.service.NotificationService;
@@ -29,6 +30,11 @@ import com.offerpilot.interview.vo.InterviewDetailVO;
 import com.offerpilot.interview.vo.InterviewHistoryVO;
 import com.offerpilot.question.entity.Question;
 import com.offerpilot.question.mapper.QuestionMapper;
+import com.offerpilot.resume.entity.ResumeFile;
+import com.offerpilot.resume.entity.ResumeProject;
+import com.offerpilot.resume.mapper.ResumeFileMapper;
+import com.offerpilot.resume.mapper.ResumeProjectMapper;
+import com.offerpilot.resume.vo.ResumeProjectQuestionVO;
 import com.offerpilot.wrong.entity.WrongQuestion;
 import com.offerpilot.wrong.mapper.WrongQuestionMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -51,6 +57,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Slf4j
 @Service
@@ -73,6 +80,8 @@ public class InterviewServiceImpl implements InterviewService {
     private final KnowledgeCardService knowledgeCardService;
     private final OfferPilotProperties props;
     private final ObjectMapper objectMapper;
+    private final ResumeFileMapper resumeFileMapper;
+    private final ResumeProjectMapper resumeProjectMapper;
 
     @Lazy
     @Autowired
@@ -81,7 +90,10 @@ public class InterviewServiceImpl implements InterviewService {
     @Override
     @Transactional
     public InterviewCurrentQuestionVO start(Long userId, InterviewStartRequest request) {
-        List<Question> questions = pickQuestions(request.getDirection(), request.getTechStack(), request.getQuestionCount());
+        InterviewContextSnapshot context = resolveInterviewContext(userId, request.getResumeId(), request.getProjectId());
+        String effectiveTechStack = mergeTechStack(request.getTechStack(), context.techStack());
+        boolean useResumeProjectContext = Boolean.TRUE.equals(request.getIncludeResumeProject()) || !"general".equals(context.type());
+        List<Question> questions = pickQuestions(request.getDirection(), effectiveTechStack, request.getQuestionCount(), context);
 
         // If reanswerQuestionId is set, ensure it's the first question
         if (request.getReanswerQuestionId() != null) {
@@ -102,9 +114,12 @@ public class InterviewServiceImpl implements InterviewService {
         session.setDirection(request.getDirection());
         session.setJobRole(request.getJobRole());
         session.setExperienceLevel(request.getExperienceLevel());
-        session.setTechStack(request.getTechStack());
+        session.setTechStack(effectiveTechStack);
+        session.setContextType(context.type());
+        session.setResumeFileId(context.resumeId());
+        session.setResumeProjectId(context.projectId());
         session.setDurationMinutes(request.getDurationMinutes());
-        session.setIncludeResumeProject(Boolean.TRUE.equals(request.getIncludeResumeProject()) ? 1 : 0);
+        session.setIncludeResumeProject(useResumeProjectContext ? 1 : 0);
         session.setStatus("in_progress");
         session.setQuestionCount(questions.size());
         session.setCurrentIndex(1);
@@ -127,13 +142,15 @@ public class InterviewServiceImpl implements InterviewService {
                 .currentIndex(1)
                 .questionCount(questions.size())
                 .questionId(first.getId())
-                .questionTitle(first.getTitle())
+                .questionTitle(resolveQuestionTitle(first, 1, questions.size(), context))
                 .direction(session.getDirection())
                 .jobRole(session.getJobRole())
                 .experienceLevel(session.getExperienceLevel())
                 .techStack(session.getTechStack())
                 .durationMinutes(session.getDurationMinutes())
                 .includeResumeProject(includeResumeProject(session))
+                .contextType(context.type())
+                .contextSource(context.source())
                 .build();
     }
 
@@ -148,7 +165,8 @@ public class InterviewServiceImpl implements InterviewService {
         int idx = Math.min(session.getCurrentIndex() - 1, records.size() - 1);
         InterviewRecord record = records.get(idx);
         Question question = questionMapper.selectById(record.getQuestionId());
-        String title = question != null ? question.getTitle() : "Unknown";
+        InterviewContextSnapshot context = resolveInterviewContext(userId, session.getResumeFileId(), session.getResumeProjectId());
+        String title = resolveQuestionTitle(question, session.getCurrentIndex(), session.getQuestionCount(), context);
 
         return InterviewCurrentQuestionVO.builder()
                 .sessionId(sessionId)
@@ -162,6 +180,8 @@ public class InterviewServiceImpl implements InterviewService {
                 .techStack(session.getTechStack())
                 .durationMinutes(session.getDurationMinutes())
                 .includeResumeProject(includeResumeProject(session))
+                .contextType(context.type())
+                .contextSource(context.source())
                 .build();
     }
 
@@ -174,14 +194,17 @@ public class InterviewServiceImpl implements InterviewService {
         }
 
         List<InterviewRecord> records = getRecords(session.getId());
+        InterviewContextSnapshot context = resolveInterviewContext(userId, session.getResumeFileId(), session.getResumeProjectId());
         InterviewRecord currentRecord = records.stream()
                 .filter(r -> r.getQuestionId().equals(request.getQuestionId()))
                 .findFirst()
                 .orElseThrow(() -> new BusinessException(ResultCode.NOT_FOUND.getCode(), "question not in this session"));
 
         Question question = questionMapper.selectById(request.getQuestionId());
+        if (question != null || !"general".equals(context.type())) {
+            request.setQuestionTitle(resolveQuestionTitle(question, session.getCurrentIndex(), session.getQuestionCount(), context));
+        }
         if (question != null) {
-            request.setQuestionTitle(question.getTitle());
             request.setStandardAnswer(question.getStandardAnswer());
             request.setScoreStandard(question.getScoreStandard());
         }
@@ -190,6 +213,8 @@ public class InterviewServiceImpl implements InterviewService {
         request.setExperienceLevel(session.getExperienceLevel());
         request.setTechStack(session.getTechStack());
         request.setIncludeResumeProject(session.getIncludeResumeProject() != null && session.getIncludeResumeProject() == 1);
+        request.setContextType(context.type());
+        request.setContextSummary(context.source().getSummary());
 
         boolean hasNext = session.getCurrentIndex() < session.getQuestionCount();
 
@@ -256,6 +281,7 @@ public class InterviewServiceImpl implements InterviewService {
     public InterviewDetailVO detail(Long userId, Long sessionId) {
         InterviewSession session = getOwnedSession(userId, sessionId);
         List<InterviewRecord> records = getRecords(sessionId);
+        InterviewContextSnapshot context = resolveInterviewContext(userId, session.getResumeFileId(), session.getResumeProjectId());
 
         List<Long> questionIds = records.stream()
                 .map(InterviewRecord::getQuestionId)
@@ -281,26 +307,29 @@ public class InterviewServiceImpl implements InterviewService {
         InterviewDeckSnapshot deckSnapshot = buildInterviewDeckSnapshot(records, interviewDeck);
 
         List<InterviewDetailVO.InterviewRecordVO> recordVOs = records.stream()
+                .map(record -> Map.entry(record, records.indexOf(record) + 1))
                 .map(record -> {
-                    Question q = questionMap.get(record.getQuestionId());
-                    VoiceRecord vr = voiceRecordMap.get(record.getId());
-                    String generatedCardId = deckSnapshot.generatedCardIdsByRecordId.get(record.getId());
+                    InterviewRecord item = record.getKey();
+                    int questionIndex = record.getValue();
+                    Question q = questionMap.get(item.getQuestionId());
+                    VoiceRecord vr = voiceRecordMap.get(item.getId());
+                    String generatedCardId = deckSnapshot.generatedCardIdsByRecordId.get(item.getId());
                     return InterviewDetailVO.InterviewRecordVO.builder()
-                            .questionId(record.getQuestionId())
-                            .questionTitle(q != null ? q.getTitle() : "Unknown")
-                            .userAnswer(record.getUserAnswer())
-                            .score(record.getScore())
-                            .comment(record.getComment())
+                            .questionId(item.getQuestionId())
+                            .questionTitle(resolveQuestionTitle(q, questionIndex, session.getQuestionCount(), context))
+                            .userAnswer(item.getUserAnswer())
+                            .score(item.getScore())
+                            .comment(item.getComment())
                             .standardAnswer(q != null ? q.getStandardAnswer() : null)
-                            .followUp(record.getFollowUp())
-                            .scoreBreakdown(parseScoreBreakdown(record.getScoreDimensionsJson()))
-                            .weakPointTags(parseWeakPointTags(record.getWeakPointTags()))
-                            .reviewSummary(record.getReviewSummary())
-                            .isLowScore(Integer.valueOf(1).equals(record.getIsWrong()))
+                            .followUp(item.getFollowUp())
+                            .scoreBreakdown(parseScoreBreakdown(item.getScoreDimensionsJson()))
+                            .weakPointTags(parseWeakPointTags(item.getWeakPointTags()))
+                            .reviewSummary(item.getReviewSummary())
+                            .isLowScore(Integer.valueOf(1).equals(item.getIsWrong()))
                             .recommendedCardFront(q != null ? q.getTitle() : "Unknown")
                             .recommendedCardBack(q != null ? q.getStandardAnswer() : null)
-                            .recommendedCardExplanation(buildInterviewCardExplanation(record))
-                            .recommendedCardFollowUp(record.getFollowUp())
+                            .recommendedCardExplanation(buildInterviewCardExplanation(item))
+                            .recommendedCardFollowUp(item.getFollowUp())
                             .generatedCardId(generatedCardId)
                             .voiceTranscript(vr != null ? vr.getTranscript() : null)
                             .voiceConfidence(vr != null ? vr.getTranscriptConfidence() : null)
@@ -316,6 +345,8 @@ public class InterviewServiceImpl implements InterviewService {
                 .techStack(session.getTechStack())
                 .durationMinutes(session.getDurationMinutes())
                 .includeResumeProject(includeResumeProject(session))
+                .contextType(context.type())
+                .contextSource(context.source())
                 .status(session.getStatus())
                 .mode(session.getMode())
                 .totalScore(session.getTotalScore())
@@ -353,6 +384,8 @@ public class InterviewServiceImpl implements InterviewService {
                             .techStack(s.getTechStack())
                             .durationMinutes(s.getDurationMinutes())
                             .includeResumeProject(includeResumeProject(s))
+                            .contextType(resolveInterviewContext(userId, s.getResumeFileId(), s.getResumeProjectId()).type())
+                            .contextSource(resolveInterviewContext(userId, s.getResumeFileId(), s.getResumeProjectId()).source())
                             .status(s.getStatus())
                             .mode(s.getMode())
                             .totalScore(s.getTotalScore())
@@ -393,6 +426,8 @@ public class InterviewServiceImpl implements InterviewService {
                         .techStack(s.getTechStack())
                         .durationMinutes(s.getDurationMinutes())
                         .includeResumeProject(includeResumeProject(s))
+                        .contextType(resolveInterviewContext(userId, s.getResumeFileId(), s.getResumeProjectId()).type())
+                        .contextSource(resolveInterviewContext(userId, s.getResumeFileId(), s.getResumeProjectId()).source())
                         .status(s.getStatus())
                         .mode(s.getMode())
                         .totalScore(s.getTotalScore())
@@ -429,7 +464,7 @@ public class InterviewServiceImpl implements InterviewService {
     // Private helpers
     // ──────────────────────────────────────────────
 
-    private List<Question> pickQuestions(String direction, String techStack, int count) {
+    private List<Question> pickQuestions(String direction, String techStack, int count, InterviewContextSnapshot context) {
         // Try matching category by name — first look for 'interview' type, then 'question' type
         Category category = categoryService.lambdaQuery()
                 .eq(Category::getName, direction)
@@ -452,18 +487,22 @@ public class InterviewServiceImpl implements InterviewService {
                     .like(Question::getTitle, direction));
         }
 
+        List<String> techKeywords = new ArrayList<>();
         if (techStack != null && !techStack.isBlank()) {
-            List<String> techKeywords = java.util.Arrays.stream(techStack.split("[,，/\\s]+"))
+            techKeywords.addAll(java.util.Arrays.stream(techStack.split("[,，/\\s]+"))
                     .map(String::trim)
                     .filter(keyword -> !keyword.isBlank())
+                    .toList());
+        }
+        if (context.projectName() != null) {
+            techKeywords.add(context.projectName());
+        }
+        if (!techKeywords.isEmpty()) {
+            pool = pool.stream()
+                    .sorted((left, right) -> Integer.compare(
+                            techMatchScore(right, techKeywords),
+                            techMatchScore(left, techKeywords)))
                     .toList();
-            if (!techKeywords.isEmpty()) {
-                pool = pool.stream()
-                        .sorted((left, right) -> Integer.compare(
-                                techMatchScore(right, techKeywords),
-                                techMatchScore(left, techKeywords)))
-                        .toList();
-            }
         }
 
         if (pool.isEmpty()) {
@@ -473,7 +512,16 @@ public class InterviewServiceImpl implements InterviewService {
         }
 
         pool = new ArrayList<>(pool);
-        Collections.shuffle(pool);
+        if (techKeywords.isEmpty()) {
+            Collections.shuffle(pool);
+        } else {
+            int headSize = Math.min(pool.size(), Math.max(count * 3, count));
+            List<Question> head = new ArrayList<>(pool.subList(0, headSize));
+            Collections.shuffle(head);
+            List<Question> tail = headSize < pool.size() ? new ArrayList<>(pool.subList(headSize, pool.size())) : List.of();
+            pool = new ArrayList<>(head);
+            pool.addAll(tail);
+        }
         List<Question> selected = new ArrayList<>(pool.stream().limit(count).toList());
         if (selected.size() >= count) {
             return selected;
@@ -649,6 +697,140 @@ public class InterviewServiceImpl implements InterviewService {
 
     private boolean includeResumeProject(InterviewSession session) {
         return session.getIncludeResumeProject() != null && session.getIncludeResumeProject() == 1;
+    }
+
+    private String mergeTechStack(String requestTechStack, String contextTechStack) {
+        if (!StringUtils.hasText(requestTechStack)) {
+            return contextTechStack;
+        }
+        if (!StringUtils.hasText(contextTechStack)) {
+            return requestTechStack;
+        }
+        LinkedHashMap<String, String> merged = new LinkedHashMap<>();
+        for (String item : (requestTechStack + "," + contextTechStack).split("[,，]")) {
+            String normalized = item.trim();
+            if (!normalized.isBlank()) {
+                merged.putIfAbsent(normalized.toLowerCase(), normalized);
+            }
+        }
+        return String.join(", ", merged.values());
+    }
+
+    private InterviewContextSnapshot resolveInterviewContext(Long userId, Long resumeId, Long projectId) {
+        if (projectId != null) {
+            ResumeProject project = resumeProjectMapper.selectById(projectId);
+            if (project == null || !project.getUserId().equals(userId)) {
+                throw new BusinessException(ResultCode.NOT_FOUND.getCode(), "resume project not found");
+            }
+            ResumeFile resume = resumeFileMapper.selectById(project.getResumeFileId());
+            if (resume == null || !resume.getUserId().equals(userId)) {
+                throw new BusinessException(ResultCode.NOT_FOUND.getCode(), "resume file not found");
+            }
+            ContextSourceVO source = ContextSourceVO.builder()
+                    .type("project")
+                    .label("项目上下文")
+                    .summary(buildProjectContextSummary(project, resume))
+                    .resumeId(resume.getId())
+                    .resumeTitle(resume.getTitle())
+                    .projectId(project.getId())
+                    .projectName(project.getProjectName())
+                    .build();
+            return new InterviewContextSnapshot(
+                    "project",
+                    source,
+                    resume.getId(),
+                    project.getId(),
+                    project.getProjectName(),
+                    project.getTechStack(),
+                    parseProjectFollowUpQuestions(project.getFollowUpQuestionsJson()));
+        }
+        if (resumeId != null) {
+            ResumeFile resume = resumeFileMapper.selectById(resumeId);
+            if (resume == null || !resume.getUserId().equals(userId)) {
+                throw new BusinessException(ResultCode.NOT_FOUND.getCode(), "resume file not found");
+            }
+            ContextSourceVO source = ContextSourceVO.builder()
+                    .type("resume")
+                    .label("简历上下文")
+                    .summary(buildResumeContextSummary(resume))
+                    .resumeId(resume.getId())
+                    .resumeTitle(resume.getTitle())
+                    .build();
+            return new InterviewContextSnapshot("resume", source, resume.getId(), null, null, resume.getSkills(), List.of());
+        }
+        ContextSourceVO source = ContextSourceVO.builder()
+                .type("general")
+                .label("通用模拟")
+                .summary("当前以通用方向题为主，不绑定特定简历或项目。")
+                .build();
+        return new InterviewContextSnapshot("general", source, null, null, null, null, List.of());
+    }
+
+    private String resolveQuestionTitle(Question question, int currentIndex, int questionCount, InterviewContextSnapshot context) {
+        String baseTitle = question != null && StringUtils.hasText(question.getTitle()) ? question.getTitle() : "请继续回答当前问题";
+        if ("project".equals(context.type())) {
+            if (currentIndex <= context.projectQuestions().size()) {
+                return context.projectQuestions().get(currentIndex - 1);
+            }
+            if (currentIndex == 1) {
+                return "请你用 1 分钟介绍项目「" + context.projectName() + "」，重点讲背景、职责和结果。";
+            }
+            return "请结合项目「" + context.projectName() + "」回答：" + baseTitle;
+        }
+        if ("resume".equals(context.type())) {
+            if (currentIndex == 1) {
+                return "请先用 1 分钟介绍你的简历亮点，以及它和目标岗位的匹配度。";
+            }
+            if (currentIndex == questionCount) {
+                return "如果面试官继续从你的简历经历追问，你会怎么把这段能力讲得更扎实？";
+            }
+            return "请结合你的简历经历回答：" + baseTitle;
+        }
+        return baseTitle;
+    }
+
+    private String buildResumeContextSummary(ResumeFile resume) {
+        String summary = StringUtils.hasText(resume.getSummary()) ? resume.getSummary() : "可围绕这份简历里的项目经历、技术栈和结果来组织回答。";
+        return "当前绑定简历《" + resume.getTitle() + "》。" + summary;
+    }
+
+    private String buildProjectContextSummary(ResumeProject project, ResumeFile resume) {
+        String lead = "当前绑定项目「" + project.getProjectName() + "」";
+        if (resume != null) {
+            lead += "，来源简历《" + resume.getTitle() + "》";
+        }
+        String summary = StringUtils.hasText(project.getProjectSummary()) ? project.getProjectSummary() : "优先围绕项目背景、职责、方案选择和结果来组织表达。";
+        String techStack = StringUtils.hasText(project.getTechStack()) ? "技术栈：" + project.getTechStack() + "。" : "";
+        String responsibility = StringUtils.hasText(project.getResponsibility()) ? "职责：" + project.getResponsibility() + "。" : "";
+        String achievement = StringUtils.hasText(project.getAchievement()) ? "结果：" + project.getAchievement() + "。" : "";
+        return lead + "。" + summary + " " + techStack + responsibility + achievement;
+    }
+
+    private List<String> parseProjectFollowUpQuestions(String rawJson) {
+        if (!StringUtils.hasText(rawJson)) {
+            return List.of();
+        }
+        try {
+            return objectMapper.readValue(rawJson, new TypeReference<List<ResumeProjectQuestionVO>>() {})
+                    .stream()
+                    .map(ResumeProjectQuestionVO::getQuestion)
+                    .filter(StringUtils::hasText)
+                    .limit(5)
+                    .toList();
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to parse resume project follow-up questions: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    private record InterviewContextSnapshot(
+            String type,
+            ContextSourceVO source,
+            Long resumeId,
+            Long projectId,
+            String projectName,
+            String techStack,
+            List<String> projectQuestions) {
     }
 
     private String writeScoreBreakdown(List<InterviewAnswerVO.ScoreDimensionVO> scoreBreakdown) {

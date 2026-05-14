@@ -237,12 +237,27 @@ export interface ChatSessionItem {
   id: number
   title: string
   mode: 'chat' | 'rag'
+  contextType?: ContextType
+  knowledgeScope?: ChatKnowledgeScope
+  contextSource?: ContextSource
   lastMessageTime?: string
   updateTime?: string
 }
 
 export type ChatAnswerMode = 'learning' | 'interview' | 'concise' | 'project'
 export type ChatKnowledgeScope = 'all' | 'system' | 'personal'
+export type ContextType = 'general' | 'knowledge' | 'resume' | 'project'
+
+export interface ContextSource {
+  type: ContextType
+  label: string
+  summary?: string
+  knowledgeScope?: ChatKnowledgeScope
+  resumeId?: string
+  resumeTitle?: string
+  projectId?: string
+  projectName?: string
+}
 
 export interface ChatMessageItem {
   id: number
@@ -259,6 +274,8 @@ export interface ChatSendResult {
   answer: string
   answerMode?: ChatAnswerMode
   knowledgeScope?: ChatKnowledgeScope
+  contextType?: ContextType
+  contextSource?: ContextSource
   references: KnowledgeReferenceItem[]
   suggestedQuestions?: string[]
 }
@@ -275,6 +292,8 @@ export interface InterviewCurrentQuestion {
   techStack?: string
   durationMinutes?: number
   includeResumeProject?: boolean
+  contextType?: ContextType
+  contextSource?: ContextSource
 }
 
 export interface InterviewScoreDimension {
@@ -324,6 +343,8 @@ export interface InterviewDetail {
   techStack?: string
   durationMinutes?: number
   includeResumeProject?: boolean
+  contextType?: ContextType
+  contextSource?: ContextSource
   status: string
   mode?: string
   totalScore: number
@@ -360,6 +381,8 @@ export interface InterviewHistoryItem {
   techStack?: string
   durationMinutes?: number
   includeResumeProject?: boolean
+  contextType?: ContextType
+  contextSource?: ContextSource
   status: string
   mode?: string
   totalScore: number

@@ -1,5 +1,6 @@
 package com.offerpilot.interview.vo;
 
+import com.offerpilot.common.vo.ContextSourceVO;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Builder;
@@ -21,4 +22,6 @@ public class InterviewCurrentQuestionVO {
     private String techStack;
     private Integer durationMinutes;
     private Boolean includeResumeProject;
+    private String contextType;
+    private ContextSourceVO contextSource;
 }

@@ -12,20 +12,25 @@ import com.offerpilot.chat.vo.ChatMessageReferenceVO;
 import com.offerpilot.chat.vo.ChatMessageVO;
 import com.offerpilot.chat.vo.ChatSendVO;
 import com.offerpilot.chat.vo.ChatSessionVO;
+import com.offerpilot.common.vo.ContextSourceVO;
 import com.offerpilot.common.api.ResultCode;
 import com.offerpilot.common.dto.PageResult;
 import com.offerpilot.common.exception.BusinessException;
+import com.offerpilot.resume.entity.ResumeFile;
+import com.offerpilot.resume.entity.ResumeProject;
+import com.offerpilot.resume.mapper.ResumeFileMapper;
+import com.offerpilot.resume.mapper.ResumeProjectMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +40,8 @@ public class ChatServiceImpl implements ChatService {
     private final ChatMessageMapper chatMessageMapper;
     private final AiOrchestratorService aiOrchestratorService;
     private final ObjectMapper objectMapper;
+    private final ResumeFileMapper resumeFileMapper;
+    private final ResumeProjectMapper resumeProjectMapper;
 
     @Lazy
     @org.springframework.beans.factory.annotation.Autowired
@@ -43,6 +50,9 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public ChatSendVO send(Long userId, ChatSendRequest request) {
         request.setUserId(userId);
+        ChatContextSnapshot contextSnapshot = resolveContext(userId, request.getMode(), request.getKnowledgeScope(),
+                request.getResumeId(), request.getProjectId());
+        applyResolvedContext(request, contextSnapshot);
         // Phase 1: persist user message in its own transaction (via proxy)
         ChatSession session = self.persistUserMessage(userId, request);
 
@@ -53,12 +63,17 @@ public class ChatServiceImpl implements ChatService {
         self.persistAssistantMessage(session, userId, result);
         result.setSessionId(session.getId());
         result.setSessionTitle(session.getTitle());
+        result.setContextType(contextSnapshot.type());
+        result.setContextSource(contextSnapshot.source());
         return result;
     }
 
     @Override
     public ChatSendVO streamChat(Long userId, ChatSendRequest request, Consumer<String> onToken) {
         request.setUserId(userId);
+        ChatContextSnapshot contextSnapshot = resolveContext(userId, request.getMode(), request.getKnowledgeScope(),
+                request.getResumeId(), request.getProjectId());
+        applyResolvedContext(request, contextSnapshot);
         // Phase 1: persist user message
         ChatSession session = self.persistUserMessage(userId, request);
 
@@ -76,6 +91,10 @@ public class ChatServiceImpl implements ChatService {
                 .sessionId(session.getId())
                 .sessionTitle(session.getTitle())
                 .answer(fullAnswer.toString())
+                .answerMode(request.getAnswerMode())
+                .knowledgeScope(request.getKnowledgeScope())
+                .contextType(contextSnapshot.type())
+                .contextSource(contextSnapshot.source())
                 .references(references)
                 .build();
         self.persistAssistantMessage(session, userId, result);
@@ -88,9 +107,23 @@ public class ChatServiceImpl implements ChatService {
         ChatSession session = request.getSessionId() == null
                 ? createSession(userId, request.getMessage(), request.getMode())
                 : getOwnedSession(userId, request.getSessionId());
+        if (!StringUtils.hasText(request.getKnowledgeScope()) && StringUtils.hasText(session.getKnowledgeScope())) {
+            request.setKnowledgeScope(session.getKnowledgeScope());
+        }
+        if (request.getResumeId() == null && session.getResumeFileId() != null) {
+            request.setResumeId(session.getResumeFileId());
+        }
+        if (request.getProjectId() == null && session.getResumeProjectId() != null) {
+            request.setProjectId(session.getResumeProjectId());
+        }
         if (!session.getMode().equals(request.getMode())) {
             session.setMode(request.getMode());
         }
+        session.setContextType(request.getContextType());
+        session.setKnowledgeScope(request.getKnowledgeScope());
+        session.setResumeFileId(request.getResumeId());
+        session.setResumeProjectId(request.getProjectId());
+        chatSessionMapper.updateById(session);
         persistMessage(session.getId(), userId, "user", "text", request.getMessage(), null);
         return session;
     }
@@ -121,6 +154,9 @@ public class ChatServiceImpl implements ChatService {
                         .id(session.getId())
                         .title(session.getTitle())
                         .mode(session.getMode())
+                        .contextType(inferContextType(session))
+                        .knowledgeScope(session.getKnowledgeScope())
+                        .contextSource(buildContextSource(session))
                         .lastMessageTime(session.getLastMessageTime())
                         .updateTime(session.getUpdateTime())
                         .build())
@@ -231,5 +267,173 @@ public class ChatServiceImpl implements ChatService {
             return normalized;
         }
         return normalized.substring(0, 18) + "...";
+    }
+
+    private void applyResolvedContext(ChatSendRequest request, ChatContextSnapshot contextSnapshot) {
+        request.setContextType(contextSnapshot.type());
+        request.setKnowledgeScope(contextSnapshot.knowledgeScope());
+        request.setResumeId(contextSnapshot.resumeId());
+        request.setProjectId(contextSnapshot.projectId());
+        request.setContextSummary(contextSnapshot.summary());
+    }
+
+    private ChatContextSnapshot resolveContext(Long userId, String mode, String knowledgeScope, Long resumeId, Long projectId) {
+        if (projectId != null) {
+            ResumeProject project = resumeProjectMapper.selectById(projectId);
+            if (project == null || !project.getUserId().equals(userId)) {
+                throw new BusinessException(ResultCode.NOT_FOUND.getCode(), "resume project not found");
+            }
+            ResumeFile resume = resumeFileMapper.selectById(project.getResumeFileId());
+            if (resume == null || !resume.getUserId().equals(userId)) {
+                throw new BusinessException(ResultCode.NOT_FOUND.getCode(), "resume file not found");
+            }
+            ContextSourceVO source = ContextSourceVO.builder()
+                    .type("project")
+                    .label("项目上下文")
+                    .summary(buildProjectSummary(project, resume))
+                    .knowledgeScope(normalizeKnowledgeScope(knowledgeScope))
+                    .resumeId(resume.getId())
+                    .resumeTitle(resume.getTitle())
+                    .projectId(project.getId())
+                    .projectName(project.getProjectName())
+                    .build();
+            return new ChatContextSnapshot("project", source, source.getSummary(), source.getKnowledgeScope(), resume.getId(), project.getId());
+        }
+        if (resumeId != null) {
+            ResumeFile resume = resumeFileMapper.selectById(resumeId);
+            if (resume == null || !resume.getUserId().equals(userId)) {
+                throw new BusinessException(ResultCode.NOT_FOUND.getCode(), "resume file not found");
+            }
+            String summary = buildResumeSummary(resume);
+            ContextSourceVO source = ContextSourceVO.builder()
+                    .type("resume")
+                    .label("简历上下文")
+                    .summary(summary)
+                    .knowledgeScope(normalizeKnowledgeScope(knowledgeScope))
+                    .resumeId(resume.getId())
+                    .resumeTitle(resume.getTitle())
+                    .build();
+            return new ChatContextSnapshot("resume", source, summary, source.getKnowledgeScope(), resume.getId(), null);
+        }
+        if ("rag".equalsIgnoreCase(mode)) {
+            String normalizedScope = normalizeKnowledgeScope(knowledgeScope);
+            ContextSourceVO source = ContextSourceVO.builder()
+                    .type("knowledge")
+                    .label("资料上下文")
+                    .summary("当前会优先基于" + knowledgeScopeLabel(normalizedScope) + "里的资料回答。")
+                    .knowledgeScope(normalizedScope)
+                    .build();
+            return new ChatContextSnapshot("knowledge", source, source.getSummary(), normalizedScope, null, null);
+        }
+        ContextSourceVO source = ContextSourceVO.builder()
+                .type("general")
+                .label("自由提问")
+                .summary("当前不会绑定特定资料、简历或项目，适合直接追问原理、场景和表达。")
+                .build();
+        return new ChatContextSnapshot("general", source, source.getSummary(), normalizeKnowledgeScope(knowledgeScope), null, null);
+    }
+
+    private ContextSourceVO buildContextSource(ChatSession session) {
+        String contextType = inferContextType(session);
+        String knowledgeScope = normalizeKnowledgeScope(session.getKnowledgeScope());
+        if ("project".equals(contextType) && session.getResumeProjectId() != null) {
+            ResumeProject project = resumeProjectMapper.selectById(session.getResumeProjectId());
+            ResumeFile resume = session.getResumeFileId() == null ? null : resumeFileMapper.selectById(session.getResumeFileId());
+            if (project != null) {
+                return ContextSourceVO.builder()
+                        .type("project")
+                        .label("项目上下文")
+                        .summary(buildProjectSummary(project, resume))
+                        .knowledgeScope(knowledgeScope)
+                        .resumeId(resume != null ? resume.getId() : null)
+                        .resumeTitle(resume != null ? resume.getTitle() : null)
+                        .projectId(project.getId())
+                        .projectName(project.getProjectName())
+                        .build();
+            }
+        }
+        if ("resume".equals(contextType) && session.getResumeFileId() != null) {
+            ResumeFile resume = resumeFileMapper.selectById(session.getResumeFileId());
+            if (resume != null) {
+                return ContextSourceVO.builder()
+                        .type("resume")
+                        .label("简历上下文")
+                        .summary(buildResumeSummary(resume))
+                        .knowledgeScope(knowledgeScope)
+                        .resumeId(resume.getId())
+                        .resumeTitle(resume.getTitle())
+                        .build();
+            }
+        }
+        if ("knowledge".equals(contextType)) {
+            return ContextSourceVO.builder()
+                    .type("knowledge")
+                    .label("资料上下文")
+                    .summary("当前会优先基于" + knowledgeScopeLabel(knowledgeScope) + "里的资料回答。")
+                    .knowledgeScope(knowledgeScope)
+                    .build();
+        }
+        return ContextSourceVO.builder()
+                .type("general")
+                .label("自由提问")
+                .summary("当前不会绑定特定资料、简历或项目。")
+                .knowledgeScope(knowledgeScope)
+                .build();
+    }
+
+    private String inferContextType(ChatSession session) {
+        if (StringUtils.hasText(session.getContextType())) {
+            return session.getContextType();
+        }
+        if (session.getResumeProjectId() != null) {
+            return "project";
+        }
+        if (session.getResumeFileId() != null) {
+            return "resume";
+        }
+        if ("rag".equalsIgnoreCase(session.getMode())) {
+            return "knowledge";
+        }
+        return "general";
+    }
+
+    private String normalizeKnowledgeScope(String knowledgeScope) {
+        if ("system".equalsIgnoreCase(knowledgeScope) || "personal".equalsIgnoreCase(knowledgeScope)) {
+            return knowledgeScope.toLowerCase();
+        }
+        return "all";
+    }
+
+    private String knowledgeScopeLabel(String knowledgeScope) {
+        if ("system".equalsIgnoreCase(knowledgeScope)) {
+            return "推荐资料";
+        }
+        if ("personal".equalsIgnoreCase(knowledgeScope)) {
+            return "我的资料";
+        }
+        return "全部资料";
+    }
+
+    private String buildResumeSummary(ResumeFile resume) {
+        String summary = StringUtils.hasText(resume.getSummary()) ? resume.getSummary() : "可结合这份简历里的经历、技术栈和项目成果来回答。";
+        return "当前绑定简历《" + resume.getTitle() + "》。" + summary;
+    }
+
+    private String buildProjectSummary(ResumeProject project, ResumeFile resume) {
+        String resumeLead = resume != null ? "，来源简历《" + resume.getTitle() + "》" : "";
+        String techStack = StringUtils.hasText(project.getTechStack()) ? "技术栈：" + project.getTechStack() + "。" : "";
+        String responsibility = StringUtils.hasText(project.getResponsibility()) ? "职责：" + project.getResponsibility() + "。" : "";
+        String achievement = StringUtils.hasText(project.getAchievement()) ? "结果：" + project.getAchievement() + "。" : "";
+        String summary = StringUtils.hasText(project.getProjectSummary()) ? project.getProjectSummary() : "优先围绕项目背景、职责、方案选择和结果来作答。";
+        return "当前绑定项目「" + project.getProjectName() + "」" + resumeLead + "。" + summary + " " + techStack + responsibility + achievement;
+    }
+
+    private record ChatContextSnapshot(
+            String type,
+            ContextSourceVO source,
+            String summary,
+            String knowledgeScope,
+            Long resumeId,
+            Long projectId) {
     }
 }

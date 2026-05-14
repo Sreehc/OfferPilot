@@ -1,50 +1,12 @@
 <template>
   <div class="chat-page">
     <section class="chat-toolbar shell-section-card p-4 sm:p-5">
-      <div class="chat-toolbar__actions">
-        <div class="chat-toolbar__selectors">
-          <div class="mode-toggle mode-toggle-page" role="tablist" aria-label="问答模式">
-            <button
-              type="button"
-              class="mode-toggle__item"
-              :class="{ 'mode-toggle__item-active': mode === 'rag' }"
-              @click="mode = 'rag'"
-            >
-              基于资料回答
-            </button>
-            <button
-              type="button"
-              class="mode-toggle__item"
-              :class="{ 'mode-toggle__item-active': mode === 'chat' }"
-              @click="mode = 'chat'"
-            >
-              自由提问
-            </button>
-          </div>
-          <div class="mode-toggle mode-toggle-page" role="tablist" aria-label="回答模式">
-            <button
-              v-for="item in answerModes"
-              :key="item.value"
-              type="button"
-              class="mode-toggle__item"
-              :class="{ 'mode-toggle__item-active': answerMode === item.value }"
-              @click="answerMode = item.value"
-            >
-              {{ item.label }}
-            </button>
-          </div>
-          <div v-if="mode === 'rag'" class="scope-toggle" role="tablist" aria-label="知识库范围">
-            <button
-              v-for="item in knowledgeScopes"
-              :key="item.value"
-              type="button"
-              class="scope-toggle__item"
-              :class="{ 'scope-toggle__item-active': knowledgeScope === item.value }"
-              @click="knowledgeScope = item.value"
-            >
-              {{ item.label }}
-            </button>
-          </div>
+      <div class="chat-toolbar__head">
+        <div class="min-w-0">
+          <h2 class="chat-toolbar__title">先确定你现在要怎么问</h2>
+          <p class="chat-toolbar__summary">
+            先选提问路径，再决定要不要带资料、简历或项目上下文。顶部只保留这一步，不再解释模式定义。
+          </p>
         </div>
         <div class="flex flex-wrap gap-3">
           <button type="button" class="session-toggle" @click="toggleSessionPanel">
@@ -59,6 +21,77 @@
             <span>会话</span>
           </button>
           <button type="button" class="topbar-primary" @click="startNewSession">新对话</button>
+        </div>
+      </div>
+
+      <div class="chat-toolbar__paths" role="tablist" aria-label="提问路径">
+        <button
+          type="button"
+          class="chat-path-chip"
+          :class="{ 'chat-path-chip-active': chatPath === 'general' }"
+          @click="applyChatPath('general')"
+        >
+          自由提问
+        </button>
+        <button
+          type="button"
+          class="chat-path-chip"
+          :class="{ 'chat-path-chip-active': chatPath === 'knowledge' }"
+          @click="applyChatPath('knowledge')"
+        >
+          基于资料回答
+        </button>
+        <button
+          type="button"
+          class="chat-path-chip"
+          :class="{ 'chat-path-chip-active': chatPath === 'project' }"
+          @click="applyChatPath('project')"
+        >
+          简历 / 项目上下文
+        </button>
+      </div>
+
+      <div class="chat-toolbar__actions">
+        <div class="chat-toolbar__selectors">
+          <div v-if="chatPath !== 'general'" class="chat-context-grid">
+            <el-select v-model="knowledgeScope" size="large" placeholder="资料范围">
+              <el-option v-for="item in knowledgeScopes" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+            <template v-if="chatPath === 'project'">
+              <el-select
+                v-model="selectedResumeId"
+                size="large"
+                clearable
+                placeholder="先选一份简历"
+                :loading="loadingResumes"
+              >
+                <el-option
+                  v-for="resume in resumes"
+                  :key="resume.id"
+                  :label="resume.title"
+                  :value="resume.id"
+                />
+              </el-select>
+              <el-select
+                v-model="selectedProjectId"
+                size="large"
+                clearable
+                placeholder="再锁定一个项目（可选）"
+                :disabled="!selectedResumeId || !resumeProjects.length"
+              >
+                <el-option
+                  v-for="project in resumeProjects"
+                  :key="project.id"
+                  :label="project.projectName"
+                  :value="project.id"
+                />
+              </el-select>
+            </template>
+          </div>
+          <div class="chat-context-note">
+            <span class="detail-pill">{{ chatPathLabel(chatPath) }}</span>
+            <span class="text-sm text-secondary">{{ draftContextSummary }}</span>
+          </div>
         </div>
       </div>
     </section>
@@ -115,6 +148,9 @@
                     </span>
                     <span>{{ formatSessionTime(session.lastMessageTime || session.updateTime) }}</span>
                   </div>
+                  <p v-if="session.contextSource?.summary" class="session-pill__context">
+                    {{ session.contextSource.summary }}
+                  </p>
                   <button
                     type="button"
                     class="session-pill__delete"
@@ -154,10 +190,13 @@
                 <div class="conversation-bar__headline">
                   <p class="conversation-bar__name">{{ activeSessionTitle }}</p>
                   <span class="session-mode-tag" :class="mode === 'rag' ? 'tag-rag' : 'tag-chat'">
-                    {{ mode === 'rag' ? '基于资料回答' : '自由提问' }}
+                    {{ chatPathLabel(activeChatPath) }}
                   </span>
                 </div>
-                <p v-if="activeSession" class="conversation-bar__meta">
+                <p v-if="activeContextSummary" class="conversation-bar__meta">
+                  {{ activeContextSummary }}
+                </p>
+                <p v-else-if="activeSession" class="conversation-bar__meta">
                   {{ formatSessionTime(activeSession.lastMessageTime || activeSession.updateTime) }}
                 </p>
               </div>
@@ -262,9 +301,9 @@
               <footer class="composer-shell">
                 <div class="composer-shell__meta">
                   <span class="composer-hint">
-                    {{ mode === 'rag' ? `资料问答 · ${knowledgeScopeLabel(knowledgeScope)}` : '自由问答' }}
+                    {{ chatPathLabel(chatPath) }}
                   </span>
-                  <span class="composer-hint">{{ answerModeLabel(answerMode) }}</span>
+                  <span class="composer-hint">{{ composerContextHint }}</span>
                   <span class="composer-shortcut">Enter 发送 · Shift + Enter 换行</span>
                 </div>
 
@@ -441,15 +480,18 @@ import type { ComponentPublicInstance } from 'vue'
 import { ElMessage } from 'element-plus'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { deleteChatSessionApi, fetchChatMessagesApi, fetchChatSessionsApi } from '@/api/chat'
+import { fetchResumeDetailApi, fetchResumeListApi } from '@/api/resume'
 import type {
-  ChatAnswerMode,
   ChatKnowledgeScope,
   ChatMessageItem,
   ChatSessionItem,
-  KnowledgeReferenceItem
+  ContextSource,
+  KnowledgeReferenceItem,
+  ResumeProjectItem,
+  ResumeSummaryItem
 } from '@/types/api'
 import { storage } from '@/utils/storage'
 import { getStoredDeviceId } from '@/utils/device'
@@ -461,8 +503,8 @@ const sessions = ref<ChatSessionItem[]>([])
 const messages = ref<ChatMessageItem[]>([])
 const activeSessionId = ref<number | null>(null)
 const mode = ref<'chat' | 'rag'>('rag')
-const answerMode = ref<ChatAnswerMode>('learning')
 const knowledgeScope = ref<ChatKnowledgeScope>('all')
+const chatPath = ref<'general' | 'knowledge' | 'project'>('knowledge')
 const prompt = ref('')
 const loadingMessages = ref(false)
 const sending = ref(false)
@@ -485,6 +527,11 @@ const lastQuestion = ref('')
 const suggestedQuestions = ref<string[]>([])
 const autoStickToBottom = ref(true)
 const isDesktopViewport = ref(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true)
+const resumes = ref<ResumeSummaryItem[]>([])
+const loadingResumes = ref(false)
+const selectedResumeId = ref('')
+const selectedProjectId = ref('')
+const resumeProjects = ref<ResumeProjectItem[]>([])
 
 const sessionFilters: Array<{ label: string; value: SessionFilterValue }> = [
   { label: '全部', value: 'all' },
@@ -492,17 +539,10 @@ const sessionFilters: Array<{ label: string; value: SessionFilterValue }> = [
   { label: '自由提问', value: 'chat' }
 ]
 
-const answerModes: Array<{ label: string; value: ChatAnswerMode }> = [
-  { label: '学习版', value: 'learning' },
-  { label: '面试版', value: 'interview' },
-  { label: '简短版', value: 'concise' },
-  { label: '项目结合', value: 'project' }
-]
-
 const knowledgeScopes: Array<{ label: string; value: ChatKnowledgeScope }> = [
   { label: '全部资料', value: 'all' },
-  { label: '系统库', value: 'system' },
-  { label: '个人库', value: 'personal' }
+  { label: '推荐资料', value: 'system' },
+  { label: '我的资料', value: 'personal' }
 ]
 
 const promptSuggestions = ['帮我梳理这次学习的重点', '解释一下这个知识点的核心原理', '给我一份更容易复习的总结']
@@ -516,9 +556,62 @@ marked.setOptions({
 
 const activeSession = computed(() => sessions.value.find((item) => item.id === activeSessionId.value) ?? null)
 
+const activeChatPath = computed(() => {
+  if (activeSession.value?.contextType === 'project' || activeSession.value?.contextType === 'resume') return 'project'
+  if (activeSession.value?.mode === 'rag') return 'knowledge'
+  return activeSession.value ? 'general' : chatPath.value
+})
+
 const activeSessionTitle = computed(() => {
   if (!activeSessionId.value) return '新对话'
   return activeSession.value?.title || '当前会话'
+})
+
+const draftContextSource = computed<ContextSource | null>(() => {
+  if (chatPath.value === 'project') {
+    const resume = resumes.value.find((item) => item.id === selectedResumeId.value)
+    const project = resumeProjects.value.find((item) => item.id === selectedProjectId.value)
+    return {
+      type: project ? 'project' : 'resume',
+      label: project ? '项目上下文' : '简历上下文',
+      knowledgeScope: knowledgeScope.value,
+      resumeId: selectedResumeId.value || undefined,
+      resumeTitle: resume?.title,
+      projectId: project?.id,
+      projectName: project?.projectName,
+      summary: project
+        ? `当前会优先围绕项目「${project.projectName}」回答，并检索${knowledgeScopeLabel(knowledgeScope.value)}。`
+        : resume
+          ? `当前会优先结合简历《${resume.title}》回答，并检索${knowledgeScopeLabel(knowledgeScope.value)}。`
+          : '先选一份简历，再决定要不要锁定到某个项目。'
+    }
+  }
+  if (chatPath.value === 'knowledge') {
+    return {
+      type: 'knowledge',
+      label: '资料上下文',
+      knowledgeScope: knowledgeScope.value,
+      summary: `当前会优先基于${knowledgeScopeLabel(knowledgeScope.value)}里的资料回答。`
+    }
+  }
+  return {
+    type: 'general',
+    label: '自由提问',
+    summary: '当前不会绑定资料、简历或项目，适合直接追问原理、场景和表达。'
+  }
+})
+
+const activeContextSource = computed(() => activeSession.value?.contextSource ?? draftContextSource.value)
+const activeContextSummary = computed(() => activeContextSource.value?.summary || '')
+const draftContextSummary = computed(() => draftContextSource.value?.summary || '')
+const composerContextHint = computed(() => {
+  if (chatPath.value === 'project') {
+    return selectedProjectId.value ? '会优先结合当前项目来回答' : '会优先结合当前简历来回答'
+  }
+  if (chatPath.value === 'knowledge') {
+    return `会优先检索${knowledgeScopeLabel(knowledgeScope.value)}`
+  }
+  return '不绑定额外上下文'
 })
 
 const filteredSessions = computed(() => {
@@ -563,16 +656,15 @@ const confidenceLabel = (score?: number) => {
   return '弱相关'
 }
 
-const answerModeLabel = (value: ChatAnswerMode) => {
-  if (value === 'interview') return '回答口径：面试版'
-  if (value === 'concise') return '回答口径：简短版'
-  if (value === 'project') return '回答口径：项目结合版'
-  return '回答口径：学习版'
+const chatPathLabel = (value: 'general' | 'knowledge' | 'project') => {
+  if (value === 'project') return '简历 / 项目上下文'
+  if (value === 'knowledge') return '基于资料回答'
+  return '自由提问'
 }
 
 const knowledgeScopeLabel = (value?: string) => {
-  if (value === 'system') return '系统库'
-  if (value === 'personal') return '个人库'
+  if (value === 'system') return '推荐资料'
+  if (value === 'personal') return '我的资料'
   return '全部资料'
 }
 
@@ -626,6 +718,27 @@ const loadSessions = async (selectLatest = false) => {
   }
 }
 
+const loadResumes = async () => {
+  loadingResumes.value = true
+  try {
+    const response = await fetchResumeListApi()
+    resumes.value = response.data
+  } catch {
+    resumes.value = []
+  } finally {
+    loadingResumes.value = false
+  }
+}
+
+const loadResumeProjects = async (resumeId: string) => {
+  try {
+    const response = await fetchResumeDetailApi(resumeId)
+    resumeProjects.value = response.data.projects || []
+  } catch {
+    resumeProjects.value = []
+  }
+}
+
 const handleSessionPageChange = (page: number) => {
   sessionPage.value = page
   void loadSessions()
@@ -650,8 +763,12 @@ const loadMessages = async (sessionId: number) => {
 
 const selectSession = async (sessionId: number, nextMode?: 'chat' | 'rag') => {
   activeSessionId.value = sessionId
+  const session = sessions.value.find((item) => item.id === sessionId)
   if (nextMode) {
     mode.value = nextMode
+  }
+  if (session) {
+    applySessionContext(session)
   }
   sessionDrawerVisible.value = false
   await loadMessages(sessionId)
@@ -696,6 +813,56 @@ const startNewSession = () => {
   focusComposer()
 }
 
+const applySessionContext = (session: ChatSessionItem) => {
+  if (session.contextType === 'project' || session.contextType === 'resume') {
+    chatPath.value = 'project'
+    mode.value = 'rag'
+    knowledgeScope.value = session.contextSource?.knowledgeScope || session.knowledgeScope || 'personal'
+    selectedResumeId.value = session.contextSource?.resumeId || ''
+    selectedProjectId.value = session.contextSource?.projectId || ''
+    if (selectedResumeId.value) {
+      void loadResumeProjects(selectedResumeId.value)
+    }
+    return
+  }
+  if (session.mode === 'rag') {
+    chatPath.value = 'knowledge'
+    mode.value = 'rag'
+    knowledgeScope.value = session.contextSource?.knowledgeScope || session.knowledgeScope || 'all'
+    selectedResumeId.value = ''
+    selectedProjectId.value = ''
+    return
+  }
+  chatPath.value = 'general'
+  mode.value = 'chat'
+  selectedResumeId.value = ''
+  selectedProjectId.value = ''
+}
+
+const applyChatPath = (path: 'general' | 'knowledge' | 'project') => {
+  chatPath.value = path
+  if (path === 'general') {
+    mode.value = 'chat'
+    selectedResumeId.value = ''
+    selectedProjectId.value = ''
+    return
+  }
+  mode.value = 'rag'
+  selectedProjectId.value = ''
+  if (path === 'knowledge') {
+    selectedResumeId.value = ''
+    return
+  }
+  if (path === 'project') {
+    if (knowledgeScope.value === 'all') {
+      knowledgeScope.value = 'personal'
+    }
+    if (!selectedResumeId.value && resumes.value[0]) {
+      selectedResumeId.value = resumes.value[0].id
+    }
+  }
+}
+
 const removeSession = async (sessionId: number) => {
   try {
     await deleteChatSessionApi(sessionId)
@@ -733,6 +900,8 @@ const parseSseChunk = (
     sessionId?: number | null
     references?: KnowledgeReferenceItem[]
     suggestedQuestions?: string[]
+    contextType?: string
+    contextSource?: ContextSource | null
   }) => void
 ) => {
   let eventName = 'message'
@@ -767,7 +936,9 @@ const parseSseChunk = (
       onDone({
         sessionId: parsed.sessionId ?? null,
         references: parsed.references || [],
-        suggestedQuestions: Array.isArray(parsed.suggestedQuestions) ? parsed.suggestedQuestions : []
+        suggestedQuestions: Array.isArray(parsed.suggestedQuestions) ? parsed.suggestedQuestions : [],
+        contextType: parsed.contextType || '',
+        contextSource: parsed.contextSource || null
       })
       return true
     }
@@ -820,8 +991,10 @@ const runChat = async (userMessage: string) => {
       body: JSON.stringify({
         sessionId: activeSessionId.value,
         mode: mode.value,
-        answerMode: answerMode.value,
+        answerMode: chatPath.value === 'project' ? 'project' : 'learning',
         knowledgeScope: knowledgeScope.value,
+        resumeId: selectedResumeId.value || undefined,
+        projectId: selectedProjectId.value || undefined,
         message: userMessage
       }),
       signal: abortController.signal
@@ -839,6 +1012,8 @@ const runChat = async (userMessage: string) => {
     let finalSessionId: number | null = null
     let finalReferences: KnowledgeReferenceItem[] = []
     let finalSuggestedQuestions: string[] = []
+    let finalContextType = ''
+    let finalContextSource: ContextSource | null = null
     let streamCompleted = false
 
     while (!streamCompleted) {
@@ -857,10 +1032,12 @@ const runChat = async (userMessage: string) => {
             streamingContent.value += token
             scrollToBottom()
           },
-          ({ sessionId, references, suggestedQuestions: nextSuggestedQuestions }) => {
+          ({ sessionId, references, suggestedQuestions: nextSuggestedQuestions, contextType, contextSource }) => {
             finalSessionId = sessionId ?? null
             finalReferences = references || []
             finalSuggestedQuestions = nextSuggestedQuestions || []
+            finalContextType = contextType || ''
+            finalContextSource = contextSource || null
           }
         )
         if (completed) {
@@ -878,10 +1055,12 @@ const runChat = async (userMessage: string) => {
           streamingContent.value += token
           scrollToBottom()
         },
-        ({ sessionId, references, suggestedQuestions: nextSuggestedQuestions }) => {
+        ({ sessionId, references, suggestedQuestions: nextSuggestedQuestions, contextType, contextSource }) => {
           finalSessionId = sessionId ?? null
           finalReferences = references || []
           finalSuggestedQuestions = nextSuggestedQuestions || []
+          finalContextType = contextType || ''
+          finalContextSource = contextSource || null
           streamCompleted = true
         }
       )
@@ -905,6 +1084,13 @@ const runChat = async (userMessage: string) => {
         activeSessionId.value = finalSessionId
       }
       suggestedQuestions.value = finalSuggestedQuestions
+      if (activeSessionId.value && finalContextSource) {
+        const session = sessions.value.find((item) => item.id === activeSessionId.value)
+        if (session) {
+          session.contextType = finalContextType as ChatSessionItem['contextType']
+          session.contextSource = finalContextSource
+        }
+      }
     }
 
     await loadSessions()
@@ -948,7 +1134,7 @@ const syncViewport = () => {
 }
 
 onMounted(async () => {
-  await loadSessions(true)
+  await Promise.all([loadSessions(true), loadResumes()])
   syncViewport()
   window.addEventListener('resize', syncViewport)
   focusComposer()
@@ -956,6 +1142,15 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', syncViewport)
+})
+
+watch(selectedResumeId, async (resumeId) => {
+  selectedProjectId.value = ''
+  if (!resumeId) {
+    resumeProjects.value = []
+    return
+  }
+  await loadResumeProjects(resumeId)
 })
 </script>
 
@@ -1002,6 +1197,57 @@ onUnmounted(() => {
   margin-bottom: 1rem;
 }
 
+.chat-toolbar__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.chat-toolbar__title {
+  color: var(--bc-ink);
+  font-size: 1.55rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+.chat-toolbar__summary {
+  margin-top: 0.75rem;
+  max-width: 48rem;
+  color: var(--bc-ink-secondary);
+  font-size: 0.92rem;
+  line-height: 1.75;
+}
+
+.chat-toolbar__paths {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.chat-path-chip {
+  border-radius: 999px;
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--bc-surface-muted);
+  padding: 0.72rem 1rem;
+  color: var(--bc-ink-secondary);
+  font-size: 0.92rem;
+  font-weight: 600;
+  transition:
+    border-color var(--motion-fast) var(--ease-hard),
+    background var(--motion-fast) var(--ease-hard),
+    color var(--motion-fast) var(--ease-hard);
+}
+
+.chat-path-chip-active {
+  border-color: rgba(var(--bc-accent-rgb), 0.24);
+  background: rgba(var(--bc-accent-rgb), 0.1);
+  color: var(--bc-ink);
+}
+
 .chat-toolbar__actions {
   display: flex;
   flex-wrap: wrap;
@@ -1013,6 +1259,27 @@ onUnmounted(() => {
 .chat-toolbar__selectors {
   display: grid;
   gap: 0.7rem;
+}
+
+.chat-context-grid {
+  display: grid;
+  gap: 0.75rem;
+  width: min(100%, 760px);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.chat-context-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.session-pill__context {
+  margin-top: 0.45rem;
+  color: var(--bc-ink-secondary);
+  font-size: 0.8rem;
+  line-height: 1.5;
 }
 
 .scope-toggle {

@@ -44,7 +44,7 @@ public class InterviewController {
     private final InterviewVoiceService interviewVoiceService;
     private final UploadPolicyService uploadPolicyService;
 
-    @Operation(summary = "开始面试", description = "根据方向抽取题目并创建面试会话")
+    @Operation(summary = "开始面试", description = "根据方向抽取题目并创建面试会话，支持绑定简历或项目上下文")
     @PostMapping("/start")
     public Result<InterviewCurrentQuestionVO> start(@Valid @RequestBody InterviewStartRequest request) {
         return Result.success(interviewService.start(currentUserId(), request));
@@ -106,7 +106,7 @@ public class InterviewController {
         return Result.success(Map.of("available", interviewVoiceService.isVoiceAvailable()));
     }
 
-    @Operation(summary = "开始语音面试", description = "创建语音面试会话，返回第一题")
+    @Operation(summary = "开始语音面试", description = "创建语音面试会话，返回第一题，支持绑定简历或项目上下文")
     @PostMapping("/voice/start")
     public Result<InterviewCurrentQuestionVO> voiceStart(@Valid @RequestBody VoiceStartRequest request) {
         return Result.success(interviewVoiceService.startVoice(currentUserId(), request));

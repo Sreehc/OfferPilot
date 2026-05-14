@@ -13,6 +13,8 @@ export interface ChatSendPayload {
   mode: 'chat' | 'rag'
   answerMode: ChatAnswerMode
   knowledgeScope?: ChatKnowledgeScope
+  resumeId?: string
+  projectId?: string
   message: string
 }
 

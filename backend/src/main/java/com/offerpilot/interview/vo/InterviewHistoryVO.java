@@ -1,5 +1,6 @@
 package com.offerpilot.interview.vo;
 
+import com.offerpilot.common.vo.ContextSourceVO;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import java.math.BigDecimal;
@@ -18,6 +19,8 @@ public class InterviewHistoryVO {
     private String techStack;
     private Integer durationMinutes;
     private Boolean includeResumeProject;
+    private String contextType;
+    private ContextSourceVO contextSource;
     private String status;
     private String mode;
     private BigDecimal totalScore;
