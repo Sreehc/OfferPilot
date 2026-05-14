@@ -1,61 +1,56 @@
 <template>
   <div class="space-y-6">
-    <AppShellHeader>
-      <template #actions>
-        <RouterLink to="/resume" class="hard-button-secondary">
-          检查简历版本
-        </RouterLink>
-        <RouterLink v-if="currentFocus" :to="`/applications/${currentFocus.id}`" class="hard-button-primary">
-          继续推进当前岗位
-        </RouterLink>
-      </template>
-    </AppShellHeader>
+    <AppShellHeader />
 
     <section class="shell-section-card application-state-card p-5 sm:p-6">
-      <div class="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)] xl:items-start">
-        <div class="min-w-0">
-          <div class="flex flex-wrap gap-2">
-            <span class="hard-chip">{{ applications.length ? '继续推进投递' : '先记录第一条岗位' }}</span>
-            <span class="detail-pill">{{ applications.length }} 条岗位</span>
-            <span class="detail-pill">{{ activeCount }} 条正在推进</span>
-            <span v-if="currentFocus" class="detail-pill">{{ statusLabel(currentFocus.status) }}</span>
-          </div>
-
-          <p class="mt-5 font-display text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">
-            {{ currentFocus ? `先推进 ${currentFocus.company} · ${currentFocus.jobTitle}` : '先把岗位记录下来' }}
-          </p>
-          <p class="mt-4 max-w-3xl text-sm leading-7 text-secondary">
-            {{
-              currentFocus
-                ? currentFocus.nextStepSuggestion || currentFocus.reviewSuggestion || '先把这条岗位推进到下一阶段，再回来看板。'
-                : '先录入第一条岗位和 JD，拿到匹配度和下一步建议后再继续推进。'
-            }}
-          </p>
-
-          <div class="mt-6 flex flex-wrap gap-3">
-            <a href="#application-create" class="hard-button-primary">
-              {{ applications.length ? '再记录一条岗位' : '开始记录岗位' }}
-            </a>
-            <RouterLink v-if="currentFocus" :to="`/applications/${currentFocus.id}`" class="hard-button-secondary">
-              查看当前时间线
-            </RouterLink>
-          </div>
+      <div class="application-state-hero">
+        <div class="flex flex-wrap gap-2">
+          <span class="hard-chip">{{ applications.length ? '继续推进投递' : '先记录第一条岗位' }}</span>
+          <span class="detail-pill">{{ applications.length }} 条岗位</span>
+          <span class="detail-pill">{{ activeCount }} 条正在推进</span>
+          <span v-if="currentFocus" class="detail-pill">{{ statusLabel(currentFocus.status) }}</span>
         </div>
 
-        <div class="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-          <article class="application-metric-card">
-            <span>当前主动作</span>
-            <strong>{{ currentFocus ? '推进现有岗位' : '录入岗位信息' }}</strong>
-          </article>
-          <article class="application-metric-card">
-            <span>最高匹配度</span>
-            <strong>{{ topMatchScore }}</strong>
-          </article>
-          <article class="application-metric-card">
-            <span>Offer 数</span>
-            <strong>{{ statuses.offer.count }}</strong>
-          </article>
+        <p class="mt-5 font-display text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">
+          {{ currentFocus ? `先推进 ${currentFocus.company} · ${currentFocus.jobTitle}` : '先把岗位记录下来' }}
+        </p>
+        <p class="mt-4 max-w-3xl text-sm leading-7 text-secondary">
+          {{
+            currentFocus
+              ? currentFocus.nextStepSuggestion || currentFocus.reviewSuggestion || '先把这条岗位推进到下一阶段，再回来看板。'
+              : '先录入第一条岗位和 JD，拿到匹配度和下一步建议后再继续推进。'
+          }}
+        </p>
+        <p class="mt-3 text-sm leading-7 text-secondary">
+          首页先帮你判断现在该推进哪一条岗位，次级动作再下沉到时间线和阶段看板里。
+        </p>
+
+        <div class="mt-6 flex flex-wrap gap-3">
+          <a href="#application-create" class="hard-button-primary">
+            {{ applications.length ? '再记录一条岗位' : '开始记录岗位' }}
+          </a>
+          <RouterLink to="/resume" class="hard-button-secondary">
+            检查简历版本
+          </RouterLink>
+          <RouterLink v-if="currentFocus" :to="`/applications/${currentFocus.id}`" class="hard-button-secondary">
+            查看当前时间线
+          </RouterLink>
         </div>
+      </div>
+
+      <div class="application-state-metrics">
+        <article class="application-metric-card">
+          <span>当前主动作</span>
+          <strong>{{ currentFocus ? '推进现有岗位' : '录入岗位信息' }}</strong>
+        </article>
+        <article class="application-metric-card">
+          <span>最高匹配度</span>
+          <strong>{{ topMatchScore }}</strong>
+        </article>
+        <article class="application-metric-card">
+          <span>Offer 数</span>
+          <strong>{{ statuses.offer.count }}</strong>
+        </article>
       </div>
     </section>
 
@@ -422,6 +417,16 @@ onMounted(() => {
     var(--bc-surface-card);
 }
 
+.application-state-hero {
+  min-width: 0;
+}
+
+.application-state-metrics {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
 .application-metric-card {
   border-radius: calc(var(--radius-md) - 6px);
   border: 1px solid var(--bc-border-subtle);
@@ -485,6 +490,12 @@ onMounted(() => {
   background: var(--bc-surface-card);
   padding: 0.95rem;
   text-decoration: none;
+}
+
+@media (min-width: 768px) {
+  .application-state-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (min-width: 1280px) {

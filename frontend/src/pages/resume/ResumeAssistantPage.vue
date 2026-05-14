@@ -1,107 +1,105 @@
 <template>
   <div v-loading="loading" class="space-y-6">
-    <AppShellHeader>
-      <template #actions>
-        <button
-          v-if="currentResume && interviewResume"
-          type="button"
-          class="hard-button-secondary"
-          @click="handleDownloadResume"
-        >
-          导出面试提纲
-        </button>
-        <RouterLink v-if="currentResume" to="/interview" class="hard-button-primary">
-          准备模拟面试
-        </RouterLink>
-      </template>
-    </AppShellHeader>
+    <AppShellHeader />
 
     <section class="shell-section-card resume-state-card p-5 sm:p-6">
-      <div class="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)] xl:items-start">
-        <div class="min-w-0">
-          <div class="flex flex-wrap gap-2">
-            <span class="hard-chip">{{ stateChip }}</span>
-            <span class="detail-pill">{{ resumeList.length }} 份简历</span>
-            <span v-if="currentResume" class="detail-pill">{{ currentResume.projects.length }} 个项目</span>
-            <span v-if="currentResume" class="detail-pill">{{ flattenedRisks.length }} 条待检查提醒</span>
-          </div>
-
-          <p class="mt-5 font-display text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">
-            {{ stateTitle }}
-          </p>
-          <p class="mt-4 max-w-3xl text-sm leading-7 text-secondary">
-            {{ stateDescription }}
-          </p>
-
-          <div class="mt-6 flex flex-wrap gap-3">
-            <button
-              v-if="!currentResume"
-              type="button"
-              class="hard-button-primary"
-              @click="scrollToUpload"
-            >
-              上传简历开始整理
-            </button>
-            <button
-              v-else-if="currentResume.parseStatus === 'failed'"
-              type="button"
-              class="hard-button-primary"
-              @click="startEditing"
-            >
-              修正解析结果
-            </button>
-            <button
-              v-else-if="!isEditing"
-              type="button"
-              class="hard-button-primary"
-              @click="startEditing"
-            >
-              继续整理简历
-            </button>
-            <button
-              v-else
-              type="button"
-              class="hard-button-primary"
-              :disabled="saving"
-              @click="handleSave"
-            >
-              保存当前修改
-            </button>
-
-            <button
-              v-if="currentResume && currentResume.parseStatus === 'failed'"
-              type="button"
-              class="hard-button-secondary"
-              :disabled="retrying"
-              @click="handleRetryParse"
-            >
-              重新解析简历
-            </button>
-            <button
-              v-if="currentResume && isEditing"
-              type="button"
-              class="hard-button-secondary"
-              @click="cancelEditing"
-            >
-              取消修改
-            </button>
-          </div>
+      <div class="resume-state-hero">
+        <div class="flex flex-wrap gap-2">
+          <span class="hard-chip">{{ stateChip }}</span>
+          <span class="detail-pill">{{ resumeList.length }} 份简历</span>
+          <span v-if="currentResume" class="detail-pill">{{ currentResume.projects.length }} 个项目</span>
+          <span v-if="currentResume" class="detail-pill">{{ flattenedRisks.length }} 条待检查提醒</span>
         </div>
 
-        <div class="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-          <article class="resume-metric-card">
-            <span>{{ currentResume ? '当前状态' : '主目标' }}</span>
-            <strong>{{ currentResume ? parseStatusLabel(currentResume.parseStatus, currentResume.userFixStatus) : '先上传一份简历' }}</strong>
-          </article>
-          <article class="resume-metric-card">
-            <span>{{ currentResume ? '下一步' : '当前入口' }}</span>
-            <strong>{{ nextActionText }}</strong>
-          </article>
-          <article class="resume-metric-card">
-            <span>{{ currentResume ? '最后更新' : '支持格式' }}</span>
-            <strong>{{ currentResume ? formatDateTime(currentResume.updateTime) : 'PDF / DOC / DOCX' }}</strong>
-          </article>
+        <p class="mt-5 font-display text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">
+          {{ stateTitle }}
+        </p>
+        <p class="mt-4 max-w-3xl text-sm leading-7 text-secondary">
+          {{ stateDescription }}
+        </p>
+        <p class="mt-3 text-sm leading-7 text-secondary">
+          先把这份简历整理成你能直接讲出口的版本，再去模拟面试或导出提纲。
+        </p>
+
+        <div class="mt-6 flex flex-wrap gap-3">
+          <button
+            v-if="!currentResume"
+            type="button"
+            class="hard-button-primary"
+            @click="scrollToUpload"
+          >
+            上传简历开始整理
+          </button>
+          <button
+            v-else-if="currentResume.parseStatus === 'failed'"
+            type="button"
+            class="hard-button-primary"
+            @click="startEditing"
+          >
+            先修正解析结果
+          </button>
+          <button
+            v-else-if="!isEditing"
+            type="button"
+            class="hard-button-primary"
+            @click="startEditing"
+          >
+            继续整理这份简历
+          </button>
+          <button
+            v-else
+            type="button"
+            class="hard-button-primary"
+            :disabled="saving"
+            @click="handleSave"
+          >
+            保存当前修改
+          </button>
+
+          <button
+            v-if="currentResume && currentResume.parseStatus === 'failed'"
+            type="button"
+            class="hard-button-secondary"
+            :disabled="retrying"
+            @click="handleRetryParse"
+          >
+            重新解析简历
+          </button>
+          <button
+            v-if="currentResume && isEditing"
+            type="button"
+            class="hard-button-secondary"
+            @click="cancelEditing"
+          >
+            取消修改
+          </button>
+          <button
+            v-if="currentResume && interviewResume"
+            type="button"
+            class="hard-button-secondary"
+            @click="handleDownloadResume"
+          >
+            导出面试提纲
+          </button>
+          <RouterLink v-if="currentResume" to="/interview" class="hard-button-secondary">
+            去模拟面试
+          </RouterLink>
         </div>
+      </div>
+
+      <div class="resume-state-metrics">
+        <article class="resume-metric-card">
+          <span>{{ currentResume ? '当前状态' : '主目标' }}</span>
+          <strong>{{ currentResume ? parseStatusLabel(currentResume.parseStatus, currentResume.userFixStatus) : '先上传一份简历' }}</strong>
+        </article>
+        <article class="resume-metric-card">
+          <span>{{ currentResume ? '下一步' : '当前入口' }}</span>
+          <strong>{{ nextActionText }}</strong>
+        </article>
+        <article class="resume-metric-card">
+          <span>{{ currentResume ? '最后更新' : '支持格式' }}</span>
+          <strong>{{ currentResume ? formatDateTime(currentResume.updateTime) : 'PDF / DOC / DOCX' }}</strong>
+        </article>
       </div>
     </section>
 
@@ -847,6 +845,16 @@ onMounted(() => {
     var(--bc-surface-card);
 }
 
+.resume-state-hero {
+  min-width: 0;
+}
+
+.resume-state-metrics {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
 .resume-metric-card,
 .resume-step-row {
   border-radius: calc(var(--radius-md) - 6px);
@@ -939,5 +947,11 @@ onMounted(() => {
   border-radius: 1rem;
   background: rgba(255, 255, 255, 0.72);
   padding: 0.9rem 1rem;
+}
+
+@media (min-width: 768px) {
+  .resume-state-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 </style>

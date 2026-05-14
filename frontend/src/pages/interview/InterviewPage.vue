@@ -1,33 +1,13 @@
 <template>
   <div class="space-y-4 interview-cockpit">
-    <AppShellHeader>
-      <template #actions>
-        <div v-if="phase === 'idle'" class="interview-status">
-          <span class="detail-pill">{{ direction }}</span>
-          <span class="detail-pill">{{ questionCount }} 题</span>
-        </div>
-        <div v-else class="interview-status">
-          <span class="detail-pill">{{ direction }}</span>
-          <span class="detail-pill">
-            {{ interviewMode === 'voice' && voiceAvailable ? '语音作答' : '文字作答' }}
-          </span>
-        </div>
-        <el-button
-          v-if="phase === 'finished'"
-          size="large"
-          class="hard-button-secondary !min-h-11 !px-5"
-          @click="handleViewDetail"
-        >
-          查看详情
-        </el-button>
-      </template>
-    </AppShellHeader>
+    <AppShellHeader />
 
-    <!-- Idle state: centered single-column layout -->
-    <div v-if="phase === 'idle'" class="mx-auto max-w-2xl space-y-4">
-      <aside class="shell-section-card p-4 sm:p-6">
+    <!-- Idle state: setup + history workspace -->
+    <div v-if="phase === 'idle'" class="interview-setup-shell">
+      <section class="shell-section-card interview-setup-main p-4 sm:p-6">
         <div class="panel-heading">
           <h3 class="panel-heading__title">先选这轮面试怎么练</h3>
+          <p class="panel-heading__meta">先定方向、岗位和范围，再开始这轮模拟面试。完成后右侧会继续保留最近记录，方便你回看表现。</p>
         </div>
 
         <div class="mt-6 space-y-4">
@@ -191,10 +171,9 @@
             {{ interviewMode === 'voice' && voiceAvailable ? '开始语音模拟面试' : '开始模拟面试' }}
           </el-button>
         </div>
-      </aside>
+      </section>
 
-      <!-- Recent interview history -->
-      <section class="shell-section-card p-4 sm:p-6">
+      <aside class="shell-section-card interview-setup-side p-4 sm:p-6">
         <div class="flex items-center justify-between">
           <h3 class="interview-history__heading">最近面试</h3>
           <RouterLink
@@ -249,7 +228,7 @@
             </svg>
           </RouterLink>
         </div>
-      </section>
+      </aside>
     </div>
 
     <!-- Active states: two-column layout -->
@@ -328,7 +307,7 @@
         </div>
       </aside>
 
-      <section class="shell-section-card flex min-h-[560px] flex-col p-4 sm:p-6">
+      <section class="shell-section-card interview-session-card flex flex-col p-4 sm:p-6">
         <div v-if="false"></div>
 
         <div v-else-if="phase === 'answering'" class="flex flex-1 flex-col">
@@ -374,7 +353,7 @@
           </div>
 
           <template v-if="interviewMode !== 'voice' || !voiceAvailable">
-            <div class="mt-5 flex items-center justify-between gap-3">
+            <div class="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <span class="text-xs text-tertiary">`Ctrl + Enter` 快速提交</span>
             </div>
             <el-input
@@ -523,7 +502,7 @@
             <span class="font-semibold text-ink">已加入错题本</span>：该题得分低于 60 分，后续会进入间隔复习。
           </div>
 
-          <div class="flex gap-3">
+          <div class="flex flex-col gap-3 sm:flex-row">
             <el-button
               v-if="lastResult?.hasNextQuestion"
               type="primary"
@@ -683,7 +662,7 @@
             </div>
           </div>
 
-          <div class="flex gap-3">
+          <div class="flex flex-col gap-3 lg:flex-row">
             <RouterLink to="/wrong" class="hard-button-secondary flex-1 text-center"> 查看错题本 </RouterLink>
             <RouterLink to="/review" class="hard-button-secondary flex-1 text-center"> 去复习 </RouterLink>
             <el-button type="primary" size="large" class="action-button flex-1" @click="handleNewInterview">
@@ -1140,16 +1119,6 @@ const handleFinish = async () => {
   }
 }
 
-const handleViewDetail = async () => {
-  if (!currentQuestion.value) return
-  try {
-    const response = await interviewDetailApi(currentQuestion.value.sessionId)
-    detail.value = response.data
-  } catch {
-    ElMessage.error('获取面试详情失败')
-  }
-}
-
 const handleNewInterview = () => {
   phase.value = 'idle'
   currentQuestion.value = null
@@ -1286,6 +1255,20 @@ watch(selectedResumeId, async (resumeId) => {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.interview-setup-shell {
+  display: grid;
+  gap: 1rem;
+}
+
+.interview-setup-main,
+.interview-setup-side {
+  min-width: 0;
+}
+
+.interview-session-card {
+  min-height: 420px;
 }
 
 .interview-context-chip {
@@ -1570,6 +1553,18 @@ watch(selectedResumeId, async (resumeId) => {
 
   .question-spotlight__title {
     font-size: 1.9rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  .interview-setup-shell {
+    grid-template-columns: minmax(0, 1.05fr) 320px;
+    align-items: start;
+  }
+
+  .interview-setup-side {
+    position: sticky;
+    top: 88px;
   }
 }
 </style>

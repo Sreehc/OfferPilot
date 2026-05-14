@@ -24,75 +24,86 @@
         </div>
       </div>
 
-      <div class="chat-toolbar__paths" role="tablist" aria-label="提问路径">
-        <button
-          type="button"
-          class="chat-path-chip"
-          :class="{ 'chat-path-chip-active': chatPath === 'general' }"
-          @click="applyChatPath('general')"
-        >
-          直接提问
-        </button>
-        <button
-          type="button"
-          class="chat-path-chip"
-          :class="{ 'chat-path-chip-active': chatPath === 'knowledge' }"
-          @click="applyChatPath('knowledge')"
-        >
-          带资料提问
-        </button>
-        <button
-          type="button"
-          class="chat-path-chip"
-          :class="{ 'chat-path-chip-active': chatPath === 'project' }"
-          @click="applyChatPath('project')"
-        >
-          结合简历提问
-        </button>
-      </div>
-
-      <div class="chat-toolbar__actions">
-        <div class="chat-toolbar__selectors">
-          <div v-if="chatPath !== 'general'" class="chat-context-grid">
-            <el-select v-model="knowledgeScope" size="large" placeholder="资料范围">
-              <el-option v-for="item in knowledgeScopes" :key="item.value" :label="item.label" :value="item.value" />
-            </el-select>
-            <template v-if="chatPath === 'project'">
-              <el-select
-                v-model="selectedResumeId"
-                size="large"
-                clearable
-                placeholder="先选一份简历"
-                :loading="loadingResumes"
-              >
-                <el-option
-                  v-for="resume in resumes"
-                  :key="resume.id"
-                  :label="resume.title"
-                  :value="resume.id"
-                />
-              </el-select>
-              <el-select
-                v-model="selectedProjectId"
-                size="large"
-                clearable
-                placeholder="再锁定一个项目（可选）"
-                :disabled="!selectedResumeId || !resumeProjects.length"
-              >
-                <el-option
-                  v-for="project in resumeProjects"
-                  :key="project.id"
-                  :label="project.projectName"
-                  :value="project.id"
-                />
-              </el-select>
-            </template>
+      <div class="chat-toolbar__stack">
+        <section class="chat-toolbar__section">
+          <p class="chat-toolbar__section-label">提问路径</p>
+          <div class="chat-toolbar__paths" role="tablist" aria-label="提问路径">
+            <button
+              type="button"
+              class="chat-path-chip"
+              :class="{ 'chat-path-chip-active': chatPath === 'general' }"
+              @click="applyChatPath('general')"
+            >
+              直接提问
+            </button>
+            <button
+              type="button"
+              class="chat-path-chip"
+              :class="{ 'chat-path-chip-active': chatPath === 'knowledge' }"
+              @click="applyChatPath('knowledge')"
+            >
+              带资料提问
+            </button>
+            <button
+              type="button"
+              class="chat-path-chip"
+              :class="{ 'chat-path-chip-active': chatPath === 'project' }"
+              @click="applyChatPath('project')"
+            >
+              结合简历提问
+            </button>
           </div>
+        </section>
+
+        <section v-if="chatPath !== 'general'" class="chat-toolbar__section">
+          <p class="chat-toolbar__section-label">补充上下文</p>
+          <div class="chat-toolbar__actions">
+            <div class="chat-toolbar__selectors">
+              <div class="chat-context-grid">
+                <el-select v-model="knowledgeScope" size="large" placeholder="资料范围">
+                  <el-option v-for="item in knowledgeScopes" :key="item.value" :label="item.label" :value="item.value" />
+                </el-select>
+                <template v-if="chatPath === 'project'">
+                  <el-select
+                    v-model="selectedResumeId"
+                    size="large"
+                    clearable
+                    placeholder="先选一份简历"
+                    :loading="loadingResumes"
+                  >
+                    <el-option
+                      v-for="resume in resumes"
+                      :key="resume.id"
+                      :label="resume.title"
+                      :value="resume.id"
+                    />
+                  </el-select>
+                  <el-select
+                    v-model="selectedProjectId"
+                    size="large"
+                    clearable
+                    placeholder="再锁定一个项目（可选）"
+                    :disabled="!selectedResumeId || !resumeProjects.length"
+                  >
+                    <el-option
+                      v-for="project in resumeProjects"
+                      :key="project.id"
+                      :label="project.projectName"
+                      :value="project.id"
+                    />
+                  </el-select>
+                </template>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="chat-toolbar__section chat-toolbar__section-note">
           <div class="chat-context-note">
             <span class="detail-pill">{{ chatPathLabel(chatPath) }}</span>
             <span class="text-sm text-secondary">{{ draftContextSummary }}</span>
           </div>
-        </div>
+        </section>
       </div>
     </section>
 
@@ -1233,6 +1244,25 @@ watch(
   margin-bottom: 1rem;
 }
 
+.chat-toolbar__stack {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.chat-toolbar__section {
+  min-width: 0;
+}
+
+.chat-toolbar__section-label {
+  margin: 0 0 0.65rem;
+  color: var(--bc-ink-secondary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .chat-toolbar__head {
   display: flex;
   flex-wrap: wrap;
@@ -1261,7 +1291,6 @@ watch(
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
-  margin-top: 1rem;
 }
 
 .chat-path-chip {
@@ -1286,6 +1315,7 @@ watch(
 
 .chat-toolbar__actions {
   display: flex;
+  min-width: 0;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
@@ -1294,18 +1324,20 @@ watch(
 
 .chat-toolbar__selectors {
   display: grid;
+  min-width: 0;
   gap: 0.7rem;
 }
 
 .chat-context-grid {
   display: grid;
   gap: 0.75rem;
-  width: min(100%, 760px);
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  width: min(100%, 880px);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
 .chat-context-note {
   display: flex;
+  min-width: 0;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
@@ -2212,10 +2244,6 @@ watch(
 }
 
 @media (max-width: 1023px) {
-  .chat-main {
-    height: calc(100dvh - 196px);
-  }
-
   .chat-toolbar__actions {
     flex-direction: column;
     align-items: stretch;
@@ -2271,20 +2299,12 @@ watch(
 }
 
 @media (min-width: 1024px) {
-  .chat-main {
-    min-height: calc(100dvh - 232px);
-  }
-
   .chat-shell {
-    height: 100%;
+    min-height: 720px;
   }
 }
 
 @media (max-width: 767px) {
-  .chat-main {
-    height: calc(100dvh - 164px);
-  }
-
   .module-topbar__title {
     align-items: flex-start;
   }
@@ -2332,7 +2352,7 @@ watch(
   }
 
   .chat-main__workspace {
-    min-height: calc(100dvh - 164px);
+    min-height: 0;
   }
 }
 </style>

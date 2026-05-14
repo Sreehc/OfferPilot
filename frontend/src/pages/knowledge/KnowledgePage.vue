@@ -41,23 +41,23 @@
             <p class="mt-3 max-w-2xl text-sm leading-7 text-secondary">
               你最需要先知道两件事：哪些资料已经可以继续提问，哪些资料还在准备中。
             </p>
-          </div>
-          <div class="knowledge-table-head__aside">
-            <div class="knowledge-table-stat">
-              <span>当前资料区</span>
-              <strong>{{ activeTabLabel }}</strong>
-            </div>
-            <div class="knowledge-table-stat">
-              <span>当前文档数</span>
-              <strong>{{ total }}</strong>
-            </div>
-            <div class="knowledge-table-stat">
-              <span>现在可以提问</span>
-              <strong>{{ statusSummary.indexed }}</strong>
-            </div>
-            <div class="knowledge-table-stat">
-              <span>还在准备中</span>
-              <strong>{{ statusSummary.pending }}</strong>
+            <div class="knowledge-table-head__stats">
+              <div class="knowledge-table-stat">
+                <span>当前资料区</span>
+                <strong>{{ activeTabLabel }}</strong>
+              </div>
+              <div class="knowledge-table-stat">
+                <span>当前文档数</span>
+                <strong>{{ total }}</strong>
+              </div>
+              <div class="knowledge-table-stat">
+                <span>现在可以提问</span>
+                <strong>{{ statusSummary.indexed }}</strong>
+              </div>
+              <div class="knowledge-table-stat">
+                <span>还在准备中</span>
+                <strong>{{ statusSummary.pending }}</strong>
+              </div>
             </div>
           </div>
         </div>
@@ -119,7 +119,7 @@
                     <span v-if="doc.businessType" class="detail-pill">{{ businessTypeLabel(doc.businessType) }}</span>
                     <span v-if="doc.fileType" class="detail-pill">{{ doc.fileType.toUpperCase() }}</span>
                   </div>
-                  <h4 class="mt-3 line-clamp-2 text-lg font-semibold text-ink">{{ doc.title }}</h4>
+                  <h4 class="mt-3 text-lg font-semibold leading-7 text-ink">{{ doc.title }}</h4>
                 </div>
               </div>
 
@@ -141,7 +141,7 @@
             </div>
             <div class="knowledge-row__body">
               <div class="knowledge-row__summary">
-                <p class="line-clamp-3 text-sm leading-7 text-secondary">
+                <p class="text-sm leading-7 text-secondary">
                   {{ doc.summary || '暂无摘要。' }}
                 </p>
                 <div class="mt-3 flex flex-wrap gap-2 text-xs text-secondary">
@@ -231,6 +231,9 @@
 
         <section class="shell-section-card p-5 sm:p-6">
           <h3 class="text-xl font-semibold tracking-[-0.03em] text-ink">按资料类型和准备情况筛选</h3>
+          <p class="mt-2 text-sm leading-6 text-secondary">
+            先缩小范围，再看哪些资料可以直接提问或生成卡片。
+          </p>
           <div class="mt-5 grid gap-3">
             <el-select v-model="filters.categoryId" clearable placeholder="知识分类" size="large">
               <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
@@ -278,7 +281,7 @@
               class="action-button knowledge-tool-button"
               @click="loadDocs"
             >
-              查看资料
+              应用筛选
             </el-button>
             <el-button size="large" class="hard-button-secondary knowledge-tool-button !ml-0" @click="resetFilters">
               重置
@@ -602,11 +605,10 @@ onMounted(async () => {
   min-width: 0;
 }
 
-.knowledge-table-head__aside {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+.knowledge-table-head__stats {
+  display: grid;
   gap: 10px;
+  margin-top: 18px;
 }
 
 .knowledge-table-stat {
@@ -1035,6 +1037,12 @@ onMounted(async () => {
   }
 }
 
+@media (min-width: 768px) {
+  .knowledge-table-head__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (min-width: 1200px) {
   .knowledge-workspace {
     grid-template-columns: minmax(0, 1.45fr) 320px;
@@ -1049,6 +1057,10 @@ onMounted(async () => {
   .knowledge-row__body {
     grid-template-columns: minmax(0, 1fr) 300px;
     align-items: start;
+  }
+
+  .knowledge-table-head__stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 </style>

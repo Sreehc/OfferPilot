@@ -1,5 +1,9 @@
 <template>
-  <header class="app-shell-header shell-section-card p-4 sm:p-5" :class="compact ? 'app-shell-header-compact' : ''">
+  <header
+    v-if="shouldRender"
+    class="app-shell-header shell-section-card p-4 sm:p-5"
+    :class="compact ? 'app-shell-header-compact' : ''"
+  >
     <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
       <div class="min-w-0">
         <p v-if="resolvedKicker" class="section-kicker">{{ resolvedKicker }}</p>
@@ -43,6 +47,7 @@ const resolvedTitle = computed(() => props.title || routeMeta.value.title || '')
 const resolvedSubtitle = computed(() => props.subtitle || '')
 const resolvedKicker = computed(() => props.kicker || '')
 const showResolvedSubtitle = computed(() => props.showSubtitle && Boolean(resolvedSubtitle.value))
+const shouldRender = computed(() => Boolean(resolvedTitle.value || resolvedKicker.value || showResolvedSubtitle.value))
 </script>
 
 <style scoped>

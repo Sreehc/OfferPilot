@@ -1,9 +1,8 @@
 <template>
   <div v-loading="loading" class="space-y-6">
-    <AppShellHeader />
 
     <section class="shell-section-card plan-state-card p-5 sm:p-6">
-      <div class="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)] xl:items-start">
+      <div class="grid gap-6">
         <div class="min-w-0">
           <div class="flex flex-wrap gap-2">
             <span class="hard-chip">{{ currentPlan ? planStateLabel : '先生成一份计划' }}</span>
@@ -41,7 +40,7 @@
           </div>
         </div>
 
-        <div class="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+        <div class="plan-state-metrics">
           <article class="plan-metric-card">
             <span>{{ currentPlan ? '今日进度' : '计划模板' }}</span>
             <strong>{{ currentPlan ? `${Math.round(currentPlan.progressRate || 0)}%` : '7 / 14 / 30 天' }}</strong>
@@ -185,14 +184,6 @@
               填好岗位、重点方向和技术范围后，系统会直接生成每天要做的题库、问答、模拟面试和复习任务。
             </p>
           </div>
-          <el-button
-            :loading="generatingDuration === 7"
-            size="large"
-            class="hard-button-primary"
-            @click="handleGenerate(7)"
-          >
-            直接生成 7 天计划
-          </el-button>
         </div>
 
         <div class="mt-5 grid gap-4 md:grid-cols-3">
@@ -210,6 +201,18 @@
             <div class="text-xs uppercase tracking-[0.22em] text-tertiary">技术范围</div>
             <el-input v-model="techStack" class="mt-2" size="large" placeholder="Spring Boot, MySQL, Redis" />
           </div>
+        </div>
+
+        <div class="mt-5 flex flex-wrap gap-3">
+          <el-button
+            :loading="generatingDuration === 7"
+            size="large"
+            class="hard-button-primary"
+            @click="handleGenerate(7)"
+          >
+            直接生成 7 天计划
+          </el-button>
+          <span class="detail-pill">生成后会直接拆成今天可执行的题库、问答、面试和复习任务</span>
         </div>
       </article>
 
@@ -241,7 +244,6 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
-import AppShellHeader from '@/components/AppShellHeader.vue'
 import { fetchDashboardOverviewApi } from '@/api/dashboard'
 import { fetchCurrentStudyPlanApi, generateStudyPlanApi, refreshStudyPlanApi, updateStudyPlanTaskStatusApi } from '@/api/plan'
 import { fetchReviewStatsApi } from '@/api/review'
@@ -469,6 +471,11 @@ onMounted(() => {
     var(--bc-surface-card);
 }
 
+.plan-state-metrics {
+  display: grid;
+  gap: 0.75rem;
+}
+
 .plan-metric-card,
 .plan-signal-row {
   border-radius: calc(var(--radius-md) - 6px);
@@ -595,6 +602,10 @@ onMounted(() => {
 @media (min-width: 1024px) {
   .plan-state-card {
     min-height: 260px;
+  }
+
+  .plan-state-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 </style>

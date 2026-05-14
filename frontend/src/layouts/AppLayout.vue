@@ -53,7 +53,7 @@
     </header>
 
     <div
-      class="app-layout-shell pt-[56px] sm:pt-[60px] lg:mt-[60px] lg:h-[calc(100dvh-60px)] lg:pt-0 lg:overflow-hidden"
+      class="app-layout-shell pt-[56px] sm:pt-[60px]"
       :class="{ 'app-layout-shell-sidebar-hidden': !sidebarVisible }"
     >
       <div
@@ -62,9 +62,7 @@
         :aria-hidden="!sidebarVisible"
         :inert="!sidebarVisible"
       >
-        <NavRail
-          class="min-h-[280px] border-r border-[var(--bc-border-subtle)] lg:h-full lg:min-h-0 lg:overflow-y-auto"
-        />
+        <NavRail class="min-h-[280px] border-r border-[var(--bc-border-subtle)] lg:min-h-0 lg:overflow-y-auto" />
       </div>
 
       <Transition name="mobile-rail-fade">
@@ -90,9 +88,9 @@
       <main
         id="main-content"
         tabindex="-1"
-        class="relative z-[1] flex min-w-0 flex-col px-4 py-4 md:px-5 md:py-5 lg:h-full lg:min-h-0 lg:overflow-hidden lg:px-5 lg:py-5 xl:px-6"
+        class="relative z-[1] flex min-w-0 flex-col px-4 py-4 md:px-5 md:py-5 lg:min-h-[calc(100dvh-60px)] lg:px-5 lg:py-5 xl:px-6"
       >
-        <section class="min-h-0 flex flex-1 lg:overflow-y-auto">
+        <section class="flex flex-1">
           <div class="app-canvas w-full max-w-[1720px]">
             <RouterView v-slot="{ Component, route: viewRoute }">
               <Transition
@@ -307,7 +305,7 @@ const handleLogout = async () => {
   display: flex;
   flex: 1;
   flex-direction: column;
-  min-height: 100%;
+  min-height: 0;
   margin-inline: auto;
   width: 100%;
   max-width: 1720px;
@@ -315,10 +313,9 @@ const handleLogout = async () => {
 
 .app-canvas-page {
   display: flex;
-  flex: 1;
   flex-direction: column;
   min-width: 0;
-  min-height: 100%;
+  min-height: 0;
 }
 
 .app-layout-shell {
@@ -560,6 +557,7 @@ const handleLogout = async () => {
   .app-layout-shell {
     display: grid;
     grid-template-columns: 252px minmax(0, 1fr);
+    align-items: start;
     transition: grid-template-columns 240ms var(--ease-hard);
   }
 

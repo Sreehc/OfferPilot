@@ -76,10 +76,13 @@
 
       <section class="shell-section-card p-5 sm:p-6">
         <div class="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
+          <div class="min-w-0">
+            <h2 class="text-2xl font-semibold tracking-[-0.03em] text-ink">
               接下来可以直接去这里
             </h2>
+            <p class="mt-2 text-sm leading-7 text-secondary">
+              只保留现在就能直接开始的主线动作，先选一个入口继续推进。
+            </p>
           </div>
         </div>
 
@@ -90,16 +93,18 @@
             :to="item.to"
             class="dashboard-route-card"
           >
-            <div class="flex items-center justify-between gap-3">
+            <div class="dashboard-route-card__topline">
               <span class="dashboard-route-card__label">{{ item.label }}</span>
               <span class="dashboard-route-card__status">{{ item.status }}</span>
             </div>
-            <h3 class="dashboard-route-card__title">
-              {{ item.title }}
-            </h3>
-            <p class="dashboard-route-card__description">
-              {{ item.description }}
-            </p>
+            <div class="dashboard-route-card__body">
+              <h3 class="dashboard-route-card__title">
+                {{ item.title }}
+              </h3>
+              <p class="dashboard-route-card__description">
+                {{ item.description }}
+              </p>
+            </div>
           </RouterLink>
         </div>
       </section>
@@ -159,10 +164,13 @@
         </article>
 
         <article class="shell-section-card p-5 sm:p-6">
-          <div class="flex items-center justify-between gap-3">
+          <div class="min-w-0">
             <h2 class="text-2xl font-semibold tracking-[-0.03em] text-ink">
               需要时再补这些准备
             </h2>
+            <p class="mt-2 text-sm leading-7 text-secondary">
+              这些入口不是当前主任务，但你需要补资料、补简历或补巩固时可以直接回到这里。
+            </p>
           </div>
 
           <div class="mt-5 space-y-3">
@@ -172,13 +180,15 @@
               :to="item.to"
               class="dashboard-secondary-card"
             >
-              <div class="dashboard-secondary-card__topline">
-                <span>{{ item.label }}</span>
-                <span>{{ item.hint }}</span>
+              <div class="dashboard-secondary-card__content">
+                <div class="dashboard-secondary-card__topline">
+                  <span>{{ item.label }}</span>
+                  <span class="dashboard-secondary-card__hint">{{ item.hint }}</span>
+                </div>
+                <h3 class="dashboard-secondary-card__title">
+                  {{ item.title }}
+                </h3>
               </div>
-              <h3 class="dashboard-secondary-card__title">
-                {{ item.title }}
-              </h3>
             </RouterLink>
           </div>
         </article>
@@ -490,6 +500,11 @@ onMounted(() => {
 }
 
 .dashboard-route-card {
+  display: flex;
+  min-width: 0;
+  min-height: 100%;
+  flex-direction: column;
+  gap: 0.85rem;
   border-radius: calc(var(--radius-md) - 4px);
   border: 1px solid var(--bc-border-subtle);
   background: linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.07), transparent 56%), var(--bc-surface-muted);
@@ -503,6 +518,14 @@ onMounted(() => {
 .dashboard-route-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--bc-shadow-hover);
+}
+
+.dashboard-route-card__topline {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .dashboard-route-card__label,
@@ -522,16 +545,20 @@ onMounted(() => {
   color: var(--bc-accent);
 }
 
+.dashboard-route-card__body {
+  min-width: 0;
+}
+
 .dashboard-route-card__title,
 .dashboard-secondary-card__title {
-  margin-top: 0.85rem;
   font-size: 1.1rem;
   font-weight: 700;
   color: var(--bc-ink);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .dashboard-route-card__description {
-  margin-top: 0.7rem;
   font-size: 0.92rem;
   line-height: 1.7;
   color: var(--bc-ink-secondary);
@@ -539,17 +566,29 @@ onMounted(() => {
 
 .dashboard-weak-card,
 .dashboard-secondary-card {
+  display: flex;
+  min-width: 0;
   border-radius: calc(var(--radius-md) - 4px);
   border: 1px solid var(--bc-border-subtle);
   background: var(--bc-surface-muted);
   padding: 1rem;
 }
 
+.dashboard-secondary-card__content {
+  min-width: 0;
+}
+
 .dashboard-secondary-card__topline {
   display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 0.75rem;
   color: var(--bc-ink-secondary);
+}
+
+.dashboard-secondary-card__hint {
+  white-space: nowrap;
 }
 
 @media (min-width: 960px) {
