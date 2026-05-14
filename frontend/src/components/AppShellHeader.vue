@@ -1,6 +1,6 @@
 <template>
-  <header class="app-shell-header shell-section-card p-5 sm:p-6" :class="compact ? 'app-shell-header-compact' : ''">
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+  <header class="app-shell-header shell-section-card p-4 sm:p-5" :class="compact ? 'app-shell-header-compact' : ''">
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
       <div class="min-w-0">
         <p v-if="resolvedKicker" class="section-kicker">{{ resolvedKicker }}</p>
         <h1 :class="compact ? 'text-xl sm:text-2xl' : 'text-3xl sm:text-4xl'" class="page-title text-ink">
@@ -52,6 +52,11 @@ const showResolvedSubtitle = computed(() => props.showSubtitle && Boolean(resolv
     linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.05), transparent 26%),
     var(--bc-surface-card);
   box-shadow: var(--bc-shadow-soft);
+}
+
+.app-shell-header-compact {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
 }
 
 .page-title {

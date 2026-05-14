@@ -1,7 +1,17 @@
 <template>
   <div class="auth-immersive-shell px-4 py-8 md:px-6 md:py-10">
-    <div class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1180px] items-stretch gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(380px,1.05fr)]">
-      <section class="shell-section-card auth-brand-panel p-6 sm:p-8">
+    <a
+      href="#auth-main"
+      class="skip-link"
+    >
+      跳到注册表单
+    </a>
+
+    <main
+      id="auth-main"
+      class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1180px] items-stretch gap-4 xl:grid-cols-[minmax(0,0.82fr)_minmax(380px,1.18fr)]"
+    >
+      <section class="shell-section-card auth-brand-panel order-2 p-6 sm:p-8 xl:order-1">
         <div class="flex items-center gap-3">
           <span
             class="state-pulse"
@@ -13,9 +23,9 @@
         </div>
 
         <div class="mt-8 max-w-2xl">
-          <h1 class="auth-hero-title">
-            先建好账号，把后续资料与训练沉淀到同一处
-          </h1>
+          <p class="auth-support-title">
+            把后续资料、训练记录和投递进展放到同一个账号里
+          </p>
           <p class="mt-5 text-sm leading-8 text-secondary sm:text-base">
             先把账号和邮箱准备好，后面整理简历、上传资料和恢复账号都会更顺手。
           </p>
@@ -49,19 +59,38 @@
         </div>
       </section>
 
-      <section class="shell-section-card auth-form-panel p-6 sm:p-8 md:p-10">
+      <section class="shell-section-card auth-form-panel order-1 p-6 sm:p-8 md:p-10 xl:order-2">
         <div class="flex items-start justify-between gap-4">
           <div>
             <p class="section-kicker">
               注册
             </p>
-            <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">
+            <h1 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">
               填好信息后开始使用
-            </h2>
+            </h1>
             <p class="mt-3 text-sm leading-7 text-secondary">
               用户名、邮箱和密码准备好后，就能直接进入工作台。
             </p>
           </div>
+        </div>
+
+        <div
+          class="sr-only"
+          aria-live="assertive"
+        >
+          {{ liveMessage }}
+        </div>
+
+        <div
+          v-if="formAnnouncement"
+          id="register-form-summary"
+          ref="formErrorSummaryRef"
+          class="auth-feedback-banner mt-6"
+          tabindex="-1"
+          role="alert"
+          aria-live="assertive"
+        >
+          {{ formAnnouncement }}
         </div>
 
         <el-form
@@ -143,14 +172,14 @@
           </div>
         </el-form>
       </section>
-    </div>
+    </main>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { reactive, ref } from 'vue'
+import { nextTick, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { RegisterPayload } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
@@ -158,7 +187,10 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const authStore = useAuthStore()
 const formRef = ref<FormInstance>()
+const formErrorSummaryRef = ref<HTMLElement | null>(null)
 const loading = ref(false)
+const formAnnouncement = ref('')
+const liveMessage = ref('')
 
 const form = reactive<RegisterPayload>({
   nickname: '',
@@ -189,9 +221,33 @@ const rules: FormRules<typeof form> = {
   ],
 }
 
+const announce = async (message: string) => {
+  formAnnouncement.value = message
+  liveMessage.value = message
+  await nextTick()
+  formErrorSummaryRef.value?.focus()
+}
+
+const focusFirstInvalidField = async () => {
+  await nextTick()
+  const formEl = formRef.value?.$el as HTMLElement | undefined
+  const invalidInput = formEl?.querySelector('.is-error input, .is-error textarea') as HTMLElement | null
+  invalidInput?.focus()
+}
+
+const clearAnnouncement = () => {
+  formAnnouncement.value = ''
+  liveMessage.value = ''
+}
+
 const handleRegister = async () => {
+  clearAnnouncement()
   const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
+  if (!valid) {
+    await announce('请先补全注册信息后再继续。')
+    await focusFirstInvalidField()
+    return
+  }
   loading.value = true
   try {
     await authStore.register({
@@ -200,10 +256,11 @@ const handleRegister = async () => {
       email: form.email.trim(),
       password: form.password,
     })
+    clearAnnouncement()
     ElMessage.success('注册成功，已自动登录')
     await router.push('/dashboard')
-  } catch {
-    // Message is handled by the request interceptor.
+  } catch (error: any) {
+    await announce(error?.message || '创建账号失败，请稍后重试。')
   } finally {
     loading.value = false
   }
@@ -215,6 +272,25 @@ const handleRegister = async () => {
   min-height: 100dvh;
 }
 
+.skip-link {
+  position: absolute;
+  left: 1.25rem;
+  top: 0.75rem;
+  z-index: 20;
+  transform: translateY(-180%);
+  border-radius: 999px;
+  background: var(--bc-ink);
+  color: var(--bc-shell);
+  padding: 0.55rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  transition: transform 160ms ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
 .auth-brand-panel,
 .auth-form-panel {
   min-height: 100%;
@@ -224,7 +300,7 @@ const handleRegister = async () => {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 3rem;
+  gap: 2.25rem;
   background:
     radial-gradient(circle at 16% 18%, rgba(var(--bc-accent-rgb), 0.12), transparent 30%),
     radial-gradient(circle at 82% 14%, rgba(var(--bc-cyan-rgb), 0.08), transparent 24%),
@@ -232,11 +308,19 @@ const handleRegister = async () => {
     var(--panel-bg);
 }
 
-.auth-hero-title {
+.auth-support-title {
   font-family: theme('fontFamily.display');
-  font-size: clamp(2.25rem, 3.4vw, 3.9rem);
-  line-height: 0.98;
-  letter-spacing: -0.04em;
+  font-size: clamp(1.5rem, 2vw, 2.35rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: var(--bc-ink);
+}
+
+.auth-feedback-banner {
+  border-radius: 18px;
+  border: 1px solid rgba(195, 71, 71, 0.18);
+  background: linear-gradient(180deg, rgba(195, 71, 71, 0.08), transparent 72%), var(--bc-surface-muted);
+  padding: 0.95rem 1rem;
   color: var(--bc-ink);
 }
 

@@ -1,21 +1,31 @@
 <template>
   <div class="auth-immersive-shell px-4 py-8 md:px-6 md:py-10">
-    <div class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1180px] items-stretch gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(380px,1.05fr)]">
-      <section class="shell-section-card auth-brand-panel p-6 sm:p-8">
+    <a
+      href="#auth-main"
+      class="skip-link"
+    >
+      跳到登录表单
+    </a>
+
+    <main
+      id="auth-main"
+      class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1180px] items-stretch gap-4 xl:grid-cols-[minmax(0,0.82fr)_minmax(380px,1.18fr)]"
+    >
+      <section class="shell-section-card auth-brand-panel order-2 p-6 sm:p-8 xl:order-1">
         <div class="flex items-center gap-3">
           <span
             class="state-pulse"
             aria-hidden="true"
           />
           <p class="section-kicker">
-            账号登录
+            继续你的求职训练
           </p>
         </div>
 
         <div class="mt-8 max-w-2xl">
-          <h1 class="auth-hero-title">
-            登录后继续今天的训练
-          </h1>
+          <p class="auth-support-title">
+            回到正在推进的题目、问答和模拟面试
+          </p>
           <p class="mt-5 text-sm leading-8 text-secondary sm:text-base">
             回到题库、问答、模拟面试、简历和投递记录，继续推进你当前的求职准备。
           </p>
@@ -49,19 +59,38 @@
         </div>
       </section>
 
-      <section class="shell-section-card auth-form-panel p-6 sm:p-8 md:p-10">
+      <section class="shell-section-card auth-form-panel order-1 p-6 sm:p-8 md:p-10 xl:order-2">
         <div class="flex items-start justify-between gap-4">
           <div>
             <p class="section-kicker">
               登录
             </p>
-            <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">
-              输入账号继续
-            </h2>
+            <h1 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">
+              输入账号继续今天的训练
+            </h1>
             <p class="mt-3 text-sm leading-7 text-secondary">
               输入用户名和密码，若忘记密码可走邮箱验证码重置。
             </p>
           </div>
+        </div>
+
+        <div
+          class="sr-only"
+          aria-live="assertive"
+        >
+          {{ liveMessage }}
+        </div>
+
+        <div
+          v-if="formAnnouncement"
+          id="login-form-summary"
+          ref="formErrorSummaryRef"
+          class="auth-feedback-banner mt-6"
+          tabindex="-1"
+          role="alert"
+          aria-live="assertive"
+        >
+          {{ formAnnouncement }}
         </div>
 
         <el-form
@@ -174,14 +203,14 @@
           </div>
         </el-form>
       </section>
-    </div>
+    </main>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchCaptchaApi, type LoginPayload } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
@@ -190,10 +219,13 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const formRef = ref<FormInstance>()
+const formErrorSummaryRef = ref<HTMLElement | null>(null)
 const loading = ref(false)
 const failCount = ref(0)
 const captchaImage = ref('')
 const captchaKey = ref('')
+const formAnnouncement = ref('')
+const liveMessage = ref('')
 
 const showCaptcha = computed(() => failCount.value >= 3)
 const redirectTarget = computed(() => (route.query.redirect as string) || '/dashboard')
@@ -208,6 +240,32 @@ const rules: FormRules<typeof form> = {
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
 }
 
+const announce = async (message: string) => {
+  formAnnouncement.value = message
+  liveMessage.value = message
+  await nextTick()
+  formErrorSummaryRef.value?.focus()
+}
+
+const focusFirstInvalidField = async () => {
+  await nextTick()
+  const formEl = formRef.value?.$el as HTMLElement | undefined
+  const invalidInput = formEl?.querySelector('.is-error input, .is-error textarea') as HTMLElement | null
+  invalidInput?.focus()
+}
+
+const focusCaptchaField = async () => {
+  await nextTick()
+  const formEl = formRef.value?.$el as HTMLElement | undefined
+  const captchaInput = formEl?.querySelector('input[placeholder="请输入验证码"]') as HTMLElement | null
+  captchaInput?.focus()
+}
+
+const clearAnnouncement = () => {
+  formAnnouncement.value = ''
+  liveMessage.value = ''
+}
+
 const refreshCaptcha = async () => {
   try {
     const response = await fetchCaptchaApi()
@@ -219,11 +277,18 @@ const refreshCaptcha = async () => {
 }
 
 const handleLogin = async () => {
+  clearAnnouncement()
   const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
+  if (!valid) {
+    await announce('请先补全用户名和密码后再继续。')
+    await focusFirstInvalidField()
+    return
+  }
 
   if (showCaptcha.value && !form.captchaCode.trim()) {
+    await announce('请输入验证码后再继续登录。')
     ElMessage.warning('请输入验证码')
+    await focusCaptchaField()
     return
   }
 
@@ -250,6 +315,7 @@ const handleLogin = async () => {
       return
     }
 
+    clearAnnouncement()
     ElMessage.success('登录成功')
     await router.push(redirectTarget.value)
   } catch (error: any) {
@@ -257,7 +323,9 @@ const handleLogin = async () => {
     if (failCount.value >= 3) {
       await refreshCaptcha()
     }
-    ElMessage.error(error?.message || '登录失败，请稍后重试')
+    const message = error?.message || '登录失败，请稍后重试'
+    await announce(message)
+    ElMessage.error(message)
   } finally {
     loading.value = false
   }
@@ -273,6 +341,25 @@ onMounted(() => {
   min-height: 100dvh;
 }
 
+.skip-link {
+  position: absolute;
+  left: 1.25rem;
+  top: 0.75rem;
+  z-index: 20;
+  transform: translateY(-180%);
+  border-radius: 999px;
+  background: var(--bc-ink);
+  color: var(--bc-shell);
+  padding: 0.55rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  transition: transform 160ms ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
 .auth-viewport {
   align-items: stretch;
 }
@@ -286,7 +373,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 3rem;
+  gap: 2.25rem;
   background:
     radial-gradient(circle at 18% 18%, rgba(var(--bc-accent-rgb), 0.12), transparent 30%),
     radial-gradient(circle at 82% 16%, rgba(var(--bc-cyan-rgb), 0.08), transparent 24%),
@@ -294,11 +381,19 @@ onMounted(() => {
     var(--panel-bg);
 }
 
-.auth-hero-title {
+.auth-support-title {
   font-family: theme('fontFamily.display');
-  font-size: clamp(2.25rem, 3.4vw, 4rem);
-  line-height: 0.98;
-  letter-spacing: -0.04em;
+  font-size: clamp(1.5rem, 2vw, 2.35rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: var(--bc-ink);
+}
+
+.auth-feedback-banner {
+  border-radius: 18px;
+  border: 1px solid rgba(195, 71, 71, 0.18);
+  background: linear-gradient(180deg, rgba(195, 71, 71, 0.08), transparent 72%), var(--bc-surface-muted);
+  padding: 0.95rem 1rem;
   color: var(--bc-ink);
 }
 
@@ -389,13 +484,7 @@ onMounted(() => {
   padding: 16px;
 }
 
-.auth-feature-card__icon {
-  font-size: 1.5rem;
-  line-height: 1;
-}
-
 .auth-feature-card__title {
-  margin-top: 10px;
   font-size: 14px;
   font-weight: 700;
   color: var(--bc-ink);

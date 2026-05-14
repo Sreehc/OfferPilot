@@ -1,5 +1,12 @@
 <template>
   <div class="ambient-shell min-h-screen pb-24 md:pb-0">
+    <a
+      href="#main-content"
+      class="skip-link"
+    >
+      跳到主要内容
+    </a>
+
     <header class="global-topbar">
       <div class="global-topbar__left">
         <button
@@ -46,7 +53,7 @@
     </header>
 
     <div
-      class="app-layout-shell pt-[64px] lg:mt-[64px] lg:h-[calc(100dvh-64px)] lg:pt-0 lg:overflow-hidden"
+      class="app-layout-shell pt-[56px] sm:pt-[60px] lg:mt-[60px] lg:h-[calc(100dvh-60px)] lg:pt-0 lg:overflow-hidden"
       :class="{ 'app-layout-shell-sidebar-hidden': !sidebarVisible }"
     >
       <div
@@ -81,7 +88,9 @@
       </Transition>
 
       <main
-        class="relative z-[1] flex min-w-0 flex-col px-4 py-5 md:px-6 md:py-7 lg:h-full lg:min-h-0 lg:overflow-hidden lg:px-5 lg:py-7 xl:px-6"
+        id="main-content"
+        tabindex="-1"
+        class="relative z-[1] flex min-w-0 flex-col px-4 py-4 md:px-5 md:py-5 lg:h-full lg:min-h-0 lg:overflow-hidden lg:px-5 lg:py-5 xl:px-6"
       >
         <section class="min-h-0 flex flex-1 lg:overflow-y-auto">
           <div class="app-canvas w-full max-w-[1720px]">
@@ -320,6 +329,26 @@ const handleLogout = async () => {
   min-width: 0;
 }
 
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: 0.75rem;
+  z-index: 120;
+  transform: translateY(-180%);
+  border-radius: 999px;
+  background: var(--bc-ink);
+  color: var(--bc-shell);
+  padding: 0.55rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(var(--bc-ink-rgb), 0.18);
+  transition: transform 160ms ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
 .global-topbar {
   position: fixed;
   inset: 0 0 auto 0;
@@ -328,8 +357,8 @@ const handleLogout = async () => {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  height: 64px;
-  padding: 0 16px;
+  height: 56px;
+  padding: 0 14px;
   border-bottom: 1px solid var(--bc-border-subtle);
   background:
     radial-gradient(circle at 12% 20%, rgba(var(--bc-accent-rgb), 0.08), transparent 18%),
@@ -347,8 +376,8 @@ const handleLogout = async () => {
 
 .global-topbar__menu {
   display: inline-flex;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -377,15 +406,15 @@ const handleLogout = async () => {
 .global-topbar__brand {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
 }
 
 .global-topbar__brand-mark {
   position: relative;
   display: inline-flex;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
@@ -410,8 +439,8 @@ const handleLogout = async () => {
 
 .global-topbar__brand-dot {
   position: absolute;
-  right: 8px;
-  top: 8px;
+  right: 7px;
+  top: 7px;
   width: 6px;
   height: 6px;
   border-radius: 999px;
@@ -420,7 +449,7 @@ const handleLogout = async () => {
 
 .global-topbar__brand-name {
   color: var(--bc-ink);
-  font-size: 1.15rem;
+  font-size: 1.08rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   white-space: nowrap;
@@ -451,7 +480,7 @@ const handleLogout = async () => {
 
 .mobile-rail-overlay {
   position: fixed;
-  inset: 64px 0 0;
+  inset: 56px 0 0;
   z-index: 38;
   background: rgba(16, 12, 8, 0.32);
   backdrop-filter: blur(6px);
@@ -459,11 +488,11 @@ const handleLogout = async () => {
 
 .mobile-rail-panel {
   position: fixed;
-  top: 64px;
+  top: 56px;
   left: 0;
   z-index: 39;
   width: min(84vw, 320px);
-  height: calc(100dvh - 64px);
+  height: calc(100dvh - 56px);
   border-right: 1px solid var(--bc-border-subtle);
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--panel-bg) 96%, transparent), color-mix(in srgb, var(--bc-shell) 92%, transparent)),
@@ -509,6 +538,22 @@ const handleLogout = async () => {
   padding: 0.15rem 0.4rem;
   color: var(--bc-ink-secondary);
   box-shadow: var(--bc-shadow-soft);
+}
+
+@media (min-width: 640px) {
+  .global-topbar {
+    height: 60px;
+    padding: 0 16px;
+  }
+
+  .mobile-rail-overlay {
+    inset: 60px 0 0;
+  }
+
+  .mobile-rail-panel {
+    top: 60px;
+    height: calc(100dvh - 60px);
+  }
 }
 
 @media (min-width: 1024px) {

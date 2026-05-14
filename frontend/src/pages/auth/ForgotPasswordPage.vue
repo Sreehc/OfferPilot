@@ -1,9 +1,17 @@
 <template>
   <div class="auth-immersive-shell px-4 py-8 md:px-6 md:py-10">
-    <div
-      class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1180px] items-stretch gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(380px,1.05fr)]"
+    <a
+      href="#auth-main"
+      class="skip-link"
     >
-      <section class="shell-section-card auth-brand-panel p-6 sm:p-8">
+      跳到密码重置表单
+    </a>
+
+    <div
+      id="auth-main"
+      class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1180px] items-stretch gap-4 xl:grid-cols-[minmax(0,0.82fr)_minmax(380px,1.18fr)]"
+    >
+      <section class="shell-section-card auth-brand-panel order-2 p-6 sm:p-8 xl:order-1">
         <div class="flex items-center gap-3">
           <span
             class="state-pulse"
@@ -15,9 +23,9 @@
         </div>
 
         <div class="mt-8 max-w-2xl">
-          <h1 class="auth-hero-title">
-            用邮箱验证码恢复账号访问
-          </h1>
+          <p class="auth-support-title">
+            用邮箱验证码把账号访问快速找回来
+          </p>
           <p class="mt-5 text-sm leading-8 text-secondary sm:text-base">
             先拿到验证码，再设置新密码，很快就能回到账号里继续使用。
           </p>
@@ -51,17 +59,35 @@
         </div>
       </section>
 
-      <section class="shell-section-card auth-form-panel p-6 sm:p-8 md:p-10">
+      <section class="shell-section-card auth-form-panel order-1 p-6 sm:p-8 md:p-10 xl:order-2">
         <div>
           <p class="section-kicker">
             密码恢复
           </p>
-          <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">
+          <h1 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">
             先拿到验证码，再重置密码
-          </h2>
+          </h1>
           <p class="mt-3 text-sm leading-7 text-secondary">
             如果你现在收不到邮件，可以先确认邮箱是否填写正确。
           </p>
+        </div>
+
+        <div
+          class="sr-only"
+          aria-live="assertive"
+        >
+          {{ liveMessage }}
+        </div>
+
+        <div
+          v-if="formAnnouncement"
+          ref="formErrorSummaryRef"
+          class="auth-feedback-banner mt-6"
+          tabindex="-1"
+          role="alert"
+          aria-live="assertive"
+        >
+          {{ formAnnouncement }}
         </div>
 
         <el-form
@@ -90,6 +116,7 @@
           >
             <div class="verification-inline">
               <el-input
+                ref="codeInputRef"
                 v-model="form.code"
                 placeholder="输入 6 位验证码"
                 size="large"
@@ -123,6 +150,7 @@
           <div
             v-if="deliveryMessage"
             class="auth-inline-note"
+            aria-live="polite"
           >
             <p class="font-semibold text-ink">
               {{ deliveryMessage }}
@@ -165,17 +193,21 @@
 <script setup lang="ts">
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { computed, reactive, ref } from 'vue'
+import { computed, nextTick, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { forgotPasswordApi, resetPasswordApi } from '@/api/auth'
 
 const router = useRouter()
 const formRef = ref<FormInstance>()
+const formErrorSummaryRef = ref<HTMLElement | null>(null)
+const codeInputRef = ref<{ focus?: () => void } | null>(null)
 const sending = ref(false)
 const submitting = ref(false)
 const deliveryMessage = ref('')
 const maskedEmail = ref('')
 const expiresMinutes = ref<number | null>(null)
+const formAnnouncement = ref('')
+const liveMessage = ref('')
 
 const form = reactive({
   email: '',
@@ -197,25 +229,57 @@ const rules: FormRules<typeof form> = {
 
 const expiresText = computed(() => (expiresMinutes.value ? `${expiresMinutes.value} 分钟内有效` : ''))
 
+const announce = async (message: string) => {
+  formAnnouncement.value = message
+  liveMessage.value = message
+  await nextTick()
+  formErrorSummaryRef.value?.focus()
+}
+
+const focusFirstInvalidField = async () => {
+  await nextTick()
+  const formEl = formRef.value?.$el as HTMLElement | undefined
+  const invalidInput = formEl?.querySelector('.is-error input, .is-error textarea') as HTMLElement | null
+  invalidInput?.focus()
+}
+
+const clearAnnouncement = () => {
+  formAnnouncement.value = ''
+  liveMessage.value = ''
+}
+
 const handleSendCode = async () => {
+  clearAnnouncement()
   const valid = await formRef.value?.validateField('email').catch(() => false)
-  if (valid === false) return
+  if (valid === false) {
+    await announce('请先输入可接收邮件的邮箱地址。')
+    await focusFirstInvalidField()
+    return
+  }
 
   sending.value = true
   try {
     const { data } = await forgotPasswordApi(form.email.trim())
-    deliveryMessage.value = data.message
+    deliveryMessage.value = data.message || '验证码已发送，请去邮箱查看。'
     maskedEmail.value = data.maskedEmail || ''
     expiresMinutes.value = data.expiresInMinutes ?? null
+    clearAnnouncement()
     ElMessage.success('验证码发送结果已更新')
+  } catch (error: any) {
+    await announce(error?.message || '发送验证码失败，请稍后重试。')
   } finally {
     sending.value = false
   }
 }
 
 const handleResetPassword = async () => {
+  clearAnnouncement()
   const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
+  if (!valid) {
+    await announce('请先补全邮箱、验证码和新密码。')
+    await focusFirstInvalidField()
+    return
+  }
 
   submitting.value = true
   try {
@@ -224,8 +288,13 @@ const handleResetPassword = async () => {
       code: form.code.trim(),
       newPassword: form.newPassword
     })
+    clearAnnouncement()
     ElMessage.success('密码已重置，请重新登录')
     await router.push('/login')
+  } catch (error: any) {
+    await announce(error?.message || '重置密码失败，请稍后重试。')
+    await nextTick()
+    codeInputRef.value?.focus?.()
   } finally {
     submitting.value = false
   }
@@ -237,6 +306,25 @@ const handleResetPassword = async () => {
   min-height: 100dvh;
 }
 
+.skip-link {
+  position: absolute;
+  left: 1.25rem;
+  top: 0.75rem;
+  z-index: 20;
+  transform: translateY(-180%);
+  border-radius: 999px;
+  background: var(--bc-ink);
+  color: var(--bc-shell);
+  padding: 0.55rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  transition: transform 160ms ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
 .auth-brand-panel,
 .auth-form-panel {
   min-height: 100%;
@@ -246,7 +334,7 @@ const handleResetPassword = async () => {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 3rem;
+  gap: 2.25rem;
   background:
     radial-gradient(circle at 16% 18%, rgba(var(--bc-accent-rgb), 0.12), transparent 30%),
     radial-gradient(circle at 82% 14%, rgba(var(--bc-cyan-rgb), 0.08), transparent 24%),
@@ -254,11 +342,11 @@ const handleResetPassword = async () => {
     var(--panel-bg);
 }
 
-.auth-hero-title {
+.auth-support-title {
   font-family: theme('fontFamily.display');
-  font-size: clamp(2.25rem, 3.4vw, 3.9rem);
-  line-height: 0.98;
-  letter-spacing: -0.04em;
+  font-size: clamp(1.5rem, 2vw, 2.35rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
   color: var(--bc-ink);
 }
 
@@ -293,6 +381,14 @@ const handleResetPassword = async () => {
   border: 1px solid rgba(var(--bc-accent-rgb), 0.16);
   background: linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.06), transparent 60%), var(--bc-surface-muted);
   padding: 0.95rem 1rem;
+}
+
+.auth-feedback-banner {
+  border-radius: 18px;
+  border: 1px solid rgba(195, 71, 71, 0.18);
+  background: linear-gradient(180deg, rgba(195, 71, 71, 0.08), transparent 72%), var(--bc-surface-muted);
+  padding: 0.95rem 1rem;
+  color: var(--bc-ink);
 }
 
 .auth-links {

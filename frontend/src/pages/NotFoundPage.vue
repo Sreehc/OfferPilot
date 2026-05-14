@@ -13,8 +13,8 @@
         <button type="button" class="hard-button-secondary" @click="goBack">
           返回上一页
         </button>
-        <RouterLink to="/dashboard" class="hard-button-primary">
-          回到首页
+        <RouterLink :to="homePath" class="hard-button-primary">
+          {{ homeLabel }}
         </RouterLink>
       </div>
     </section>
@@ -22,15 +22,20 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
+const homePath = computed(() => (authStore.isLoggedIn ? '/dashboard' : '/login'))
+const homeLabel = computed(() => (authStore.isLoggedIn ? '回到工作台' : '去登录'))
 
 const goBack = () => {
   if (window.history.length > 1) {
     router.back()
   } else {
-    router.push('/dashboard')
+    router.push(homePath.value)
   }
 }
 </script>

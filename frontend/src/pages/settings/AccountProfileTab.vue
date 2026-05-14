@@ -5,7 +5,7 @@
         <div class="flex items-start justify-between gap-4">
           <div>
             <p class="section-kicker">
-              邮箱状态
+              账号与邮箱
             </p>
             <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
               {{ emailStatusTitle }}
@@ -26,13 +26,14 @@
             class="action-button"
             @click="handleSendVerificationCode"
           >
-            {{ sendingVerificationCode ? '发送中...' : authStore.user?.emailVerified ? '已完成验证' : '发送验证验证码' }}
+            {{ sendingVerificationCode ? '发送中...' : authStore.user?.emailVerified ? '邮箱已验证' : '发送邮箱验证码' }}
           </el-button>
         </div>
 
         <div
           v-if="verificationMessage"
           class="account-inline-note mt-4"
+          aria-live="polite"
         >
           <p class="font-semibold text-ink">
             {{ verificationMessage }}
@@ -43,12 +44,6 @@
           >
             {{ verificationHint }}
           </p>
-          <p
-            v-if="debugCode"
-            class="mt-2 text-xs text-accent"
-          >
-            开发验证码：{{ debugCode }}
-          </p>
         </div>
 
         <div
@@ -58,6 +53,7 @@
           <label class="mb-2 block text-sm font-semibold text-ink">输入邮箱验证码</label>
           <div class="account-verify-row">
             <el-input
+              ref="verificationInputRef"
               v-model="verificationCode"
               placeholder="6 位验证码"
               size="large"
@@ -69,7 +65,7 @@
               class="hard-button-secondary !ml-0"
               @click="handleVerifyEmail"
             >
-              {{ verifyingEmail ? '验证中...' : '确认验证' }}
+              {{ verifyingEmail ? '验证中...' : '完成验证' }}
             </el-button>
           </div>
         </div>
@@ -77,10 +73,10 @@
 
       <article class="shell-section-card p-5 sm:p-6">
         <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
-          其他登录方式
+          备用登录方式
         </h3>
         <p class="mt-3 text-sm leading-7 text-secondary">
-          GitHub 登录开放后，你可以直接在这里查看状态并切换使用。
+          这里会显示后续可直接启用的登录方式。当前先使用账号密码登录即可。
         </p>
 
         <div class="mt-5 space-y-3">
@@ -91,10 +87,10 @@
                   GitHub
                 </div>
                 <div class="mt-1 text-xs text-secondary">
-                  {{ githubProvider?.configured ? '登录配置已经准备好。' : '当前还不能使用 GitHub 登录。' }}
+                  {{ githubProvider?.enabled ? '登录页已可直接使用 GitHub 登录。' : '当前还不能直接使用，开放后会在登录页显示入口。' }}
                 </div>
               </div>
-              <span class="detail-pill">{{ githubProvider?.enabled ? '可使用' : '暂未开放' }}</span>
+              <span class="detail-pill">{{ githubProvider?.enabled ? '已可使用' : '尚不可用' }}</span>
             </div>
           </article>
         </div>
@@ -105,18 +101,18 @@
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { fetchOAuthProvidersApi, sendEmailVerificationCodeApi, verifyEmailCodeApi } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 import type { OAuthProviderInfo } from '@/types/api'
 
 const authStore = useAuthStore()
 const verificationCode = ref('')
+const verificationInputRef = ref<{ focus?: () => void } | null>(null)
 const sendingVerificationCode = ref(false)
 const verifyingEmail = ref(false)
 const verificationMessage = ref('')
 const verificationHint = ref('')
-const debugCode = ref('')
 const oauthProviders = ref<OAuthProviderInfo[]>([])
 
 const githubProvider = computed(() => oauthProviders.value.find((item) => item.provider === 'github') ?? null)
@@ -144,12 +140,11 @@ const handleSendVerificationCode = async () => {
   sendingVerificationCode.value = true
   try {
     const { data } = await sendEmailVerificationCodeApi()
-    verificationMessage.value = data.message
+    verificationMessage.value = data.message || '验证码已发送，请去邮箱查看。'
     verificationHint.value = [data.maskedEmail, data.expiresInMinutes ? `${data.expiresInMinutes} 分钟内有效` : '']
       .filter(Boolean)
       .join(' · ')
-    debugCode.value = data.debugCode || ''
-    ElMessage.success('验证码发送成功')
+    ElMessage.success('验证码已发送')
   } finally {
     sendingVerificationCode.value = false
   }
@@ -157,7 +152,11 @@ const handleSendVerificationCode = async () => {
 
 const handleVerifyEmail = async () => {
   if (!verificationCode.value.trim()) {
+    verificationMessage.value = '请先输入邮箱验证码。'
+    verificationHint.value = '验证码通常会发到你已填写的邮箱里。'
     ElMessage.warning('请输入验证码')
+    await nextTick()
+    verificationInputRef.value?.focus?.()
     return
   }
   verifyingEmail.value = true
@@ -167,7 +166,6 @@ const handleVerifyEmail = async () => {
     authStore.persistUser()
     verificationMessage.value = '邮箱验证已完成'
     verificationHint.value = data.email || ''
-    debugCode.value = ''
     verificationCode.value = ''
     ElMessage.success('邮箱已验证')
   } finally {

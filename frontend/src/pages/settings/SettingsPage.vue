@@ -1,6 +1,6 @@
 <template>
   <div class="settings-cockpit space-y-6">
-    <AppShellHeader />
+    <AppShellHeader compact />
 
     <section class="shell-section-card p-5 sm:p-6">
       <section class="settings-tab-shell">
@@ -9,7 +9,7 @@
           class="settings-tabs"
         >
           <el-tab-pane
-            label="账号状态"
+            label="账号资料"
             name="account"
           >
             <div class="settings-tab-content">
@@ -17,7 +17,7 @@
             </div>
           </el-tab-pane>
           <el-tab-pane
-            label="两步验证"
+            label="安全验证"
             name="twoFactor"
           >
             <div class="settings-tab-content">
@@ -25,7 +25,7 @@
             </div>
           </el-tab-pane>
           <el-tab-pane
-            label="数据导出"
+            label="导出我的数据"
             name="dataExport"
           >
             <div class="settings-tab-content">
@@ -33,7 +33,7 @@
             </div>
           </el-tab-pane>
           <el-tab-pane
-            label="设备管理"
+            label="登录设备"
             name="devices"
           >
             <div class="settings-tab-content">
@@ -41,7 +41,7 @@
             </div>
           </el-tab-pane>
           <el-tab-pane
-            label="登录历史"
+            label="登录记录"
             name="loginHistory"
           >
             <div class="settings-tab-content">
