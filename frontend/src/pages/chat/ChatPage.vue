@@ -31,7 +31,7 @@
           :class="{ 'chat-path-chip-active': chatPath === 'general' }"
           @click="applyChatPath('general')"
         >
-          自由提问
+          直接提问
         </button>
         <button
           type="button"
@@ -39,7 +39,7 @@
           :class="{ 'chat-path-chip-active': chatPath === 'knowledge' }"
           @click="applyChatPath('knowledge')"
         >
-          基于资料回答
+          带资料提问
         </button>
         <button
           type="button"
@@ -47,7 +47,7 @@
           :class="{ 'chat-path-chip-active': chatPath === 'project' }"
           @click="applyChatPath('project')"
         >
-          简历 / 项目上下文
+          结合简历提问
         </button>
       </div>
 
@@ -669,9 +669,9 @@ const confidenceLabel = (score?: number) => {
 }
 
 const chatPathLabel = (value: 'general' | 'knowledge' | 'project') => {
-  if (value === 'project') return '简历 / 项目上下文'
-  if (value === 'knowledge') return '基于资料回答'
-  return '自由提问'
+  if (value === 'project') return '结合简历提问'
+  if (value === 'knowledge') return '带资料提问'
+  return '直接提问'
 }
 
 const knowledgeScopeLabel = (value?: string) => {

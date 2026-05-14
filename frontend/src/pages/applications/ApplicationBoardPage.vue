@@ -28,7 +28,7 @@
             {{
               currentFocus
                 ? currentFocus.nextStepSuggestion || currentFocus.reviewSuggestion || '先把这条岗位推进到下一阶段，再回来看板。'
-                : '先录入岗位和 JD，系统会帮你整理匹配度、下一步提醒和后续复盘线索。'
+                : '先录入第一条岗位和 JD，拿到匹配度和下一步建议后再继续推进。'
             }}
           </p>
 
@@ -60,7 +60,7 @@
     </section>
 
     <section class="grid gap-4 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
-      <article id="application-create" class="shell-section-card p-5 sm:p-6">
+        <article v-if="!currentFocus" id="application-create" class="shell-section-card p-5 sm:p-6">
         <div class="flex items-start justify-between gap-3">
           <div>
             <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">1. 记录岗位</h3>
@@ -154,7 +154,64 @@
             </RouterLink>
           </div>
           <div v-else class="mt-5 rounded-2xl border border-dashed border-[var(--bc-line)] p-5 text-sm text-secondary">
-            还没有可推进的岗位，先记录第一条。
+            还没有可推进的岗位，先记录第一条岗位，再回来继续。
+          </div>
+        </article>
+
+        <article v-if="currentFocus" id="application-create" class="shell-section-card p-5 sm:p-6">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">补记下一条岗位</h3>
+              <p class="mt-2 text-sm leading-7 text-secondary">
+                当前重点岗位已经明确。要继续扩充机会时，再把下一条岗位补进来。
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-5 grid gap-4">
+            <div class="grid gap-4 md:grid-cols-2">
+              <div class="data-slab p-4">
+                <div class="text-xs uppercase tracking-[0.22em] text-tertiary">公司</div>
+                <el-input v-model="form.company" class="mt-2" size="large" placeholder="例如：美团" />
+              </div>
+              <div class="data-slab p-4">
+                <div class="text-xs uppercase tracking-[0.22em] text-tertiary">岗位</div>
+                <el-input v-model="form.jobTitle" class="mt-2" size="large" placeholder="例如：Java 后端开发" />
+              </div>
+            </div>
+
+            <div class="grid gap-4 md:grid-cols-2">
+              <div class="data-slab p-4">
+                <div class="text-xs uppercase tracking-[0.22em] text-tertiary">城市</div>
+                <el-input v-model="form.city" class="mt-2" size="large" placeholder="例如：上海" />
+              </div>
+              <div class="data-slab p-4">
+                <div class="text-xs uppercase tracking-[0.22em] text-tertiary">渠道</div>
+                <el-input v-model="form.source" class="mt-2" size="large" placeholder="例如：Boss / 官网 / 内推" />
+              </div>
+            </div>
+
+            <div class="data-slab p-4">
+              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">绑定简历</div>
+              <el-select v-model="form.resumeFileId" class="mt-2 w-full" size="large" clearable placeholder="默认使用最新简历">
+                <el-option v-for="item in resumes" :key="item.id" :label="item.title" :value="item.id" />
+              </el-select>
+            </div>
+
+            <div class="data-slab p-4">
+              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">JD 原文</div>
+              <el-input
+                v-model="form.jdText"
+                class="mt-2"
+                type="textarea"
+                :rows="11"
+                placeholder="粘贴岗位 JD，先看匹配度和下一步建议"
+              />
+            </div>
+
+            <el-button :loading="creating" size="large" class="action-button w-full" @click="handleCreate">
+              记录这条岗位
+            </el-button>
           </div>
         </article>
 

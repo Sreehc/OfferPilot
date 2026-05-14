@@ -27,7 +27,7 @@
     <div v-if="phase === 'idle'" class="mx-auto max-w-2xl space-y-4">
       <aside class="shell-section-card p-4 sm:p-6">
         <div class="panel-heading">
-          <h3 class="panel-heading__title">开始前设置</h3>
+          <h3 class="panel-heading__title">先选这轮面试怎么练</h3>
         </div>
 
         <div class="mt-6 space-y-4">
@@ -82,7 +82,7 @@
               placeholder="例如：Spring Boot, MySQL, Redis, MQ"
             />
             <p class="mt-2 text-xs leading-5 text-tertiary">
-              支持逗号分隔，系统会优先抽取与你当前技术栈更贴近的问题。
+              支持逗号分隔，本轮会优先抽取更贴近你目标技术栈的问题。
             </p>
           </div>
           <div class="data-slab p-4">
@@ -188,7 +188,7 @@
             class="action-button w-full"
             @click="handleStart()"
           >
-            {{ interviewMode === 'voice' && voiceAvailable ? '开始语音诊断' : '开始诊断' }}
+            {{ interviewMode === 'voice' && voiceAvailable ? '开始语音模拟面试' : '开始模拟面试' }}
           </el-button>
         </div>
       </aside>
@@ -215,7 +215,7 @@
             </svg>
           </div>
           <p class="text-sm leading-6 text-secondary">
-            还没有面试记录。AI 面试官会针对你的知识薄弱点出题，回答后即时评分并给出标准答案和追问。
+            还没有面试记录。先开始一轮模拟面试，回答后这里会显示最近表现和回看入口。
           </p>
         </div>
 
@@ -962,7 +962,7 @@ const handleStart = async (reanswerQuestionId?: number) => {
     detail.value = null
     phase.value = 'answering'
     startCountdown()
-    ElMessage.success(isVoice ? '语音面试已开始，请点击录音按钮作答' : '面试已开始，请回答第一题')
+    ElMessage.success(isVoice ? '语音模拟面试已开始，请点击录音按钮作答' : '模拟面试已开始，请回答第一题')
   } catch {
     ElMessage.error('启动面试失败，请确认题库中有对应方向的题目')
   } finally {

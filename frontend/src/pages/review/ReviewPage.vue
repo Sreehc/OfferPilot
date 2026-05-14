@@ -20,7 +20,7 @@
 
     <section v-if="loading" class="shell-section-card p-8 text-center">
       <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-      <p class="mt-4 text-sm text-slate-500">加载复习数据...</p>
+      <p class="mt-4 text-sm text-slate-500">正在加载今天的复习任务...</p>
     </section>
 
     <template v-else>
@@ -30,7 +30,7 @@
             <div>
               <div class="flex items-center gap-2">
                 <p class="section-kicker">复习工作台</p>
-                <el-tooltip content="系统根据遗忘曲线自动安排复习时间，逾期越久优先级越高。" placement="top">
+                <el-tooltip content="系统会优先把更容易忘记、逾期更久的内容排在前面。" placement="top">
                   <span class="inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full bg-[var(--interactive-bg)] text-[10px] font-bold text-tertiary">?</span>
                 </el-tooltip>
               </div>
@@ -313,7 +313,7 @@ const currentReviewItem = computed(() => reviewItems.value[currentIndex.value] ?
 
 const heroTitle = computed(() => {
   if (!reviewItems.value.length) {
-    return selectedContentType.value === 'interview_card' ? '当前没有面试卡片' : '今天没有待复习内容'
+    return selectedContentType.value === 'interview_card' ? '这里还没有面试复习内容' : '今天没有待复习内容'
   }
   return `今天先复习这 ${reviewItems.value.length} 项`
 })
@@ -331,22 +331,22 @@ const ratingButtons = [
 
 const emptyStateTitle = computed(() => {
   if (selectedContentType.value === 'interview_card') {
-    return '当前没有来自面试错题的复习项'
+    return '这里还没有面试复习项'
   }
   if (selectedContentType.value === 'knowledge_card') {
-    return '当前没有到期的知识卡片'
+    return '这里还没有到期的知识卡片'
   }
   if (selectedContentType.value === 'wrong_card') {
-    return '当前没有到期的错题卡片'
+    return '这里还没有到期的错题卡片'
   }
   return '今日复习已完成'
 })
 
 const emptyStateDescription = computed(() => {
   if (selectedContentType.value === 'interview_card') {
-    return '完成面试诊断后，相关复习会出现在这里。'
+    return '先完成一轮模拟面试，相关复习会出现在这里。'
   }
-  return '去知识库上传资料生成卡片，或去今日卡片开始学习。'
+  return '先去知识库上传资料生成卡片，或去今日卡片开始学习。'
 })
 
 const contentTypeLabel = (contentType: string) => {

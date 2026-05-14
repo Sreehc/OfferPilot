@@ -23,8 +23,8 @@
       <div class="grid gap-4 xl:grid-cols-[288px_minmax(0,1fr)] xl:items-stretch">
         <aside class="analytics-overview">
           <div>
-            <p class="section-kicker">求职准备概览</p>
-            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">先看这几条主线</h3>
+            <p class="section-kicker">本周总览</p>
+            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">先判断准备节奏有没有往前走</h3>
           </div>
 
           <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
@@ -44,8 +44,8 @@
         <div class="analytics-main-chart">
           <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">求职准备趋势</h3>
-              <p class="mt-1 text-sm text-secondary">计划进度、投递推进、简历更新和面试分数</p>
+              <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">当前主线有没有继续推进</h3>
+              <p class="mt-1 text-sm text-secondary">优先看计划、投递、简历和模拟面试这四条主线是否在前进。</p>
             </div>
           </div>
 
@@ -61,7 +61,7 @@
             "
             class="mt-4 flex h-[340px] items-center justify-center"
           >
-            <EmptyState icon="chart" title="暂无主线趋势数据" description="开始安排计划、上传简历或记录投递后再来看。" compact />
+            <EmptyState icon="chart" title="这里还没有准备趋势" description="先安排计划、上传简历或记录投递，再回来查看变化。" compact />
           </div>
           <div v-else class="mt-4">
             <div ref="trendChartRef" class="chart-shell h-[340px] w-full"></div>
@@ -82,7 +82,7 @@
           <div class="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
         </div>
         <div v-else-if="!efficiencyData.efTrend?.length" class="mt-5 flex h-[260px] items-center justify-center">
-          <EmptyState icon="review" title="暂无复习数据" description="完成复习后查看记忆系数。" compact />
+          <EmptyState icon="review" title="这里还没有复习记录" description="先完成今天的复习，再回来看看记忆强度。" compact />
         </div>
         <div v-else class="mt-5">
           <div class="grid gap-3 sm:grid-cols-3">
@@ -119,7 +119,7 @@
           v-else-if="!efficiencyData.forgettingRateTrend?.length"
           class="mt-5 flex h-[260px] items-center justify-center"
         >
-          <EmptyState icon="review" title="暂无复习数据" description="完成复习后查看遗忘率。" compact />
+          <EmptyState icon="review" title="这里还没有复习记录" description="先完成今天的复习，再回来看看稳定性。" compact />
         </div>
         <div v-else class="mt-5">
           <div class="flex flex-wrap gap-2">
@@ -169,7 +169,7 @@
           </article>
         </div>
         <div v-else class="mt-5">
-          <EmptyState icon="chart" title="暂无分类掌握度" description="生成并复习卡片后查看掌握度。" compact />
+          <EmptyState icon="chart" title="这里还没有分类掌握度" description="先生成并复习卡片，再回来查看各分类进度。" compact />
         </div>
       </article>
 
@@ -200,7 +200,7 @@
           </article>
         </div>
         <div v-else class="mt-5">
-          <EmptyState icon="chart" title="暂无掌握分布" description="完成复习后查看分布。" compact />
+          <EmptyState icon="chart" title="这里还没有掌握分布" description="先完成复习，再回来看看题目分布。" compact />
         </div>
       </article>
     </section>
@@ -216,7 +216,7 @@
         <div class="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
       </div>
       <div v-else-if="!trendData.overallTrend?.length" class="mt-5 flex h-[300px] items-center justify-center">
-        <EmptyState icon="chart" title="暂无面试数据" description="完成面试后查看趋势。" compact />
+        <EmptyState icon="chart" title="这里还没有面试趋势" description="先完成一轮模拟面试，再回来查看变化。" compact />
       </div>
       <div v-else class="mt-5">
         <div v-if="normalizedCategoryTrends.length" class="mb-4 flex flex-wrap gap-2">
@@ -416,7 +416,7 @@ const categoryMasteryItems = computed(() => efficiencyData.value.categoryMastery
 
 const summarySignals = computed(() => [
   {
-    label: '当前计划',
+    label: '当前重点',
     value: learningInsights.value.activePlanTitle || '还没有计划',
     detail: learningInsights.value.planExecutionStatus || '先生成一份训练计划',
     toneClass: ''
@@ -440,9 +440,9 @@ const summarySignals = computed(() => [
     toneClass: 'summary-slab-amber'
   },
   {
-    label: '当前完成率',
+    label: '本周完成率',
     value: `${formatPercent(latestCompletionRate.value)}%`,
-    detail: '辅助观察复习与积压变化',
+    detail: '先看这一周有没有真正往前推进',
     toneClass: ''
   }
 ])

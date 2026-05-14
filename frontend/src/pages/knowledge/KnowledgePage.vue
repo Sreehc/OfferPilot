@@ -37,26 +37,26 @@
                 我的文档
               </button>
             </div>
-            <h3 class="mt-4 text-2xl font-semibold tracking-[-0.03em] text-ink">先筛出你要看的资料</h3>
+            <h3 class="mt-4 text-2xl font-semibold tracking-[-0.03em] text-ink">先上传资料，或继续使用已经准备好的资料</h3>
             <p class="mt-3 max-w-2xl text-sm leading-7 text-secondary">
-              先上传、再筛选、再查看状态。文档只有在“可使用”后，才适合继续问答或生成卡片。
+              你最需要先知道两件事：哪些资料已经可以继续提问，哪些资料还在准备中。
             </p>
           </div>
           <div class="knowledge-table-head__aside">
             <div class="knowledge-table-stat">
-              <span>当前视图</span>
+              <span>当前资料区</span>
               <strong>{{ activeTabLabel }}</strong>
             </div>
             <div class="knowledge-table-stat">
-              <span>总文档数</span>
+              <span>当前文档数</span>
               <strong>{{ total }}</strong>
             </div>
             <div class="knowledge-table-stat">
-              <span>可使用</span>
+              <span>现在可以提问</span>
               <strong>{{ statusSummary.indexed }}</strong>
             </div>
             <div class="knowledge-table-stat">
-              <span>待处理</span>
+              <span>还在准备中</span>
               <strong>{{ statusSummary.pending }}</strong>
             </div>
           </div>
@@ -67,7 +67,7 @@
             class="empty-state-card"
             icon="document"
             :title="activeTab === 'my' ? '上传你的第一份学习资料' : '推荐资料暂时为空'"
-            :description="activeTab === 'my' ? '上传文档后继续整理、学习和生成卡片。' : '稍后再来看看新的资料推荐。'"
+            :description="activeTab === 'my' ? '先上传一份资料，准备好后就能继续提问或生成卡片。' : '这里暂时没有可直接使用的推荐资料，稍后再来看看。'"
           />
         </div>
 
@@ -125,7 +125,7 @@
 
               <div class="flex shrink-0 items-center gap-2">
                 <span v-if="doc.cardDeckId" class="detail-pill">{{ doc.cardCount ?? 0 }} 张卡片</span>
-                <span v-else-if="doc.status === 'indexed' || doc.status === 'parsed'" class="detail-pill">可继续生成卡片</span>
+                <span v-else-if="doc.status === 'indexed' || doc.status === 'parsed'" class="detail-pill">准备好后可生成卡片</span>
                 <el-popconfirm
                   v-if="activeTab === 'my'"
                   title="确认删除此文档？删除后关联的 chunk 和向量数据将一并清除。"
@@ -145,9 +145,9 @@
                   {{ doc.summary || '暂无摘要。' }}
                 </p>
                 <div class="mt-3 flex flex-wrap gap-2 text-xs text-secondary">
-                  <span class="detail-pill">阶段 {{ availabilityLabel(doc) }}</span>
-                  <span class="detail-pill">解析 {{ parseStatusLabel(doc.parseStatus) }}</span>
-                  <span class="detail-pill">索引 {{ indexStatusLabel(doc.indexStatus) }}</span>
+                  <span class="detail-pill">{{ availabilityLabel(doc) }}</span>
+                  <span class="detail-pill">文本准备 {{ parseStatusLabel(doc.parseStatus) }}</span>
+                  <span class="detail-pill">问答准备 {{ indexStatusLabel(doc.indexStatus) }}</span>
                   <span v-if="doc.categoryName" class="detail-pill">{{ doc.categoryName }}</span>
                 </div>
               </div>
@@ -159,7 +159,7 @@
                     <span>已生成 {{ doc.cardCount ?? 0 }} 张卡片。</span>
                   </template>
                   <template v-else>
-                    <strong>未生成卡片</strong>
+                    <strong>还没有卡片</strong>
                     <span>{{ availabilityHint(doc) }}</span>
                   </template>
                 </div>
@@ -178,7 +178,7 @@
                     class="hard-button-primary text-sm"
                     @click="openGeneratePanel(doc)"
                   >
-                    {{ doc.status === 'indexed' ? '生成卡片' : '等文档可使用后再生成' }}
+                    {{ doc.status === 'indexed' ? '生成卡片' : '等资料准备好后再生成' }}
                   </button>
                 </div>
               </div>
@@ -212,7 +212,7 @@
               <div class="min-w-0">
                 <p class="text-sm font-semibold text-ink">把资料拖到这里，或点击右上角上传</p>
                 <p class="mt-1 text-sm text-secondary">
-                  支持 <span class="font-semibold text-ink">md / txt / pdf / doc / docx</span>，单文件不超过 20MB。上传后会先解析，再进入索引。
+                  支持 <span class="font-semibold text-ink">md / txt / pdf / doc / docx</span>，单文件不超过 20MB。上传后会先准备文本，再变成可提问资料。
                 </p>
               </div>
             </div>
@@ -220,17 +220,17 @@
             <div class="upload-dropzone__aside">
               <div class="flex flex-wrap gap-2 text-[11px] text-secondary">
                 <span class="hard-chip">当前 {{ docs.length }} 份</span>
-                <span class="rounded-full border border-[var(--bc-line)] px-2.5 py-1">可使用 {{ statusSummary.indexed }}</span>
+                <span class="rounded-full border border-[var(--bc-line)] px-2.5 py-1">可提问 {{ statusSummary.indexed }}</span>
               </div>
             </div>
           </div>
           <p class="mt-4 text-sm leading-6 text-secondary">
-            先上传资料，再看它现在是待解析、待索引还是已经可使用。
+            先上传资料，再看它现在是还在准备，还是已经可以继续提问。
           </p>
         </section>
 
         <section class="shell-section-card p-5 sm:p-6">
-          <h3 class="text-xl font-semibold tracking-[-0.03em] text-ink">按类型和状态筛选</h3>
+          <h3 class="text-xl font-semibold tracking-[-0.03em] text-ink">按资料类型和准备情况筛选</h3>
           <div class="mt-5 grid gap-3">
             <el-select v-model="filters.categoryId" clearable placeholder="知识分类" size="large">
               <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
@@ -253,20 +253,20 @@
               <el-option label="DOC" value="doc" />
               <el-option label="DOCX" value="docx" />
             </el-select>
-            <el-select v-model="filters.parseStatus" clearable placeholder="解析状态" size="large">
-              <el-option label="待解析" value="pending" />
-              <el-option label="已解析" value="parsed" />
-              <el-option label="解析失败" value="failed" />
+            <el-select v-model="filters.parseStatus" clearable placeholder="文本准备情况" size="large">
+              <el-option label="待准备" value="pending" />
+              <el-option label="已准备" value="parsed" />
+              <el-option label="准备失败" value="failed" />
             </el-select>
-            <el-select v-model="filters.indexStatus" clearable placeholder="索引状态" size="large">
-              <el-option label="待索引" value="pending" />
-              <el-option label="已索引" value="indexed" />
-              <el-option label="索引失败" value="failed" />
+            <el-select v-model="filters.indexStatus" clearable placeholder="问答准备情况" size="large">
+              <el-option label="待准备" value="pending" />
+              <el-option label="已准备" value="indexed" />
+              <el-option label="准备失败" value="failed" />
             </el-select>
-            <el-select v-model="filters.status" clearable placeholder="当前可用阶段" size="large">
-              <el-option label="待解析" value="draft" />
-              <el-option label="待索引" value="parsed" />
-              <el-option label="可使用" value="indexed" />
+            <el-select v-model="filters.status" clearable placeholder="现在可以做什么" size="large">
+              <el-option label="还在准备资料" value="draft" />
+              <el-option label="快准备好了" value="parsed" />
+              <el-option label="现在可以提问" value="indexed" />
             </el-select>
             <el-input v-model="filters.keyword" clearable placeholder="搜索标题或摘要" size="large" />
           </div>
@@ -278,7 +278,7 @@
               class="action-button knowledge-tool-button"
               @click="loadDocs"
             >
-              刷新
+              查看资料
             </el-button>
             <el-button size="large" class="hard-button-secondary knowledge-tool-button !ml-0" @click="resetFilters">
               重置
@@ -460,7 +460,7 @@ const resetFilters = () => {
 }
 
 const statusLabel = (status: KnowledgeDocItem['status']) => {
-  const map: Record<KnowledgeDocItem['status'], string> = { draft: '处理中', parsed: '已解析', indexed: '可学习' }
+  const map: Record<KnowledgeDocItem['status'], string> = { draft: '还在准备中', parsed: '快准备好了', indexed: '现在可以提问' }
   return map[status]
 }
 
@@ -504,30 +504,30 @@ const businessTypeLabel = (type?: string) => {
 }
 
 const parseStatusLabel = (status?: string) => {
-  if (status === 'failed') return '失败'
-  if (status === 'parsed') return '已完成'
-  return '待解析'
+  if (status === 'failed') return '准备失败'
+  if (status === 'parsed') return '已准备'
+  return '待准备'
 }
 
 const indexStatusLabel = (status?: string) => {
-  if (status === 'failed') return '失败'
-  if (status === 'indexed') return '已完成'
-  return '待索引'
+  if (status === 'failed') return '准备失败'
+  if (status === 'indexed') return '已准备'
+  return '待准备'
 }
 
 const availabilityLabel = (doc: KnowledgeDocItem) => {
-  if (doc.status === 'indexed') return '可使用'
-  if (doc.parseStatus === 'failed' || doc.indexStatus === 'failed') return '处理失败'
-  if (doc.parseStatus !== 'parsed') return '待解析'
-  return '待索引'
+  if (doc.status === 'indexed') return '现在可以继续提问'
+  if (doc.parseStatus === 'failed' || doc.indexStatus === 'failed') return '这份资料准备失败'
+  if (doc.parseStatus !== 'parsed') return '这份资料还在准备中'
+  return '还差一步就能提问'
 }
 
 const availabilityHint = (doc: KnowledgeDocItem) => {
-  if (doc.status === 'indexed') return '从这份资料生成第一组卡片。'
-  if (doc.parseStatus === 'failed') return '先处理解析失败的问题，再继续生成卡片。'
-  if (doc.indexStatus === 'failed') return '先重试索引，再继续生成卡片。'
-  if (doc.parseStatus !== 'parsed') return '等解析完成后，再继续问答或生成卡片。'
-  return '等索引完成后，这份资料才适合继续问答或生成卡片。'
+  if (doc.status === 'indexed') return '现在可以直接提问，也可以从这份资料生成卡片。'
+  if (doc.parseStatus === 'failed') return '先让这份资料完成文本准备，再回来生成卡片。'
+  if (doc.indexStatus === 'failed') return '先让这份资料完成问答准备，再回来生成卡片。'
+  if (doc.parseStatus !== 'parsed') return '等资料准备好后，再回来继续提问或生成卡片。'
+  return '问答准备完成后，这份资料就能继续提问或生成卡片。'
 }
 
 const docType = (fileUrl?: string): 'pdf' | 'text' => {

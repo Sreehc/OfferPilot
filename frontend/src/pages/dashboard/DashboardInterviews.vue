@@ -2,12 +2,12 @@
   <article class="shell-section-card p-6">
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
-        <p class="section-kicker">诊断记录</p>
-        <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">最近面试诊断结果</h3>
+        <p class="section-kicker">最近面试</p>
+        <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">回看最近几次模拟面试</h3>
       </div>
       <div class="flex gap-3">
         <RouterLink class="accent-link text-sm font-semibold" to="/interview/history">全部历史</RouterLink>
-        <RouterLink class="accent-link text-sm font-semibold" to="/interview">开始下一次诊断</RouterLink>
+        <RouterLink class="accent-link text-sm font-semibold" to="/interview">开始下一次模拟面试</RouterLink>
       </div>
     </div>
 
@@ -41,8 +41,8 @@
     <EmptyState
       v-else
       icon="clipboard"
-      title="还没有诊断记录"
-      description="完成面试后查看最近结果。"
+      title="还没有面试记录"
+      description="先完成一轮模拟面试，这里会显示最近结果。"
       compact
       class="mt-6"
     />
@@ -71,7 +71,7 @@ const formatDate = (dateTime: string): string => {
 }
 
 const interviewTitle = (interview: RecentInterviewItem): string => {
-  return interview.status === 'finished' ? '已完成面试诊断' : '进行中的面试诊断'
+  return interview.status === 'finished' ? '已完成的模拟面试' : '进行中的模拟面试'
 }
 
 const statusLabel = (status: string): string => {

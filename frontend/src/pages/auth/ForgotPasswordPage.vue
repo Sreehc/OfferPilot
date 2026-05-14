@@ -135,12 +135,6 @@
               <span v-if="maskedEmail && expiresText"> · </span>
               <span v-if="expiresText">{{ expiresText }}</span>
             </p>
-            <p
-              v-if="debugCode"
-              class="mt-2 text-xs text-accent"
-            >
-              开发验证码：{{ debugCode }}
-            </p>
           </div>
 
           <div class="mt-6 grid gap-3">
@@ -182,7 +176,6 @@ const submitting = ref(false)
 const deliveryMessage = ref('')
 const maskedEmail = ref('')
 const expiresMinutes = ref<number | null>(null)
-const debugCode = ref('')
 
 const form = reactive({
   email: '',
@@ -214,7 +207,6 @@ const handleSendCode = async () => {
     deliveryMessage.value = data.message
     maskedEmail.value = data.maskedEmail || ''
     expiresMinutes.value = data.expiresInMinutes ?? null
-    debugCode.value = data.debugCode || ''
     ElMessage.success('验证码发送结果已更新')
   } finally {
     sending.value = false
