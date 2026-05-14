@@ -11,11 +11,8 @@
         >
           刷新计划
         </el-button>
-        <RouterLink to="/question" class="hard-button-secondary">
-          去题库训练
-        </RouterLink>
         <RouterLink to="/interview" class="hard-button-primary">
-          安排模拟面试
+          {{ currentPlan ? '继续今天的训练' : '开始安排计划' }}
         </RouterLink>
       </template>
     </AppShellHeader>
@@ -24,18 +21,18 @@
       <div class="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
         <div class="max-w-3xl">
           <div class="flex flex-wrap gap-2">
-            <span class="hard-chip">{{ currentPlan ? '正式学习计划已启用' : '按 7 / 14 / 30 天生成计划' }}</span>
+            <span class="hard-chip">{{ currentPlan ? '今天有计划可执行' : '先生成一份计划' }}</span>
             <span class="detail-pill">{{ reviewPending }} 个待复习项</span>
             <span class="detail-pill">{{ weakPointCount }} 个弱项方向</span>
           </div>
-          <h2 class="mt-5 font-display text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">
-            {{ currentPlan ? currentPlan.title : '把题库、问答、模拟面试排成一条可执行的训练节奏' }}
-          </h2>
+          <p class="mt-5 font-display text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">
+            {{ currentPlan ? currentPlan.title : '先排好接下来几天要练什么' }}
+          </p>
           <p class="mt-4 max-w-2xl text-sm leading-7 text-secondary">
             {{
               currentPlan
                 ? currentPlan.reviewSuggestion
-                : '先选择 7 / 14 / 30 天模板，再结合目标岗位、方向和技术栈生成每日任务。计划会自动串起题库训练、RAG 问答、模拟面试和复习动作。'
+                : '选择 7 / 14 / 30 天模板后，直接生成每天要做的题库、问答、模拟面试和复习任务。'
             }}
           </p>
         </div>
@@ -60,10 +57,9 @@
     <section class="shell-section-card p-5 sm:p-6">
       <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div class="max-w-2xl">
-          <p class="section-kicker">计划参数</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">先定义你的训练目标</h3>
+          <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">先定好这轮训练目标</h3>
           <p class="mt-3 text-sm leading-7 text-secondary">
-            计划会参考当前弱项和最近面试记录，但你也可以显式指定目标岗位、重点方向和技术范围。
+            填好岗位、重点方向和技术范围后，再生成最适合当前阶段的计划。
           </p>
         </div>
         <div class="grid gap-3 md:grid-cols-3 xl:min-w-[760px]">
@@ -111,8 +107,7 @@
       <article class="shell-section-card p-5 sm:p-6">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p class="section-kicker">每日任务</p>
-            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
+            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">
               Day {{ currentPlan.currentDay }} 的执行清单
             </h3>
           </div>
@@ -188,8 +183,7 @@
 
       <div class="space-y-4">
         <article class="shell-section-card p-5 sm:p-6">
-          <p class="section-kicker">计划摘要</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">{{ currentPlan.focusDirection }}</h3>
+          <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">{{ currentPlan.focusDirection }}</h3>
           <div class="mt-5 space-y-3">
             <div class="plan-signal-row">
               <span>目标岗位</span>
@@ -207,7 +201,7 @@
         </article>
 
         <article class="shell-section-card p-5 sm:p-6">
-          <p class="section-kicker">薄弱点</p>
+          <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">这轮重点弱项</h3>
           <div class="mt-4 flex flex-wrap gap-2">
             <span
               v-for="tag in currentPlan.weakPoints"
@@ -222,7 +216,7 @@
         </article>
 
         <article class="shell-section-card p-5 sm:p-6">
-          <p class="section-kicker">辅助信号</p>
+          <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">生成计划时参考了这些信号</h3>
           <div class="mt-5 space-y-3">
             <div class="plan-signal-row">
               <span>今日卡片任务</span>
@@ -243,8 +237,7 @@
 
     <section v-else class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
       <article class="shell-section-card p-5 sm:p-6">
-        <p class="section-kicker">开始前建议</p>
-        <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">生成第一份训练计划</h3>
+        <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">先生成第一份训练计划</h3>
         <div class="mt-5 space-y-3">
           <article v-for="item in emptyStateActions" :key="item.title" class="plan-task-card">
             <div class="text-xs font-semibold uppercase tracking-[0.22em] text-tertiary">{{ item.label }}</div>
@@ -255,8 +248,7 @@
       </article>
 
       <article class="shell-section-card p-5 sm:p-6">
-        <p class="section-kicker">当前信号</p>
-        <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">这些数据会参与计划生成</h3>
+        <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">这些数据会影响计划内容</h3>
         <div class="mt-5 space-y-3">
           <div class="plan-signal-row">
             <span>最近面试场次</span>
@@ -305,7 +297,7 @@ const planTracks = [
     days: 30,
     label: '30 天闭环',
     title: '建立完整求职准备节奏',
-    description: '把题库、问答、模拟面试、复习任务全部接进长期节奏，适合系统复习期。',
+    description: '把题库、问答、模拟面试和复习任务排成长期节奏，适合拉长周期稳定推进。',
     points: ['长期节奏拆解', '弱项持续跟踪', '面试复盘持续迭代']
   }
 ]
@@ -340,17 +332,17 @@ const emptyStateActions = computed(() => [
   {
     label: '题库',
     title: weakPointCount.value > 0 ? `围绕 ${topWeakPoint.value} 起一条计划` : '先选择一个主方向建立节奏',
-    description: '先把当前最弱的一类题放进计划里，后续 RAG 问答和模拟面试都会围绕这批知识点继续推进。'
+    description: '先把当前最弱的一类题排进计划，再围绕这批知识点继续问答和模拟面试。'
   },
   {
     label: '问答',
     title: '用 RAG 问答把答案从会写变成会讲',
-    description: '计划不只是刷题数量，更要把知识点转成适合面试表达的口径。'
+    description: '不只要刷题，更要把知识点整理成你能直接说出口的回答。'
   },
   {
     label: '面试',
     title: '用模拟面试检验计划是否有效',
-    description: '每轮计划都应该插入面试检验，否则你只是在堆积知识点，而不是在训练输出能力。'
+    description: '每轮计划都该安排一次检验，确认你练的不只是知识点，还有表达能力。'
   }
 ])
 

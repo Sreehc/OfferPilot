@@ -14,10 +14,10 @@
 
         <div class="mt-8 max-w-2xl">
           <h1 class="auth-hero-title">
-            账号已经不只服务学习，还要承接求职资料和训练记录
+            登录后继续今天的训练
           </h1>
           <p class="mt-5 text-sm leading-8 text-secondary sm:text-base">
-            登录后继续进入题库、知识库、模拟面试与后续的简历、投递工作流。Phase 1 已补入邮箱验证、忘记密码和第三方登录入口预留。
+            回到题库、问答、模拟面试、简历和投递记录，继续推进你当前的求职准备。
           </p>
         </div>
 
@@ -117,27 +117,27 @@
                 v-model="form.captchaCode"
                 placeholder="请输入验证码"
                 size="large"
-                class="flex-1"
+                class="captcha-console__input"
                 @keyup.enter="handleLogin"
               />
               <button
                 type="button"
                 class="captcha-panel"
+                aria-label="刷新验证码"
                 @click="refreshCaptcha"
               >
                 <img
                   v-if="captchaImage"
                   :src="captchaImage"
                   alt="验证码"
-                  class="h-14 w-[148px] object-cover"
+                  class="captcha-panel__image"
                 >
                 <div
                   v-else
-                  class="flex h-14 w-[148px] items-center justify-center text-xs text-tertiary"
+                  class="captcha-panel__placeholder"
                 >
                   加载中...
                 </div>
-                <span class="captcha-panel__hint">点击刷新</span>
               </button>
             </div>
           </el-form-item>
@@ -171,10 +171,10 @@
               <div class="flex items-center justify-between gap-3">
                 <div>
                   <p class="text-sm font-semibold text-ink">
-                    第三方登录入口
+                    其他登录方式
                   </p>
                   <p class="mt-1 text-xs leading-6 text-secondary">
-                    当前预留 GitHub 登录入口，启用前保持占位。
+                    GitHub 登录准备好后，会直接出现在这里。
                   </p>
                 </div>
                 <button
@@ -182,7 +182,7 @@
                   class="hard-button-secondary text-sm"
                   :disabled="!githubProvider?.enabled"
                 >
-                  {{ githubProvider?.enabled ? 'GitHub 登录' : 'GitHub 登录（预留）' }}
+                  {{ githubProvider?.enabled ? '使用 GitHub 登录' : 'GitHub 登录暂未开放' }}
                 </button>
               </div>
             </div>
@@ -343,21 +343,51 @@ onMounted(() => {
   display: grid;
   gap: 12px;
   width: 100%;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr) 188px;
+  align-items: stretch;
+}
+
+.captcha-console__input {
+  min-width: 0;
 }
 
 .captcha-panel {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 8px;
+  justify-content: center;
+  min-height: 56px;
+  padding: 10px 14px;
   color: var(--bc-ink-secondary);
+  transition:
+    border-color 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
 }
 
-.captcha-panel__hint {
-  font-size: 11px;
+.captcha-panel:hover {
+  border-color: rgba(var(--bc-accent-rgb), 0.28);
+  box-shadow: 0 10px 24px rgba(var(--bc-ink-rgb), 0.08);
+}
+
+.captcha-panel:active {
+  transform: translateY(1px);
+}
+
+.captcha-panel__image {
+  display: block;
+  width: 148px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.captcha-panel__placeholder {
+  display: flex;
+  width: 148px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--bc-ink-tertiary);
 }
 
 .auth-links {

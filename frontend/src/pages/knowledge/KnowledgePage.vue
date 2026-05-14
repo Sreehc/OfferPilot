@@ -27,7 +27,7 @@
                 :class="{ 'mode-switch__chip-active': activeTab === 'system' }"
                 @click="switchTab('system')"
               >
-                系统资料
+                推荐资料
               </button>
               <button
                 type="button"
@@ -64,8 +64,8 @@
           <EmptyState
             class="empty-state-card"
             icon="document"
-            :title="activeTab === 'my' ? '上传你的第一份学习资料' : '系统资料暂时为空'"
-            :description="activeTab === 'my' ? '上传文档后 AI 自动生成卡片，开始间隔记忆。' : '等待管理员导入资料。'"
+            :title="activeTab === 'my' ? '上传你的第一份学习资料' : '推荐资料暂时为空'"
+            :description="activeTab === 'my' ? '上传文档后继续整理、学习和生成卡片。' : '稍后再来看看新的资料推荐。'"
           />
         </div>
 
@@ -231,7 +231,7 @@
               <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
             </el-select>
             <el-select v-model="filters.businessType" clearable placeholder="业务归属" size="large">
-              <el-option label="系统知识" value="system_knowledge" />
+              <el-option label="平台资料" value="system_knowledge" />
               <el-option label="个人笔记" value="user_note" />
               <el-option label="简历资料" value="resume" />
               <el-option label="JD 资料" value="jd" />
@@ -324,7 +324,7 @@ const statusSummary = computed(() => {
   return summary
 })
 
-const activeTabLabel = computed(() => (activeTab.value === 'my' ? '我的文档' : '系统资料'))
+const activeTabLabel = computed(() => (activeTab.value === 'my' ? '我的文档' : '推荐资料'))
 
 const loadCategories = async () => {
   try {
@@ -459,7 +459,7 @@ const statusToneClass = (status: KnowledgeDocItem['status']) => {
 }
 
 const libraryScopeLabel = (scope?: string) => {
-  return scope === 'personal' ? '个人库' : '系统库'
+  return scope === 'personal' ? '个人库' : '推荐库'
 }
 
 const businessTypeLabel = (type?: string) => {
@@ -467,7 +467,7 @@ const businessTypeLabel = (type?: string) => {
   if (type === 'resume') return '简历资料'
   if (type === 'jd') return 'JD 资料'
   if (type === 'project_doc') return '项目资料'
-  return '系统知识'
+  return '平台资料'
 }
 
 const parseStatusLabel = (status?: string) => {

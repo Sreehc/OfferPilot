@@ -15,15 +15,15 @@
       <div class="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
         <div class="max-w-3xl">
           <div class="flex flex-wrap gap-2">
-            <span class="hard-chip">{{ applications.length ? '投递看板已上线' : '先录入第一条岗位信息' }}</span>
+            <span class="hard-chip">{{ applications.length ? '继续推进当前投递' : '先录入第一条岗位信息' }}</span>
             <span class="detail-pill">{{ applications.length }} 条岗位</span>
             <span class="detail-pill">{{ statuses.interview.count }} 条进行中</span>
           </div>
-          <h2 class="mt-5 font-display text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">
-            把岗位、简历、真实面试和复盘建议收进同一个投递看板
-          </h2>
+          <p class="mt-5 font-display text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">
+            先把岗位录进来，再持续推进每一步
+          </p>
           <p class="mt-4 max-w-2xl text-sm leading-7 text-secondary">
-            新建岗位后，系统会提取 JD 关键词、计算和当前简历的匹配度，并把状态流转、真实面试记录和复盘事件沉淀到 application 域。
+            录入岗位后，这里会帮你集中查看匹配度、状态变化、真实面试记录和后续复盘。
           </p>
         </div>
 
@@ -47,8 +47,7 @@
     <section class="shell-section-card p-5 sm:p-6">
       <div class="flex items-center justify-between gap-3">
         <div>
-          <p class="section-kicker">新增岗位</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">先录入 JD 再分析</h3>
+          <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">先录入一条岗位信息</h3>
         </div>
       </div>
 
@@ -89,7 +88,7 @@
             class="mt-2"
             type="textarea"
             :rows="12"
-            placeholder="粘贴岗位 JD，系统会抽取技术关键词、匹配点和风险项"
+            placeholder="粘贴岗位 JD，稍后在这里查看关键词、匹配点和风险项"
           />
           <el-button :loading="creating" size="large" class="action-button mt-4 w-full" @click="handleCreate">
             创建并分析岗位
@@ -101,8 +100,7 @@
     <section class="shell-section-card p-5 sm:p-6">
       <div class="flex items-center justify-between gap-3">
         <div>
-          <p class="section-kicker">投递看板</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">按状态管理真实求职流程</h3>
+          <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">按状态推进你的投递</h3>
         </div>
       </div>
 

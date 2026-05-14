@@ -19,7 +19,7 @@
             用邮箱验证码恢复账号访问
           </h1>
           <p class="mt-5 text-sm leading-8 text-secondary sm:text-base">
-            当前 Phase 1 已接入找回密码链路。你可以先发送验证码，再用新密码完成重置。
+            先拿到验证码，再设置新密码，很快就能回到账号里继续使用。
           </p>
         </div>
 
@@ -29,7 +29,7 @@
               1. 发送验证码
             </div>
             <p class="auth-feature-card__desc">
-              输入注册邮箱，系统向邮箱发送重置验证码。
+              输入注册邮箱，把验证码发到你的邮箱里。
             </p>
           </div>
           <div class="auth-feature-card">
@@ -60,7 +60,7 @@
             先拿到验证码，再重置密码
           </h2>
           <p class="mt-3 text-sm leading-7 text-secondary">
-            如果当前环境未接入真实邮件服务，开发环境会显示调试验证码，方便联调。
+            如果你现在收不到邮件，可以先确认邮箱是否填写正确。
           </p>
         </div>
 

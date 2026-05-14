@@ -76,14 +76,11 @@
       </article>
 
       <article class="shell-section-card p-5 sm:p-6">
-        <p class="section-kicker">
-          第三方登录
-        </p>
         <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
-          GitHub 入口已预留
+          其他登录方式
         </h3>
         <p class="mt-3 text-sm leading-7 text-secondary">
-          当前阶段只保留入口位和配置检测，不强行接入全部提供商。后续启用时会沿用现在这套账号结构。
+          GitHub 登录开放后，你可以直接在这里查看状态并切换使用。
         </p>
 
         <div class="mt-5 space-y-3">
@@ -94,10 +91,10 @@
                   GitHub
                 </div>
                 <div class="mt-1 text-xs text-secondary">
-                  {{ githubProvider?.configured ? '配置已检测到，当前未启用正式登录。' : '尚未配置 Client ID / Secret。' }}
+                  {{ githubProvider?.configured ? '登录配置已经准备好。' : '当前还不能使用 GitHub 登录。' }}
                 </div>
               </div>
-              <span class="detail-pill">{{ githubProvider?.enabled ? '已启用' : '预留中' }}</span>
+              <span class="detail-pill">{{ githubProvider?.enabled ? '可使用' : '暂未开放' }}</span>
             </div>
           </article>
         </div>
@@ -126,12 +123,12 @@ const githubProvider = computed(() => oauthProviders.value.find((item) => item.p
 const emailStatusTitle = computed(() => (authStore.user?.emailVerified ? '邮箱已验证' : authStore.user?.email ? '邮箱待验证' : '尚未填写邮箱'))
 const emailStatusDescription = computed(() => {
   if (!authStore.user?.email) {
-    return '当前账号还没有邮箱信息。Phase 1 已要求新注册用户填写邮箱，后续账号资料编辑会补充邮箱维护入口。'
+    return '先补一个常用邮箱，后面找回密码和接收验证码都会更方便。'
   }
   if (authStore.user.emailVerified) {
-    return '当前邮箱已经完成验证，可承接忘记密码和后续敏感资料能力。'
+    return '这个邮箱已经可以用来接收验证码和恢复账号。'
   }
-  return '建议先完成邮箱验证，后续找回密码与资料型能力会依赖这条链路。'
+  return '建议先完成验证，后面找回密码时会更省事。'
 })
 
 const loadProviders = async () => {

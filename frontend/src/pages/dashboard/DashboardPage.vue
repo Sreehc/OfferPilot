@@ -27,13 +27,9 @@
             <div class="flex flex-wrap gap-2">
               <span class="hard-chip">连续 {{ reviewStats.currentStreak }} 天</span>
               <span class="hard-chip">待巩固 {{ reviewPending }} 项</span>
-              <span class="detail-pill">Phase 0 已切换为求职训练主线</span>
             </div>
 
             <div class="mt-6 max-w-[48rem]">
-              <p class="section-kicker">
-                求职训练工作台
-              </p>
               <h1 class="font-display text-4xl font-semibold leading-[1.02] tracking-[-0.05em] text-ink sm:text-5xl">
                 {{ primaryMission.title }}
               </h1>
@@ -51,9 +47,9 @@
               </RouterLink>
               <RouterLink
                 to="/study-plan"
-                class="hard-button-secondary"
+                class="accent-link text-sm font-semibold"
               >
-                查看训练计划入口
+                查看学习计划
               </RouterLink>
             </div>
           </div>
@@ -80,14 +76,10 @@
       <section class="shell-section-card p-5 sm:p-6">
         <div class="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p class="section-kicker">
-              主线路径
-            </p>
             <h2 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
-              现在围绕这些模块推进求职准备
+              继续推进今天的训练
             </h2>
           </div>
-          <span class="detail-pill">卡片与复习已降级为辅助入口</span>
         </div>
 
         <div class="dashboard-route-grid mt-5">
@@ -115,9 +107,6 @@
         <article class="shell-section-card p-5 sm:p-6">
           <div class="flex items-center justify-between gap-3">
             <div>
-              <p class="section-kicker">
-                当前重点
-              </p>
               <h2 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
                 优先补齐的训练方向
               </h2>
@@ -170,14 +159,9 @@
 
         <article class="shell-section-card p-5 sm:p-6">
           <div class="flex items-center justify-between gap-3">
-            <div>
-              <p class="section-kicker">
-                辅助入口
-              </p>
-              <h2 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
-                仍然保留但不再主导心智
-              </h2>
-            </div>
+            <h2 class="text-2xl font-semibold tracking-[-0.03em] text-ink">
+              需要时再补充这些动作
+            </h2>
           </div>
 
           <div class="mt-5 space-y-3">
@@ -274,7 +258,7 @@ const primaryMission = computed(() => {
     return {
       to: '/question',
       title: `先补 ${weakPoint.categoryName} 这一块`,
-      description: `当前 ${weakPoint.categoryName} 是最需要优先补齐的方向。先用题库做结构化训练，再去问答页扩展回答，最后用模拟面试验证表达质量。`,
+      description: `先用题库把 ${weakPoint.categoryName} 练顺，再去问答页补全回答结构，最后用模拟面试检查表达是否稳定。`,
       cta: '去题库训练',
       urgent: weakPoint.wrongCount > 0
     }
@@ -284,7 +268,7 @@ const primaryMission = computed(() => {
     return {
       to: '/interview',
       title: '先开始第一场模拟面试',
-      description: '首页已经切到求职训练主线。用第一场模拟面试建立基线，后续题库、问答和计划模块都会围绕它来组织训练节奏。',
+      description: '先做一场模拟面试拿到基线，再决定接下来是补题库、练问答，还是安排下一轮计划。',
       cta: '开始模拟面试',
       urgent: false
     }
@@ -294,7 +278,7 @@ const primaryMission = computed(() => {
     return {
       to: '/review',
       title: '把待巩固内容先清掉',
-      description: `当前仍有 ${reviewPending.value} 项待复习内容和 ${todayCardTotal.value} 张卡片任务。它们不再是主线，但仍然是维持训练节奏的重要辅助动作。`,
+      description: `你还有 ${reviewPending.value} 项待复习内容和 ${todayCardTotal.value} 张卡片任务。先清掉这些积压，再继续新的训练会更稳。`,
       cta: '去复习巩固',
       urgent: reviewPending.value > 0
     }
@@ -302,8 +286,8 @@ const primaryMission = computed(() => {
 
   return {
     to: '/study-plan',
-    title: '开始规划下一阶段训练路线',
-    description: '学习计划模块的正式闭环会在 Phase 3 落地；当前入口已经建立，可以先按阶段路线整理下一步训练方向。',
+    title: '安排下一段训练节奏',
+    description: '把接下来几天要练的题目、问答和模拟面试排好顺序，避免训练断档。',
     cta: '查看学习计划',
     urgent: false
   }
@@ -312,59 +296,59 @@ const primaryMission = computed(() => {
 const primaryRoutes = computed(() => [
   {
     to: '/question',
-    label: '题库',
-    title: '结构化刷题',
-    description: '按技术分类、难度和岗位方向组织训练，形成稳定答题底座。',
-    status: '已接主导航'
+    label: '题库训练',
+    title: '先刷今天最该补的题',
+    description: '按分类、难度和岗位方向快速找到当前最该练的题目。',
+    status: '立即开始'
   },
   {
     to: '/knowledge',
     label: '知识库',
-    title: '统一资料中心',
-    description: '承接系统资料、个人文档和后续简历、JD、项目语料。',
-    status: '已接主导航'
+    title: '从资料里补答案',
+    description: '整理资料、追回答案依据，方便随时回看和继续提问。',
+    status: '补资料'
   },
   {
     to: '/chat',
     label: '问答',
-    title: '带引用知识问答',
-    description: '对题目、项目和资料继续深挖，让回答结构更完整。',
-    status: '已接主导航'
+    title: '把答案讲完整',
+    description: '围绕题目、项目和资料继续追问，把会写变成会讲。',
+    status: '继续深挖'
   },
   {
     to: '/interview',
     label: '面试',
-    title: '模拟面试',
-    description: '用文字或语音训练真实表达，把知识点转化为可输出的答案。',
-    status: '已接主导航'
+    title: '检验你的表达',
+    description: '用文字或语音做一次完整演练，看看回答是否稳定。',
+    status: '做一轮'
   },
   {
     to: '/study-plan',
     label: '计划',
-    title: '学习计划入口',
-    description: '先搭页面和节奏入口，后续接正式计划、任务和统计。',
-    status: 'Phase 3'
+    title: '排好接下来几天的训练',
+    description: '把题库、问答、复习和面试排成连续节奏，减少临场决策。',
+    status: '安排节奏'
   },
   {
     to: '/resume',
     label: '简历',
-    title: '简历助手入口',
-    description: '为简历解析、项目问答和自我介绍保留独立主路径。',
-    status: 'Phase 4'
+    title: '整理项目表达',
+    description: '上传简历后继续整理项目经历、追问和开场表达。',
+    status: '继续整理'
   },
   {
     to: '/applications',
     label: '投递',
-    title: '投递管理入口',
-    description: '为 JD 分析、投递看板、真实面试与复盘建立主路径。',
-    status: 'Phase 5'
+    title: '推进你的投递',
+    description: '记录岗位、跟进状态，再把面试过程和复盘沉淀下来。',
+    status: '记录进展'
   },
   {
     to: '/analytics',
     label: '洞察',
-    title: '训练结果观察',
-    description: '查看趋势、弱项和节奏变化，辅助决定下一步训练动作。',
-    status: '已保留'
+    title: '回看你的趋势',
+    description: '看看弱项、得分和节奏怎么变化，再决定下一步优先级。',
+    status: '查看变化'
   }
 ])
 

@@ -15,18 +15,18 @@
       <div class="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
         <div class="max-w-3xl">
           <div class="flex flex-wrap gap-2">
-            <span class="hard-chip">{{ currentResume ? '已接入真实简历解析' : '上传简历开始生成项目问答' }}</span>
+            <span class="hard-chip">{{ currentResume ? '继续整理这份简历' : '先上传一份简历' }}</span>
             <span class="detail-pill">{{ resumeList.length }} 份简历</span>
             <span class="detail-pill">{{ currentResume?.projects.length || 0 }} 个项目</span>
           </div>
-          <h2 class="mt-5 font-display text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">
-            {{ currentResume ? currentResume.title : '把简历、项目、自我介绍和面试表达放进同一条工作流' }}
-          </h2>
+          <p class="mt-5 font-display text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">
+            {{ currentResume ? currentResume.title : '从简历开始整理项目表达' }}
+          </p>
           <p class="mt-4 max-w-2xl text-sm leading-7 text-secondary">
             {{
               currentResume
                 ? currentResume.summary
-                : '上传 PDF / Word 简历后，系统会抽取项目经历、技术栈、项目追问、自我介绍和面试版简历提纲，帮助你直接进入项目面试准备。'
+                : '上传 PDF 或 Word 简历后，你可以继续整理项目经历、项目追问、自我介绍和面试版提纲。'
             }}
           </p>
         </div>
@@ -53,8 +53,7 @@
         <article class="shell-section-card p-5 sm:p-6">
           <div class="flex items-center justify-between gap-3">
             <div>
-              <p class="section-kicker">上传简历</p>
-              <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">开始解析</h3>
+              <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">先上传简历</h3>
             </div>
           </div>
 
@@ -71,14 +70,13 @@
             </div>
           </el-upload>
 
-          <p v-if="uploading" class="mt-3 text-sm text-secondary">正在解析简历并拆解项目，请稍候...</p>
+          <p v-if="uploading" class="mt-3 text-sm text-secondary">正在整理项目、技能和追问，请稍候...</p>
         </article>
 
         <article class="shell-section-card p-5 sm:p-6">
           <div class="flex items-center justify-between gap-3">
             <div>
-              <p class="section-kicker">我的简历</p>
-              <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">历史版本</h3>
+              <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">切换已上传的简历</h3>
             </div>
           </div>
 
@@ -222,7 +220,7 @@
         <article v-else class="shell-section-card p-8 text-center">
           <p class="text-lg font-semibold text-ink">还没有可展示的简历结果</p>
           <p class="mt-3 text-sm leading-7 text-secondary">
-            上传简历后，这里会展示项目拆解、项目追问、自我介绍和面试版简历提纲。
+            上传后，这里会继续帮你整理项目拆解、项目追问、自我介绍和面试版提纲。
           </p>
         </article>
       </section>

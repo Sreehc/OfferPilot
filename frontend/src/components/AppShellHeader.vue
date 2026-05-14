@@ -33,15 +33,15 @@ const props = withDefaults(defineProps<{
   subtitle: '',
   kicker: '',
   compact: false,
-  showSubtitle: true
+  showSubtitle: false
 })
 
 const route = useRoute()
 
-const routeMeta = computed(() => route.meta as { title?: string; subtitle?: string; kicker?: string })
+const routeMeta = computed(() => route.meta as { title?: string })
 const resolvedTitle = computed(() => props.title || routeMeta.value.title || '')
-const resolvedSubtitle = computed(() => props.subtitle || routeMeta.value.subtitle || '')
-const resolvedKicker = computed(() => props.kicker || routeMeta.value.kicker || '')
+const resolvedSubtitle = computed(() => props.subtitle || '')
+const resolvedKicker = computed(() => props.kicker || '')
 const showResolvedSubtitle = computed(() => props.showSubtitle && Boolean(resolvedSubtitle.value))
 </script>
 

@@ -17,33 +17,33 @@
             先建好账号，把后续资料与训练沉淀到同一处
           </h1>
           <p class="mt-5 text-sm leading-8 text-secondary sm:text-base">
-            Phase 1 已把邮箱验证和找回密码链路接进账号体系。现在注册时就带上邮箱，后续简历、知识文档和语音面试资料都会复用同一账号基础。
+            先把账号和邮箱准备好，后面整理简历、上传资料和恢复账号都会更顺手。
           </p>
         </div>
 
         <div class="mt-10 grid gap-4 sm:grid-cols-3">
           <div class="auth-feature-card">
             <div class="auth-feature-card__title">
-              邮箱预留
+              邮箱恢复
             </div>
             <p class="auth-feature-card__desc">
-              注册后可在设置页完成邮箱验证，为找回密码和后续资料安全做准备。
+              注册后验证邮箱，后面忘记密码时可以更快找回账号。
             </p>
           </div>
           <div class="auth-feature-card">
             <div class="auth-feature-card__title">
-              统一资料归档
+              资料集中管理
             </div>
             <p class="auth-feature-card__desc">
-              知识文档、头像、语音面试音频会逐步统一到同一套文件存储策略下。
+              训练记录、文档和个人资料都会跟着同一个账号走。
             </p>
           </div>
           <div class="auth-feature-card">
             <div class="auth-feature-card__title">
-              第三方入口预留
+              更多登录方式
             </div>
             <p class="auth-feature-card__desc">
-              GitHub 登录入口已预留，后续接入时不会再重做整套认证心智。
+              以后开放 GitHub 登录时，你可以直接在这里切换使用。
             </p>
           </div>
         </div>
@@ -56,10 +56,10 @@
               注册
             </p>
             <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">
-              补齐基础信息后开始使用
+              填好信息后开始使用
             </h2>
             <p class="mt-3 text-sm leading-7 text-secondary">
-              当前注册会同步保存邮箱，方便后续验证和找回密码。
+              用户名、邮箱和密码准备好后，就能直接进入工作台。
             </p>
           </div>
         </div>
