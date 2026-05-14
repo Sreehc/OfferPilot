@@ -27,6 +27,15 @@ public class TrendVO {
     /** Per-category weekly breakdown. */
     private List<CategoryTrend> categoryTrends;
 
+    /** Weekly plan progress snapshots. */
+    private List<PlanTrendPoint> planProgressTrend;
+
+    /** Weekly application activity snapshots. */
+    private List<ApplicationTrendPoint> applicationActivityTrend;
+
+    /** Weekly resume upload / parse snapshots. */
+    private List<ResumeTrendPoint> resumeActivityTrend;
+
     @Data
     @Builder
     public static class WeeklyPoint {
@@ -49,5 +58,32 @@ public class TrendVO {
         private String week;
         private BigDecimal value;
         private int count;
+    }
+
+    @Data
+    @Builder
+    public static class PlanTrendPoint {
+        private String week;
+        private BigDecimal progressRate;
+        private int completedTaskCount;
+        private int totalTaskCount;
+    }
+
+    @Data
+    @Builder
+    public static class ApplicationTrendPoint {
+        private String week;
+        private int totalCount;
+        private int activeCount;
+        private int interviewCount;
+        private int offerCount;
+    }
+
+    @Data
+    @Builder
+    public static class ResumeTrendPoint {
+        private String week;
+        private int uploadCount;
+        private int parsedCount;
     }
 }

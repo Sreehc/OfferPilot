@@ -7,6 +7,8 @@ import com.offerpilot.analytics.service.AnalyticsService;
 import com.offerpilot.analytics.vo.EfficiencyVO;
 import com.offerpilot.analytics.vo.LearningInsightsVO;
 import com.offerpilot.analytics.vo.TrendVO;
+import com.offerpilot.application.entity.JobApplication;
+import com.offerpilot.application.mapper.JobApplicationMapper;
 import com.offerpilot.cards.entity.DailyCardTask;
 import com.offerpilot.cards.entity.KnowledgeCard;
 import com.offerpilot.cards.entity.KnowledgeCardLog;
@@ -23,8 +25,14 @@ import com.offerpilot.knowledge.entity.KnowledgeChunk;
 import com.offerpilot.knowledge.entity.KnowledgeDoc;
 import com.offerpilot.knowledge.mapper.KnowledgeChunkMapper;
 import com.offerpilot.knowledge.mapper.KnowledgeDocMapper;
+import com.offerpilot.plan.entity.StudyPlan;
+import com.offerpilot.plan.entity.StudyPlanTask;
+import com.offerpilot.plan.mapper.StudyPlanMapper;
+import com.offerpilot.plan.mapper.StudyPlanTaskMapper;
 import com.offerpilot.question.entity.Question;
 import com.offerpilot.question.mapper.QuestionMapper;
+import com.offerpilot.resume.entity.ResumeFile;
+import com.offerpilot.resume.mapper.ResumeFileMapper;
 import com.offerpilot.wrong.entity.ReviewLog;
 import com.offerpilot.wrong.entity.WrongQuestion;
 import com.offerpilot.wrong.mapper.ReviewLogMapper;
@@ -74,6 +82,10 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     private final KnowledgeDocMapper knowledgeDocMapper;
     private final DailyCardTaskMapper dailyCardTaskMapper;
     private final DailyMemorySnapshotMapper dailyMemorySnapshotMapper;
+    private final StudyPlanMapper studyPlanMapper;
+    private final StudyPlanTaskMapper studyPlanTaskMapper;
+    private final ResumeFileMapper resumeFileMapper;
+    private final JobApplicationMapper jobApplicationMapper;
 
     @Override
     @Transactional
@@ -112,6 +124,9 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .masteredGrowthTrend(masteredGrowthTrend)
                 .overallTrend(interviewTrend.overallTrend())
                 .categoryTrends(interviewTrend.categoryTrends())
+                .planProgressTrend(buildPlanProgressTrend(userId, safeWeeks))
+                .applicationActivityTrend(buildApplicationActivityTrend(userId, safeWeeks))
+                .resumeActivityTrend(buildResumeActivityTrend(userId, safeWeeks))
                 .build();
     }
 
@@ -245,6 +260,31 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
         DailyMemorySnapshot latest = snapshots.isEmpty() ? null : snapshots.get(snapshots.size() - 1);
         DailyMemorySnapshot previous = snapshots.size() >= 2 ? snapshots.get(snapshots.size() - 2) : null;
+        StudyPlan activePlan = studyPlanMapper.selectOne(new LambdaQueryWrapper<StudyPlan>()
+                .eq(StudyPlan::getUserId, userId)
+                .orderByDesc(StudyPlan::getUpdateTime)
+                .last("LIMIT 1"));
+        int todayPlanCompletedTaskCount = 0;
+        int todayPlanTaskCount = 0;
+        if (activePlan != null) {
+            List<StudyPlanTask> todayTasks = studyPlanTaskMapper.selectList(new LambdaQueryWrapper<StudyPlanTask>()
+                    .eq(StudyPlanTask::getPlanId, activePlan.getId())
+                    .eq(StudyPlanTask::getDayIndex, activePlan.getCurrentDay()));
+            todayPlanTaskCount = todayTasks.size();
+            todayPlanCompletedTaskCount = (int) todayTasks.stream().filter(task -> "completed".equals(task.getStatus())).count();
+        }
+        List<JobApplication> applications = jobApplicationMapper.selectList(new LambdaQueryWrapper<JobApplication>()
+                .eq(JobApplication::getUserId, userId));
+        int activeApplicationCount = (int) applications.stream()
+                .filter(item -> List.of("applied", "written", "interview").contains(item.getStatus()))
+                .count();
+        int offerCount = (int) applications.stream()
+                .filter(item -> "offer".equals(item.getStatus()))
+                .count();
+        List<ResumeFile> resumes = resumeFileMapper.selectList(new LambdaQueryWrapper<ResumeFile>()
+                .eq(ResumeFile::getUserId, userId)
+                .orderByDesc(ResumeFile::getUpdateTime));
+        ResumeFile latestResume = resumes.isEmpty() ? null : resumes.get(0);
 
         return LearningInsightsVO.builder()
                 .thisWeekAvgScore(thisAvg)
@@ -254,9 +294,81 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .todayCompletionStatus(resolveTodayCompletionStatus(latest))
                 .reviewDebtStatus(resolveReviewDebtStatus(latest, previous))
                 .masteryGrowthStatus(resolveMasteryGrowthStatus(latest, previous))
+                .planExecutionStatus(resolvePlanExecutionStatus(activePlan, todayPlanCompletedTaskCount, todayPlanTaskCount))
+                .todayPlanCompletedTaskCount(todayPlanCompletedTaskCount)
+                .todayPlanTaskCount(todayPlanTaskCount)
+                .activePlanProgressRate(activePlan == null ? BigDecimal.ZERO : defaultDecimal(activePlan.getProgressRate()))
+                .activePlanTitle(activePlan == null ? null : activePlan.getTitle())
+                .applicationActiveCount(activeApplicationCount)
+                .applicationOfferCount(offerCount)
+                .applicationStatus(resolveApplicationStatus(applications, activeApplicationCount, offerCount))
+                .resumeCount(resumes.size())
+                .latestResumeTitle(latestResume == null ? null : latestResume.getTitle())
+                .resumeReadinessStatus(resolveResumeReadinessStatus(resumes, latestResume))
+                .interviewConversionStatus(resolveInterviewConversionStatus(thisWeekCount, activeApplicationCount, offerCount))
+                .nextActionTitle(resolveNextActionTitle(activePlan, latestResume, activeApplicationCount))
+                .nextActionDescription(resolveNextActionDescription(activePlan, latestResume, activeApplicationCount, todayPlanTaskCount))
+                .nextActionPath(resolveNextActionPath(activePlan, latestResume, activeApplicationCount))
                 .categoryChanges(categoryChanges)
                 .bestStudyHours(bestStudyHours)
                 .build();
+    }
+
+    private List<TrendVO.PlanTrendPoint> buildPlanProgressTrend(Long userId, int weeks) {
+        LocalDate startDate = LocalDate.now().minusWeeks(weeks).with(DayOfWeek.MONDAY);
+        List<StudyPlan> plans = studyPlanMapper.selectList(new LambdaQueryWrapper<StudyPlan>()
+                .eq(StudyPlan::getUserId, userId)
+                .ge(StudyPlan::getUpdateTime, startDate.atStartOfDay())
+                .orderByAsc(StudyPlan::getUpdateTime));
+        Map<String, List<StudyPlan>> byWeek = plans.stream()
+                .filter(plan -> plan.getUpdateTime() != null)
+                .collect(Collectors.groupingBy(plan -> formatWeek(plan.getUpdateTime().toLocalDate()), LinkedHashMap::new, Collectors.toList()));
+        return byWeek.entrySet().stream()
+                .map(entry -> TrendVO.PlanTrendPoint.builder()
+                        .week(entry.getKey())
+                        .progressRate(avg(entry.getValue().stream().map(StudyPlan::getProgressRate).filter(Objects::nonNull).toList()))
+                        .completedTaskCount(entry.getValue().stream().mapToInt(plan -> plan.getCompletedTaskCount() == null ? 0 : plan.getCompletedTaskCount()).sum())
+                        .totalTaskCount(entry.getValue().stream().mapToInt(plan -> plan.getTotalTaskCount() == null ? 0 : plan.getTotalTaskCount()).sum())
+                        .build())
+                .toList();
+    }
+
+    private List<TrendVO.ApplicationTrendPoint> buildApplicationActivityTrend(Long userId, int weeks) {
+        LocalDate startDate = LocalDate.now().minusWeeks(weeks).with(DayOfWeek.MONDAY);
+        List<JobApplication> applications = jobApplicationMapper.selectList(new LambdaQueryWrapper<JobApplication>()
+                .eq(JobApplication::getUserId, userId)
+                .ge(JobApplication::getCreateTime, startDate.atStartOfDay())
+                .orderByAsc(JobApplication::getCreateTime));
+        Map<String, List<JobApplication>> byWeek = applications.stream()
+                .filter(item -> item.getCreateTime() != null)
+                .collect(Collectors.groupingBy(item -> formatWeek(item.getCreateTime().toLocalDate()), LinkedHashMap::new, Collectors.toList()));
+        return byWeek.entrySet().stream()
+                .map(entry -> TrendVO.ApplicationTrendPoint.builder()
+                        .week(entry.getKey())
+                        .totalCount(entry.getValue().size())
+                        .activeCount((int) entry.getValue().stream().filter(item -> List.of("applied", "written", "interview").contains(item.getStatus())).count())
+                        .interviewCount((int) entry.getValue().stream().filter(item -> "interview".equals(item.getStatus())).count())
+                        .offerCount((int) entry.getValue().stream().filter(item -> "offer".equals(item.getStatus())).count())
+                        .build())
+                .toList();
+    }
+
+    private List<TrendVO.ResumeTrendPoint> buildResumeActivityTrend(Long userId, int weeks) {
+        LocalDate startDate = LocalDate.now().minusWeeks(weeks).with(DayOfWeek.MONDAY);
+        List<ResumeFile> resumes = resumeFileMapper.selectList(new LambdaQueryWrapper<ResumeFile>()
+                .eq(ResumeFile::getUserId, userId)
+                .ge(ResumeFile::getCreateTime, startDate.atStartOfDay())
+                .orderByAsc(ResumeFile::getCreateTime));
+        Map<String, List<ResumeFile>> byWeek = resumes.stream()
+                .filter(item -> item.getCreateTime() != null)
+                .collect(Collectors.groupingBy(item -> formatWeek(item.getCreateTime().toLocalDate()), LinkedHashMap::new, Collectors.toList()));
+        return byWeek.entrySet().stream()
+                .map(entry -> TrendVO.ResumeTrendPoint.builder()
+                        .week(entry.getKey())
+                        .uploadCount(entry.getValue().size())
+                        .parsedCount((int) entry.getValue().stream().filter(item -> "parsed".equals(item.getParseStatus())).count())
+                        .build())
+                .toList();
     }
 
     private TrendData buildInterviewTrend(Long userId, int weeks, List<Long> categoryIds) {
@@ -354,6 +466,97 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 Long::sum));
         cards.forEach(card -> masteryDistribution.merge(normalizeKnowledgeMastery(card), 1L, Long::sum));
         return masteryDistribution;
+    }
+
+    private String resolvePlanExecutionStatus(StudyPlan activePlan, int todayCompletedTaskCount, int todayPlanTaskCount) {
+        if (activePlan == null) {
+            return "还没有训练计划";
+        }
+        if (todayPlanTaskCount <= 0) {
+            return "今天没有待执行的计划任务";
+        }
+        if (todayCompletedTaskCount >= todayPlanTaskCount) {
+            return "今天的计划任务已经完成";
+        }
+        return String.format("今天已完成 %d / %d 项计划任务", todayCompletedTaskCount, todayPlanTaskCount);
+    }
+
+    private String resolveApplicationStatus(List<JobApplication> applications, int activeApplicationCount, int offerCount) {
+        if (applications.isEmpty()) {
+            return "还没有投递记录";
+        }
+        if (offerCount > 0) {
+            return String.format("已有 %d 个 Offer，继续稳住后续流程", offerCount);
+        }
+        if (activeApplicationCount > 0) {
+            return String.format("当前有 %d 条投递在推进中", activeApplicationCount);
+        }
+        return String.format("已记录 %d 条投递，下一步可以补更多岗位", applications.size());
+    }
+
+    private String resolveResumeReadinessStatus(List<ResumeFile> resumes, ResumeFile latestResume) {
+        if (resumes.isEmpty()) {
+            return "还没有上传简历";
+        }
+        if (latestResume != null && "parsed".equals(latestResume.getParseStatus())) {
+            return String.format("最新简历《%s》已经可以继续整理项目表达", latestResume.getTitle());
+        }
+        return String.format("最新简历《%s》还在处理中", latestResume == null ? "未命名简历" : latestResume.getTitle());
+    }
+
+    private String resolveInterviewConversionStatus(int thisWeekInterviewCount, int activeApplicationCount, int offerCount) {
+        if (offerCount > 0) {
+            return "已有面试结果进入 Offer 阶段";
+        }
+        if (activeApplicationCount > 0 && thisWeekInterviewCount == 0) {
+            return "有投递在推进中，建议尽快补一轮模拟面试";
+        }
+        if (thisWeekInterviewCount > 0) {
+            return String.format("本周已完成 %d 场模拟面试，可以继续对照真实岗位推进", thisWeekInterviewCount);
+        }
+        return "先做一轮模拟面试，建立当前表达基线";
+    }
+
+    private String resolveNextActionTitle(StudyPlan activePlan, ResumeFile latestResume, int activeApplicationCount) {
+        if (latestResume == null) {
+            return "先上传简历";
+        }
+        if (activePlan == null) {
+            return "先生成训练计划";
+        }
+        if (activeApplicationCount > 0) {
+            return "继续推进当前投递";
+        }
+        return "安排下一轮模拟面试";
+    }
+
+    private String resolveNextActionDescription(StudyPlan activePlan, ResumeFile latestResume, int activeApplicationCount, int todayPlanTaskCount) {
+        if (latestResume == null) {
+            return "先把简历整理出来，再继续项目追问、模拟面试和投递。";
+        }
+        if (activePlan == null) {
+            return "把接下来几天要练的题目、问答和模拟面试先排好。";
+        }
+        if (todayPlanTaskCount > 0) {
+            return String.format("今天还有 %d 项计划任务待处理，先把它们推进完。", todayPlanTaskCount);
+        }
+        if (activeApplicationCount > 0) {
+            return "先更新投递进度、补面试记录，避免信息断档。";
+        }
+        return "用一轮新的模拟面试检查这段时间的训练有没有真正转成表达能力。";
+    }
+
+    private String resolveNextActionPath(StudyPlan activePlan, ResumeFile latestResume, int activeApplicationCount) {
+        if (latestResume == null) {
+            return "/resume";
+        }
+        if (activePlan == null) {
+            return "/study-plan";
+        }
+        if (activeApplicationCount > 0) {
+            return "/applications";
+        }
+        return "/interview";
     }
 
     private BigDecimal resolveAvgEaseFactor(List<WrongQuestion> wrongs, List<KnowledgeCard> cards) {

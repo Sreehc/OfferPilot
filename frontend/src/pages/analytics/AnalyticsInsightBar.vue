@@ -41,7 +41,54 @@ const insights = computed<Insight[]>(() => {
   const list: Insight[] = []
   const d = props.data
 
-  // Score trend
+  if (d.nextActionTitle && d.nextActionPath) {
+    list.push({
+      key: 'next-action',
+      icon: '→',
+      title: d.nextActionTitle,
+      description: d.nextActionDescription || '先推进这一项，再看后面的变化。',
+      to: d.nextActionPath,
+      toneClass: 'insight-card--info',
+      iconClass: 'insight-icon--info'
+    })
+  }
+
+  if (d.planExecutionStatus) {
+    list.push({
+      key: 'plan-status',
+      icon: '□',
+      title: '今天的计划',
+      description: d.planExecutionStatus,
+      to: '/study-plan',
+      toneClass: 'insight-card--good',
+      iconClass: 'insight-icon--good'
+    })
+  }
+
+  if (d.applicationStatus) {
+    list.push({
+      key: 'application-status',
+      icon: '◎',
+      title: '投递进展',
+      description: d.applicationStatus,
+      to: '/applications',
+      toneClass: 'insight-card--info',
+      iconClass: 'insight-icon--info'
+    })
+  }
+
+  if (d.resumeReadinessStatus) {
+    list.push({
+      key: 'resume-status',
+      icon: '◆',
+      title: '简历准备',
+      description: d.resumeReadinessStatus,
+      to: '/resume',
+      toneClass: 'insight-card--info',
+      iconClass: 'insight-icon--info'
+    })
+  }
+
   if (d.thisWeekAvgScore > 0 && d.lastWeekAvgScore > 0) {
     const diff = d.thisWeekAvgScore - d.lastWeekAvgScore
     if (diff < -5) {
@@ -49,8 +96,8 @@ const insights = computed<Insight[]>(() => {
         key: 'score-drop',
         icon: '▼',
         title: '本周面试分下降',
-        description: `平均分 ${Math.round(d.thisWeekAvgScore)}，比上周低 ${Math.abs(Math.round(diff))} 分。建议减少新卡片，优先复习积压项。`,
-        to: '/review',
+        description: `平均分 ${Math.round(d.thisWeekAvgScore)}，比上周低 ${Math.abs(Math.round(diff))} 分。建议先补弱项，再做一轮模拟面试。`,
+        to: '/question',
         toneClass: 'insight-card--warn',
         iconClass: 'insight-icon--warn'
       })
@@ -67,46 +114,43 @@ const insights = computed<Insight[]>(() => {
     }
   }
 
-  // Review debt
   if (d.reviewDebtStatus && d.reviewDebtStatus.includes('高')) {
     list.push({
       key: 'debt-high',
       icon: '!',
-      title: '复习积压较多',
-      description: '建议今天先处理复习再学习新卡，避免积压持续增长。',
+      title: '待巩固内容较多',
+      description: '先清掉积压内容，再继续新的训练，会更容易稳住节奏。',
       to: '/review',
       toneClass: 'insight-card--warn',
       iconClass: 'insight-icon--warn'
     })
   }
 
-  // Streak
   if (d.thisWeekInterviewCount >= 3 || (d.todayCompletionStatus && d.todayCompletionStatus.includes('完成'))) {
     list.push({
       key: 'streak',
       icon: '✓',
-      title: '学习节奏良好',
-      description: `本周已完成 ${d.thisWeekInterviewCount} 场面试诊断，继续保持！`,
-      to: '/cards',
+      title: '训练节奏稳定',
+      description: `本周已完成 ${d.thisWeekInterviewCount} 场模拟面试，继续保持这条节奏。`,
+      to: '/interview',
       toneClass: 'insight-card--good',
       iconClass: 'insight-icon--good'
     })
   }
 
-  // Mastery growth slow
   if (d.masteryGrowthStatus && d.masteryGrowthStatus.includes('放缓')) {
     list.push({
       key: 'mastery-slow',
-      icon: '◆',
+      icon: '△',
       title: '掌握度增长放缓',
-      description: '试试减少每日新卡数量，把精力集中在复习已有内容上。',
-      to: '/cards',
+      description: '试试减少新内容，把精力集中到复盘和巩固上。',
+      to: '/review',
       toneClass: 'insight-card--info',
       iconClass: 'insight-icon--info'
     })
   }
 
-  return list
+  return list.slice(0, 6)
 })
 </script>
 

@@ -23,8 +23,8 @@
       <div class="grid gap-4 xl:grid-cols-[288px_minmax(0,1fr)] xl:items-stretch">
         <aside class="analytics-overview">
           <div>
-            <p class="section-kicker">学习概览</p>
-            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">先看整体节奏</h3>
+            <p class="section-kicker">求职准备概览</p>
+            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">先看这几条主线</h3>
           </div>
 
           <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
@@ -36,6 +36,7 @@
             >
               <p class="analytics-overview-card__label">{{ signal.label }}</p>
               <p class="analytics-overview-card__value">{{ signal.value }}</p>
+              <p v-if="signal.detail" class="mt-2 text-xs leading-5 text-secondary">{{ signal.detail }}</p>
             </article>
           </div>
         </aside>
@@ -43,8 +44,8 @@
         <div class="analytics-main-chart">
           <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">记忆趋势</h3>
-              <p class="mt-1 text-sm text-secondary">完成率、复习负债和掌握增长</p>
+              <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">求职准备趋势</h3>
+              <p class="mt-1 text-sm text-secondary">计划进度、投递推进、简历更新和面试分数</p>
             </div>
           </div>
 
@@ -53,13 +54,14 @@
           </div>
           <div
             v-else-if="
-              !trendData.completionRateTrend?.length &&
-              !trendData.reviewDebtTrend?.length &&
-              !trendData.masteredGrowthTrend?.length
+              !trendData.planProgressTrend?.length &&
+              !trendData.applicationActivityTrend?.length &&
+              !trendData.resumeActivityTrend?.length &&
+              !trendData.overallTrend?.length
             "
             class="mt-4 flex h-[340px] items-center justify-center"
           >
-            <EmptyState icon="chart" title="暂无记忆趋势数据" description="开始学习后查看趋势。" compact />
+            <EmptyState icon="chart" title="暂无主线趋势数据" description="开始安排计划、上传简历或记录投递后再来看。" compact />
           </div>
           <div v-else class="mt-4">
             <div ref="trendChartRef" class="chart-shell h-[340px] w-full"></div>
@@ -72,7 +74,7 @@
       <article class="shell-section-card p-4 sm:p-5">
         <div class="flex items-center justify-between gap-3">
           <div>
-            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">记忆强度</h3>
+            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">复习强度</h3>
           </div>
         </div>
 
@@ -106,7 +108,7 @@
       <article class="shell-section-card p-4 sm:p-5">
         <div class="flex items-center justify-between gap-3">
           <div>
-            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">遗忘率</h3>
+            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">复习稳定性</h3>
           </div>
         </div>
 
@@ -136,7 +138,7 @@
       <article class="shell-section-card p-4 sm:p-5">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">分类掌握度</h3>
+            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">题目掌握度</h3>
           </div>
         </div>
 
@@ -206,7 +208,7 @@
     <section class="shell-section-card p-4 sm:p-5">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div class="min-w-0">
-          <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">面试趋势</h3>
+          <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">分类面试趋势</h3>
         </div>
       </div>
 
@@ -270,7 +272,10 @@ const trendData = ref<AbilityTrend>({
   reviewDebtTrend: [],
   masteredGrowthTrend: [],
   overallTrend: [],
-  categoryTrends: []
+  categoryTrends: [],
+  planProgressTrend: [],
+  applicationActivityTrend: [],
+  resumeActivityTrend: []
 })
 const efficiencyData = ref<EfficiencyData>({
   avgEaseFactor: 2.5,
@@ -296,6 +301,21 @@ const learningInsights = ref<LearningInsights>({
   todayCompletionStatus: '',
   reviewDebtStatus: '',
   masteryGrowthStatus: '',
+  planExecutionStatus: '',
+  todayPlanCompletedTaskCount: 0,
+  todayPlanTaskCount: 0,
+  activePlanProgressRate: 0,
+  activePlanTitle: '',
+  applicationActiveCount: 0,
+  applicationOfferCount: 0,
+  applicationStatus: '',
+  resumeCount: 0,
+  latestResumeTitle: '',
+  resumeReadinessStatus: '',
+  interviewConversionStatus: '',
+  nextActionTitle: '',
+  nextActionDescription: '',
+  nextActionPath: '',
   categoryChanges: [],
   bestStudyHours: []
 })
@@ -396,28 +416,34 @@ const categoryMasteryItems = computed(() => efficiencyData.value.categoryMastery
 
 const summarySignals = computed(() => [
   {
-    label: '观察周数',
-    value: selectedWeeks.value,
-    detail: '',
+    label: '当前计划',
+    value: learningInsights.value.activePlanTitle || '还没有计划',
+    detail: learningInsights.value.planExecutionStatus || '先生成一份训练计划',
     toneClass: ''
+  },
+  {
+    label: '活跃投递',
+    value: `${learningInsights.value.applicationActiveCount ?? 0} 条`,
+    detail: learningInsights.value.applicationStatus || '先录入岗位',
+    toneClass: 'summary-slab-cyan'
+  },
+  {
+    label: '简历准备',
+    value: `${learningInsights.value.resumeCount ?? 0} 份`,
+    detail: learningInsights.value.resumeReadinessStatus || '先上传一份简历',
+    toneClass: 'summary-slab-lime'
+  },
+  {
+    label: '本周模拟面试',
+    value: `${learningInsights.value.thisWeekInterviewCount ?? 0} 场`,
+    detail: learningInsights.value.interviewConversionStatus || '先做一轮模拟面试',
+    toneClass: 'summary-slab-amber'
   },
   {
     label: '当前完成率',
     value: `${formatPercent(latestCompletionRate.value)}%`,
-    detail: '',
-    toneClass: 'summary-slab-cyan'
-  },
-  {
-    label: '总复习次数',
-    value: efficiencyData.value.totalReviews,
-    detail: '',
-    toneClass: 'summary-slab-lime'
-  },
-  {
-    label: '连续复习',
-    value: `${efficiencyData.value.currentStreak} 天`,
-    detail: '',
-    toneClass: 'summary-slab-amber'
+    detail: '辅助观察复习与积压变化',
+    toneClass: ''
   }
 ])
 
@@ -504,23 +530,31 @@ const buildChartBase = () => {
 const renderTrendChart = () => {
   if (!trendChartRef.value) return
   const weeks = trendData.value.weeks || []
-  const completion = trendData.value.completionRateTrend || []
-  const debts = trendData.value.reviewDebtTrend || []
-  const mastered = trendData.value.masteredGrowthTrend || []
-  if (!weeks.length && !completion.length && !debts.length && !mastered.length) return
+  const planProgress = trendData.value.planProgressTrend || []
+  const applications = trendData.value.applicationActivityTrend || []
+  const resumes = trendData.value.resumeActivityTrend || []
+  const interviews = trendData.value.overallTrend || []
+  if (!weeks.length && !planProgress.length && !applications.length && !resumes.length && !interviews.length) return
 
   if (!trendChart) {
     trendChart = echarts.init(trendChartRef.value)
   }
 
-  const xAxisData = weeks.length ? weeks : completion.map((item) => item.week)
+  const xAxisData = weeks.length
+    ? weeks
+    : [...new Set([
+        ...planProgress.map((item) => item.week),
+        ...applications.map((item) => item.week),
+        ...resumes.map((item) => item.week),
+        ...interviews.map((item) => item.week)
+      ])]
   const palette = readThemePalette()
   const base = buildChartBase()
   trendChart.setOption(
     {
       ...base,
       legend: {
-        data: ['完成率', '复习负债', '已掌握卡片'],
+        data: ['计划进度', '活跃投递', '简历更新', '面试均分'],
         bottom: 0,
         textStyle: { fontSize: 11, color: palette.textSecondary }
       },
@@ -553,19 +587,19 @@ const renderTrendChart = () => {
       ],
       series: [
         {
-          name: '完成率',
+          name: '计划进度',
           type: 'line',
           smooth: true,
           symbol: 'circle',
-          data: xAxisData.map((week) => completion.find((item) => item.week === week)?.value ?? null),
+          data: xAxisData.map((week) => planProgress.find((item) => item.week === week)?.progressRate ?? null),
           lineStyle: { width: 3, color: palette.cyan },
           itemStyle: { color: palette.cyan }
         },
         {
-          name: '复习负债',
+          name: '活跃投递',
           type: 'bar',
           yAxisIndex: 1,
-          data: xAxisData.map((week) => debts.find((item) => item.week === week)?.value ?? null),
+          data: xAxisData.map((week) => applications.find((item) => item.week === week)?.activeCount ?? null),
           itemStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
               { offset: 0, color: palette.coral },
@@ -575,14 +609,23 @@ const renderTrendChart = () => {
           }
         },
         {
-          name: '已掌握卡片',
+          name: '简历更新',
           type: 'line',
           yAxisIndex: 1,
           smooth: true,
           symbol: 'circle',
-          data: xAxisData.map((week) => mastered.find((item) => item.week === week)?.value ?? null),
+          data: xAxisData.map((week) => resumes.find((item) => item.week === week)?.uploadCount ?? null),
           lineStyle: { width: 2, color: palette.lime },
           itemStyle: { color: palette.lime }
+        },
+        {
+          name: '面试均分',
+          type: 'line',
+          smooth: true,
+          symbol: 'circle',
+          data: xAxisData.map((week) => interviews.find((item) => item.week === week)?.score ?? null),
+          lineStyle: { width: 2, color: palette.amber },
+          itemStyle: { color: palette.amber }
         }
       ]
     },

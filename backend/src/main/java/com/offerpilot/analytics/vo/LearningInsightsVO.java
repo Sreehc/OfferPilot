@@ -16,6 +16,21 @@ public class LearningInsightsVO {
     private String todayCompletionStatus;
     private String reviewDebtStatus;
     private String masteryGrowthStatus;
+    private String planExecutionStatus;
+    private Integer todayPlanCompletedTaskCount;
+    private Integer todayPlanTaskCount;
+    private BigDecimal activePlanProgressRate;
+    private String activePlanTitle;
+    private Integer applicationActiveCount;
+    private Integer applicationOfferCount;
+    private String applicationStatus;
+    private Integer resumeCount;
+    private String latestResumeTitle;
+    private String resumeReadinessStatus;
+    private String interviewConversionStatus;
+    private String nextActionTitle;
+    private String nextActionDescription;
+    private String nextActionPath;
 
     /** Per-category week-over-week changes, sorted by |change| descending. */
     private List<CategoryChange> categoryChanges;

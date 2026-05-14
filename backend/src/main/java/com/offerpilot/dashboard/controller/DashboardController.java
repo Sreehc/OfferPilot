@@ -18,10 +18,9 @@ public class DashboardController {
 
     private final DashboardService dashboardService;
 
-    @Operation(summary = "首页概览", description = "获取学习次数、平均分、错题数、计划完成率、最近面试、薄弱点")
+    @Operation(summary = "首页概览", description = "获取主任务、计划摘要、简历摘要、投递摘要、最近面试和薄弱点")
     @GetMapping("/overview")
     public Result<DashboardOverviewVO> overview() {
         return Result.success(dashboardService.overview());
     }
 }
-

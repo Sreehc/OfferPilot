@@ -25,7 +25,7 @@ public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
 
-    @Operation(summary = "能力趋势", description = "按周聚合面试得分趋势，支持分类筛选")
+    @Operation(summary = "能力趋势", description = "按周聚合计划、投递、简历与面试趋势，支持分类筛选")
     @GetMapping("/trend")
     public Result<TrendVO> trend(
             @RequestParam(defaultValue = "12") int weeks,
@@ -39,7 +39,7 @@ public class AnalyticsController {
         return Result.success(analyticsService.getEfficiencyData(currentUserId()));
     }
 
-    @Operation(summary = "学习洞察", description = "周对比、分类变化、最佳学习时段")
+    @Operation(summary = "学习洞察", description = "返回计划、投递、简历、面试和训练节奏洞察")
     @GetMapping("/insights")
     public Result<LearningInsightsVO> insights() {
         return Result.success(analyticsService.getLearningInsights(currentUserId()));

@@ -3,6 +3,8 @@ package com.offerpilot.dashboard.dto;
 import com.offerpilot.adaptive.vo.CategoryAbilityVO;
 import com.offerpilot.analytics.vo.LearningInsightsVO;
 import com.offerpilot.analytics.vo.EfficiencyVO;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import java.math.BigDecimal;
 import java.util.List;
 import lombok.Builder;
@@ -43,4 +45,54 @@ public class DashboardOverviewVO {
     private Integer thisWeekInterviewCount;
     private List<LearningInsightsVO.CategoryChange> categoryChanges;
     private List<LearningInsightsVO.HourDistribution> bestStudyHours;
+    private PlanSummary planSummary;
+    private ResumeSummary resumeSummary;
+    private ApplicationSummary applicationSummary;
+    private NextStepSummary nextStep;
+
+    @Data
+    @Builder
+    public static class PlanSummary {
+        @JsonSerialize(using = ToStringSerializer.class)
+        private Long planId;
+        private String title;
+        private Integer currentDay;
+        private Integer totalDays;
+        private Integer todayTaskCount;
+        private Integer completedTaskCount;
+        private Integer totalTaskCount;
+        private BigDecimal progressRate;
+        private String actionPath;
+    }
+
+    @Data
+    @Builder
+    public static class ResumeSummary {
+        @JsonSerialize(using = ToStringSerializer.class)
+        private Long resumeId;
+        private Integer resumeCount;
+        private String latestResumeTitle;
+        private String parseStatus;
+        private Integer projectCount;
+        private String actionPath;
+    }
+
+    @Data
+    @Builder
+    public static class ApplicationSummary {
+        private Integer totalCount;
+        private Integer activeCount;
+        private Integer offerCount;
+        private BigDecimal averageMatchScore;
+        private String topCompany;
+        private String actionPath;
+    }
+
+    @Data
+    @Builder
+    public static class NextStepSummary {
+        private String title;
+        private String description;
+        private String actionPath;
+    }
 }

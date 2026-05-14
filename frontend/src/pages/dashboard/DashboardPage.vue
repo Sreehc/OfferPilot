@@ -25,8 +25,9 @@
         <div class="relative grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-end">
           <div>
             <div class="flex flex-wrap gap-2">
-              <span class="hard-chip">连续 {{ reviewStats.currentStreak }} 天</span>
-              <span class="hard-chip">待巩固 {{ reviewPending }} 项</span>
+              <span class="hard-chip">下一步</span>
+              <span class="detail-pill">连续 {{ reviewStats.currentStreak }} 天</span>
+              <span class="detail-pill">待巩固 {{ reviewPending }} 项</span>
             </div>
 
             <div class="mt-6 max-w-[48rem]">
@@ -46,26 +47,26 @@
                 {{ primaryMission.cta }}
               </RouterLink>
               <RouterLink
-                to="/study-plan"
+                to="/analytics"
                 class="accent-link text-sm font-semibold"
               >
-                查看学习计划
+                查看整体趋势
               </RouterLink>
             </div>
           </div>
 
           <div class="dashboard-hero__summary">
             <article class="dashboard-hero__summary-item">
-              <span>最近均分</span>
-              <strong>{{ formatScore(overview.averageScore) }}</strong>
+              <span>当前计划</span>
+              <strong>{{ dashboardHeroSummary.plan }}</strong>
             </article>
             <article class="dashboard-hero__summary-item">
-              <span>最近面试</span>
-              <strong>{{ overview.recentInterviews.length }}</strong>
+              <span>简历准备</span>
+              <strong>{{ dashboardHeroSummary.resume }}</strong>
             </article>
             <article class="dashboard-hero__summary-item">
-              <span>重点弱项</span>
-              <strong>{{ topWeakPoint }}</strong>
+              <span>投递进展</span>
+              <strong>{{ dashboardHeroSummary.application }}</strong>
             </article>
           </div>
         </div>
@@ -77,7 +78,7 @@
         <div class="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
-              继续推进今天的训练
+              接下来可以直接去这里
             </h2>
           </div>
         </div>
@@ -160,7 +161,7 @@
         <article class="shell-section-card p-5 sm:p-6">
           <div class="flex items-center justify-between gap-3">
             <h2 class="text-2xl font-semibold tracking-[-0.03em] text-ink">
-              需要时再补充这些动作
+              需要时再补这些准备
             </h2>
           </div>
 
@@ -226,32 +227,63 @@ const overview = ref<DashboardOverview>({
 
 const reviewPending = computed(() => reviewStats.value.todayPending ?? overview.value.reviewDebtCount ?? 0)
 const todayCardTotal = computed(() => (overview.value.todayLearnCards ?? 0) + (overview.value.todayReviewCards ?? 0))
-const topWeakPoint = computed(() => overview.value.weakPoints[0]?.categoryName ?? '等待训练数据')
+const todayPlanMetric = computed(() => {
+  const plan = overview.value.planSummary
+  if (!plan?.planId) return '未开始'
+  const todayCount = plan.todayTaskCount ?? plan.totalTaskCount ?? 0
+  return `${plan.completedTaskCount ?? 0}/${todayCount}`
+})
 
 const trainingMetrics = computed(() => [
   {
-    label: '训练资产',
-    value: String(overview.value.learningCount ?? 0),
-    desc: '当前沉淀的学习记录和训练积累'
+    label: '今日计划',
+    value: todayPlanMetric.value,
+    desc: overview.value.planSummary?.planId
+      ? `Day ${overview.value.planSummary.currentDay ?? 1}，先把今天的任务推进完`
+      : '先生成一份训练计划'
   },
   {
-    label: '平均表现',
-    value: formatScore(overview.value.averageScore),
-    desc: '基于现有面试与训练结果的阶段性均分'
+    label: '简历准备',
+    value: `${overview.value.resumeSummary?.resumeCount ?? 0} 份`,
+    desc: overview.value.resumeSummary?.latestResumeTitle || '先上传一份简历开始整理项目表达'
   },
   {
-    label: '待巩固内容',
-    value: String(overview.value.wrongCount ?? 0),
-    desc: '需要继续补强的错题与低掌握内容'
+    label: '投递推进',
+    value: `${overview.value.applicationSummary?.activeCount ?? 0} 条`,
+    desc: overview.value.applicationSummary?.totalCount
+      ? `共记录 ${overview.value.applicationSummary.totalCount} 条投递`
+      : '先录入第一条岗位信息'
   },
   {
-    label: '连续训练',
-    value: String(reviewStats.value.currentStreak ?? overview.value.studyStreak ?? 0),
-    desc: '连续推进求职训练的天数'
+    label: '本周面试',
+    value: String(overview.value.thisWeekInterviewCount ?? overview.value.recentInterviews.length ?? 0),
+    desc: `${formatScore(overview.value.averageScore)} 分最近均分`
   }
 ])
 
+const dashboardHeroSummary = computed(() => ({
+  plan: overview.value.planSummary?.planId
+    ? `${Math.round(overview.value.planSummary.progressRate ?? 0)}%`
+    : '先生成计划',
+  resume: overview.value.resumeSummary?.resumeCount
+    ? `${overview.value.resumeSummary.resumeCount} 份`
+    : '先上传简历',
+  application: overview.value.applicationSummary?.activeCount
+    ? `${overview.value.applicationSummary.activeCount} 条进行中`
+    : '先记录岗位'
+}))
+
 const primaryMission = computed(() => {
+  if (overview.value.nextStep?.title) {
+    return {
+      to: overview.value.nextStep.actionPath || '/dashboard',
+      title: overview.value.nextStep.title,
+      description: overview.value.nextStep.description,
+      cta: routeActionLabel(overview.value.nextStep.actionPath),
+      urgent: Boolean(overview.value.planSummary?.todayTaskCount || overview.value.applicationSummary?.activeCount)
+    }
+  }
+
   const weakPoint = overview.value.weakPoints[0]
 
   if (weakPoint) {
@@ -302,13 +334,6 @@ const primaryRoutes = computed(() => [
     status: '立即开始'
   },
   {
-    to: '/knowledge',
-    label: '知识库',
-    title: '从资料里补答案',
-    description: '整理资料、追回答案依据，方便随时回看和继续提问。',
-    status: '补资料'
-  },
-  {
     to: '/chat',
     label: '问答',
     title: '把答案讲完整',
@@ -330,13 +355,6 @@ const primaryRoutes = computed(() => [
     status: '安排节奏'
   },
   {
-    to: '/resume',
-    label: '简历',
-    title: '整理项目表达',
-    description: '上传简历后继续整理项目经历、追问和开场表达。',
-    status: '继续整理'
-  },
-  {
     to: '/applications',
     label: '投递',
     title: '推进你的投递',
@@ -354,24 +372,41 @@ const primaryRoutes = computed(() => [
 
 const secondaryRoutes = computed(() => [
   {
+    to: '/resume',
+    label: '简历助手',
+    title: overview.value.resumeSummary?.latestResumeTitle || '继续整理你的项目表达',
+    hint: '整理简历'
+  },
+  {
+    to: '/knowledge',
+    label: '知识库',
+    title: '回看资料并继续追问',
+    hint: '补资料'
+  },
+  {
     to: '/cards',
-    label: '卡片强化',
-    title: todayCardTotal.value > 0 ? `当前还有 ${todayCardTotal.value} 张卡片待处理` : '用卡片做专项强化',
-    hint: '辅助'
-  },
-  {
-    to: '/review',
-    label: '复习巩固',
-    title: reviewPending.value > 0 ? `当前还有 ${reviewPending.value} 项待巩固` : '处理错题与到期复习',
-    hint: '辅助'
-  },
-  {
-    to: '/community',
-    label: '社区',
-    title: '浏览问题、回答和排行榜',
-    hint: '冻结'
+    label: '卡片与复习',
+    title: reviewPending.value > 0 ? `先清掉 ${reviewPending.value} 项待巩固内容` : '需要时再做专项强化',
+    hint: '补巩固'
   }
 ])
+
+const routeActionLabel = (path?: string) => {
+  switch (path) {
+    case '/resume':
+      return '去上传简历'
+    case '/study-plan':
+      return '去安排计划'
+    case '/applications':
+      return '去推进投递'
+    case '/interview':
+      return '去模拟面试'
+    case '/question':
+      return '去题库训练'
+    default:
+      return '继续处理'
+  }
+}
 
 const interviewTrendData = computed(() =>
   overview.value.recentInterviews.map((item) => ({

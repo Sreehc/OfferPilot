@@ -88,6 +88,42 @@ export interface CategoryMasteryItem {
   masteryRate: number
 }
 
+export interface PlanSummary {
+  planId?: string
+  title: string
+  currentDay?: number
+  totalDays?: number
+  todayTaskCount?: number
+  completedTaskCount?: number
+  totalTaskCount?: number
+  progressRate?: number
+  actionPath?: string
+}
+
+export interface ResumePreparationSummary {
+  resumeId?: string
+  resumeCount: number
+  latestResumeTitle: string
+  parseStatus?: string
+  projectCount?: number
+  actionPath?: string
+}
+
+export interface ApplicationSummary {
+  totalCount: number
+  activeCount: number
+  offerCount: number
+  averageMatchScore?: number
+  topCompany?: string
+  actionPath?: string
+}
+
+export interface NextStepSummary {
+  title: string
+  description: string
+  actionPath: string
+}
+
 export interface DashboardOverview {
   learningCount: number
   averageScore: number
@@ -117,6 +153,10 @@ export interface DashboardOverview {
   thisWeekInterviewCount?: number
   categoryChanges?: CategoryChange[]
   bestStudyHours?: HourDistribution[]
+  planSummary?: PlanSummary
+  resumeSummary?: ResumePreparationSummary
+  applicationSummary?: ApplicationSummary
+  nextStep?: NextStepSummary
 }
 
 export interface CategoryItem {
@@ -705,6 +745,24 @@ export interface AbilityTrend {
   masteredGrowthTrend: MemoryTrendPoint[]
   overallTrend: WeeklyPoint[]
   categoryTrends: CategoryTrend[]
+  planProgressTrend?: Array<{
+    week: string
+    progressRate: number
+    completedTaskCount: number
+    totalTaskCount: number
+  }>
+  applicationActivityTrend?: Array<{
+    week: string
+    totalCount: number
+    activeCount: number
+    interviewCount: number
+    offerCount: number
+  }>
+  resumeActivityTrend?: Array<{
+    week: string
+    uploadCount: number
+    parsedCount: number
+  }>
 }
 
 export interface WeeklyEF {
@@ -770,6 +828,21 @@ export interface LearningInsights {
   todayCompletionStatus?: string
   reviewDebtStatus?: string
   masteryGrowthStatus?: string
+  planExecutionStatus?: string
+  todayPlanCompletedTaskCount?: number
+  todayPlanTaskCount?: number
+  activePlanProgressRate?: number
+  activePlanTitle?: string
+  applicationActiveCount?: number
+  applicationOfferCount?: number
+  applicationStatus?: string
+  resumeCount?: number
+  latestResumeTitle?: string
+  resumeReadinessStatus?: string
+  interviewConversionStatus?: string
+  nextActionTitle?: string
+  nextActionDescription?: string
+  nextActionPath?: string
   categoryChanges: CategoryChange[]
   bestStudyHours: HourDistribution[]
 }
