@@ -22,7 +22,7 @@ public class QuestionController {
 
     private final com.offerpilot.question.service.QuestionService questionService;
 
-    @Operation(summary = "题目列表", description = "分页查询题库")
+    @Operation(summary = "题目列表", description = "分页查询题库，支持按分类、难度、题型、岗位方向、标签和关键词筛选")
     @GetMapping("/list")
     public Result<PageResult<QuestionVO>> list(@ModelAttribute QuestionQuery query) {
         return Result.success(questionService.listQuestions(query));

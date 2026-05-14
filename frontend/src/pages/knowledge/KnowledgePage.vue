@@ -19,7 +19,6 @@
       <section class="shell-section-card overflow-hidden knowledge-table-shell">
         <div class="knowledge-table-head border-b border-slate-200/70 px-5 py-4 dark:border-slate-700/70">
           <div class="knowledge-table-head__main">
-            <p class="section-kicker">文档</p>
             <div class="mode-switch mode-switch-compact mt-3">
               <button
                 type="button"
@@ -38,7 +37,10 @@
                 我的文档
               </button>
             </div>
-            <h3 class="mt-4 text-2xl font-semibold tracking-[-0.03em] text-ink">共 {{ total }} 份文档</h3>
+            <h3 class="mt-4 text-2xl font-semibold tracking-[-0.03em] text-ink">先筛出你要看的资料</h3>
+            <p class="mt-3 max-w-2xl text-sm leading-7 text-secondary">
+              先上传、再筛选、再查看状态。文档只有在“可使用”后，才适合继续问答或生成卡片。
+            </p>
           </div>
           <div class="knowledge-table-head__aside">
             <div class="knowledge-table-stat">
@@ -46,16 +48,16 @@
               <strong>{{ activeTabLabel }}</strong>
             </div>
             <div class="knowledge-table-stat">
-              <span>当前结果</span>
-              <strong>{{ docs.length }}</strong>
+              <span>总文档数</span>
+              <strong>{{ total }}</strong>
             </div>
             <div class="knowledge-table-stat">
-              <span>可学习</span>
-              <strong>{{ statusSummary.indexed + statusSummary.parsed }}</strong>
+              <span>可使用</span>
+              <strong>{{ statusSummary.indexed }}</strong>
             </div>
             <div class="knowledge-table-stat">
-              <span>处理中</span>
-              <strong>{{ statusSummary.draft }}</strong>
+              <span>待处理</span>
+              <strong>{{ statusSummary.pending }}</strong>
             </div>
           </div>
         </div>
@@ -123,7 +125,7 @@
 
               <div class="flex shrink-0 items-center gap-2">
                 <span v-if="doc.cardDeckId" class="detail-pill">{{ doc.cardCount ?? 0 }} 张卡片</span>
-                <span v-else-if="doc.status === 'indexed' || doc.status === 'parsed'" class="detail-pill">待生成卡片</span>
+                <span v-else-if="doc.status === 'indexed' || doc.status === 'parsed'" class="detail-pill">可继续生成卡片</span>
                 <el-popconfirm
                   v-if="activeTab === 'my'"
                   title="确认删除此文档？删除后关联的 chunk 和向量数据将一并清除。"
@@ -143,6 +145,7 @@
                   {{ doc.summary || '暂无摘要。' }}
                 </p>
                 <div class="mt-3 flex flex-wrap gap-2 text-xs text-secondary">
+                  <span class="detail-pill">阶段 {{ availabilityLabel(doc) }}</span>
                   <span class="detail-pill">解析 {{ parseStatusLabel(doc.parseStatus) }}</span>
                   <span class="detail-pill">索引 {{ indexStatusLabel(doc.indexStatus) }}</span>
                   <span v-if="doc.categoryName" class="detail-pill">{{ doc.categoryName }}</span>
@@ -157,7 +160,7 @@
                   </template>
                   <template v-else>
                     <strong>未生成卡片</strong>
-                    <span>从这份资料生成第一组卡片。</span>
+                    <span>{{ availabilityHint(doc) }}</span>
                   </template>
                 </div>
 
@@ -167,7 +170,7 @@
                     to="/cards"
                     class="hard-button-primary text-sm"
                   >
-                    去今日卡片
+                    查看卡片
                   </RouterLink>
                   <button
                     v-else
@@ -175,7 +178,7 @@
                     class="hard-button-primary text-sm"
                     @click="openGeneratePanel(doc)"
                   >
-                    生成卡片
+                    {{ doc.status === 'indexed' ? '生成卡片' : '等文档可使用后再生成' }}
                   </button>
                 </div>
               </div>
@@ -195,7 +198,6 @@
 
       <aside class="knowledge-side">
         <section class="shell-section-card p-5 sm:p-6">
-          <p class="section-kicker">上传</p>
           <div class="upload-dropzone mt-5" @dragover.prevent @drop.prevent="handleDrop">
             <div class="upload-dropzone__copy">
               <div class="upload-dropzone__icon" aria-hidden="true">
@@ -208,9 +210,9 @@
                 </svg>
               </div>
               <div class="min-w-0">
-                <p class="text-sm font-semibold text-ink">拖拽文档到这里上传</p>
+                <p class="text-sm font-semibold text-ink">把资料拖到这里，或点击右上角上传</p>
                 <p class="mt-1 text-sm text-secondary">
-                  支持 <span class="font-semibold text-ink">md / txt / pdf / doc / docx</span>，单文件不超过 20MB。
+                  支持 <span class="font-semibold text-ink">md / txt / pdf / doc / docx</span>，单文件不超过 20MB。上传后会先解析，再进入索引。
                 </p>
               </div>
             </div>
@@ -218,17 +220,24 @@
             <div class="upload-dropzone__aside">
               <div class="flex flex-wrap gap-2 text-[11px] text-secondary">
                 <span class="hard-chip">当前 {{ docs.length }} 份</span>
-                <span class="rounded-full border border-[var(--bc-line)] px-2.5 py-1">可学习 {{ statusSummary.indexed + statusSummary.parsed }}</span>
+                <span class="rounded-full border border-[var(--bc-line)] px-2.5 py-1">可使用 {{ statusSummary.indexed }}</span>
               </div>
             </div>
           </div>
+          <p class="mt-4 text-sm leading-6 text-secondary">
+            先上传资料，再看它现在是待解析、待索引还是已经可使用。
+          </p>
         </section>
 
         <section class="shell-section-card p-5 sm:p-6">
-          <p class="section-kicker">筛选与状态</p>
+          <h3 class="text-xl font-semibold tracking-[-0.03em] text-ink">按类型和状态筛选</h3>
           <div class="mt-5 grid gap-3">
             <el-select v-model="filters.categoryId" clearable placeholder="知识分类" size="large">
               <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
+            </el-select>
+            <el-select v-model="filters.libraryScope" clearable placeholder="资料范围" size="large">
+              <el-option label="推荐资料" value="system" />
+              <el-option label="我的文档" value="personal" />
             </el-select>
             <el-select v-model="filters.businessType" clearable placeholder="业务归属" size="large">
               <el-option label="平台资料" value="system_knowledge" />
@@ -244,10 +253,20 @@
               <el-option label="DOC" value="doc" />
               <el-option label="DOCX" value="docx" />
             </el-select>
-            <el-select v-model="filters.status" clearable placeholder="文档状态" size="large">
-              <el-option label="处理中" value="draft" />
+            <el-select v-model="filters.parseStatus" clearable placeholder="解析状态" size="large">
+              <el-option label="待解析" value="pending" />
               <el-option label="已解析" value="parsed" />
-              <el-option label="可学习" value="indexed" />
+              <el-option label="解析失败" value="failed" />
+            </el-select>
+            <el-select v-model="filters.indexStatus" clearable placeholder="索引状态" size="large">
+              <el-option label="待索引" value="pending" />
+              <el-option label="已索引" value="indexed" />
+              <el-option label="索引失败" value="failed" />
+            </el-select>
+            <el-select v-model="filters.status" clearable placeholder="当前可用阶段" size="large">
+              <el-option label="待解析" value="draft" />
+              <el-option label="待索引" value="parsed" />
+              <el-option label="可使用" value="indexed" />
             </el-select>
             <el-input v-model="filters.keyword" clearable placeholder="搜索标题或摘要" size="large" />
           </div>
@@ -304,22 +323,31 @@ const total = ref(0)
 const totalPages = ref(0)
 const filters = reactive<{
   categoryId?: number
+  libraryScope?: KnowledgeDocItem['libraryScope']
   businessType?: string
   fileType?: string
+  parseStatus?: KnowledgeDocItem['parseStatus']
+  indexStatus?: KnowledgeDocItem['indexStatus']
   keyword: string
   status?: KnowledgeDocItem['status']
 }>({
   categoryId: undefined,
+  libraryScope: undefined,
   businessType: undefined,
   fileType: undefined,
+  parseStatus: undefined,
+  indexStatus: undefined,
   keyword: '',
   status: undefined
 })
 
 const statusSummary = computed(() => {
-  const summary = { draft: 0, parsed: 0, indexed: 0 }
+  const summary = { draft: 0, parsed: 0, indexed: 0, pending: 0 }
   docs.value.forEach((doc) => {
     summary[doc.status] += 1
+    if (doc.status !== 'indexed') {
+      summary.pending += 1
+    }
   })
   return summary
 })
@@ -341,9 +369,11 @@ const loadDocs = async () => {
   try {
     const params = {
       categoryId: filters.categoryId,
-      libraryScope: activeTab.value === 'my' ? 'personal' : 'system',
+      libraryScope: filters.libraryScope || (activeTab.value === 'my' ? 'personal' : 'system'),
       businessType: filters.businessType,
       fileType: filters.fileType,
+      parseStatus: filters.parseStatus,
+      indexStatus: filters.indexStatus,
       keyword: filters.keyword || undefined,
       status: filters.status,
       pageNum: currentPage.value,
@@ -385,12 +415,12 @@ const handleUpload = async (options: { file: File }) => {
   uploading.value = true
   try {
     await uploadKnowledgeDocApi(options.file, filters.categoryId)
-    ElMessage.success('文档上传成功，正在后台处理')
+    ElMessage.success('文档已上传，接下来会先解析，再建立索引')
     activeTab.value = 'my'
     currentPage.value = 1
     await loadDocs()
   } catch {
-    ElMessage.error('文档上传失败')
+    ElMessage.error('上传失败，请检查文件格式或大小后重试')
   } finally {
     uploading.value = false
   }
@@ -418,8 +448,11 @@ const handleDelete = async (docId: number) => {
 
 const resetFilters = () => {
   filters.categoryId = undefined
+  filters.libraryScope = undefined
   filters.businessType = undefined
   filters.fileType = undefined
+  filters.parseStatus = undefined
+  filters.indexStatus = undefined
   filters.keyword = ''
   filters.status = undefined
   currentPage.value = 1
@@ -473,13 +506,28 @@ const businessTypeLabel = (type?: string) => {
 const parseStatusLabel = (status?: string) => {
   if (status === 'failed') return '失败'
   if (status === 'parsed') return '已完成'
-  return '处理中'
+  return '待解析'
 }
 
 const indexStatusLabel = (status?: string) => {
   if (status === 'failed') return '失败'
   if (status === 'indexed') return '已完成'
-  return '处理中'
+  return '待索引'
+}
+
+const availabilityLabel = (doc: KnowledgeDocItem) => {
+  if (doc.status === 'indexed') return '可使用'
+  if (doc.parseStatus === 'failed' || doc.indexStatus === 'failed') return '处理失败'
+  if (doc.parseStatus !== 'parsed') return '待解析'
+  return '待索引'
+}
+
+const availabilityHint = (doc: KnowledgeDocItem) => {
+  if (doc.status === 'indexed') return '从这份资料生成第一组卡片。'
+  if (doc.parseStatus === 'failed') return '先处理解析失败的问题，再继续生成卡片。'
+  if (doc.indexStatus === 'failed') return '先重试索引，再继续生成卡片。'
+  if (doc.parseStatus !== 'parsed') return '等解析完成后，再继续问答或生成卡片。'
+  return '等索引完成后，这份资料才适合继续问答或生成卡片。'
 }
 
 const docType = (fileUrl?: string): 'pdf' | 'text' => {

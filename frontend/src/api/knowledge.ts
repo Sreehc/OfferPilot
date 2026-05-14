@@ -1,15 +1,24 @@
 import { request } from '@/utils/http'
-import type { KnowledgeDocItem, KnowledgeSearchResult, PageResult } from '@/types/api'
+import type {
+  KnowledgeBusinessType,
+  KnowledgeDocItem,
+  KnowledgeDocStatus,
+  KnowledgeIndexStatus,
+  KnowledgeLibraryScope,
+  KnowledgeParseStatus,
+  KnowledgeSearchResult,
+  PageResult
+} from '@/types/api'
 
 export interface KnowledgeListQuery {
   categoryId?: number
   keyword?: string
-  libraryScope?: KnowledgeDocItem['libraryScope']
-  businessType?: string
+  libraryScope?: KnowledgeLibraryScope
+  businessType?: KnowledgeBusinessType
   fileType?: string
-  parseStatus?: KnowledgeDocItem['parseStatus']
-  indexStatus?: KnowledgeDocItem['indexStatus']
-  status?: KnowledgeDocItem['status']
+  parseStatus?: KnowledgeParseStatus
+  indexStatus?: KnowledgeIndexStatus
+  status?: KnowledgeDocStatus
   pageNum?: number
   pageSize?: number
 }

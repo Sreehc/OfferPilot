@@ -248,7 +248,8 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
         // Async vectorization
         self.vectorizeChunksAsync(doc.getId(), insertedChunks, chunks);
 
-        log.info("User {} uploaded document '{}', {} chunks", userId, originalFilename, chunks.size());
+        log.info("User {} uploaded document '{}', {} chunks; parse_status=parsed, index_status=pending",
+                userId, originalFilename, chunks.size());
         return buildDocVOs(List.of(doc)).get(0);
     }
 
@@ -400,7 +401,7 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
 
     private void vectorizeChunks(Long docId, List<KnowledgeChunk> chunks, List<String> texts) {
         try {
-            List<float[]> embeddings = embeddingGateway.embedBatch(texts);
+            List<float[]> embeddings = embeddingGateway.embedBatch(texts, "knowledge.index");
             for (int i = 0; i < chunks.size(); i++) {
                 float[] embedding = embeddings.get(i);
                 if (embedding.length > 0) {

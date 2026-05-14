@@ -32,7 +32,7 @@ public class KnowledgeController {
 
     private final KnowledgeService knowledgeService;
 
-    @Operation(summary = "文档列表", description = "分页查询知识文档")
+    @Operation(summary = "文档列表", description = "分页查询知识文档，支持按资料范围、业务类型、解析状态、索引状态和可用状态筛选")
     @GetMapping("/list")
     public Result<PageResult<KnowledgeDocVO>> list(@ModelAttribute KnowledgeListQuery query) {
         return Result.success(knowledgeService.listDocs(query));
@@ -44,7 +44,7 @@ public class KnowledgeController {
         return Result.success(knowledgeService.search(request));
     }
 
-    @Operation(summary = "上传文档", description = "上传 Markdown/TXT/PDF/Word 文档到个人知识库，自动切分并入库")
+    @Operation(summary = "上传文档", description = "上传 Markdown/TXT/PDF/Word 文档到个人知识库；上传成功后文档会依次经历待解析、待索引、可使用或失败状态")
     @PostMapping("/upload")
     public Result<KnowledgeDocVO> upload(
             @Parameter(description = "文件（支持 .md / .txt / .pdf / .doc / .docx）") @RequestParam("file") MultipartFile file,

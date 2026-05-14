@@ -188,19 +188,25 @@ export interface QuestionItem {
   updateTime?: string
 }
 
+export type KnowledgeLibraryScope = 'system' | 'personal' | string
+export type KnowledgeBusinessType = 'system_knowledge' | 'user_note' | 'resume' | 'jd' | 'project_doc' | string
+export type KnowledgeParseStatus = 'pending' | 'parsed' | 'failed' | string
+export type KnowledgeIndexStatus = 'pending' | 'indexed' | 'failed' | string
+export type KnowledgeDocStatus = 'draft' | 'parsed' | 'indexed'
+
 export interface KnowledgeDocItem {
   id: number
   title: string
   categoryId?: number
   categoryName?: string
-  libraryScope?: 'system' | 'personal' | string
-  businessType?: string
+  libraryScope?: KnowledgeLibraryScope
+  businessType?: KnowledgeBusinessType
   sourceType?: string
   fileType?: string
   fileUrl?: string
-  parseStatus?: 'pending' | 'parsed' | 'failed' | string
-  indexStatus?: 'pending' | 'indexed' | 'failed' | string
-  status: 'draft' | 'parsed' | 'indexed'
+  parseStatus?: KnowledgeParseStatus
+  indexStatus?: KnowledgeIndexStatus
+  status: KnowledgeDocStatus
   summary?: string
   chunkCount?: number
   cardDeckId?: number
