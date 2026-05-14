@@ -11,29 +11,35 @@ import com.offerpilot.common.storage.StorageDirectory;
 import com.offerpilot.common.storage.StoredFile;
 import com.offerpilot.common.storage.UploadPolicyService;
 import com.offerpilot.knowledge.service.DocumentParserService;
+import com.offerpilot.resume.dto.ResumeUpdateRequest;
 import com.offerpilot.resume.entity.ResumeFile;
 import com.offerpilot.resume.entity.ResumeProject;
 import com.offerpilot.resume.mapper.ResumeFileMapper;
 import com.offerpilot.resume.mapper.ResumeProjectMapper;
 import com.offerpilot.resume.service.ResumeService;
 import com.offerpilot.resume.vo.ResumeFileVO;
+import com.offerpilot.resume.vo.ResumeInterviewResumeVO;
 import com.offerpilot.resume.vo.ResumeProjectQuestionVO;
 import com.offerpilot.resume.vo.ResumeProjectVO;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -76,45 +82,33 @@ public class ResumeServiceImpl implements ResumeService {
             throw new BusinessException(ResultCode.SERVER_ERROR.getCode(), "简历读取失败: " + e.getMessage());
         }
 
-        List<String> chunks = documentParserService.parse(new ByteArrayInputStream(bytes), originalFilename);
-        if (chunks.isEmpty()) {
-            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "简历内容为空或无法解析");
-        }
-        String rawText = String.join("\n\n", chunks);
         StoredFile storedFile = fileStorageService.store(StorageDirectory.RESUME, originalFilename, bytes, file.getContentType());
-
-        ResumeParseSnapshot snapshot = parseResume(rawText, stripExtension(originalFilename));
 
         ResumeFile resumeFile = new ResumeFile();
         resumeFile.setUserId(userId);
         resumeFile.setTitle(stripExtension(originalFilename));
         resumeFile.setFileUrl(storedFile.getStorageKey());
         resumeFile.setFileType(fileTypeFromName(originalFilename));
-        resumeFile.setParseStatus("parsed");
-        resumeFile.setRawText(rawText);
-        resumeFile.setSummary(snapshot.summary());
-        resumeFile.setSkills(String.join(",", snapshot.skills()));
-        resumeFile.setEducation(snapshot.education());
-        resumeFile.setSelfIntro(snapshot.selfIntro());
-        resumeFile.setInterviewResumeText(snapshot.interviewResume());
-        resumeFile.setLastParsedAt(LocalDateTime.now());
+        resumeFile.setParseStatus("pending");
+        resumeFile.setUserFixStatus("none");
         resumeFileMapper.insert(resumeFile);
 
-        for (int i = 0; i < snapshot.projects().size(); i++) {
-            ParsedProject parsed = snapshot.projects().get(i);
-            ResumeProject project = new ResumeProject();
-            project.setResumeFileId(resumeFile.getId());
-            project.setUserId(userId);
-            project.setProjectName(parsed.projectName());
-            project.setRoleName(parsed.roleName());
-            project.setTechStack(parsed.techStack());
-            project.setResponsibility(parsed.responsibility());
-            project.setAchievement(parsed.achievement());
-            project.setProjectSummary(parsed.projectSummary());
-            project.setFollowUpQuestionsJson(writeJson(parsed.followUpQuestions()));
-            project.setRiskHints(String.join(",", parsed.riskHints()));
-            project.setSortOrder(i + 1);
-            resumeProjectMapper.insert(project);
+        try {
+            ResumeParseSnapshot snapshot = parseStoredResume(bytes, originalFilename);
+            applyParsedSnapshot(resumeFile, snapshot);
+            resumeFile.setParseStatus("parsed");
+            resumeFile.setParseError(null);
+            resumeFile.setUserFixStatus("none");
+            resumeFile.setLastParsedAt(LocalDateTime.now());
+            resumeFileMapper.updateById(resumeFile);
+            replaceProjects(resumeFile, resumeFile.getUserId(), snapshot.projects(), false);
+        } catch (Exception e) {
+            String errorMessage = extractResumeParseError(e);
+            resumeFile.setParseStatus("failed");
+            resumeFile.setParseError(errorMessage);
+            resumeFile.setUserFixStatus("pending");
+            resumeFileMapper.updateById(resumeFile);
+            log.warn("Resume parse failed: userId={}, resumeId={}, reason={}", userId, resumeFile.getId(), errorMessage);
         }
 
         log.info("Resume uploaded: userId={}, resumeId={}, title={}", userId, resumeFile.getId(), resumeFile.getTitle());
@@ -137,6 +131,8 @@ public class ResumeServiceImpl implements ResumeService {
                         .education(item.getEducation())
                         .selfIntro(item.getSelfIntro())
                         .interviewResumeText(item.getInterviewResumeText())
+                        .parseError(item.getParseError())
+                        .userFixStatus(item.getUserFixStatus())
                         .lastParsedAt(item.getLastParsedAt())
                         .updateTime(item.getUpdateTime())
                         .projects(List.of())
@@ -167,12 +163,51 @@ public class ResumeServiceImpl implements ResumeService {
 
     @Override
     public String selfIntro(Long userId, Long resumeId) {
-        return getOwnedResume(userId, resumeId).getSelfIntro();
+        return firstNonBlank(getOwnedResume(userId, resumeId).getSelfIntro());
     }
 
     @Override
-    public String interviewResume(Long userId, Long resumeId) {
-        return getOwnedResume(userId, resumeId).getInterviewResumeText();
+    public ResumeInterviewResumeVO interviewResume(Long userId, Long resumeId) {
+        ResumeFile file = getOwnedResume(userId, resumeId);
+        return buildInterviewResumePayload(file, loadProjects(resumeId));
+    }
+
+    @Override
+    @Transactional
+    public ResumeFileVO retryParse(Long userId, Long resumeId) {
+        ResumeFile file = getOwnedResume(userId, resumeId);
+        ResumeParseSnapshot snapshot = parseStoredResume(loadStoredResumeBytes(file), file.getTitle() + "." + file.getFileType());
+        applyParsedSnapshot(file, snapshot);
+        file.setParseStatus("parsed");
+        file.setParseError(null);
+        file.setUserFixStatus("none");
+        file.setLastParsedAt(LocalDateTime.now());
+        resumeFileMapper.updateById(file);
+        replaceProjects(file, userId, snapshot.projects(), false);
+        return buildDetail(file, loadProjects(file.getId()));
+    }
+
+    @Override
+    @Transactional
+    public ResumeFileVO update(Long userId, Long resumeId, ResumeUpdateRequest request) {
+        ResumeFile file = getOwnedResume(userId, resumeId);
+        List<ParsedProject> parsedProjects = buildProjectsFromRequest(request.getProjects(), file.getTitle(), splitCommaValue(request.getSkills(), file.getSkills()));
+        file.setTitle(firstNonBlank(request.getTitle(), file.getTitle()));
+        file.setSummary(firstNonBlank(request.getSummary(), file.getSummary(), buildSummary(List.of(file.getTitle()), parsedProjects, splitCommaValue(request.getSkills(), file.getSkills()), file.getTitle())));
+        file.setSkills(joinComma(request.getSkills(), file.getSkills()));
+        file.setEducation(firstNonBlank(request.getEducation(), file.getEducation(), "建议补充学校 / 专业 / 学历等教育信息。"));
+        file.setSelfIntro(firstNonBlank(
+                request.getSelfIntro(),
+                file.getSelfIntro(),
+                buildSelfIntro(file.getTitle(), splitCommaValue(request.getSkills(), file.getSkills()), parsedProjects)));
+        file.setInterviewResumeText(buildInterviewResume(file.getTitle(), file.getSummary(), splitComma(file.getSkills()), parsedProjects));
+        file.setUserFixStatus("updated");
+        if (!StringUtils.hasText(file.getParseStatus())) {
+            file.setParseStatus("parsed");
+        }
+        resumeFileMapper.updateById(file);
+        replaceProjects(file, userId, parsedProjects, true);
+        return buildDetail(file, loadProjects(file.getId()));
     }
 
     private ResumeFile getOwnedResume(Long userId, Long resumeId) {
@@ -194,6 +229,8 @@ public class ResumeServiceImpl implements ResumeService {
                 .education(file.getEducation())
                 .selfIntro(file.getSelfIntro())
                 .interviewResumeText(file.getInterviewResumeText())
+                .parseError(file.getParseError())
+                .userFixStatus(file.getUserFixStatus())
                 .lastParsedAt(file.getLastParsedAt())
                 .updateTime(file.getUpdateTime())
                 .projects(projects)
@@ -216,8 +253,156 @@ public class ResumeServiceImpl implements ResumeService {
                         .projectSummary(project.getProjectSummary())
                         .followUpQuestions(parseQuestions(project.getFollowUpQuestionsJson()))
                         .riskHints(splitComma(project.getRiskHints()))
+                        .manualEdited(project.getManualEdited() != null && project.getManualEdited() == 1)
+                        .sortOrder(project.getSortOrder())
                         .build())
                 .toList();
+    }
+
+    private ResumeInterviewResumeVO buildInterviewResumePayload(ResumeFile file, List<ResumeProjectVO> projects) {
+        List<String> skills = splitComma(file.getSkills());
+        List<ResumeInterviewResumeVO.ProjectHighlightVO> highlights = projects.stream()
+                .map(project -> ResumeInterviewResumeVO.ProjectHighlightVO.builder()
+                        .projectId(project.getId())
+                        .projectName(project.getProjectName())
+                        .roleName(project.getRoleName())
+                        .talkingPoint(firstNonBlank(project.getResponsibility(), project.getProjectSummary(), "建议补充你的职责、方案选择和关键取舍"))
+                        .result(firstNonBlank(project.getAchievement(), "建议补充量化结果、性能收益或业务影响"))
+                        .build())
+                .toList();
+        return ResumeInterviewResumeVO.builder()
+                .headline("用于面试展开的简历提纲")
+                .positioning(firstNonBlank(file.getTitle(), "候选人定位待补充"))
+                .summary(firstNonBlank(file.getSummary(), "建议先补充一段简历摘要，再继续准备项目表达。"))
+                .skillKeywords(skills)
+                .projectHighlights(highlights)
+                .speakingChecklist(List.of(
+                        "先用 30 秒讲背景和目标岗位匹配点",
+                        "再用 60 秒讲一个项目里的职责、取舍和结果",
+                        "最后准备 2 到 3 个可被深挖的技术问题"))
+                .exportText(firstNonBlank(file.getInterviewResumeText(), buildInterviewResume(file.getTitle(), file.getSummary(), skills, toParsedProjects(projects))))
+                .editable(true)
+                .build();
+    }
+
+    private void applyParsedSnapshot(ResumeFile resumeFile, ResumeParseSnapshot snapshot) {
+        resumeFile.setRawText(snapshot.rawText());
+        resumeFile.setSummary(snapshot.summary());
+        resumeFile.setSkills(String.join(",", snapshot.skills()));
+        resumeFile.setEducation(snapshot.education());
+        resumeFile.setSelfIntro(snapshot.selfIntro());
+        resumeFile.setInterviewResumeText(snapshot.interviewResume());
+    }
+
+    private void replaceProjects(ResumeFile file, Long userId, List<ParsedProject> projects, boolean manualEdited) {
+        List<ResumeProject> existing = resumeProjectMapper.selectList(new LambdaQueryWrapper<ResumeProject>()
+                .eq(ResumeProject::getResumeFileId, file.getId()));
+        if (!existing.isEmpty()) {
+            resumeProjectMapper.delete(new LambdaQueryWrapper<ResumeProject>()
+                    .eq(ResumeProject::getResumeFileId, file.getId()));
+        }
+        for (int i = 0; i < projects.size(); i++) {
+            ParsedProject parsed = projects.get(i);
+            ResumeProject project = new ResumeProject();
+            project.setResumeFileId(file.getId());
+            project.setUserId(userId);
+            project.setProjectName(parsed.projectName());
+            project.setRoleName(parsed.roleName());
+            project.setTechStack(parsed.techStack());
+            project.setResponsibility(parsed.responsibility());
+            project.setAchievement(parsed.achievement());
+            project.setProjectSummary(parsed.projectSummary());
+            project.setFollowUpQuestionsJson(writeJson(parsed.followUpQuestions()));
+            project.setRiskHints(String.join(",", parsed.riskHints()));
+            project.setManualEdited(manualEdited ? 1 : 0);
+            project.setSortOrder(i + 1);
+            resumeProjectMapper.insert(project);
+        }
+    }
+
+    private byte[] loadStoredResumeBytes(ResumeFile file) {
+        Resource resource = fileStorageService.loadPrivate(file.getFileUrl());
+        try (InputStream inputStream = resource.getInputStream()) {
+            return inputStream.readAllBytes();
+        } catch (IOException e) {
+            throw new BusinessException(ResultCode.SERVER_ERROR.getCode(), "读取简历原文件失败: " + e.getMessage());
+        }
+    }
+
+    private ResumeParseSnapshot parseStoredResume(byte[] bytes, String originalFilename) {
+        List<String> chunks = documentParserService.parse(new ByteArrayInputStream(bytes), originalFilename);
+        if (chunks.isEmpty()) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "简历内容为空或无法解析");
+        }
+        String rawText = String.join("\n\n", chunks);
+        ResumeParseSnapshot snapshot = parseResume(rawText, stripExtension(originalFilename));
+        return new ResumeParseSnapshot(
+                rawText,
+                snapshot.summary(),
+                snapshot.skills(),
+                snapshot.education(),
+                snapshot.selfIntro(),
+                snapshot.interviewResume(),
+                snapshot.projects());
+    }
+
+    private List<ParsedProject> buildProjectsFromRequest(
+            List<ResumeUpdateRequest.ResumeProjectUpdateRequest> requests, String fallbackTitle, List<String> skills) {
+        if (requests == null || requests.isEmpty()) {
+            return List.of();
+        }
+        List<ParsedProject> projects = new ArrayList<>();
+        int index = 1;
+        for (ResumeUpdateRequest.ResumeProjectUpdateRequest request : requests) {
+            String projectName = firstNonBlank(request.getProjectName(), fallbackTitle + " 项目 " + index);
+            String techStack = firstNonBlank(request.getTechStack(), String.join(", ", skills));
+            String responsibility = firstNonBlank(request.getResponsibility(), "建议补充你负责的模块、关键决策和取舍");
+            String achievement = firstNonBlank(request.getAchievement(), "建议补充性能、稳定性或业务结果");
+            String projectSummary = firstNonBlank(
+                    request.getProjectSummary(),
+                    buildProjectSummary(projectName, request.getRoleName(), techStack, responsibility, achievement));
+            projects.add(new ParsedProject(
+                    projectName,
+                    firstNonBlank(request.getRoleName(), "项目核心负责人 / 主要贡献者"),
+                    techStack,
+                    responsibility,
+                    achievement,
+                    projectSummary,
+                    buildQuestions(projectName, techStack, responsibility, achievement),
+                    buildRiskHints(techStack, responsibility, achievement)));
+            index++;
+        }
+        return projects;
+    }
+
+    private String buildProjectSummary(
+            String projectName, String roleName, String techStack, String responsibility, String achievement) {
+        return abbreviate(projectName + "｜" + firstNonBlank(roleName, "主要贡献者") + "｜" + responsibility + "｜结果：" + achievement
+                + "｜技术：" + techStack, 180);
+    }
+
+    private List<ParsedProject> toParsedProjects(List<ResumeProjectVO> projects) {
+        return projects.stream()
+                .map(project -> new ParsedProject(
+                        project.getProjectName(),
+                        project.getRoleName(),
+                        project.getTechStack(),
+                        project.getResponsibility(),
+                        project.getAchievement(),
+                        project.getProjectSummary(),
+                        project.getFollowUpQuestions(),
+                        project.getRiskHints()))
+                .toList();
+    }
+
+    private String extractResumeParseError(Exception e) {
+        if (e instanceof BusinessException businessException && StringUtils.hasText(businessException.getMessage())) {
+            return businessException.getMessage();
+        }
+        if (StringUtils.hasText(e.getMessage())) {
+            return abbreviate(e.getMessage(), 180);
+        }
+        return "这份简历暂时没能完整解析，建议重试或手动修正关键信息。";
     }
 
     private ResumeParseSnapshot parseResume(String rawText, String fallbackTitle) {
@@ -231,7 +416,7 @@ public class ResumeServiceImpl implements ResumeService {
         String summary = buildSummary(normalizedLines, projects, skills, fallbackTitle);
         String selfIntro = buildSelfIntro(fallbackTitle, skills, projects);
         String interviewResume = buildInterviewResume(fallbackTitle, summary, skills, projects);
-        return new ResumeParseSnapshot(summary, skills, education, selfIntro, interviewResume, projects);
+        return new ResumeParseSnapshot(rawText, summary, skills, education, selfIntro, interviewResume, projects);
     }
 
     private List<String> extractSkills(String rawText) {
@@ -311,7 +496,8 @@ public class ResumeServiceImpl implements ResumeService {
         String projectNames = projects.stream().map(ParsedProject::projectName).limit(3).collect(Collectors.joining("、"));
         String skillText = skills.isEmpty() ? "Java 后端常用技术栈" : String.join("、", skills.stream().limit(6).toList());
         String lead = lines.isEmpty() ? fallbackTitle : abbreviate(lines.get(0), 40);
-        return "简历核心信息已抽取，可围绕 " + skillText + " 和项目「" + projectNames + "」准备项目表达。当前摘要来源于简历标题/抬头「" + lead + "」。";
+        String resolvedProjectNames = StringUtils.hasText(projectNames) ? projectNames : "待补充项目";
+        return "简历核心信息已抽取，可围绕 " + skillText + " 和项目「" + resolvedProjectNames + "」准备项目表达。当前摘要来源于简历标题/抬头「" + lead + "」。";
     }
 
     private String buildSelfIntro(String fallbackTitle, List<String> skills, List<ParsedProject> projects) {
@@ -406,6 +592,31 @@ public class ResumeServiceImpl implements ResumeService {
                 .toList();
     }
 
+    private List<String> splitCommaValue(List<String> values, String fallbackRaw) {
+        if (values != null && !values.isEmpty()) {
+            return values.stream()
+                    .filter(StringUtils::hasText)
+                    .map(String::trim)
+                    .distinct()
+                    .toList();
+        }
+        return splitComma(fallbackRaw);
+    }
+
+    private String joinComma(List<String> values, String fallbackRaw) {
+        List<String> resolved = splitCommaValue(values, fallbackRaw);
+        return String.join(",", resolved);
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value.trim();
+            }
+        }
+        return "";
+    }
+
     private List<ResumeProjectQuestionVO> parseQuestions(String raw) {
         if (!StringUtils.hasText(raw)) {
             return List.of();
@@ -448,6 +659,7 @@ public class ResumeServiceImpl implements ResumeService {
     }
 
     private record ResumeParseSnapshot(
+            String rawText,
             String summary,
             List<String> skills,
             String education,

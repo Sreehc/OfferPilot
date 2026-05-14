@@ -467,6 +467,8 @@ export interface ResumeProjectItem {
   projectSummary: string
   followUpQuestions: ResumeProjectQuestionItem[]
   riskHints: string[]
+  manualEdited?: boolean
+  sortOrder?: number
 }
 
 export interface ResumeSummaryItem {
@@ -479,12 +481,33 @@ export interface ResumeSummaryItem {
   education: string
   selfIntro: string
   interviewResumeText: string
+  parseError?: string
+  userFixStatus?: 'none' | 'pending' | 'updated' | string
   lastParsedAt?: string
   updateTime?: string
 }
 
 export interface ResumeFileDetail extends ResumeSummaryItem {
   projects: ResumeProjectItem[]
+}
+
+export interface EditableInterviewResumeProject {
+  projectId?: string
+  projectName: string
+  roleName: string
+  talkingPoint: string
+  result: string
+}
+
+export interface EditableInterviewResume {
+  headline: string
+  positioning: string
+  summary: string
+  skillKeywords: string[]
+  projectHighlights: EditableInterviewResumeProject[]
+  speakingChecklist: string[]
+  exportText: string
+  editable: boolean
 }
 
 export type JobApplicationStatus = 'saved' | 'applied' | 'written' | 'interview' | 'offer' | 'rejected'

@@ -1,6 +1,8 @@
 package com.offerpilot.resume.service;
 
+import com.offerpilot.resume.dto.ResumeUpdateRequest;
 import com.offerpilot.resume.vo.ResumeFileVO;
+import com.offerpilot.resume.vo.ResumeInterviewResumeVO;
 import com.offerpilot.resume.vo.ResumeProjectVO;
 import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,5 +20,9 @@ public interface ResumeService {
 
     String selfIntro(Long userId, Long resumeId);
 
-    String interviewResume(Long userId, Long resumeId);
+    ResumeInterviewResumeVO interviewResume(Long userId, Long resumeId);
+
+    ResumeFileVO retryParse(Long userId, Long resumeId);
+
+    ResumeFileVO update(Long userId, Long resumeId, ResumeUpdateRequest request);
 }

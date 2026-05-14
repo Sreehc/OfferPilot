@@ -20,6 +20,8 @@ public class ResumeFileVO {
     private String education;
     private String selfIntro;
     private String interviewResumeText;
+    private String parseError;
+    private String userFixStatus;
     private LocalDateTime lastParsedAt;
     private LocalDateTime updateTime;
     private List<ResumeProjectVO> projects;

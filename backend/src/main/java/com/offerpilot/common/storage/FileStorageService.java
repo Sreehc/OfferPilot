@@ -6,5 +6,7 @@ public interface FileStorageService {
 
     StoredFile store(StorageDirectory directory, String originalFilename, byte[] content, String contentType);
 
+    Resource loadPrivate(String storageKey);
+
     Resource loadPublic(String relativePath);
 }

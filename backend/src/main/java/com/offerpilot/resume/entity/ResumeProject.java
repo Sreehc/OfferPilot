@@ -19,5 +19,6 @@ public class ResumeProject extends BaseEntity {
     private String projectSummary;
     private String followUpQuestionsJson;
     private String riskHints;
+    private Integer manualEdited;
     private Integer sortOrder;
 }

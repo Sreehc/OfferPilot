@@ -21,5 +21,7 @@ public class ResumeFile extends BaseEntity {
     private String education;
     private String selfIntro;
     private String interviewResumeText;
+    private String parseError;
+    private String userFixStatus;
     private LocalDateTime lastParsedAt;
 }

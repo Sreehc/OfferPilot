@@ -67,6 +67,20 @@ public class LocalFileStorageService implements FileStorageService {
         return new FileSystemResource(target);
     }
 
+    @Override
+    public Resource loadPrivate(String storageKey) {
+        if (!StringUtils.hasText(storageKey) || !storageKey.startsWith("local://")) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "不支持的本地存储地址");
+        }
+        String relativePath = storageKey.substring("local://".length());
+        Path root = resolveRoot();
+        Path target = root.resolve(relativePath).normalize();
+        if (!target.startsWith(root) || !Files.exists(target) || !Files.isRegularFile(target)) {
+            throw new BusinessException(ResultCode.NOT_FOUND.getCode(), "文件不存在");
+        }
+        return new FileSystemResource(target);
+    }
+
     private Path resolveRoot() {
         return Paths.get(offerPilotProperties.getStorage().getLocalRoot()).toAbsolutePath().normalize();
     }

@@ -19,4 +19,6 @@ public class ResumeProjectVO {
     private String projectSummary;
     private List<ResumeProjectQuestionVO> followUpQuestions;
     private List<String> riskHints;
+    private Boolean manualEdited;
+    private Integer sortOrder;
 }
