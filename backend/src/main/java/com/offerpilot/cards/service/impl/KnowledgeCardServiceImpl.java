@@ -1096,6 +1096,7 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
                     .systemPrompt(promptTemplateService.knowledgeCardPrompt())
                     .userPrompt(prompt)
                     .references(List.of())
+                    .scene("cards.generate")
                     .build());
             String content = normalizeJson(response.getContent());
             List<GeneratedCardPayload> payloads =

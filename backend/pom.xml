@@ -10,11 +10,11 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.bytecoach</groupId>
-    <artifactId>bytecoach-backend</artifactId>
+    <groupId>com.offerpilot</groupId>
+    <artifactId>offerpilot-backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>bytecoach-backend</name>
-    <description>ByteCoach backend skeleton</description>
+    <name>offerpilot-backend</name>
+    <description>OfferPilot backend skeleton</description>
 
     <properties>
         <java.version>17</java.version>

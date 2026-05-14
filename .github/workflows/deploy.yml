@@ -1,4 +1,4 @@
-name: Deploy ByteCoach
+name: Deploy OfferPilot
 
 on:
   push:
@@ -12,8 +12,8 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  BACKEND_IMAGE: ghcr.io/sreehc/bytecoach-backend
-  FRONTEND_IMAGE: ghcr.io/sreehc/bytecoach-frontend
+  BACKEND_IMAGE: ghcr.io/sreehc/offerpilot-backend
+  FRONTEND_IMAGE: ghcr.io/sreehc/offerpilot-frontend
 
 jobs:
   build-and-deploy:
@@ -65,7 +65,7 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT || 22 }}
           source: "deploy/docker-compose.release.yml,deploy/redeploy.sh"
-          target: "/srv/bytecoach/deploy"
+          target: "/srv/offerpilot/deploy"
           strip_components: 1
 
       - name: Run deploy on server
@@ -76,8 +76,8 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT || 22 }}
           script: |
-            chmod +x /srv/bytecoach/deploy/redeploy.sh
+            chmod +x /srv/offerpilot/deploy/redeploy.sh
             GHCR_USERNAME='${{ secrets.GHCR_USERNAME }}' \
             GHCR_TOKEN='${{ secrets.GHCR_TOKEN }}' \
             IMAGE_TAG='${{ steps.meta.outputs.sha_tag }}' \
-            /srv/bytecoach/deploy/redeploy.sh
+            /srv/offerpilot/deploy/redeploy.sh

@@ -1,6 +1,6 @@
 import { ref, onMounted } from 'vue'
 
-const THEME_KEY = 'bytecoach_theme'
+const THEME_KEY = 'offerpilot_theme'
 
 type Theme = 'light' | 'dark'
 

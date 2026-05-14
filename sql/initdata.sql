@@ -1,7 +1,7 @@
--- ByteCoach 测试数据
+-- OfferPilot 测试数据
 -- 在 init.sql 执行后运行此文件，插入初始测试数据。
 
-USE bytecoach;
+USE offerpilot;
 SET NAMES utf8mb4;
 
 -- ============================================================
@@ -11,18 +11,18 @@ DELETE FROM user WHERE id BETWEEN 6 AND 12;
 
 INSERT INTO user (id, username, password, nickname, email, role, status, source, remark, last_login_time, create_time, update_time)
 VALUES
-    (1, 'demo', '$2a$10$0T3BFXGNjpcmWyfsFieXbudX82IlGMIC96SET0cfSUNFe40UPMjaC', 'ByteCoach', 'demo@bytecoach.local', 'ADMIN', 1, 'seed', '默认后台测试管理员', NOW() - INTERVAL 20 MINUTE, NOW() - INTERVAL 20 DAY, NOW()),
-    (2, 'learner', '$2a$10$0T3BFXGNjpcmWyfsFieXbudX82IlGMIC96SET0cfSUNFe40UPMjaC', '林简', 'linjian@bytecoach.local', 'USER', 1, 'seed', '主学习链路测试账号', NOW() - INTERVAL 1 HOUR, NOW() - INTERVAL 15 DAY, NOW()),
-    (3, 'mentor', '$2a$10$0T3BFXGNjpcmWyfsFieXbudX82IlGMIC96SET0cfSUNFe40UPMjaC', '周顾问', 'mentor@bytecoach.local', 'USER', 1, 'seed', '社区高活跃回答用户', NOW() - INTERVAL 4 HOUR, NOW() - INTERVAL 12 DAY, NOW()),
-    (4, 'teammate', '$2a$10$0T3BFXGNjpcmWyfsFieXbudX82IlGMIC96SET0cfSUNFe40UPMjaC', '陈同学', 'teammate@bytecoach.local', 'USER', 1, 'seed', '社区提问用户', NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 9 DAY, NOW()),
-    (5, 'reviewer', '$2a$10$0T3BFXGNjpcmWyfsFieXbudX82IlGMIC96SET0cfSUNFe40UPMjaC', '许面试官', 'reviewer@bytecoach.local', 'USER', 1, 'seed', '面试与内容审核测试用户', NOW() - INTERVAL 2 DAY, NOW() - INTERVAL 8 DAY, NOW()),
-    (6, 'ops_admin', '$2a$10$0T3BFXGNjpcmWyfsFieXbudX82IlGMIC96SET0cfSUNFe40UPMjaC', '运维台', 'ops@bytecoach.local', 'ADMIN', 1, 'seed', '第二管理员账号', NOW() - INTERVAL 35 MINUTE, NOW() - INTERVAL 7 DAY, NOW()),
-    (7, 'campus_newbie', '$2a$10$0T3BFXGNjpcmWyfsFieXbudX82IlGMIC96SET0cfSUNFe40UPMjaC', '校招练习生', 'campus@bytecoach.local', 'USER', 1, 'seed', '新注册轻度活跃用户', NOW() - INTERVAL 3 HOUR, NOW() - INTERVAL 2 DAY, NOW()),
-    (8, 'silent_reader', '$2a$10$0T3BFXGNjpcmWyfsFieXbudX82IlGMIC96SET0cfSUNFe40UPMjaC', '潜水用户', 'reader@bytecoach.local', 'USER', 1, 'seed', '只浏览不发言的用户', NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 6 DAY, NOW()),
-    (9, 'blocked_case', '$2a$10$0T3BFXGNjpcmWyfsFieXbudX82IlGMIC96SET0cfSUNFe40UPMjaC', '封禁样例', 'blocked@bytecoach.local', 'USER', 0, 'seed', '用于后台封禁状态展示', NOW() - INTERVAL 12 DAY, NOW() - INTERVAL 11 DAY, NOW()),
-    (10, 'pending_author', '$2a$10$0T3BFXGNjpcmWyfsFieXbudX82IlGMIC96SET0cfSUNFe40UPMjaC', '待审作者', 'pending@bytecoach.local', 'USER', 1, 'seed', '用于内容审核列表展示', NOW() - INTERVAL 2 HOUR, NOW() - INTERVAL 1 DAY, NOW()),
-    (11, 'answer_drafter', '$2a$10$0T3BFXGNjpcmWyfsFieXbudX82IlGMIC96SET0cfSUNFe40UPMjaC', '回答草稿人', 'drafter@bytecoach.local', 'USER', 1, 'seed', '用于不同回答状态展示', NOW() - INTERVAL 6 HOUR, NOW() - INTERVAL 4 DAY, NOW()),
-    (12, 'growth_user', '$2a$10$0T3BFXGNjpcmWyfsFieXbudX82IlGMIC96SET0cfSUNFe40UPMjaC', '成长样例', 'growth@bytecoach.local', 'USER', 1, 'seed', '用于排行榜与社区积分展示', NOW() - INTERVAL 50 MINUTE, NOW() - INTERVAL 3 DAY, NOW())
+    (1, 'demo', '$2a$10$0T3BFXGNjpcmWyfsFieXbudX82IlGMIC96SET0cfSUNFe40UPMjaC', 'OfferPilot', 'demo@offerpilot.local', 'ADMIN', 1, 'seed', '默认后台测试管理员', NOW() - INTERVAL 20 MINUTE, NOW() - INTERVAL 20 DAY, NOW()),
+    (2, 'learner', '$2a$10$0T3BFXGNjpcmWyfsFieXbudX82IlGMIC96SET0cfSUNFe40UPMjaC', '林简', 'linjian@offerpilot.local', 'USER', 1, 'seed', '主学习链路测试账号', NOW() - INTERVAL 1 HOUR, NOW() - INTERVAL 15 DAY, NOW()),
+    (3, 'mentor', '$2a$10$0T3BFXGNjpcmWyfsFieXbudX82IlGMIC96SET0cfSUNFe40UPMjaC', '周顾问', 'mentor@offerpilot.local', 'USER', 1, 'seed', '社区高活跃回答用户', NOW() - INTERVAL 4 HOUR, NOW() - INTERVAL 12 DAY, NOW()),
+    (4, 'teammate', '$2a$10$0T3BFXGNjpcmWyfsFieXbudX82IlGMIC96SET0cfSUNFe40UPMjaC', '陈同学', 'teammate@offerpilot.local', 'USER', 1, 'seed', '社区提问用户', NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 9 DAY, NOW()),
+    (5, 'reviewer', '$2a$10$0T3BFXGNjpcmWyfsFieXbudX82IlGMIC96SET0cfSUNFe40UPMjaC', '许面试官', 'reviewer@offerpilot.local', 'USER', 1, 'seed', '面试与内容审核测试用户', NOW() - INTERVAL 2 DAY, NOW() - INTERVAL 8 DAY, NOW()),
+    (6, 'ops_admin', '$2a$10$0T3BFXGNjpcmWyfsFieXbudX82IlGMIC96SET0cfSUNFe40UPMjaC', '运维台', 'ops@offerpilot.local', 'ADMIN', 1, 'seed', '第二管理员账号', NOW() - INTERVAL 35 MINUTE, NOW() - INTERVAL 7 DAY, NOW()),
+    (7, 'campus_newbie', '$2a$10$0T3BFXGNjpcmWyfsFieXbudX82IlGMIC96SET0cfSUNFe40UPMjaC', '校招练习生', 'campus@offerpilot.local', 'USER', 1, 'seed', '新注册轻度活跃用户', NOW() - INTERVAL 3 HOUR, NOW() - INTERVAL 2 DAY, NOW()),
+    (8, 'silent_reader', '$2a$10$0T3BFXGNjpcmWyfsFieXbudX82IlGMIC96SET0cfSUNFe40UPMjaC', '潜水用户', 'reader@offerpilot.local', 'USER', 1, 'seed', '只浏览不发言的用户', NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 6 DAY, NOW()),
+    (9, 'blocked_case', '$2a$10$0T3BFXGNjpcmWyfsFieXbudX82IlGMIC96SET0cfSUNFe40UPMjaC', '封禁样例', 'blocked@offerpilot.local', 'USER', 0, 'seed', '用于后台封禁状态展示', NOW() - INTERVAL 12 DAY, NOW() - INTERVAL 11 DAY, NOW()),
+    (10, 'pending_author', '$2a$10$0T3BFXGNjpcmWyfsFieXbudX82IlGMIC96SET0cfSUNFe40UPMjaC', '待审作者', 'pending@offerpilot.local', 'USER', 1, 'seed', '用于内容审核列表展示', NOW() - INTERVAL 2 HOUR, NOW() - INTERVAL 1 DAY, NOW()),
+    (11, 'answer_drafter', '$2a$10$0T3BFXGNjpcmWyfsFieXbudX82IlGMIC96SET0cfSUNFe40UPMjaC', '回答草稿人', 'drafter@offerpilot.local', 'USER', 1, 'seed', '用于不同回答状态展示', NOW() - INTERVAL 6 HOUR, NOW() - INTERVAL 4 DAY, NOW()),
+    (12, 'growth_user', '$2a$10$0T3BFXGNjpcmWyfsFieXbudX82IlGMIC96SET0cfSUNFe40UPMjaC', '成长样例', 'growth@offerpilot.local', 'USER', 1, 'seed', '用于排行榜与社区积分展示', NOW() - INTERVAL 50 MINUTE, NOW() - INTERVAL 3 DAY, NOW())
 ON DUPLICATE KEY UPDATE
     email = VALUES(email),
     password = VALUES(password),

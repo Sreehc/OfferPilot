@@ -3,13 +3,13 @@ services:
   # ───────── MySQL ─────────
   mysql:
     image: mysql:8.0
-    container_name: bytecoach-mysql
+    container_name: offerpilot-mysql
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${BYTECOACH_DB_NAME:-bytecoach}
-      MYSQL_USER: ${BYTECOACH_DB_USERNAME:-bytecoach}
-      MYSQL_PASSWORD: ${BYTECOACH_DB_PASSWORD:?Set BYTECOACH_DB_PASSWORD}
+      MYSQL_DATABASE: ${OFFERPILOT_DB_NAME:-offerpilot}
+      MYSQL_USER: ${OFFERPILOT_DB_USERNAME:-offerpilot}
+      MYSQL_PASSWORD: ${OFFERPILOT_DB_PASSWORD:?Set OFFERPILOT_DB_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
       - ./sql/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
@@ -21,35 +21,35 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - bytecoach
+      - offerpilot
 
   # ───────── Redis ─────────
   redis:
     image: redis/redis-stack-server:latest
-    container_name: bytecoach-redis
+    container_name: offerpilot-redis
     restart: unless-stopped
     volumes:
       - redis_data:/data
     command: >
       redis-server
       --appendonly yes
-      --requirepass ${BYTECOACH_REDIS_PASSWORD:-}
+      --requirepass ${OFFERPILOT_REDIS_PASSWORD:-}
       --loadmodule /opt/redis-stack/lib/redisearch.so
       --loadmodule /opt/redis-stack/lib/rejson.so
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${BYTECOACH_REDIS_PASSWORD:-}", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${OFFERPILOT_REDIS_PASSWORD:-}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - bytecoach
+      - offerpilot
 
   # ───────── Backend ─────────
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: bytecoach-backend
+    container_name: offerpilot-backend
     restart: unless-stopped
     depends_on:
       mysql:
@@ -59,37 +59,37 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: prod
       # Database
-      BYTECOACH_DB_HOST: mysql
-      BYTECOACH_DB_PORT: 3306
-      BYTECOACH_DB_NAME: ${BYTECOACH_DB_NAME:-bytecoach}
-      BYTECOACH_DB_USERNAME: ${BYTECOACH_DB_USERNAME:-bytecoach}
-      BYTECOACH_DB_PASSWORD: ${BYTECOACH_DB_PASSWORD:?Set BYTECOACH_DB_PASSWORD}
+      OFFERPILOT_DB_HOST: mysql
+      OFFERPILOT_DB_PORT: 3306
+      OFFERPILOT_DB_NAME: ${OFFERPILOT_DB_NAME:-offerpilot}
+      OFFERPILOT_DB_USERNAME: ${OFFERPILOT_DB_USERNAME:-offerpilot}
+      OFFERPILOT_DB_PASSWORD: ${OFFERPILOT_DB_PASSWORD:?Set OFFERPILOT_DB_PASSWORD}
       # Redis
-      BYTECOACH_REDIS_HOST: redis
-      BYTECOACH_REDIS_PORT: 6379
-      BYTECOACH_REDIS_PASSWORD: ${BYTECOACH_REDIS_PASSWORD:-}
+      OFFERPILOT_REDIS_HOST: redis
+      OFFERPILOT_REDIS_PORT: 6379
+      OFFERPILOT_REDIS_PASSWORD: ${OFFERPILOT_REDIS_PASSWORD:-}
       # Security
-      BYTECOACH_JWT_SECRET: ${BYTECOACH_JWT_SECRET:?Set BYTECOACH_JWT_SECRET}
-      BYTECOACH_JWT_EXPIRE_SECONDS: ${BYTECOACH_JWT_EXPIRE_SECONDS:-86400}
-      BYTECOACH_CORS_ORIGINS: ${BYTECOACH_CORS_ORIGINS:-http://localhost}
+      OFFERPILOT_JWT_SECRET: ${OFFERPILOT_JWT_SECRET:?Set OFFERPILOT_JWT_SECRET}
+      OFFERPILOT_JWT_EXPIRE_SECONDS: ${OFFERPILOT_JWT_EXPIRE_SECONDS:-86400}
+      OFFERPILOT_CORS_ORIGINS: ${OFFERPILOT_CORS_ORIGINS:-http://localhost}
       # LLM
-      BYTECOACH_LLM_ENABLED: ${BYTECOACH_LLM_ENABLED:-true}
-      BYTECOACH_LLM_BASE_URL: ${BYTECOACH_LLM_BASE_URL:-https://api.openai.com/v1}
-      BYTECOACH_LLM_API_KEY: ${BYTECOACH_LLM_API_KEY:-}
-      BYTECOACH_LLM_MODEL: ${BYTECOACH_LLM_MODEL:-gpt-4.1-mini}
-      BYTECOACH_LLM_TIMEOUT_SECONDS: ${BYTECOACH_LLM_TIMEOUT_SECONDS:-30}
+      OFFERPILOT_LLM_ENABLED: ${OFFERPILOT_LLM_ENABLED:-true}
+      OFFERPILOT_LLM_BASE_URL: ${OFFERPILOT_LLM_BASE_URL:-https://api.openai.com/v1}
+      OFFERPILOT_LLM_API_KEY: ${OFFERPILOT_LLM_API_KEY:-}
+      OFFERPILOT_LLM_MODEL: ${OFFERPILOT_LLM_MODEL:-gpt-4.1-mini}
+      OFFERPILOT_LLM_TIMEOUT_SECONDS: ${OFFERPILOT_LLM_TIMEOUT_SECONDS:-30}
       # Embedding
-      BYTECOACH_EMBEDDING_ENABLED: ${BYTECOACH_EMBEDDING_ENABLED:-false}
-      BYTECOACH_EMBEDDING_BASE_URL: ${BYTECOACH_EMBEDDING_BASE_URL:-${BYTECOACH_LLM_BASE_URL:-https://api.openai.com/v1}}
-      BYTECOACH_EMBEDDING_API_KEY: ${BYTECOACH_EMBEDDING_API_KEY:-${BYTECOACH_LLM_API_KEY:-}}
-      BYTECOACH_EMBEDDING_MODEL: ${BYTECOACH_EMBEDDING_MODEL:-text-embedding-3-small}
-      BYTECOACH_EMBEDDING_DIMENSIONS: ${BYTECOACH_EMBEDDING_DIMENSIONS:-1536}
-      BYTECOACH_VECTOR_THRESHOLD: ${BYTECOACH_VECTOR_THRESHOLD:-0.3}
+      OFFERPILOT_EMBEDDING_ENABLED: ${OFFERPILOT_EMBEDDING_ENABLED:-false}
+      OFFERPILOT_EMBEDDING_BASE_URL: ${OFFERPILOT_EMBEDDING_BASE_URL:-${OFFERPILOT_LLM_BASE_URL:-https://api.openai.com/v1}}
+      OFFERPILOT_EMBEDDING_API_KEY: ${OFFERPILOT_EMBEDDING_API_KEY:-${OFFERPILOT_LLM_API_KEY:-}}
+      OFFERPILOT_EMBEDDING_MODEL: ${OFFERPILOT_EMBEDDING_MODEL:-text-embedding-3-small}
+      OFFERPILOT_EMBEDDING_DIMENSIONS: ${OFFERPILOT_EMBEDDING_DIMENSIONS:-1536}
+      OFFERPILOT_VECTOR_THRESHOLD: ${OFFERPILOT_VECTOR_THRESHOLD:-0.3}
       # Business
-      BYTECOACH_WRONG_THRESHOLD: ${BYTECOACH_WRONG_THRESHOLD:-60}
-      BYTECOACH_AI_QUOTA: ${BYTECOACH_AI_QUOTA:-100}
-      BYTECOACH_RATE_LIMIT: ${BYTECOACH_RATE_LIMIT:-60}
-      BYTECOACH_RATE_WINDOW: ${BYTECOACH_RATE_WINDOW:-60}
+      OFFERPILOT_WRONG_THRESHOLD: ${OFFERPILOT_WRONG_THRESHOLD:-60}
+      OFFERPILOT_AI_QUOTA: ${OFFERPILOT_AI_QUOTA:-100}
+      OFFERPILOT_RATE_LIMIT: ${OFFERPILOT_RATE_LIMIT:-60}
+      OFFERPILOT_RATE_WINDOW: ${OFFERPILOT_RATE_WINDOW:-60}
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/actuator/health"]
       interval: 15s
@@ -97,27 +97,27 @@ services:
       retries: 3
       start_period: 30s
     networks:
-      - bytecoach
+      - offerpilot
 
   # ───────── Frontend ─────────
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: bytecoach-frontend
+    container_name: offerpilot-frontend
     restart: unless-stopped
     depends_on:
       backend:
         condition: service_healthy
     ports:
-      - "${BYTECOACH_HTTP_PORT:-80}:80"
+      - "${OFFERPILOT_HTTP_PORT:-80}:80"
     networks:
-      - bytecoach
+      - offerpilot
 
 volumes:
   mysql_data:
   redis_data:
 
 networks:
-  bytecoach:
+  offerpilot:
     driver: bridge

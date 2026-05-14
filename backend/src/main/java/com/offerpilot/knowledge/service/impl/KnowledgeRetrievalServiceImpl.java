@@ -60,7 +60,7 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
     }
 
     private List<ScoredChunk> vectorSearch(String query, int limit, String knowledgeScope, Long userId) {
-        float[] queryEmbedding = embeddingGateway.embed(query);
+        float[] queryEmbedding = embeddingGateway.embed(query, "knowledge.search");
         if (queryEmbedding.length == 0) {
             log.debug("Embedding disabled or failed, skipping vector search");
             return List.of();

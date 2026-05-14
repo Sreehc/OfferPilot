@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-    <springProperty scope="context" name="APP_NAME" source="spring.application.name" defaultValue="bytecoach"/>
+    <springProperty scope="context" name="APP_NAME" source="spring.application.name" defaultValue="offerpilot"/>
     <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
 
     <!-- Console output (all profiles) -->
@@ -50,7 +50,7 @@
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
         </root>
-        <logger name="com.bytecoach" level="DEBUG"/>
+        <logger name="com.offerpilot" level="DEBUG"/>
     </springProfile>
 
     <!-- Prod profile: console + file + error file -->
@@ -60,7 +60,7 @@
             <appender-ref ref="FILE"/>
             <appender-ref ref="ERROR_FILE"/>
         </root>
-        <logger name="com.bytecoach" level="INFO"/>
+        <logger name="com.offerpilot" level="INFO"/>
         <logger name="org.springframework.security" level="WARN"/>
     </springProfile>
 

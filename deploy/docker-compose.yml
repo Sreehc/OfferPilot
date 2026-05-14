@@ -3,15 +3,15 @@ version: '3.8'
 services:
   mysql:
     image: mysql:8.0
-    container_name: bytecoach-mysql
+    container_name: offerpilot-mysql
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
-      MYSQL_DATABASE: ${BYTECOACH_DB_NAME:-bytecoach}
-      MYSQL_USER: ${BYTECOACH_DB_USERNAME:-bytecoach}
-      MYSQL_PASSWORD: ${BYTECOACH_DB_PASSWORD:-bytecoach}
+      MYSQL_DATABASE: ${OFFERPILOT_DB_NAME:-offerpilot}
+      MYSQL_USER: ${OFFERPILOT_DB_USERNAME:-offerpilot}
+      MYSQL_PASSWORD: ${OFFERPILOT_DB_PASSWORD:-offerpilot}
     ports:
-      - "${BYTECOACH_DB_PORT:-3306}:3306"
+      - "${OFFERPILOT_DB_PORT:-3306}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
@@ -23,10 +23,10 @@ services:
 
   redis:
     image: redis/redis-stack-server:latest
-    container_name: bytecoach-redis
+    container_name: offerpilot-redis
     restart: unless-stopped
     ports:
-      - "${BYTECOACH_REDIS_PORT:-6379}:6379"
+      - "${OFFERPILOT_REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes --loadmodule /opt/redis-stack/lib/redisearch.so --loadmodule /opt/redis-stack/lib/rejson.so
@@ -40,7 +40,7 @@ services:
     build:
       context: ../backend
       dockerfile: Dockerfile
-    container_name: bytecoach-backend
+    container_name: offerpilot-backend
     restart: unless-stopped
     depends_on:
       mysql:
@@ -49,33 +49,33 @@ services:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      BYTECOACH_DB_HOST: mysql
-      BYTECOACH_DB_PORT: 3306
-      BYTECOACH_DB_NAME: ${BYTECOACH_DB_NAME:-bytecoach}
-      BYTECOACH_DB_USERNAME: ${BYTECOACH_DB_USERNAME:-bytecoach}
-      BYTECOACH_DB_PASSWORD: ${BYTECOACH_DB_PASSWORD:-bytecoach}
-      BYTECOACH_REDIS_HOST: redis
-      BYTECOACH_REDIS_PORT: 6379
-      BYTECOACH_REDIS_PASSWORD: ${BYTECOACH_REDIS_PASSWORD:-}
-      BYTECOACH_JWT_SECRET: ${BYTECOACH_JWT_SECRET:?Set BYTECOACH_JWT_SECRET}
-      BYTECOACH_CORS_ORIGINS: ${BYTECOACH_CORS_ORIGINS:-http://localhost}
-      BYTECOACH_LLM_ENABLED: ${BYTECOACH_LLM_ENABLED:-true}
-      BYTECOACH_LLM_BASE_URL: ${BYTECOACH_LLM_BASE_URL:-https://api.openai.com/v1}
-      BYTECOACH_LLM_API_KEY: ${BYTECOACH_LLM_API_KEY:-}
-      BYTECOACH_LLM_MODEL: ${BYTECOACH_LLM_MODEL:-gpt-4.1-mini}
+      OFFERPILOT_DB_HOST: mysql
+      OFFERPILOT_DB_PORT: 3306
+      OFFERPILOT_DB_NAME: ${OFFERPILOT_DB_NAME:-offerpilot}
+      OFFERPILOT_DB_USERNAME: ${OFFERPILOT_DB_USERNAME:-offerpilot}
+      OFFERPILOT_DB_PASSWORD: ${OFFERPILOT_DB_PASSWORD:-offerpilot}
+      OFFERPILOT_REDIS_HOST: redis
+      OFFERPILOT_REDIS_PORT: 6379
+      OFFERPILOT_REDIS_PASSWORD: ${OFFERPILOT_REDIS_PASSWORD:-}
+      OFFERPILOT_JWT_SECRET: ${OFFERPILOT_JWT_SECRET:?Set OFFERPILOT_JWT_SECRET}
+      OFFERPILOT_CORS_ORIGINS: ${OFFERPILOT_CORS_ORIGINS:-http://localhost}
+      OFFERPILOT_LLM_ENABLED: ${OFFERPILOT_LLM_ENABLED:-true}
+      OFFERPILOT_LLM_BASE_URL: ${OFFERPILOT_LLM_BASE_URL:-https://api.openai.com/v1}
+      OFFERPILOT_LLM_API_KEY: ${OFFERPILOT_LLM_API_KEY:-}
+      OFFERPILOT_LLM_MODEL: ${OFFERPILOT_LLM_MODEL:-gpt-4.1-mini}
     ports:
-      - "${BYTECOACH_BACKEND_PORT:-8080}:8080"
+      - "${OFFERPILOT_BACKEND_PORT:-8080}:8080"
 
   frontend:
     build:
       context: ../frontend
       dockerfile: Dockerfile
-    container_name: bytecoach-frontend
+    container_name: offerpilot-frontend
     restart: unless-stopped
     depends_on:
       - backend
     ports:
-      - "${BYTECOACH_HTTP_PORT:-80}:80"
+      - "${OFFERPILOT_HTTP_PORT:-80}:80"
 
 volumes:
   mysql_data:

@@ -1,9 +1,9 @@
 import type { UserInfo } from '@/types/api'
 
-const TOKEN_KEY = 'bytecoach_token'
-const USER_KEY = 'bytecoach_user'
+const TOKEN_KEY = 'offerpilot_token'
+const USER_KEY = 'offerpilot_user'
 
-const guideKey = (userId: number | string) => `bytecoach_guide_seen_${userId}`
+const guideKey = (userId: number | string) => `offerpilot_guide_seen_${userId}`
 
 export const storage = {
   getToken: (): string | null => localStorage.getItem(TOKEN_KEY),
