@@ -774,6 +774,8 @@ const detail = ref<InterviewDetail | null>(null)
 const expandedQuestions = ref<Set<string>>(new Set())
 const recentInterviews = ref<InterviewHistoryItem[]>([])
 const loadingHistory = ref(false)
+const seededQuestionTitle = ref('')
+const seededQuestionMeta = ref('')
 
 const draftContextSource = computed<ContextSource | null>(() => {
   if (interviewContextPath.value === 'project') {
@@ -806,7 +808,9 @@ const draftContextSource = computed<ContextSource | null>(() => {
   return {
     type: 'general',
     label: '通用模拟',
-    summary: '本轮以通用方向题为主，不绑定特定简历或项目。'
+    summary: seededQuestionTitle.value
+      ? `本轮会优先围绕题目「${seededQuestionTitle.value}」练表达${seededQuestionMeta.value ? `，重点参考${seededQuestionMeta.value}` : ''}。`
+      : '本轮以通用方向题为主，不绑定特定简历或项目。'
   }
 })
 
@@ -1157,10 +1161,25 @@ const handleNewInterview = () => {
   voiceTranscript.value = ''
 }
 
+const applyQuestionSeedFromRoute = () => {
+  const title = String(route.query.sourceQuestionTitle || '').trim()
+  if (!title) return
+  const category = String(route.query.sourceQuestionCategory || '').trim()
+  const tag = String(route.query.sourceQuestionTag || '').trim()
+  const directionQuery = String(route.query.sourceQuestionDirection || '').trim()
+  seededQuestionTitle.value = title
+  seededQuestionMeta.value = [category, directionQuery, tag].filter(Boolean).join(' / ')
+  if (directionQuery && directions.some((item) => item.name === directionQuery)) {
+    direction.value = directionQuery
+  }
+  interviewContextPath.value = 'general'
+}
+
 onMounted(() => {
   // Load recent interviews for idle state
   void loadRecentInterviews()
   void loadResumes()
+  applyQuestionSeedFromRoute()
 
   // Check voice availability
   void fetchVoiceStatusApi()

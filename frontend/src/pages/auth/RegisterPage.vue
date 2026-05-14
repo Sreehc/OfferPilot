@@ -24,26 +24,26 @@
         <div class="mt-10 grid gap-4 sm:grid-cols-3">
           <div class="auth-feature-card">
             <div class="auth-feature-card__title">
-              邮箱恢复
+              保存训练记录
             </div>
             <p class="auth-feature-card__desc">
-              注册后验证邮箱，后面忘记密码时可以更快找回账号。
+              题库、问答、模拟面试和投递记录都会跟着同一个账号走。
             </p>
           </div>
           <div class="auth-feature-card">
             <div class="auth-feature-card__title">
-              资料集中管理
+              整理你的资料
             </div>
             <p class="auth-feature-card__desc">
-              训练记录、文档和个人资料都会跟着同一个账号走。
+              上传资料、整理简历和项目后，后续训练会更连贯。
             </p>
           </div>
           <div class="auth-feature-card">
             <div class="auth-feature-card__title">
-              更多登录方式
+              方便找回账号
             </div>
             <p class="auth-feature-card__desc">
-              以后开放 GitHub 登录时，你可以直接在这里切换使用。
+              先填好邮箱，后面忘记密码时可以更快恢复登录。
             </p>
           </div>
         </div>

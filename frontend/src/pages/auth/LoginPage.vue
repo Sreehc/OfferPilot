@@ -23,36 +23,27 @@
 
         <div class="mt-10 grid gap-4 sm:grid-cols-3">
           <div class="auth-feature-card">
-            <div class="auth-feature-card__icon">
-              🧠
-            </div>
             <p class="auth-feature-card__title">
-              AI 间隔记忆
+              继续刷题
             </p>
             <p class="auth-feature-card__desc">
-              根据遗忘曲线自动安排复习，科学高效。
+              回到你正在准备的方向，继续筛题、看答案和补表达。
             </p>
           </div>
           <div class="auth-feature-card">
-            <div class="auth-feature-card__icon">
-              🎯
-            </div>
             <p class="auth-feature-card__title">
-              模拟面试
+              继续问答
             </p>
             <p class="auth-feature-card__desc">
-              AI 评分 + 标准答案 + 追问，查漏补缺。
+              结合资料、简历或项目，把没讲清楚的问题继续问下去。
             </p>
           </div>
           <div class="auth-feature-card">
-            <div class="auth-feature-card__icon">
-              📚
-            </div>
             <p class="auth-feature-card__title">
-              知识卡片
+              继续模拟面试
             </p>
             <p class="auth-feature-card__desc">
-              上传资料，自动生成结构化学习卡片。
+              回看上次表现，再开始一轮新的模拟面试。
             </p>
           </div>
         </div>
@@ -171,19 +162,13 @@
               <div class="flex items-center justify-between gap-3">
                 <div>
                   <p class="text-sm font-semibold text-ink">
-                    其他登录方式
+                    当前登录方式
                   </p>
                   <p class="mt-1 text-xs leading-6 text-secondary">
-                    GitHub 登录准备好后，会直接出现在这里。
+                    现在使用用户名和密码登录，忘记密码时可通过邮箱验证码重置。
                   </p>
                 </div>
-                <button
-                  type="button"
-                  class="hard-button-secondary text-sm"
-                  :disabled="!githubProvider?.enabled"
-                >
-                  {{ githubProvider?.enabled ? '使用 GitHub 登录' : 'GitHub 登录暂未开放' }}
-                </button>
+                <span class="detail-pill">账号密码登录</span>
               </div>
             </div>
           </div>
@@ -198,9 +183,8 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { fetchCaptchaApi, fetchOAuthProvidersApi, type LoginPayload } from '@/api/auth'
+import { fetchCaptchaApi, type LoginPayload } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
-import type { OAuthProviderInfo } from '@/types/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -210,11 +194,9 @@ const loading = ref(false)
 const failCount = ref(0)
 const captchaImage = ref('')
 const captchaKey = ref('')
-const oauthProviders = ref<OAuthProviderInfo[]>([])
 
 const showCaptcha = computed(() => failCount.value >= 3)
 const redirectTarget = computed(() => (route.query.redirect as string) || '/dashboard')
-const githubProvider = computed(() => oauthProviders.value.find((item) => item.provider === 'github') ?? null)
 const form = reactive({
   username: '',
   password: '',
@@ -233,15 +215,6 @@ const refreshCaptcha = async () => {
     captchaImage.value = response.data.image
   } catch {
     // Silently fail
-  }
-}
-
-const loadOAuthProviders = async () => {
-  try {
-    const response = await fetchOAuthProvidersApi()
-    oauthProviders.value = response.data
-  } catch {
-    oauthProviders.value = []
   }
 }
 
@@ -291,7 +264,7 @@ const handleLogin = async () => {
 }
 
 onMounted(() => {
-  void loadOAuthProviders()
+  void refreshCaptcha()
 })
 </script>
 

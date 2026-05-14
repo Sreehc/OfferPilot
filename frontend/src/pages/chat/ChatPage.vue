@@ -231,7 +231,7 @@
                   </div>
 
                   <div v-else-if="!messages.length && !streaming" class="chat-empty-wrap">
-                    <EmptyState icon="chat" title="开始提问" description="输入问题即可。" compact />
+                    <EmptyState icon="chat" title="开始提问" :description="emptyStateDescription" compact />
                     <div class="prompt-suggestions">
                       <button
                         v-for="suggestion in promptSuggestions"
@@ -481,6 +481,7 @@ import { ElMessage } from 'element-plus'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
 import { deleteChatSessionApi, fetchChatMessagesApi, fetchChatSessionsApi } from '@/api/chat'
 import { fetchResumeDetailApi, fetchResumeListApi } from '@/api/resume'
@@ -498,6 +499,7 @@ import { getStoredDeviceId } from '@/utils/device'
 
 type SessionFilterValue = 'all' | 'rag' | 'chat'
 type ElTextareaInstance = ComponentPublicInstance<{ focus?: () => void }>
+const route = useRoute()
 
 const sessions = ref<ChatSessionItem[]>([])
 const messages = ref<ChatMessageItem[]>([])
@@ -532,6 +534,7 @@ const loadingResumes = ref(false)
 const selectedResumeId = ref('')
 const selectedProjectId = ref('')
 const resumeProjects = ref<ResumeProjectItem[]>([])
+const seededQuestionSummary = ref('')
 
 const sessionFilters: Array<{ label: string; value: SessionFilterValue }> = [
   { label: '全部', value: 'all' },
@@ -567,6 +570,8 @@ const activeSessionTitle = computed(() => {
   return activeSession.value?.title || '当前会话'
 })
 
+const sourceQuestionTitle = computed(() => String(route.query.sourceQuestionTitle || '').trim())
+
 const draftContextSource = computed<ContextSource | null>(() => {
   if (chatPath.value === 'project') {
     const resume = resumes.value.find((item) => item.id === selectedResumeId.value)
@@ -580,10 +585,10 @@ const draftContextSource = computed<ContextSource | null>(() => {
       projectId: project?.id,
       projectName: project?.projectName,
       summary: project
-        ? `当前会优先围绕项目「${project.projectName}」回答，并检索${knowledgeScopeLabel(knowledgeScope.value)}。`
+        ? seededQuestionSummary.value || `当前会优先围绕项目「${project.projectName}」回答，并检索${knowledgeScopeLabel(knowledgeScope.value)}。`
         : resume
-          ? `当前会优先结合简历《${resume.title}》回答，并检索${knowledgeScopeLabel(knowledgeScope.value)}。`
-          : '先选一份简历，再决定要不要锁定到某个项目。'
+          ? seededQuestionSummary.value || `当前会优先结合简历《${resume.title}》回答，并检索${knowledgeScopeLabel(knowledgeScope.value)}。`
+          : seededQuestionSummary.value || '先选一份简历，再决定要不要锁定到某个项目。'
     }
   }
   if (chatPath.value === 'knowledge') {
@@ -591,13 +596,13 @@ const draftContextSource = computed<ContextSource | null>(() => {
       type: 'knowledge',
       label: '资料上下文',
       knowledgeScope: knowledgeScope.value,
-      summary: `当前会优先基于${knowledgeScopeLabel(knowledgeScope.value)}里的资料回答。`
+      summary: seededQuestionSummary.value || `当前会优先基于${knowledgeScopeLabel(knowledgeScope.value)}里的资料回答。`
     }
   }
   return {
     type: 'general',
     label: '自由提问',
-    summary: '当前不会绑定资料、简历或项目，适合直接追问原理、场景和表达。'
+    summary: seededQuestionSummary.value || '当前不会绑定资料、简历或项目，适合直接追问原理、场景和表达。'
   }
 })
 
@@ -612,6 +617,13 @@ const composerContextHint = computed(() => {
     return `会优先检索${knowledgeScopeLabel(knowledgeScope.value)}`
   }
   return '不绑定额外上下文'
+})
+
+const emptyStateDescription = computed(() => {
+  if (sourceQuestionTitle.value) {
+    return `当前会围绕「${sourceQuestionTitle.value}」继续提问。`
+  }
+  return '输入问题即可。'
 })
 
 const filteredSessions = computed(() => {
@@ -811,6 +823,20 @@ const startNewSession = () => {
   sessionDrawerVisible.value = false
   autoStickToBottom.value = true
   focusComposer()
+}
+
+const applyQuestionSeedFromRoute = () => {
+  if (!sourceQuestionTitle.value || activeSessionId.value) return
+  const meta = [route.query.sourceQuestionCategory, route.query.sourceQuestionDirection, route.query.sourceQuestionTag]
+    .map((item) => String(item || '').trim())
+    .filter(Boolean)
+  seededQuestionSummary.value = meta.length
+    ? `当前会优先围绕题目「${sourceQuestionTitle.value}」继续提问，重点参考${meta.join(' / ')}。`
+    : `当前会优先围绕题目「${sourceQuestionTitle.value}」继续提问。`
+  prompt.value = `围绕题目「${sourceQuestionTitle.value}」继续追问，帮我补充答案结构、常见追问和更好的表达方式。`
+  if (chatPath.value === 'general') {
+    applyChatPath('knowledge')
+  }
 }
 
 const applySessionContext = (session: ChatSessionItem) => {
@@ -1135,6 +1161,7 @@ const syncViewport = () => {
 
 onMounted(async () => {
   await Promise.all([loadSessions(true), loadResumes()])
+  applyQuestionSeedFromRoute()
   syncViewport()
   window.addEventListener('resize', syncViewport)
   focusComposer()
@@ -1152,6 +1179,15 @@ watch(selectedResumeId, async (resumeId) => {
   }
   await loadResumeProjects(resumeId)
 })
+
+watch(
+  () => route.fullPath,
+  () => {
+    if (!activeSessionId.value) {
+      applyQuestionSeedFromRoute()
+    }
+  }
+)
 </script>
 
 <style scoped>

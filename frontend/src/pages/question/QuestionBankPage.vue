@@ -19,34 +19,23 @@
 
     <section class="space-y-4">
       <section class="shell-section-card p-5 sm:p-6">
-        <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <div class="min-w-0 max-w-3xl">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div class="min-w-0 max-w-2xl">
             <h2 class="text-2xl font-semibold tracking-[-0.03em] text-ink">先筛出你现在最该练的题</h2>
             <p class="mt-3 text-sm leading-7 text-secondary">
-              按分类、难度、岗位方向和标签缩小范围，再决定是直接刷题、追问还是去做模拟面试。
+              先搜题或选一个基础筛选，题目会马上出现在下面。需要更精细的范围时，再展开更多筛选。
             </p>
           </div>
-          <div class="grid gap-3 sm:grid-cols-4">
-            <article class="question-summary-card">
-              <span>当前页题目</span>
-              <strong>{{ questions.length }}</strong>
-            </article>
-            <article class="question-summary-card">
-              <span>困难题</span>
-              <strong>{{ hardQuestionCount }}</strong>
-            </article>
-            <article class="question-summary-card">
-              <span>带标签题目</span>
-              <strong>{{ taggedQuestionCount }}</strong>
-            </article>
-            <article class="question-summary-card">
-              <span>岗位向题目</span>
-              <strong>{{ directionalQuestionCount }}</strong>
-            </article>
-          </div>
+          <button
+            type="button"
+            class="hard-button-secondary shrink-0"
+            @click="showAdvancedFilters = !showAdvancedFilters"
+          >
+            {{ showAdvancedFilters ? '收起更多筛选' : '展开更多筛选' }}
+          </button>
         </div>
 
-        <div class="mt-5 grid gap-3 xl:grid-cols-[1.1fr_180px_180px_220px_220px_220px_auto]">
+        <div class="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_auto]">
             <el-input
               v-model="filters.keyword"
               clearable
@@ -130,6 +119,63 @@
               </el-button>
             </div>
           </div>
+
+        <div v-if="showAdvancedFilters" class="mt-3 grid gap-3 xl:grid-cols-[180px_220px_220px_220px_auto]">
+            <el-select
+              v-model="filters.difficulty"
+              clearable
+              size="large"
+              placeholder="难度"
+            >
+              <el-option
+                label="简单"
+                value="easy"
+              />
+              <el-option
+                label="中等"
+                value="medium"
+              />
+              <el-option
+                label="困难"
+                value="hard"
+              />
+            </el-select>
+            <el-select
+              v-model="filters.type"
+              clearable
+              size="large"
+              placeholder="题目类型"
+            >
+              <el-option label="八股题" value="concept" />
+              <el-option label="场景题" value="scenario" />
+              <el-option label="项目题" value="project" />
+              <el-option label="算法题" value="coding" />
+            </el-select>
+            <el-input
+              v-model="filters.jobDirection"
+              clearable
+              size="large"
+              placeholder="岗位方向，如 Java 后端 / 校招"
+              @keyup.enter="applyFilters"
+            />
+            <el-input
+              v-model="filters.tag"
+              clearable
+              size="large"
+              placeholder="标签，如 Redis / 并发 / 微服务"
+              @keyup.enter="applyFilters"
+            />
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+              <article class="question-summary-card">
+                <span>当前页题目</span>
+                <strong>{{ questions.length }}</strong>
+              </article>
+              <article class="question-summary-card">
+                <span>困难题 / 带标签题</span>
+                <strong>{{ hardQuestionCount }} / {{ taggedQuestionCount }}</strong>
+              </article>
+            </div>
+          </div>
       </section>
 
       <section
@@ -178,16 +224,16 @@
                 查看详情
               </button>
               <RouterLink
-                to="/chat"
+                :to="questionChatTarget(item)"
                 class="hard-button-secondary text-sm"
               >
-                继续追问
+                去问这个问题
               </RouterLink>
               <RouterLink
-                to="/interview"
+                :to="questionInterviewTarget(item)"
                 class="hard-button-primary text-sm"
               >
-                去练表达
+                去做表达练习
               </RouterLink>
             </div>
           </div>
@@ -333,6 +379,7 @@ const categories = ref<CategoryItem[]>([])
 const questions = ref<QuestionItem[]>([])
 const detailVisible = ref(false)
 const selectedQuestion = ref<QuestionItem | null>(null)
+const showAdvancedFilters = ref(false)
 
 const filters = reactive<{
   categoryId?: number
@@ -352,7 +399,6 @@ const filters = reactive<{
 
 const hardQuestionCount = computed(() => questions.value.filter((item) => item.difficulty === 'hard').length)
 const taggedQuestionCount = computed(() => questions.value.filter((item) => tagList(item.tags).length > 0).length)
-const directionalQuestionCount = computed(() => questions.value.filter((item) => Boolean(item.jobDirection?.trim())).length)
 
 const loadCategories = async () => {
   try {
@@ -448,6 +494,28 @@ const openDetail = (question: QuestionItem) => {
   selectedQuestion.value = question
   detailVisible.value = true
 }
+
+const questionChatTarget = (question: QuestionItem) => ({
+  path: '/chat',
+  query: {
+    sourceQuestionId: String(question.id),
+    sourceQuestionTitle: question.title,
+    sourceQuestionCategory: question.categoryName || '',
+    sourceQuestionTag: tagList(question.tags)[0] || '',
+    sourceQuestionDirection: question.jobDirection || ''
+  }
+})
+
+const questionInterviewTarget = (question: QuestionItem) => ({
+  path: '/interview',
+  query: {
+    sourceQuestionId: String(question.id),
+    sourceQuestionTitle: question.title,
+    sourceQuestionCategory: question.categoryName || '',
+    sourceQuestionTag: tagList(question.tags)[0] || '',
+    sourceQuestionDirection: question.jobDirection || ''
+  }
+})
 
 onMounted(() => {
   void Promise.all([loadCategories(), loadQuestions()])
