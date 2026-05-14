@@ -2,7 +2,7 @@
   <div class="admin-tool-grid">
     <aside class="space-y-4">
       <section class="surface-muted p-4">
-        <p class="section-kicker">筛选与动作</p>
+        <div class="text-sm font-semibold text-ink">筛选文档</div>
         <div class="mt-4 grid gap-3">
           <el-select v-model="filter.categoryId" clearable placeholder="按分类" size="large">
             <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
@@ -20,11 +20,6 @@
             <el-option label="PDF" value="pdf" />
             <el-option label="DOC" value="doc" />
             <el-option label="DOCX" value="docx" />
-          </el-select>
-          <el-select v-model="filter.status" clearable placeholder="按状态" size="large">
-            <el-option label="草稿" value="draft" />
-            <el-option label="已解析" value="parsed" />
-            <el-option label="已索引" value="indexed" />
           </el-select>
           <el-select v-model="filter.parseStatus" clearable placeholder="解析状态" size="large">
             <el-option label="处理中" value="pending" />
@@ -51,8 +46,43 @@
         </div>
       </section>
 
+      <section class="surface-card p-4">
+        <div class="text-sm font-semibold text-ink">补救失败文档</div>
+        <div class="mt-4 grid gap-3">
+          <article class="surface-muted p-4">
+            <div class="text-xs uppercase tracking-[0.18em] text-tertiary">解析失败</div>
+            <div class="mt-2 text-2xl font-semibold text-ink">{{ failedParseDocs.length }}</div>
+            <p class="mt-2 text-sm text-secondary">优先重试当前列表里的解析失败文档。</p>
+          </article>
+          <article class="surface-muted p-4">
+            <div class="text-xs uppercase tracking-[0.18em] text-tertiary">索引失败</div>
+            <div class="mt-2 text-2xl font-semibold text-ink">{{ failedIndexDocs.length }}</div>
+            <p class="mt-2 text-sm text-secondary">索引失败时直接重建当前列表里的索引。</p>
+          </article>
+        </div>
+        <div class="mt-4 grid gap-3">
+          <el-button
+            :disabled="!failedParseDocs.length"
+            :loading="batchActionId === 'rechunk-batch'"
+            class="hard-button-secondary"
+            @click="emit('batchRechunk', failedParseDocs)"
+          >
+            重试当前列表的解析失败文档
+          </el-button>
+          <el-button
+            :disabled="!failedIndexDocs.length"
+            :loading="batchActionId === 'reindex-batch'"
+            type="primary"
+            class="action-button"
+            @click="emit('batchReindex', failedIndexDocs)"
+          >
+            重建当前列表的失败索引
+          </el-button>
+        </div>
+      </section>
+
       <section v-if="seedPanelOpen" class="surface-card p-4">
-        <div class="text-sm font-semibold text-ink">导入内置资料</div>
+        <div class="text-sm font-semibold text-ink">导入资料</div>
         <div class="mt-4 space-y-3">
           <article v-for="seed in seeds" :key="seed.seedKey" class="surface-muted p-4">
             <div class="font-semibold text-ink">{{ seed.title }}</div>
@@ -70,7 +100,7 @@
       <section v-if="searchPanelOpen" class="surface-card p-4">
         <div class="text-sm font-semibold text-ink">检索验证</div>
         <div class="mt-4 grid gap-3">
-          <el-input v-model="searchQuery" placeholder="例如：JVM 垃圾回收器分类以及 CMS 和 G1 的差异" size="large" />
+          <el-input v-model="searchQuery" placeholder="输入一个问题，检查检索结果是否可用" size="large" />
           <el-button :loading="searching" type="primary" class="action-button" @click="runSearch">
             {{ searching ? '检索中...' : '开始检索' }}
           </el-button>
@@ -82,10 +112,10 @@
       <header class="shell-section-card p-5">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p class="section-kicker">文档列表</p>
-            <h3 class="admin-section-title mt-3">共 {{ total }} 份文档</h3>
+            <h3 class="admin-section-title">查看文档并执行治理</h3>
+            <p class="mt-2 text-sm text-secondary">优先看失败状态，再决定重试解析还是重建索引。</p>
           </div>
-          <div class="text-sm text-slate-500">按分类、状态或关键词筛选</div>
+          <div class="text-sm text-slate-500">共 {{ total }} 份文档</div>
         </div>
       </header>
 
@@ -122,9 +152,11 @@
         <div v-if="docs.length" class="divide-y divide-slate-200/70 dark:divide-slate-700/70">
           <article v-for="doc in docs" :key="doc.id" class="admin-record">
             <div class="min-w-0">
-              <div class="font-semibold text-ink">{{ doc.title }}</div>
+              <div class="flex flex-wrap items-center gap-2">
+                <div class="font-semibold text-ink">{{ doc.title }}</div>
+                <el-tag size="small" effect="plain">{{ recoveryLabel(doc) }}</el-tag>
+              </div>
               <div class="mt-2 flex flex-wrap gap-2 text-xs uppercase tracking-[0.2em] text-secondary">
-                <span>{{ doc.status === 'draft' ? '草稿' : doc.status === 'parsed' ? '已解析' : '已索引' }}</span>
                 <span>{{ doc.libraryScope === 'personal' ? '个人库' : '系统库' }}</span>
                 <span>{{ businessTypeLabel(doc.businessType) }}</span>
                 <span v-if="doc.fileType">{{ doc.fileType.toUpperCase() }}</span>
@@ -133,12 +165,13 @@
               <div class="mt-2 flex flex-wrap gap-2 text-xs text-secondary">
                 <span>解析 {{ processLabel(doc.parseStatus) }}</span>
                 <span>索引 {{ indexLabel(doc.indexStatus) }}</span>
+                <span>状态 {{ statusLabel(doc.status) }}</span>
               </div>
               <p class="mt-3 text-sm leading-6 text-secondary">{{ doc.summary || '暂无摘要' }}</p>
             </div>
             <div class="admin-record__actions">
               <el-button :loading="actionId === `rechunk-${doc.id}`" class="hard-button-secondary !min-h-9 !px-3" @click="emit('rechunk', doc.id)">
-                重切分
+                重新切分
               </el-button>
               <el-button :loading="actionId === `reindex-${doc.id}`" type="primary" class="action-button !min-h-9 !px-3" @click="emit('reindex', doc.id)">
                 重建索引
@@ -147,7 +180,7 @@
           </article>
         </div>
         <div v-else class="px-5 py-12 text-center text-sm text-slate-500">
-          暂无文档，先导入一份资料。
+          还没有文档，先导入一份资料。
         </div>
       </section>
 
@@ -165,7 +198,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { searchKnowledgeApi } from '@/api/knowledge'
 import type { CategoryItem, KnowledgeDocItem, KnowledgeSearchResult } from '@/types/api'
@@ -186,7 +219,7 @@ interface SeedItem {
   summary: string
 }
 
-defineProps<{
+const props = defineProps<{
   docs: KnowledgeDocItem[]
   categories: CategoryItem[]
   filter: KnowledgeFilter
@@ -194,6 +227,7 @@ defineProps<{
   loading: boolean
   importing: string | null
   actionId: string | null
+  batchActionId: string | null
   currentPage: number
   pageSize: number
   total: number
@@ -211,10 +245,15 @@ const emit = defineEmits<{
   import: [seedKey: string]
   rechunk: [id: number]
   reindex: [id: number]
+  batchRechunk: [ids: number[]]
+  batchReindex: [ids: number[]]
   filterReset: []
   load: []
   pageChange: [page: number]
 }>()
+
+const failedParseDocs = computed(() => props.docs.filter((doc) => doc.parseStatus === 'failed').map((doc) => doc.id))
+const failedIndexDocs = computed(() => props.docs.filter((doc) => doc.indexStatus === 'failed').map((doc) => doc.id))
 
 const runSearch = async () => {
   if (!searchQuery.value.trim()) {
@@ -270,6 +309,19 @@ const indexLabel = (status?: string) => {
   if (status === 'failed') return '失败'
   if (status === 'indexed') return '已完成'
   return '处理中'
+}
+
+const statusLabel = (status?: string) => {
+  if (status === 'indexed') return '可使用'
+  if (status === 'parsed') return '待索引'
+  return '待处理'
+}
+
+const recoveryLabel = (doc: KnowledgeDocItem) => {
+  if (doc.parseStatus === 'failed') return '先重试解析'
+  if (doc.indexStatus === 'failed') return '先重建索引'
+  if (doc.indexStatus === 'indexed') return '可直接使用'
+  return '继续处理'
 }
 </script>
 

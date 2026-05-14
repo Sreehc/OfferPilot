@@ -22,6 +22,10 @@ public interface KnowledgeService extends IService<KnowledgeDoc> {
 
     KnowledgeDocVO reindex(Long docId);
 
+    List<KnowledgeDocVO> batchRechunk(List<Long> docIds);
+
+    List<KnowledgeDocVO> batchReindex(List<Long> docIds);
+
     /**
      * Upload a user document: parse, chunk, and vectorize.
      */

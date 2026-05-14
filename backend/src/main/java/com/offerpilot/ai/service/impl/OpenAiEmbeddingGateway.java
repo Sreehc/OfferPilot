@@ -105,6 +105,7 @@ public class OpenAiEmbeddingGateway implements EmbeddingGateway {
             while (embeddings.size() < texts.size()) {
                 embeddings.add(new float[0]);
             }
+            UsageMetrics usage = extractUsage(response, estimateTokens(texts));
             aiCallLogService.record(AiCallLogCommand.builder()
                     .userId(SecurityUtils.getCurrentUserId())
                     .provider("openai-compatible")
@@ -112,6 +113,10 @@ public class OpenAiEmbeddingGateway implements EmbeddingGateway {
                     .callType("embedding")
                     .scene(scene)
                     .inputTokens(estimateTokens(texts))
+                    .promptTokens(usage.promptTokens())
+                    .completionTokens(usage.completionTokens())
+                    .totalTokens(usage.totalTokens())
+                    .usageSource(usage.source())
                     .latencyMs(System.currentTimeMillis() - startedAt)
                     .success(true)
                     .build());
@@ -131,6 +136,35 @@ public class OpenAiEmbeddingGateway implements EmbeddingGateway {
                     .build());
             throw exception;
         }
+    }
+
+    private UsageMetrics extractUsage(Map<String, Object> response, Integer fallbackPromptTokens) {
+        int promptTokens = fallbackPromptTokens == null ? 0 : fallbackPromptTokens;
+        int totalTokens = promptTokens;
+        String source = "estimated";
+        if (response != null && response.get("usage") instanceof Map<?, ?> usage) {
+            promptTokens = intValue(usage.get("prompt_tokens"), promptTokens);
+            totalTokens = intValue(usage.get("total_tokens"), promptTokens);
+            source = "provider";
+        }
+        return new UsageMetrics(promptTokens, 0, totalTokens, source);
+    }
+
+    private int intValue(Object value, int fallback) {
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        if (value instanceof String text) {
+            try {
+                return Integer.parseInt(text);
+            } catch (NumberFormatException ignored) {
+                return fallback;
+            }
+        }
+        return fallback;
+    }
+
+    private record UsageMetrics(int promptTokens, int completionTokens, int totalTokens, String source) {
     }
 
     private Integer estimateTokens(List<String> texts) {

@@ -106,10 +106,22 @@ export interface AdminAiLogItem {
   scene: string
   inputTokens?: number
   outputTokens?: number
+  promptTokens?: number
+  completionTokens?: number
+  totalTokens?: number
+  estimatedCost?: number
+  usageSource?: string
   latencyMs?: number
   success: number
   errorMessage?: string
   createTime: string
+}
+
+export interface UsageSummary {
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
+  estimatedCost?: number
 }
 
 export interface AdminAiLogSummary {
@@ -119,6 +131,20 @@ export interface AdminAiLogSummary {
   avgLatencyMs: number
   chatCalls: number
   embeddingCalls: number
+  usageSummary: UsageSummary
+}
+
+export interface ConfigHistory {
+  id: string
+  configGroup: string
+  configKey: string
+  oldValue?: string
+  newValue?: string
+  oldEnabled: boolean
+  newEnabled: boolean
+  operatorUserId?: string
+  changeReason?: string
+  createTime: string
 }
 
 export interface AdminSystemConfigItem {
@@ -130,11 +156,19 @@ export interface AdminSystemConfigItem {
   configValue: string
   enabled: boolean
   runtimeDefault?: string
+  configHistory: ConfigHistory[]
 }
 
 export interface AdminSystemConfigUpdatePayload {
   configValue?: string
   enabled: boolean
+  changeReason?: string
+}
+
+export interface KnowledgeRecoveryAction {
+  kind: 'rechunk' | 'reindex'
+  label: string
+  docIds: number[]
 }
 
 export interface AdminInterviewGovernanceItem {

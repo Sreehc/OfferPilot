@@ -549,6 +549,11 @@ CREATE TABLE IF NOT EXISTS ai_call_log (
     scene VARCHAR(128) DEFAULT NULL,
     input_tokens INT DEFAULT NULL,
     output_tokens INT DEFAULT NULL,
+    prompt_tokens INT DEFAULT NULL,
+    completion_tokens INT DEFAULT NULL,
+    total_tokens INT DEFAULT NULL,
+    estimated_cost DECIMAL(12,6) DEFAULT NULL,
+    usage_source VARCHAR(32) DEFAULT NULL COMMENT 'provider / estimated',
     latency_ms BIGINT DEFAULT NULL,
     success TINYINT NOT NULL DEFAULT 1 COMMENT '1=success, 0=failed',
     error_message VARCHAR(1000) DEFAULT NULL,
@@ -574,6 +579,22 @@ CREATE TABLE IF NOT EXISTS system_config (
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uk_system_config_key (config_key),
     KEY idx_system_config_group (config_group, enabled)
+);
+
+CREATE TABLE IF NOT EXISTS system_config_history (
+    id BIGINT PRIMARY KEY,
+    config_group VARCHAR(64) NOT NULL,
+    config_key VARCHAR(128) NOT NULL,
+    old_value TEXT DEFAULT NULL,
+    new_value TEXT DEFAULT NULL,
+    old_enabled TINYINT DEFAULT NULL,
+    new_enabled TINYINT DEFAULT NULL,
+    operator_user_id BIGINT DEFAULT NULL,
+    change_reason VARCHAR(255) DEFAULT NULL,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_system_config_history_key_time (config_key, create_time),
+    KEY idx_system_config_history_operator_time (operator_user_id, create_time)
 );
 
 -- ============================================================

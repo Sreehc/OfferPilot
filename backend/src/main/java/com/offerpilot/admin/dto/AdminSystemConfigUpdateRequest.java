@@ -8,4 +8,5 @@ public class AdminSystemConfigUpdateRequest {
     private String configValue;
     @NotNull(message = "enabled is required")
     private Boolean enabled;
+    private String changeReason;
 }

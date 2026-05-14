@@ -1,6 +1,7 @@
 package com.offerpilot.knowledge.controller;
 
 import com.offerpilot.common.api.Result;
+import com.offerpilot.knowledge.dto.AdminKnowledgeBatchActionRequest;
 import com.offerpilot.knowledge.dto.KnowledgeImportRequest;
 import com.offerpilot.knowledge.vo.KnowledgeDocVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,5 +39,17 @@ public class AdminKnowledgeController {
     @PostMapping("/reindex/{docId}")
     public Result<KnowledgeDocVO> reindex(@Parameter(description = "文档 ID") @PathVariable Long docId) {
         return Result.success(knowledgeService.reindex(docId));
+    }
+
+    @Operation(summary = "批量重新切分", description = "针对当前失败文档批量重新切分")
+    @PostMapping("/rechunk/batch")
+    public Result<java.util.List<KnowledgeDocVO>> batchRechunk(@Valid @RequestBody AdminKnowledgeBatchActionRequest request) {
+        return Result.success(knowledgeService.batchRechunk(request.getDocIds()));
+    }
+
+    @Operation(summary = "批量重建索引", description = "针对当前失败文档批量重建索引")
+    @PostMapping("/reindex/batch")
+    public Result<java.util.List<KnowledgeDocVO>> batchReindex(@Valid @RequestBody AdminKnowledgeBatchActionRequest request) {
+        return Result.success(knowledgeService.batchReindex(request.getDocIds()));
     }
 }

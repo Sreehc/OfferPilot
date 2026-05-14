@@ -12,4 +12,5 @@ public class AdminAiLogSummaryVO {
     private long avgLatencyMs;
     private long chatCalls;
     private long embeddingCalls;
+    private AdminUsageSummaryVO usageSummary;
 }

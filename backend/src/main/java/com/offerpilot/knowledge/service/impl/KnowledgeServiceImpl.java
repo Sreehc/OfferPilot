@@ -185,6 +185,22 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
     }
 
     @Override
+    @Transactional
+    public List<KnowledgeDocVO> batchRechunk(List<Long> docIds) {
+        return distinctDocIds(docIds).stream()
+                .map(this::rechunk)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public List<KnowledgeDocVO> batchReindex(List<Long> docIds) {
+        return distinctDocIds(docIds).stream()
+                .map(this::reindex)
+                .toList();
+    }
+
+    @Override
     public KnowledgeDocVO upload(Long userId, MultipartFile file, Long categoryId) {
         String originalFilename = file.getOriginalFilename();
         uploadPolicyService.validate(StorageDirectory.KNOWLEDGE, originalFilename, file.getContentType(), file.getSize());
@@ -251,6 +267,16 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
         log.info("User {} uploaded document '{}', {} chunks; parse_status=parsed, index_status=pending",
                 userId, originalFilename, chunks.size());
         return buildDocVOs(List.of(doc)).get(0);
+    }
+
+    private List<Long> distinctDocIds(List<Long> docIds) {
+        if (docIds == null || docIds.isEmpty()) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "docIds is required");
+        }
+        return docIds.stream()
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
     }
 
     @Override

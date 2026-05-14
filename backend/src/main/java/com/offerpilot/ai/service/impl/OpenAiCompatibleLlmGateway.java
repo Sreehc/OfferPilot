@@ -77,6 +77,7 @@ public class OpenAiCompatibleLlmGateway implements LlmGateway {
         try {
             Map<String, Object> response = callLlm(restClient, body);
             String content = extractContent(response);
+            UsageMetrics usage = extractUsage(response, inputTokens, estimateTokens(content));
             aiCallLogService.record(AiCallLogCommand.builder()
                     .userId(userId)
                     .provider(provider)
@@ -85,6 +86,10 @@ public class OpenAiCompatibleLlmGateway implements LlmGateway {
                     .scene(request.getScene())
                     .inputTokens(inputTokens)
                     .outputTokens(estimateTokens(content))
+                    .promptTokens(usage.promptTokens())
+                    .completionTokens(usage.completionTokens())
+                    .totalTokens(usage.totalTokens())
+                    .usageSource(usage.source())
                     .latencyMs(System.currentTimeMillis() - startedAt)
                     .success(true)
                     .build());
@@ -94,6 +99,7 @@ public class OpenAiCompatibleLlmGateway implements LlmGateway {
             try {
                 Map<String, Object> response = callLlm(restClient, body);
                 String content = extractContent(response);
+                UsageMetrics usage = extractUsage(response, inputTokens, estimateTokens(content));
                 aiCallLogService.record(AiCallLogCommand.builder()
                         .userId(userId)
                         .provider(provider)
@@ -102,6 +108,10 @@ public class OpenAiCompatibleLlmGateway implements LlmGateway {
                         .scene(request.getScene())
                         .inputTokens(inputTokens)
                         .outputTokens(estimateTokens(content))
+                        .promptTokens(usage.promptTokens())
+                        .completionTokens(usage.completionTokens())
+                        .totalTokens(usage.totalTokens())
+                        .usageSource(usage.source())
                         .latencyMs(System.currentTimeMillis() - startedAt)
                         .success(true)
                         .build());
@@ -212,6 +222,7 @@ public class OpenAiCompatibleLlmGateway implements LlmGateway {
                 }
             }
             conn.disconnect();
+            int outputTokens = estimateTokens(fullContent.toString());
             aiCallLogService.record(AiCallLogCommand.builder()
                     .userId(userId)
                     .provider(provider)
@@ -219,7 +230,11 @@ public class OpenAiCompatibleLlmGateway implements LlmGateway {
                     .callType("stream")
                     .scene(request.getScene())
                     .inputTokens(inputTokens)
-                    .outputTokens(estimateTokens(fullContent.toString()))
+                    .outputTokens(outputTokens)
+                    .promptTokens(inputTokens)
+                    .completionTokens(outputTokens)
+                    .totalTokens((inputTokens == null ? 0 : inputTokens) + outputTokens)
+                    .usageSource("estimated")
                     .latencyMs(System.currentTimeMillis() - startedAt)
                     .success(true)
                     .build());
@@ -258,6 +273,37 @@ public class OpenAiCompatibleLlmGateway implements LlmGateway {
                 || !StringUtils.hasText(resolveModel())) {
             throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "LLM configuration is incomplete");
         }
+    }
+
+    private UsageMetrics extractUsage(Map<String, Object> response, Integer fallbackPromptTokens, Integer fallbackCompletionTokens) {
+        int promptTokens = fallbackPromptTokens == null ? 0 : fallbackPromptTokens;
+        int completionTokens = fallbackCompletionTokens == null ? 0 : fallbackCompletionTokens;
+        int totalTokens = promptTokens + completionTokens;
+        String source = "estimated";
+        if (response != null && response.get("usage") instanceof Map<?, ?> usage) {
+            promptTokens = intValue(usage.get("prompt_tokens"), promptTokens);
+            completionTokens = intValue(usage.get("completion_tokens"), completionTokens);
+            totalTokens = intValue(usage.get("total_tokens"), promptTokens + completionTokens);
+            source = "provider";
+        }
+        return new UsageMetrics(promptTokens, completionTokens, totalTokens, source);
+    }
+
+    private int intValue(Object value, int fallback) {
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        if (value instanceof String text) {
+            try {
+                return Integer.parseInt(text);
+            } catch (NumberFormatException ignored) {
+                return fallback;
+            }
+        }
+        return fallback;
+    }
+
+    private record UsageMetrics(int promptTokens, int completionTokens, int totalTokens, String source) {
     }
 
     private List<Map<String, String>> buildMessages(AiChatRequest request) {

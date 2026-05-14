@@ -81,12 +81,15 @@
             :loading="knowledgeLoading"
             :importing="knowledgeImporting"
             :action-id="knowledgeActionId"
+            :batch-action-id="knowledgeBatchActionId"
             :page-size="knowledgePageSize"
             :total="knowledgeTotal"
             :total-pages="knowledgeTotalPages"
             @import="importSeed"
             @rechunk="rechunkDoc"
             @reindex="reindexDoc"
+            @batch-rechunk="batchRechunkDocs"
+            @batch-reindex="batchReindexDocs"
             @filter-reset="resetKnowledgeFilter"
             @load="loadKnowledgeDocs"
             @page-change="handleKnowledgePageChange"
@@ -130,7 +133,14 @@ import AdminSystemConfigTab from './AdminSystemConfigTab.vue'
 import AdminInterviewGovernanceTab from './AdminInterviewGovernanceTab.vue'
 import { exportQuestionsApi, exportUsersApi } from '@/api/admin'
 import { addCategoryApi, deleteCategoryApi, fetchCategoriesApi, updateCategoryApi } from '@/api/category'
-import { fetchKnowledgeDocsApi, importKnowledgeSeedApi, rechunkKnowledgeDocApi, reindexKnowledgeDocApi } from '@/api/knowledge'
+import {
+  batchRechunkKnowledgeDocsApi,
+  batchReindexKnowledgeDocsApi,
+  fetchKnowledgeDocsApi,
+  importKnowledgeSeedApi,
+  rechunkKnowledgeDocApi,
+  reindexKnowledgeDocApi
+} from '@/api/knowledge'
 import { addQuestionApi, deleteQuestionApi, fetchQuestionsApi, updateQuestionApi } from '@/api/question'
 import type { CategoryItem, KnowledgeDocItem, QuestionItem } from '@/types/api'
 
@@ -148,6 +158,7 @@ const exportingQuestions = ref(false)
 const exportingUsers = ref(false)
 const knowledgeImporting = ref<string | null>(null)
 const knowledgeActionId = ref<string | null>(null)
+const knowledgeBatchActionId = ref<string | null>(null)
 
 const questionPage = ref(1)
 const questionPageSize = ref(20)
@@ -309,6 +320,16 @@ const resetQuestionFilter = () => { questionFilter.categoryId = undefined; quest
 const importSeed = async (seedKey: string) => { knowledgeImporting.value = seedKey; try { await importKnowledgeSeedApi({ seedKey }); ElMessage.success('知识资料已导入'); await Promise.all([loadCategories(), loadKnowledgeDocs()]) } catch { ElMessage.error('知识资料导入失败') } finally { knowledgeImporting.value = null } }
 const rechunkDoc = async (id: number) => { knowledgeActionId.value = `rechunk-${id}`; try { await rechunkKnowledgeDocApi(id); ElMessage.success('文档已重新切分'); await loadKnowledgeDocs() } catch { ElMessage.error('重新切分失败') } finally { knowledgeActionId.value = null } }
 const reindexDoc = async (id: number) => { knowledgeActionId.value = `reindex-${id}`; try { await reindexKnowledgeDocApi(id); ElMessage.success('索引已重建'); await loadKnowledgeDocs() } catch { ElMessage.error('重建索引失败') } finally { knowledgeActionId.value = null } }
+const batchRechunkDocs = async (ids: number[]) => {
+  if (!ids.length) { ElMessage.warning('当前列表没有解析失败文档'); return }
+  knowledgeBatchActionId.value = 'rechunk-batch'
+  try { await batchRechunkKnowledgeDocsApi(ids); ElMessage.success(`已重试 ${ids.length} 份解析失败文档`); await loadKnowledgeDocs() } catch { ElMessage.error('批量重新切分失败') } finally { knowledgeBatchActionId.value = null }
+}
+const batchReindexDocs = async (ids: number[]) => {
+  if (!ids.length) { ElMessage.warning('当前列表没有索引失败文档'); return }
+  knowledgeBatchActionId.value = 'reindex-batch'
+  try { await batchReindexKnowledgeDocsApi(ids); ElMessage.success(`已重建 ${ids.length} 份失败索引`); await loadKnowledgeDocs() } catch { ElMessage.error('批量重建索引失败') } finally { knowledgeBatchActionId.value = null }
+}
 const resetKnowledgeFilter = () => { knowledgeFilter.categoryId = undefined; knowledgeFilter.businessType = undefined; knowledgeFilter.fileType = undefined; knowledgeFilter.parseStatus = undefined; knowledgeFilter.indexStatus = undefined; knowledgeFilter.status = undefined; knowledgeFilter.keyword = ''; void loadKnowledgeDocs() }
 
 const downloadBlob = (blob: BlobPart, filename: string) => {

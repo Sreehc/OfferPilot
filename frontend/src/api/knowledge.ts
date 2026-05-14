@@ -49,6 +49,14 @@ export const reindexKnowledgeDocApi = (docId: number) => {
   return request<KnowledgeDocItem>({ url: `/admin/knowledge/reindex/${docId}`, method: 'post' })
 }
 
+export const batchRechunkKnowledgeDocsApi = (docIds: number[]) => {
+  return request<KnowledgeDocItem[]>({ url: '/admin/knowledge/rechunk/batch', method: 'post', data: { docIds } })
+}
+
+export const batchReindexKnowledgeDocsApi = (docIds: number[]) => {
+  return request<KnowledgeDocItem[]>({ url: '/admin/knowledge/reindex/batch', method: 'post', data: { docIds } })
+}
+
 export const uploadKnowledgeDocApi = (file: File, categoryId?: number) => {
   const formData = new FormData()
   formData.append('file', file)

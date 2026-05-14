@@ -1,5 +1,6 @@
 package com.offerpilot.admin.dto;
 
+import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 
@@ -14,4 +15,5 @@ public class AdminSystemConfigVO {
     private String configValue;
     private boolean enabled;
     private String runtimeDefault;
+    private List<AdminSystemConfigHistoryVO> configHistory;
 }

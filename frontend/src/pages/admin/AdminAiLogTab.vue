@@ -1,26 +1,33 @@
 <template>
   <div class="space-y-4">
     <section class="shell-section-card p-5">
-      <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div>
-          <p class="section-kicker">AI 调用治理</p>
-          <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">模型调用、延迟与失败排查</h3>
-          <p class="mt-3 max-w-3xl text-sm leading-7 text-secondary">
-            统一查看问答、面试评分、卡片生成和向量化调用的场景、耗时、估算 token 与异常信息。
-          </p>
-        </div>
-        <div class="grid gap-3 sm:grid-cols-2">
-          <article v-for="card in spotlightCards" :key="card.label" class="data-slab p-4">
-            <div class="text-[10px] font-semibold uppercase tracking-[0.22em] text-tertiary">{{ card.label }}</div>
-            <div class="mt-3 text-3xl font-semibold text-ink">{{ card.value }}</div>
-          </article>
-        </div>
+      <div class="admin-summary-grid">
+        <article class="data-slab p-4">
+          <div class="text-[11px] font-semibold uppercase tracking-[0.2em] text-tertiary">总调用</div>
+          <div class="mt-3 text-3xl font-semibold text-ink">{{ summary?.totalCalls ?? 0 }}</div>
+          <p class="mt-2 text-sm text-secondary">查看全部模型调用。</p>
+        </article>
+        <article class="data-slab p-4">
+          <div class="text-[11px] font-semibold uppercase tracking-[0.2em] text-tertiary">失败请求</div>
+          <div class="mt-3 text-3xl font-semibold text-ink">{{ summary?.failedCalls ?? 0 }}</div>
+          <p class="mt-2 text-sm text-secondary">优先筛选失败请求排查问题。</p>
+        </article>
+        <article class="data-slab p-4">
+          <div class="text-[11px] font-semibold uppercase tracking-[0.2em] text-tertiary">累计 Token</div>
+          <div class="mt-3 text-3xl font-semibold text-ink">{{ formatNumber(summary?.usageSummary?.totalTokens) }}</div>
+          <p class="mt-2 text-sm text-secondary">核对模型消耗趋势。</p>
+        </article>
+        <article class="data-slab p-4">
+          <div class="text-[11px] font-semibold uppercase tracking-[0.2em] text-tertiary">估算费用</div>
+          <div class="mt-3 text-3xl font-semibold text-ink">{{ formatCost(summary?.usageSummary?.estimatedCost) }}</div>
+          <p class="mt-2 text-sm text-secondary">结合 usage 来源判断可信度。</p>
+        </article>
       </div>
     </section>
 
     <section class="shell-section-card p-5">
       <div class="grid gap-3 xl:grid-cols-4">
-        <el-select v-model="scene" clearable size="large" placeholder="场景">
+        <el-select v-model="scene" clearable size="large" placeholder="按场景筛选">
           <el-option label="聊天回答" value="chat.answer.chat" />
           <el-option label="RAG 回答" value="chat.answer.rag" />
           <el-option label="流式 RAG" value="chat.stream.rag" />
@@ -29,12 +36,12 @@
           <el-option label="知识索引" value="knowledge.index" />
           <el-option label="卡片生成" value="cards.generate" />
         </el-select>
-        <el-select v-model="callType" clearable size="large" placeholder="调用类型">
+        <el-select v-model="callType" clearable size="large" placeholder="按类型筛选">
           <el-option label="聊天" value="chat" />
           <el-option label="流式" value="stream" />
           <el-option label="向量" value="embedding" />
         </el-select>
-        <el-select v-model="success" clearable size="large" placeholder="执行状态">
+        <el-select v-model="success" clearable size="large" placeholder="按执行状态筛选">
           <el-option label="成功" :value="1" />
           <el-option label="失败" :value="0" />
         </el-select>
@@ -49,6 +56,7 @@
       </div>
       <div class="mt-4 flex flex-wrap gap-3">
         <el-button :loading="loading" size="large" class="action-button" @click="handleSearch">刷新日志</el-button>
+        <el-button size="large" class="hard-button-secondary" @click="showFailedOnly">只看失败请求</el-button>
         <el-button size="large" class="hard-button-secondary" @click="resetFilters">重置筛选</el-button>
       </div>
     </section>
@@ -77,8 +85,21 @@
         <el-table-column label="模型" min-width="160">
           <template #default="{ row }">{{ row.model || '-' }}</template>
         </el-table-column>
-        <el-table-column label="Token" min-width="120">
-          <template #default="{ row }">{{ row.inputTokens ?? 0 }} / {{ row.outputTokens ?? 0 }}</template>
+        <el-table-column label="Usage" min-width="170">
+          <template #default="{ row }">
+            <div class="text-sm font-medium text-ink">
+              {{ formatNumber(row.promptTokens ?? row.inputTokens) }} / {{ formatNumber(row.completionTokens ?? row.outputTokens) }}
+            </div>
+            <div class="mt-1 text-xs text-secondary">总计 {{ formatNumber(row.totalTokens) }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column label="费用" min-width="120">
+          <template #default="{ row }">{{ formatCost(row.estimatedCost) }}</template>
+        </el-table-column>
+        <el-table-column label="来源" min-width="100">
+          <template #default="{ row }">
+            <span class="text-sm text-secondary">{{ row.usageSource === 'provider' ? '接口返回' : '估算' }}</span>
+          </template>
         </el-table-column>
         <el-table-column label="耗时" min-width="96">
           <template #default="{ row }">{{ row.latencyMs ?? 0 }} ms</template>
@@ -109,7 +130,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   fetchAdminAiLogsApi,
@@ -129,18 +150,6 @@ const pageNum = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
 const totalPages = ref(0)
-
-const spotlightCards = computed(() => [
-  { label: '总调用数', value: summary.value?.totalCalls ?? 0 },
-  { label: '成功率', value: summary.value ? `${rate(summary.value.successCalls, summary.value.totalCalls)}%` : '0%' },
-  { label: '平均耗时', value: `${summary.value?.avgLatencyMs ?? 0} ms` },
-  { label: '向量调用', value: summary.value?.embeddingCalls ?? 0 }
-])
-
-const rate = (part: number, whole: number) => {
-  if (!whole) return 0
-  return Math.round((part / whole) * 100)
-}
 
 const loadData = async () => {
   loading.value = true
@@ -180,6 +189,12 @@ const resetFilters = () => {
   handleSearch()
 }
 
+const showFailedOnly = () => {
+  success.value = 0
+  pageNum.value = 1
+  void loadData()
+}
+
 const handlePageChange = (page: number) => {
   pageNum.value = page
   void loadData()
@@ -197,7 +212,29 @@ const formatTime = (value?: string) => {
   }).format(new Date(value))
 }
 
+const formatNumber = (value?: number) => {
+  return new Intl.NumberFormat('zh-CN').format(value ?? 0)
+}
+
+const formatCost = (value?: number) => {
+  if (value == null) return '-'
+  return `USD ${Number(value).toFixed(4)}`
+}
+
 onMounted(() => {
   void loadData()
 })
 </script>
+
+<style scoped>
+.admin-summary-grid {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 960px) {
+  .admin-summary-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+</style>
