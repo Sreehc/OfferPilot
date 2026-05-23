@@ -420,7 +420,7 @@ const categoryMasteryItems = computed(() => efficiencyData.value.categoryMastery
 const summarySignals = computed(() => [
   {
     label: '当前重点',
-    value: learningInsights.value.activePlanTitle || '还没有计划',
+    value: learningInsights.value.activePlanTitle || '先生成计划',
     detail: learningInsights.value.planExecutionStatus || '先生成一份训练计划',
     toneClass: ''
   },

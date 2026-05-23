@@ -382,7 +382,7 @@ function tagList(tags?: string) {
 
 const answerPreview = (answer?: string, max = 180) => {
   if (!answer?.trim()) {
-    return '当前题目还没有补充标准答案，可以先进入模拟面试或问答页继续扩展。'
+    return '这道题的标准答案还没补齐，可以先进入模拟面试或问答页继续扩展。'
   }
   return answer.length > max ? `${answer.slice(0, max)}...` : answer
 }

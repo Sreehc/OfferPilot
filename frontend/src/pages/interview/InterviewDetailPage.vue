@@ -111,7 +111,7 @@
 
         <div class="surface-muted mx-6 mt-4 rounded-lg p-4">
           <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">本题点评</div>
-          <p class="mt-1 text-sm leading-6 text-primary">{{ record.comment || '这道题还没有生成点评，先对照分数和标准答案补一轮复盘。' }}</p>
+          <p class="mt-1 text-sm leading-6 text-primary">{{ record.comment || '这道题的点评还没生成出来，先对照分数和标准答案补一轮复盘。' }}</p>
         </div>
 
         <div v-if="record.scoreBreakdown?.length" class="mx-6 mt-4 grid gap-3 md:grid-cols-3">
@@ -177,7 +177,7 @@
               <span class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">标准答案</span>
             </div>
             <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-primary">
-              {{ record.standardAnswer || '这道题还没有生成标准答案，先回看你的回答，再结合复盘建议补一版更完整的答案。' }}
+              {{ record.standardAnswer || '这道题的标准答案还没生成出来，先回看你的回答，再结合复盘建议补一版更完整的答案。' }}
             </p>
           </div>
         </div>
