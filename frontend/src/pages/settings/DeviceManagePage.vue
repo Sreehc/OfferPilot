@@ -27,15 +27,15 @@
     <section v-if="loading && devices.length === 0" class="shell-section-card p-6">
       <div class="flex items-center justify-center py-8">
         <el-icon class="is-loading text-tertiary" :size="24"><i class="el-icon-loading" /></el-icon>
-        <span class="ml-3 text-sm text-tertiary">正在加载...</span>
+        <span class="ml-3 text-sm text-tertiary">正在加载登录设备...</span>
       </div>
     </section>
 
     <section v-else-if="devices.length === 0" class="shell-section-card p-6">
       <EmptyState
         icon="bell"
-        title="暂无已登录设备"
-        description="登录设备会显示在这里。"
+        title="还没有其他登录设备"
+        description="当前设备和后续登录过的设备都会显示在这里。需要排查陌生登录时，回来检查这一页就行。"
       />
     </section>
 
@@ -119,7 +119,7 @@ const loadDevices = async () => {
     const response = await fetchDevicesApi()
     devices.value = response.data
   } catch {
-    ElMessage.error('设备列表加载失败')
+    ElMessage.error('暂时没拿到登录设备，请刷新后再试')
   } finally {
     loading.value = false
   }
@@ -145,7 +145,7 @@ const handleRevoke = async (deviceId: number) => {
     ElMessage.success('设备已撤销')
     await loadDevices()
   } catch {
-    ElMessage.error('撤销失败')
+    ElMessage.error('这台设备暂时没有撤销成功，请稍后再试')
   } finally {
     revokingId.value = null
   }
@@ -158,7 +158,7 @@ const handleRevokeAll = async () => {
     ElMessage.success('其他设备已全部撤销')
     await loadDevices()
   } catch {
-    ElMessage.error('撤销失败')
+    ElMessage.error('其他设备暂时没有全部撤销成功，请稍后再试')
   } finally {
     revokingAll.value = false
   }

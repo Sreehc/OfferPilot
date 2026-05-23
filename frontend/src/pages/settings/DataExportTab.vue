@@ -32,7 +32,7 @@ const handleExport = async () => {
     downloadBlob(response.data as any, '个人数据导出.xlsx')
     ElMessage.success('导出成功')
   } catch {
-    ElMessage.error('导出失败')
+    ElMessage.error('这次导出没有完成，请稍后再试')
   } finally {
     exporting.value = false
   }

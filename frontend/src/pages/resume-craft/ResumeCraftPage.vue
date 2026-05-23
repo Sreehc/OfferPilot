@@ -3,8 +3,8 @@
     <section class="shell-section-card p-6 sm:p-8">
       <EmptyState
         icon="document"
-        title="简历制作即将上线"
-        description="我们正在开发从零制作简历的功能。在此之前，你可以先使用简历助手来整理已有的简历。"
+        title="当前请先使用简历助手"
+        description="这里暂时不提供从零新建简历的流程。若你已经有简历，先去简历助手上传、解析和继续优化会更直接。"
       >
         <template #action>
           <RouterLink to="/resume" class="hard-button-primary">
