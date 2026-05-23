@@ -482,7 +482,7 @@ const quickEntries: DashboardQuickEntry[] = [
   { label: '简历助手', description: '整理简历与面试提纲', path: '/resume', icon: 'resume', tone: 'violet' },
   { label: '学习计划', description: '定制学习路径', path: '/study-plan', icon: 'plan', tone: 'cyan' },
   { label: '投递管理', description: '追踪求职进度', path: '/applications', icon: 'applications', tone: 'indigo' },
-  { label: '面试题集', description: '精选题目集合', path: '/question', icon: 'question', tone: 'sky' }
+  { label: '题库训练', description: '筛题、看答案和练表达', path: '/question', icon: 'question', tone: 'sky' }
 ]
 
 const greetingText = computed(() => resolveGreetingLabel())

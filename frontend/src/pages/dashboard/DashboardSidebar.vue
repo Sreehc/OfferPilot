@@ -195,7 +195,7 @@ const primaryGroups: SidebarGroup[] = [
     icon: 'interview',
     items: [
       { label: '模拟面试', path: '/interview' },
-      { label: '面试题集', path: '/question' },
+      { label: '题库训练', path: '/question' },
       { label: '错题本', path: '/wrong' },
       { label: '复习巩固', path: '/review' }
     ]
@@ -205,7 +205,7 @@ const primaryGroups: SidebarGroup[] = [
     icon: 'knowledge',
     items: [
       { label: '知识库', path: '/knowledge' },
-      { label: 'AI 问答', path: '/chat' },
+      { label: '问答', path: '/chat' },
       { label: '我的收藏', path: '/favorites' }
     ]
   },

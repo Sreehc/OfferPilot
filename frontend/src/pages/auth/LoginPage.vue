@@ -159,7 +159,7 @@
                   v-else
                   class="captcha-panel__placeholder"
                 >
-                  加载中...
+                  正在加载验证码...
                 </div>
               </button>
             </div>

@@ -161,7 +161,7 @@
               <div class="knowledge-row__body">
                 <div class="knowledge-row__summary">
                   <p class="text-sm leading-7 text-secondary">
-                    {{ doc.summary || '暂无摘要。' }}
+                    {{ doc.summary || '这份资料的摘要还在整理中，先看标题和标签判断是否要继续处理。' }}
                   </p>
                   <div class="mt-3 flex flex-wrap gap-2 text-xs text-secondary">
                     <span class="detail-pill">{{ availabilityLabel(doc) }}</span>
@@ -432,7 +432,7 @@ const handleDelete = async (docId: number) => {
     ElMessage.success('文档已删除')
     await loadDocs()
   } catch {
-    ElMessage.error('删除失败')
+    ElMessage.error('这份文档还没删除成功，请稍后再试')
   }
 }
 
@@ -561,7 +561,7 @@ const toggleFavorite = async (doc: KnowledgeDocItem) => {
       ElMessage.success('已收藏')
     }
   } catch {
-    ElMessage.error('操作失败')
+    ElMessage.error('收藏状态还没更新成功，请稍后再试')
   }
 }
 

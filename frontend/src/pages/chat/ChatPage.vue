@@ -4,7 +4,7 @@
       <div class="chat-toolbar">
         <div class="chat-toolbar__head">
           <div class="min-w-0">
-            <h1 class="chat-toolbar__title">AI 问答</h1>
+            <h1 class="chat-toolbar__title">问答</h1>
             <p class="chat-toolbar__summary">直接问，或带上资料、简历和项目上下文。</p>
           </div>
           <div class="flex flex-wrap gap-3">
