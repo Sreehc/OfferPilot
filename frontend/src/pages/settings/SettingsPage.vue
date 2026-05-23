@@ -50,54 +50,33 @@
       </button>
     </section>
 
-    <section class="shell-section-card p-5 sm:p-6">
-      <section class="settings-tab-shell">
-        <el-tabs
-          v-model="activeTab"
-          class="settings-tabs"
-        >
-          <el-tab-pane
-            label="账号资料"
-            name="account"
-          >
-            <div class="settings-tab-content">
-              <AccountProfileTab />
-            </div>
-          </el-tab-pane>
-          <el-tab-pane
-            label="安全验证"
-            name="twoFactor"
-          >
-            <div class="settings-tab-content">
-              <TwoFactorTab />
-            </div>
-          </el-tab-pane>
-          <el-tab-pane
-            label="导出我的数据"
-            name="dataExport"
-          >
-            <div class="settings-tab-content">
-              <DataExportTab />
-            </div>
-          </el-tab-pane>
-          <el-tab-pane
-            label="登录设备"
-            name="devices"
-          >
-            <div class="settings-tab-content">
-              <DeviceManagePage />
-            </div>
-          </el-tab-pane>
-          <el-tab-pane
-            label="登录记录"
-            name="loginHistory"
-          >
-            <div class="settings-tab-content">
-              <LoginHistoryTab />
-            </div>
-          </el-tab-pane>
-        </el-tabs>
-      </section>
+    <section class="shell-section-card p-5 sm:p-6 settings-workspace">
+      <div class="settings-workspace__head">
+        <div>
+          <p class="section-kicker">当前任务</p>
+          <h2 class="settings-workspace__title">{{ activeTask.label }}</h2>
+          <p class="settings-workspace__description">{{ activeTask.description }}</p>
+        </div>
+        <span class="detail-pill">{{ activeTask.meta }}</span>
+      </div>
+
+      <div class="settings-workspace__body">
+        <div v-if="activeTab === 'account'" class="settings-tab-content">
+          <AccountProfileTab />
+        </div>
+        <div v-else-if="activeTab === 'twoFactor'" class="settings-tab-content">
+          <TwoFactorTab />
+        </div>
+        <div v-else-if="activeTab === 'dataExport'" class="settings-tab-content">
+          <DataExportTab />
+        </div>
+        <div v-else-if="activeTab === 'devices'" class="settings-tab-content">
+          <DeviceManagePage />
+        </div>
+        <div v-else class="settings-tab-content">
+          <LoginHistoryTab />
+        </div>
+      </div>
     </section>
   </div>
 </template>
@@ -185,6 +164,8 @@ const taskItems = computed(() => [
     icon: '05'
   }
 ])
+
+const activeTask = computed(() => taskItems.value.find((item) => item.name === activeTab.value) ?? taskItems.value[0]!)
 
 const loadTwoFactorStatus = async () => {
   try {
@@ -347,42 +328,44 @@ onMounted(loadTwoFactorStatus)
   color: var(--bc-accent);
 }
 
-.settings-tab-shell {
-  border-radius: 24px;
-  background: transparent;
-  padding: 4px 0 0;
+.settings-workspace {
+  display: grid;
+  gap: 1rem;
 }
 
-.dark .settings-tab-shell {
-  background: transparent;
+.settings-workspace__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.9rem 1rem;
 }
 
-:deep(.settings-tabs > .el-tabs__header) {
-  margin-bottom: 0;
-  padding: 0 0 16px;
-}
-
-:deep(.settings-tabs .el-tabs__nav-wrap::after) {
-  display: none;
-}
-
-:deep(.settings-tabs .el-tabs__item) {
-  min-height: 44px;
-  color: var(--bc-ink-secondary);
-  font-weight: 600;
-}
-
-:deep(.settings-tabs .el-tabs__item.is-active) {
+.settings-workspace__title {
+  margin-top: 0.7rem;
+  font-size: 1.55rem;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.03em;
   color: var(--bc-ink);
 }
 
-:deep(.settings-tabs .el-tabs__active-bar) {
-  background: var(--bc-accent);
+.settings-workspace__description {
+  margin-top: 0.7rem;
+  max-width: 40rem;
+  font-size: 0.92rem;
+  line-height: 1.8;
+  color: var(--bc-ink-secondary);
+}
+
+.settings-workspace__body {
+  border-top: 1px solid var(--bc-border-subtle);
+  padding-top: 0.2rem;
 }
 
 .settings-tab-content {
   min-height: 420px;
-  padding: 12px 0 0;
+  padding: 0.75rem 0 0;
 }
 
 @media (min-width: 768px) {
