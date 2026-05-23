@@ -66,13 +66,14 @@ type NavItem = {
 const allItems: NavItem[] = [
   { path: '/dashboard', label: '首页', hint: '求职训练总览与下一步动作', group: '主线训练' },
   { path: '/question', label: '题库', hint: '按分类、难度和岗位方向训练', group: '主线训练' },
-  { path: '/knowledge', label: '知识库', hint: '管理资料、语料和学习来源', group: '主线训练' },
+  { path: '/knowledge', label: '知识库', hint: '查看推荐资料和个人文档', group: '主线训练' },
   { path: '/chat', label: '问答', hint: '基于资料做带引用的知识问答', group: '主线训练' },
   { path: '/interview', label: '模拟面试', hint: '启动一场文字或语音模拟面试', group: '主线训练' },
   { path: '/study-plan', label: '学习计划', hint: '规划 7/14/30 天训练路线', group: '主线训练' },
-  { path: '/resume', label: '简历助手', hint: '承接简历解析与项目问答', group: '主线训练' },
+  { path: '/resume', label: '简历助手', hint: '上传已有简历，AI 整理成面试提纲与项目表达', group: '主线训练' },
   { path: '/applications', label: '投递管理', hint: '跟踪投递、JD 和真实面试进度', group: '主线训练' },
-  { path: '/cards', label: '卡片强化', hint: '作为专项巩固的辅助入口保留', group: '辅助强化' },
+  { path: '/favorites', label: '收藏', hint: '收藏的资料、题目和社区回答', group: '辅助强化' },
+  { path: '/wrong', label: '错题本', hint: '回看低分题和后续巩固节奏', group: '辅助强化' },
   { path: '/review', label: '复习巩固', hint: '清理到期复习、错题与弱项', group: '辅助强化' },
   { path: '/analytics', label: '数据分析', hint: '观察训练结果和趋势变化', group: '辅助强化' },
   { path: '/community', label: '社区', hint: '浏览问题和发布回答', group: '外部' },
@@ -86,7 +87,20 @@ const groups = computed(() =>
     .filter((group) => group.items.length > 0)
 )
 
-const isActive = (path: string) => route.path === path || route.path.startsWith(path + '/')
+const isRouteMatch = (path: string) => route.path === path || route.path.startsWith(path + '/')
+
+const isActive = (path: string) => {
+  if (!isRouteMatch(path)) return false
+
+  const matchedItems = items.value.filter((item) => isRouteMatch(item.path))
+  if (!matchedItems.length) return false
+
+  const activeItem = matchedItems.reduce((current, item) =>
+    item.path.length > current.path.length ? item : current
+  )
+
+  return activeItem.path === path
+}
 </script>
 
 <style scoped>

@@ -12,13 +12,13 @@ public class TrendVO {
     /** Ordered week keys, e.g. ["2026-W15", "2026-W16", ...]. */
     private List<String> weeks;
 
-    /** Memory completion trend by week. */
-    private List<MemoryTrendPoint> completionRateTrend;
+    /** Review activity trend by week. */
+    private List<MemoryTrendPoint> reviewActivityTrend;
 
     /** Review debt trend by week. */
     private List<MemoryTrendPoint> reviewDebtTrend;
 
-    /** Mastered card growth trend by week. */
+    /** Mastered wrong-question growth trend by week. */
     private List<MemoryTrendPoint> masteredGrowthTrend;
 
     /** Overall average interview score per week, kept as supporting context. */

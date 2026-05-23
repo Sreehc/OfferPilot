@@ -10,7 +10,7 @@ import lombok.Data;
 @Builder
 public class EfficiencyVO {
 
-    /** Current average ease factor across all tracked wrong questions. */
+    /** Current average ease factor across tracked wrong questions. */
     private BigDecimal avgEaseFactor;
 
     /** Ease factor trend: list of weekly average EF values. */
@@ -22,13 +22,10 @@ public class EfficiencyVO {
     /** Forgetting rate per week (percentage of "Again" ratings). */
     private List<WeeklyForgettingRate> forgettingRateTrend;
 
-    /** Completion rate trend by day or week. */
-    private List<CompletionRatePoint> completionRateTrend;
-
     /** Review debt trend by day or week. */
     private List<DebtTrendPoint> reviewDebtTrend;
 
-    /** Mastered cards growth trend by day or week. */
+    /** Mastered wrong-question growth trend by day or week. */
     private List<MasteredGrowthPoint> masteredGrowthTrend;
 
     /** Mastery distribution: {not_started: N, reviewing: N, mastered: N}. */
@@ -37,7 +34,7 @@ public class EfficiencyVO {
     /** Review distribution by content type. */
     private Map<String, Long> contentTypeDistribution;
 
-    /** Category mastery summary. */
+    /** Category review summary. */
     private List<CategoryMastery> categoryMastery;
 
     /** Total reviews completed. */
@@ -45,9 +42,6 @@ public class EfficiencyVO {
 
     /** Current streak in days. */
     private int currentStreak;
-
-    /** Current review completion rate. */
-    private BigDecimal reviewCompletionRate;
 
     /** Current forgetting rate summary. */
     private BigDecimal forgettingRate;
@@ -67,15 +61,6 @@ public class EfficiencyVO {
         private double forgettingRate;  // 0.0 - 1.0
         private int totalRatings;
         private int againCount;
-    }
-
-    @Data
-    @Builder
-    public static class CompletionRatePoint {
-        private String label;
-        private BigDecimal completionRate;
-        private int plannedCount;
-        private int completedCount;
     }
 
     @Data

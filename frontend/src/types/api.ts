@@ -131,32 +131,12 @@ export interface DashboardOverview {
   recentInterviews: RecentInterviewItem[]
   weakPoints: WeakPointItem[]
   firstVisit: boolean
-  todayLearnCards?: number
-  todayReviewCards?: number
-  todayCompletedCards?: number
-  todayCardCompletionRate?: number
-  masteredCardCount?: number
   reviewDebtCount?: number
   studyStreak?: number
-  todayCompletionStatus?: string
-  reviewDebtDelta?: number
-  categoryMasterySummary?: CategoryMasteryItem[]
-  overallAbility?: number
-  recommendedDifficulty?: string
   weakCategories?: string[]
   suggestedFocus?: string | null
   categoryAbilities?: CategoryAbility[]
-
-  // Analytics insights
-  thisWeekAvgScore?: number
-  lastWeekAvgScore?: number
-  thisWeekInterviewCount?: number
-  categoryChanges?: CategoryChange[]
-  bestStudyHours?: HourDistribution[]
-  planSummary?: PlanSummary
-  resumeSummary?: ResumePreparationSummary
   applicationSummary?: ApplicationSummary
-  nextStep?: NextStepSummary
 }
 
 export interface CategoryItem {
@@ -209,11 +189,6 @@ export interface KnowledgeDocItem {
   status: KnowledgeDocStatus
   summary?: string
   chunkCount?: number
-  cardDeckId?: number
-  cardDeckTitle?: string
-  cardCount?: number
-  cardGeneratedAt?: string
-  cardTypes?: string
   updateTime?: string
 }
 
@@ -253,6 +228,8 @@ export interface ContextSource {
   label: string
   summary?: string
   knowledgeScope?: ChatKnowledgeScope
+  sourceDocId?: string
+  sourceDocTitle?: string
   resumeId?: string
   resumeTitle?: string
   projectId?: string
@@ -326,11 +303,6 @@ export interface InterviewRecordItem {
   weakPointTags?: string[]
   reviewSummary?: string
   isLowScore?: boolean
-  recommendedCardFront?: string
-  recommendedCardBack?: string
-  recommendedCardExplanation?: string
-  recommendedCardFollowUp?: string
-  generatedCardId?: string
   voiceTranscript?: string
   voiceConfidence?: number
 }
@@ -351,10 +323,6 @@ export interface InterviewDetail {
   questionCount: number
   startTime?: string
   endTime?: string
-  cardsGenerated?: boolean
-  generatedCardCount?: number
-  interviewDeckId?: string
-  interviewDeckTitle?: string
   records: InterviewRecordItem[]
 }
 
@@ -389,9 +357,6 @@ export interface InterviewHistoryItem {
   questionCount: number
   startTime?: string
   endTime?: string
-  cardsGenerated?: boolean
-  generatedCardCount?: number
-  interviewDeckId?: string
 }
 
 export interface StudyPlanTaskItem {
@@ -577,7 +542,7 @@ export interface ReviewTodayItem {
   masteryLevel: string
 }
 
-export type ReviewContentType = 'all' | 'knowledge_card' | 'wrong_card' | 'interview_card'
+export type ReviewContentType = 'all' | 'wrong_card'
 
 export interface UnifiedReviewItem {
   reviewItemId: string
@@ -594,10 +559,6 @@ export interface UnifiedReviewItem {
   overdueDays: number
   masteryLevel: string
   wrongQuestionId?: string
-  cardId?: string
-  deckId?: string
-  deckTitle?: string
-  sourceQuote?: string
 }
 
 export interface ReviewTodayData {
@@ -619,97 +580,6 @@ export interface ReviewStats {
   contentTypeDistribution?: Record<string, number>
   heatmap?: Record<string, number>
 }
-
-export interface KnowledgeCardItem {
-  id: string
-  question: string
-  answer: string
-  explanation?: string
-  cardType?: 'concept' | 'qa' | 'scenario' | 'compare' | string
-  difficulty?: 'easy' | 'medium' | 'hard' | 'auto' | string
-  tags?: string
-  sourceQuote?: string
-  sortOrder: number
-  scheduledDay: number
-  state: 'new' | 'learning' | 'weak' | 'mastered'
-  reviewCount: number
-  sourceRefId?: string | null
-  sourceRefType?: 'knowledge_chunk' | 'wrong_question' | string | null
-  lastRating?: number | null
-  easeFactor?: number
-  intervalDays?: number
-  streak?: number
-}
-
-export interface KnowledgeCardTask {
-  id: string
-  docId: string
-  docTitle: string
-  deckTitle?: string
-  sourceType?: 'knowledge_doc' | 'wrong_auto' | string
-  status: 'draft' | 'active' | 'completed' | 'invalid'
-  isCurrent?: number
-  days: number
-  currentDay: number
-  dailyTarget: number
-  totalCards: number
-  masteredCards: number
-  reviewCount: number
-  estimatedMinutes?: number
-  invalidReason?: string
-  startedAt?: string
-  completedAt?: string
-  lastStudiedAt?: string
-  dueCount: number
-  reviewedTodayCount: number
-  currentCard?: KnowledgeCardItem | null
-  cards: KnowledgeCardItem[]
-}
-
-export interface TodayCardsTask {
-  deckId: string
-  deckTitle: string
-  sourceType: 'knowledge_doc' | 'wrong_auto' | string
-  status: 'draft' | 'active' | 'completed' | 'invalid'
-  todayLearnCount: number
-  todayReviewCount: number
-  todayCompletedCount: number
-  completionRate: number
-  estimatedMinutes: number
-  streak: number
-  tomorrowDueCount: number
-  totalCards: number
-  masteredCards: number
-  dueCount: number
-  reviewedTodayCount: number
-  currentCard?: KnowledgeCardItem | null
-}
-
-export interface CardDeckSummary {
-  deckId: string
-  deckTitle: string
-  sourceType: 'knowledge_doc' | 'wrong_auto' | string
-  status: 'draft' | 'active' | 'completed' | 'invalid'
-  totalCards: number
-  masteredCards: number
-  dueCount: number
-  reviewedTodayCount: number
-  isCurrent: number
-  lastStudiedAt?: string | null
-}
-
-export interface CardStatsSummary {
-  currentDeckId?: string | null
-  deckCount: number
-  totalCards: number
-  masteredCards: number
-  dueTodayCount: number
-  streak: number
-  completionRate: number
-}
-
-export type CardGenerateType = 'concept' | 'qa' | 'scenario' | 'compare'
-export type CardGenerateDifficulty = 'auto' | 'easy' | 'medium' | 'hard'
 
 export interface CommunityQuestion {
   id: number
@@ -820,7 +690,7 @@ export interface CategoryTrend {
 
 export interface AbilityTrend {
   weeks: string[]
-  completionRateTrend: MemoryTrendPoint[]
+  reviewActivityTrend: MemoryTrendPoint[]
   reviewDebtTrend: MemoryTrendPoint[]
   masteredGrowthTrend: MemoryTrendPoint[]
   overallTrend: WeeklyPoint[]
@@ -863,12 +733,6 @@ export interface EfficiencyData {
   efTrend: WeeklyEF[]
   ratingDistribution: Record<number, number>
   forgettingRateTrend: WeeklyForgettingRate[]
-  completionRateTrend: Array<{
-    label: string
-    completionRate: number
-    plannedCount: number
-    completedCount: number
-  }>
   reviewDebtTrend: Array<{
     label: string
     reviewDebtCount: number
@@ -882,7 +746,6 @@ export interface EfficiencyData {
   categoryMastery?: CategoryMasteryItem[]
   totalReviews: number
   currentStreak: number
-  reviewCompletionRate?: number
   forgettingRate?: number
 }
 
@@ -947,5 +810,56 @@ export interface LoginLogItem {
   device?: string
   status: number
   failReason?: string
+  createTime: string
+}
+
+export type FavoriteTargetType = 'knowledge' | 'question' | 'community'
+
+export interface FavoriteItem {
+  id: number
+  targetType: FavoriteTargetType
+  targetId: number
+  title: string
+  summary?: string
+  categoryName?: string
+  tagId?: number
+  tagName?: string
+  createTime: string
+}
+
+export interface FavoriteTagItem {
+  id: number
+  name: string
+  count: number
+  sortOrder: number
+}
+
+export interface FavoriteStats {
+  total: number
+  knowledgeCount: number
+  questionCount: number
+  communityCount: number
+  todayCount: number
+}
+
+export interface ResumeScoreVO {
+  overallScore: number
+  completenessScore: number
+  keywordCoverage: number
+  atsCompatibility: number
+  suggestions: ResumeSuggestionVO[]
+}
+
+export interface ResumeSuggestionVO {
+  field: string
+  severity: 'info' | 'warn' | 'critical'
+  message: string
+}
+
+export interface ResumeVersionVO {
+  id: string
+  resumeFileId: string
+  version: number
+  changeSummary: string
   createTime: string
 }

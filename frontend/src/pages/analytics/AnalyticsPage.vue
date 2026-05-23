@@ -1,22 +1,5 @@
 <template>
   <div class="analytics-cockpit space-y-5">
-    <AppShellHeader>
-      <template #actions>
-        <div class="mode-switch grid grid-cols-3 gap-2">
-          <button
-            v-for="w in weekOptions"
-            :key="w.value"
-            type="button"
-            class="mode-switch__item"
-            :class="{ 'mode-switch__item-active': selectedWeeks === w.value }"
-            @click="changeWeeks(w.value)"
-          >
-            {{ w.label }}
-          </button>
-        </div>
-      </template>
-    </AppShellHeader>
-
     <AnalyticsInsightBar :data="learningInsights" />
 
     <section class="shell-section-card p-4 sm:p-5">
@@ -47,6 +30,18 @@
               <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">当前主线有没有继续推进</h3>
               <p class="mt-1 text-sm text-secondary">优先看计划、投递、简历和模拟面试这四条主线是否在前进。</p>
             </div>
+            <div class="mode-switch grid grid-cols-3 gap-2">
+              <button
+                v-for="w in weekOptions"
+                :key="w.value"
+                type="button"
+                class="mode-switch__item"
+                :class="{ 'mode-switch__item-active': selectedWeeks === w.value }"
+                @click="changeWeeks(w.value)"
+              >
+                {{ w.label }}
+              </button>
+            </div>
           </div>
 
           <div v-if="trendLoading" class="mt-4 flex h-[340px] items-center justify-center">
@@ -57,11 +52,12 @@
               !trendData.planProgressTrend?.length &&
               !trendData.applicationActivityTrend?.length &&
               !trendData.resumeActivityTrend?.length &&
-              !trendData.overallTrend?.length
+              !trendData.overallTrend?.length &&
+              !trendData.reviewActivityTrend?.length
             "
             class="mt-4 flex h-[340px] items-center justify-center"
           >
-            <EmptyState icon="chart" title="这里还没有准备趋势" description="先安排计划、上传简历或记录投递，再回来查看变化。" compact />
+            <EmptyState icon="chart" title="这里还没有准备趋势" description="安排计划、上传简历或记录投递后，就能看到变化趋势。" compact />
           </div>
           <div v-else class="mt-4">
             <div ref="trendChartRef" class="chart-shell h-[340px] w-full"></div>
@@ -74,7 +70,7 @@
       <article class="shell-section-card p-4 sm:p-5">
         <div class="flex items-center justify-between gap-3">
           <div>
-            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">复习强度</h3>
+            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">复盘强度</h3>
           </div>
         </div>
 
@@ -82,18 +78,18 @@
           <div class="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
         </div>
         <div v-else-if="!efficiencyData.efTrend?.length" class="mt-5 flex h-[260px] items-center justify-center">
-          <EmptyState icon="review" title="这里还没有复习记录" description="先完成今天的复习，再回来看看记忆强度。" compact />
+          <EmptyState icon="review" title="这里还没有复盘记录" description="完成今天的错题复盘后，就能看到节奏变化。" compact />
         </div>
         <div v-else class="mt-5">
           <div class="grid gap-3 sm:grid-cols-3">
             <article class="data-slab p-4">
-              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-tertiary">平均记忆系数</p>
+              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-tertiary">平均复盘系数</p>
               <p class="mt-3 font-mono text-3xl font-semibold text-ink">{{ efficiencyData.avgEaseFactor }}</p>
             </article>
             <article class="data-slab p-4">
-              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-tertiary">复习完成率</p>
+              <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-tertiary">到期待复盘</p>
               <p class="mt-3 font-mono text-3xl font-semibold text-ink">
-                {{ formatPercent(efficiencyData.reviewCompletionRate) }}%
+                {{ latestReviewDebtCount }} 题
               </p>
             </article>
             <article class="data-slab p-4">
@@ -108,7 +104,7 @@
       <article class="shell-section-card p-4 sm:p-5">
         <div class="flex items-center justify-between gap-3">
           <div>
-            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">复习稳定性</h3>
+            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">复盘稳定性</h3>
           </div>
         </div>
 
@@ -119,7 +115,7 @@
           v-else-if="!efficiencyData.forgettingRateTrend?.length"
           class="mt-5 flex h-[260px] items-center justify-center"
         >
-          <EmptyState icon="review" title="这里还没有复习记录" description="先完成今天的复习，再回来看看稳定性。" compact />
+          <EmptyState icon="review" title="这里还没有复盘记录" description="完成几次错题复盘后，就能看到稳定性变化。" compact />
         </div>
         <div v-else class="mt-5">
           <div class="flex flex-wrap gap-2">
@@ -138,7 +134,7 @@
       <article class="shell-section-card p-4 sm:p-5">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">题目掌握度</h3>
+            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">分类错题进度</h3>
           </div>
         </div>
 
@@ -152,12 +148,12 @@
               <div>
                 <p class="text-lg font-semibold text-ink">{{ item.categoryName }}</p>
                 <p class="mt-1 text-sm text-secondary">
-                  已掌握 {{ item.masteredCards }}/{{ item.totalCards }} · 待复习 {{ item.dueCount }}
+                  已掌握 {{ item.masteredCards }}/{{ item.totalCards }} · 待复盘 {{ item.dueCount }}
                 </p>
               </div>
               <div class="text-right">
                 <p class="font-mono text-3xl font-semibold text-ink">{{ Math.round(item.masteryRate) }}%</p>
-                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-accent">掌握率</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-accent">稳定率</p>
               </div>
             </div>
             <div class="mastery-track mt-4">
@@ -169,14 +165,14 @@
           </article>
         </div>
         <div v-else class="mt-5">
-          <EmptyState icon="chart" title="这里还没有分类掌握度" description="先生成并复习卡片，再回来查看各分类进度。" compact />
+          <EmptyState icon="chart" title="这里还没有分类进度" description="开始处理错题后，这里会显示各分类的复盘进度。" compact />
         </div>
       </article>
 
       <article class="shell-section-card p-4 sm:p-5">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">掌握分布</h3>
+            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">错题状态分布</h3>
             <p class="mt-1 text-sm text-secondary">{{ totalMasteryCount }} 道题</p>
           </div>
         </div>
@@ -200,7 +196,7 @@
           </article>
         </div>
         <div v-else class="mt-5">
-          <EmptyState icon="chart" title="这里还没有掌握分布" description="先完成复习，再回来看看题目分布。" compact />
+          <EmptyState icon="chart" title="这里还没有状态分布" description="完成错题复盘后，就能看到状态分布。" compact />
         </div>
       </article>
     </section>
@@ -216,7 +212,7 @@
         <div class="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
       </div>
       <div v-else-if="!trendData.overallTrend?.length" class="mt-5 flex h-[300px] items-center justify-center">
-        <EmptyState icon="chart" title="这里还没有面试趋势" description="先完成一轮模拟面试，再回来查看变化。" compact />
+        <EmptyState icon="chart" title="这里还没有面试趋势" description="完成一轮模拟面试后，就能看到变化趋势。" compact />
       </div>
       <div v-else class="mt-5">
         <div v-if="normalizedCategoryTrends.length" class="mb-4 flex flex-wrap gap-2">
@@ -248,7 +244,6 @@
 <script setup lang="ts">
 import * as echarts from 'echarts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import AppShellHeader from '@/components/AppShellHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { useTheme } from '@/composables/useTheme'
 import { readThemePalette } from '@/utils/theme'
@@ -268,7 +263,7 @@ const trendLoading = ref(true)
 const efficiencyLoading = ref(true)
 const trendData = ref<AbilityTrend>({
   weeks: [],
-  completionRateTrend: [],
+  reviewActivityTrend: [],
   reviewDebtTrend: [],
   masteredGrowthTrend: [],
   overallTrend: [],
@@ -282,7 +277,6 @@ const efficiencyData = ref<EfficiencyData>({
   efTrend: [],
   ratingDistribution: {},
   forgettingRateTrend: [],
-  completionRateTrend: [],
   reviewDebtTrend: [],
   masteredGrowthTrend: [],
   masteryDistribution: {},
@@ -290,7 +284,6 @@ const efficiencyData = ref<EfficiencyData>({
   categoryMastery: [],
   totalReviews: 0,
   currentStreak: 0,
-  reviewCompletionRate: 0,
   forgettingRate: 0
 })
 const learningInsights = ref<LearningInsights>({
@@ -373,9 +366,9 @@ const normalizedCategoryTrends = computed(() => {
   }))
 })
 
-const latestCompletionRate = computed(() => {
-  const data = trendData.value.completionRateTrend
-  return data.length ? data[data.length - 1]!.value : null
+const latestReviewDebtCount = computed(() => {
+  const data = efficiencyData.value.reviewDebtTrend
+  return data.length ? data[data.length - 1]!.reviewDebtCount : 0
 })
 
 const masteryItems = computed(() => {
@@ -440,17 +433,12 @@ const summarySignals = computed(() => [
     toneClass: 'summary-slab-amber'
   },
   {
-    label: '本周完成率',
-    value: `${formatPercent(latestCompletionRate.value)}%`,
-    detail: '先看这一周有没有真正往前推进',
+    label: '到期待复盘',
+    value: `${latestReviewDebtCount.value} 题`,
+    detail: latestReviewDebtCount.value > 0 ? '先把到期错题清一轮，再补新的训练。' : '当前没有到期错题，可以继续推进新训练。',
     toneClass: ''
   }
 ])
-
-const formatPercent = (value?: number | null) => {
-  if (value == null || Number.isNaN(value)) return '0'
-  return Number.isInteger(value) ? String(value) : Number(value).toFixed(0)
-}
 
 const changeWeeks = (w: number) => {
   selectedWeeks.value = w
@@ -844,6 +832,7 @@ watch(theme, () => {
 
 <style scoped>
 .mode-switch {
+  width: min(100%, 320px);
   border: 1px solid var(--bc-border-subtle);
   border-radius: 999px;
   background: var(--interactive-bg);
@@ -1015,5 +1004,11 @@ watch(theme, () => {
 
 .mastery-fill-cyan {
   background: linear-gradient(90deg, rgba(var(--bc-cyan-rgb), 0.62), var(--bc-cyan));
+}
+
+@media (max-width: 768px) {
+  .mode-switch {
+    width: 100%;
+  }
 }
 </style>

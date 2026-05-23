@@ -1,30 +1,17 @@
 package com.offerpilot.analytics.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.offerpilot.analytics.entity.DailyMemorySnapshot;
-import com.offerpilot.analytics.mapper.DailyMemorySnapshotMapper;
 import com.offerpilot.analytics.service.AnalyticsService;
 import com.offerpilot.analytics.vo.EfficiencyVO;
 import com.offerpilot.analytics.vo.LearningInsightsVO;
 import com.offerpilot.analytics.vo.TrendVO;
 import com.offerpilot.application.entity.JobApplication;
 import com.offerpilot.application.mapper.JobApplicationMapper;
-import com.offerpilot.cards.entity.DailyCardTask;
-import com.offerpilot.cards.entity.KnowledgeCard;
-import com.offerpilot.cards.entity.KnowledgeCardLog;
-import com.offerpilot.cards.mapper.DailyCardTaskMapper;
-import com.offerpilot.cards.mapper.KnowledgeCardLogMapper;
-import com.offerpilot.cards.mapper.KnowledgeCardMapper;
-import com.offerpilot.category.entity.Category;
 import com.offerpilot.category.service.CategoryService;
 import com.offerpilot.interview.entity.InterviewRecord;
 import com.offerpilot.interview.entity.InterviewSession;
 import com.offerpilot.interview.mapper.InterviewRecordMapper;
 import com.offerpilot.interview.mapper.InterviewSessionMapper;
-import com.offerpilot.knowledge.entity.KnowledgeChunk;
-import com.offerpilot.knowledge.entity.KnowledgeDoc;
-import com.offerpilot.knowledge.mapper.KnowledgeChunkMapper;
-import com.offerpilot.knowledge.mapper.KnowledgeDocMapper;
 import com.offerpilot.plan.entity.StudyPlan;
 import com.offerpilot.plan.entity.StudyPlanTask;
 import com.offerpilot.plan.mapper.StudyPlanMapper;
@@ -42,10 +29,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.temporal.IsoFields;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -65,9 +50,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AnalyticsServiceImpl implements AnalyticsService {
 
-    private static final String SOURCE_REF_KNOWLEDGE_CHUNK = "knowledge_chunk";
-    private static final String SOURCE_REF_WRONG_QUESTION = "wrong_question";
-    private static final String SOURCE_REF_INTERVIEW_RECORD = "interview_record";
     private static final BigDecimal DEFAULT_EASE_FACTOR = new BigDecimal("2.50");
 
     private final InterviewRecordMapper recordMapper;
@@ -76,50 +58,34 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     private final CategoryService categoryService;
     private final WrongQuestionMapper wrongQuestionMapper;
     private final ReviewLogMapper reviewLogMapper;
-    private final KnowledgeCardMapper knowledgeCardMapper;
-    private final KnowledgeCardLogMapper knowledgeCardLogMapper;
-    private final KnowledgeChunkMapper knowledgeChunkMapper;
-    private final KnowledgeDocMapper knowledgeDocMapper;
-    private final DailyCardTaskMapper dailyCardTaskMapper;
-    private final DailyMemorySnapshotMapper dailyMemorySnapshotMapper;
     private final StudyPlanMapper studyPlanMapper;
     private final StudyPlanTaskMapper studyPlanTaskMapper;
     private final ResumeFileMapper resumeFileMapper;
     private final JobApplicationMapper jobApplicationMapper;
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public TrendVO getAbilityTrend(Long userId, int weeks, List<Long> categoryIds) {
         int safeWeeks = weeks <= 0 ? 12 : weeks;
-        ensureSnapshots(userId, safeWeeks * 7 + 7);
+        LocalDate startDate = LocalDate.now().minusWeeks(safeWeeks).with(DayOfWeek.MONDAY);
 
-        List<DailyMemorySnapshot> snapshots = dailyMemorySnapshotMapper.selectList(new LambdaQueryWrapper<DailyMemorySnapshot>()
-                .eq(DailyMemorySnapshot::getUserId, userId)
-                .ge(DailyMemorySnapshot::getSnapshotDate, LocalDate.now().minusWeeks(safeWeeks).with(DayOfWeek.MONDAY))
-                .orderByAsc(DailyMemorySnapshot::getSnapshotDate));
+        List<WrongQuestion> wrongs = wrongQuestionMapper.selectList(new LambdaQueryWrapper<WrongQuestion>()
+                .eq(WrongQuestion::getUserId, userId)
+                .select(WrongQuestion::getNextReviewDate, WrongQuestion::getLastReviewTime, WrongQuestion::getMasteryLevel, WrongQuestion::getEaseFactor, WrongQuestion::getStreak));
 
-        List<TrendVO.MemoryTrendPoint> completionRateTrend = aggregateSnapshotTrend(
-                snapshots,
-                DailyMemorySnapshot::getTodayCompletionRate,
-                snapshot -> snapshot.getTodayCardTotal() == null ? 0 : snapshot.getTodayCardTotal());
-        List<TrendVO.MemoryTrendPoint> reviewDebtTrend = aggregateSnapshotTrend(
-                snapshots,
-                snapshot -> BigDecimal.valueOf(snapshot.getReviewDebtCount() == null ? 0 : snapshot.getReviewDebtCount()),
-                snapshot -> snapshot.getReviewDebtCount() == null ? 0 : snapshot.getReviewDebtCount());
-        List<TrendVO.MemoryTrendPoint> masteredGrowthTrend = aggregateSnapshotTrend(
-                snapshots,
-                snapshot -> BigDecimal.valueOf(snapshot.getMasteredCardCount() == null ? 0 : snapshot.getMasteredCardCount()),
-                snapshot -> snapshot.getMasteredCardCount() == null ? 0 : snapshot.getMasteredCardCount());
+        List<TrendVO.MemoryTrendPoint> reviewActivityTrend = buildReviewActivityTrend(userId, safeWeeks);
+        List<TrendVO.MemoryTrendPoint> reviewDebtTrend = buildReviewDebtTrend(wrongs, startDate);
+        List<TrendVO.MemoryTrendPoint> masteredGrowthTrend = buildMasteryGrowthTrend(wrongs, startDate);
 
         TrendData interviewTrend = buildInterviewTrend(userId, safeWeeks, categoryIds);
-        List<String> weeksAxis = completionRateTrend.stream().map(TrendVO.MemoryTrendPoint::getWeek).toList();
+        List<String> weeksAxis = reviewActivityTrend.stream().map(TrendVO.MemoryTrendPoint::getWeek).toList();
         if (weeksAxis.isEmpty()) {
             weeksAxis = interviewTrend.weeks();
         }
 
         return TrendVO.builder()
                 .weeks(weeksAxis)
-                .completionRateTrend(completionRateTrend)
+                .reviewActivityTrend(reviewActivityTrend)
                 .reviewDebtTrend(reviewDebtTrend)
                 .masteredGrowthTrend(masteredGrowthTrend)
                 .overallTrend(interviewTrend.overallTrend())
@@ -131,63 +97,28 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public EfficiencyVO getEfficiencyData(Long userId) {
-        ensureSnapshots(userId, 90);
-
         List<WrongQuestion> wrongs = wrongQuestionMapper.selectList(
                 new LambdaQueryWrapper<WrongQuestion>().eq(WrongQuestion::getUserId, userId));
-        List<KnowledgeCard> cards = knowledgeCardMapper.selectList(
-                new LambdaQueryWrapper<KnowledgeCard>()
-                        .inSql(KnowledgeCard::getTaskId,
-                                "SELECT id FROM knowledge_card_task WHERE user_id = " + userId + " AND status <> 'invalid'"));
-        List<ReviewLog> allLogs = reviewLogMapper.selectList(
+        List<ReviewLog> reviewLogs = reviewLogMapper.selectList(
                 new LambdaQueryWrapper<ReviewLog>()
                         .eq(ReviewLog::getUserId, userId)
                         .orderByAsc(ReviewLog::getCreateTime));
-        List<KnowledgeCardLog> allCardLogs = knowledgeCardLogMapper.selectList(
-                new LambdaQueryWrapper<KnowledgeCardLog>()
-                        .eq(KnowledgeCardLog::getUserId, userId)
-                        .orderByAsc(KnowledgeCardLog::getCreateTime));
-        List<DailyMemorySnapshot> snapshots = dailyMemorySnapshotMapper.selectList(new LambdaQueryWrapper<DailyMemorySnapshot>()
-                .eq(DailyMemorySnapshot::getUserId, userId)
-                .ge(DailyMemorySnapshot::getSnapshotDate, LocalDate.now().minusDays(90))
-                .orderByAsc(DailyMemorySnapshot::getSnapshotDate));
 
-        Map<String, Long> masteryDist = buildMasteryDistribution(wrongs, cards);
-        BigDecimal avgEaseFactor = resolveAvgEaseFactor(wrongs, cards);
-        Map<Integer, Long> ratingDist = buildRatingDistribution(allLogs, allCardLogs);
-        MergedLogs mergedLogs = mergeLogs(userId, allLogs, allCardLogs);
+        Map<String, Long> masteryDist = buildMasteryDistribution(wrongs);
+        BigDecimal avgEaseFactor = resolveAvgEaseFactor(wrongs);
+        Map<Integer, Long> ratingDist = buildRatingDistribution(reviewLogs);
+        List<MergedLogPoint> mergedLogs = mergeLogs(userId, reviewLogs);
 
-        List<EfficiencyVO.WeeklyEF> efTrend = buildEfTrend(mergedLogs.logs());
-        List<EfficiencyVO.WeeklyForgettingRate> frTrend = buildForgettingRateTrend(mergedLogs.logs());
-        List<EfficiencyVO.CompletionRatePoint> completionRateTrend = snapshots.stream()
-                .map(snapshot -> EfficiencyVO.CompletionRatePoint.builder()
-                        .label(snapshot.getSnapshotDate().toString())
-                        .completionRate(defaultDecimal(snapshot.getTodayCompletionRate()))
-                        .plannedCount(snapshot.getTodayCardTotal() == null ? 0 : snapshot.getTodayCardTotal())
-                        .completedCount(snapshot.getTodayCompletedCards() == null ? 0 : snapshot.getTodayCompletedCards())
-                        .build())
-                .toList();
-        List<EfficiencyVO.DebtTrendPoint> reviewDebtTrend = snapshots.stream()
-                .map(snapshot -> EfficiencyVO.DebtTrendPoint.builder()
-                        .label(snapshot.getSnapshotDate().toString())
-                        .reviewDebtCount(snapshot.getReviewDebtCount() == null ? 0 : snapshot.getReviewDebtCount())
-                        .build())
-                .toList();
-        List<EfficiencyVO.MasteredGrowthPoint> masteredGrowthTrend = snapshots.stream()
-                .map(snapshot -> EfficiencyVO.MasteredGrowthPoint.builder()
-                        .label(snapshot.getSnapshotDate().toString())
-                        .masteredCardCount(snapshot.getMasteredCardCount() == null ? 0 : snapshot.getMasteredCardCount())
-                        .build())
-                .toList();
-        Map<String, Long> contentTypeDistribution = mergedLogs.logs().stream()
+        List<EfficiencyVO.WeeklyEF> efTrend = buildEfTrend(mergedLogs);
+        List<EfficiencyVO.WeeklyForgettingRate> frTrend = buildForgettingRateTrend(mergedLogs);
+        List<EfficiencyVO.DebtTrendPoint> reviewDebtTrend = buildDebtTrendPoints(wrongs);
+        List<EfficiencyVO.MasteredGrowthPoint> masteredGrowthTrend = buildMasteredGrowthPoints(wrongs);
+        Map<String, Long> contentTypeDistribution = mergedLogs.stream()
                 .collect(Collectors.groupingBy(MergedLogPoint::contentType, Collectors.counting()));
-        List<EfficiencyVO.CategoryMastery> categoryMastery = buildCategoryMastery(userId, cards);
+        List<EfficiencyVO.CategoryMastery> categoryMastery = buildCategoryMastery(userId, wrongs);
 
-        BigDecimal reviewCompletionRate = snapshots.isEmpty()
-                ? BigDecimal.ZERO
-                : defaultDecimal(snapshots.get(snapshots.size() - 1).getTodayCompletionRate());
         BigDecimal forgettingRate = frTrend.isEmpty()
                 ? BigDecimal.ZERO
                 : BigDecimal.valueOf(frTrend.get(frTrend.size() - 1).getForgettingRate() * 100).setScale(2, RoundingMode.HALF_UP);
@@ -197,24 +128,20 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .efTrend(efTrend)
                 .ratingDistribution(ratingDist)
                 .forgettingRateTrend(frTrend)
-                .completionRateTrend(completionRateTrend)
                 .reviewDebtTrend(reviewDebtTrend)
                 .masteredGrowthTrend(masteredGrowthTrend)
                 .masteryDistribution(masteryDist)
                 .contentTypeDistribution(contentTypeDistribution)
                 .categoryMastery(categoryMastery)
-                .totalReviews(mergedLogs.logs().size())
-                .currentStreak(mergedLogs.currentStreak())
-                .reviewCompletionRate(reviewCompletionRate)
+                .totalReviews(mergedLogs.size())
+                .currentStreak(resolveCurrentStreak(mergedLogs))
                 .forgettingRate(forgettingRate)
                 .build();
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public LearningInsightsVO getLearningInsights(Long userId) {
-        ensureSnapshots(userId, 14);
-
         LocalDate today = LocalDate.now();
         LocalDate thisMonday = today.with(DayOfWeek.MONDAY);
         LocalDate lastMonday = thisMonday.minusWeeks(1);
@@ -233,7 +160,9 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         int lastWeekCount = 0;
 
         for (InterviewSession session : recentSessions) {
-            if (session.getStartTime() == null || session.getTotalScore() == null) continue;
+            if (session.getStartTime() == null || session.getTotalScore() == null) {
+                continue;
+            }
             LocalDate sessionDate = session.getStartTime().toLocalDate();
             if (!sessionDate.isBefore(thisMonday)) {
                 thisWeekAvg = thisWeekAvg.add(session.getTotalScore());
@@ -253,13 +182,14 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
         List<LearningInsightsVO.CategoryChange> categoryChanges = buildCategoryChanges(recentSessions, thisMonday);
         List<LearningInsightsVO.HourDistribution> bestStudyHours = analyzeBestHours(userId);
-        List<DailyMemorySnapshot> snapshots = dailyMemorySnapshotMapper.selectList(new LambdaQueryWrapper<DailyMemorySnapshot>()
-                .eq(DailyMemorySnapshot::getUserId, userId)
-                .ge(DailyMemorySnapshot::getSnapshotDate, today.minusDays(7))
-                .orderByAsc(DailyMemorySnapshot::getSnapshotDate));
 
-        DailyMemorySnapshot latest = snapshots.isEmpty() ? null : snapshots.get(snapshots.size() - 1);
-        DailyMemorySnapshot previous = snapshots.size() >= 2 ? snapshots.get(snapshots.size() - 2) : null;
+        List<WrongQuestion> wrongs = wrongQuestionMapper.selectList(new LambdaQueryWrapper<WrongQuestion>()
+                .eq(WrongQuestion::getUserId, userId));
+        List<ReviewLog> recentReviewLogs = reviewLogMapper.selectList(new LambdaQueryWrapper<ReviewLog>()
+                .eq(ReviewLog::getUserId, userId)
+                .ge(ReviewLog::getCreateTime, today.minusDays(7).atStartOfDay())
+                .orderByAsc(ReviewLog::getCreateTime));
+
         StudyPlan activePlan = studyPlanMapper.selectOne(new LambdaQueryWrapper<StudyPlan>()
                 .eq(StudyPlan::getUserId, userId)
                 .orderByDesc(StudyPlan::getUpdateTime)
@@ -273,6 +203,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
             todayPlanTaskCount = todayTasks.size();
             todayPlanCompletedTaskCount = (int) todayTasks.stream().filter(task -> "completed".equals(task.getStatus())).count();
         }
+
         List<JobApplication> applications = jobApplicationMapper.selectList(new LambdaQueryWrapper<JobApplication>()
                 .eq(JobApplication::getUserId, userId));
         int activeApplicationCount = (int) applications.stream()
@@ -281,6 +212,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         int offerCount = (int) applications.stream()
                 .filter(item -> "offer".equals(item.getStatus()))
                 .count();
+
         List<ResumeFile> resumes = resumeFileMapper.selectList(new LambdaQueryWrapper<ResumeFile>()
                 .eq(ResumeFile::getUserId, userId)
                 .orderByDesc(ResumeFile::getUpdateTime));
@@ -291,9 +223,9 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .lastWeekAvgScore(lastAvg)
                 .thisWeekInterviewCount(thisWeekCount)
                 .lastWeekInterviewCount(lastWeekCount)
-                .todayCompletionStatus(resolveTodayCompletionStatus(latest))
-                .reviewDebtStatus(resolveReviewDebtStatus(latest, previous))
-                .masteryGrowthStatus(resolveMasteryGrowthStatus(latest, previous))
+                .todayCompletionStatus(resolveTodayCompletionStatus(recentReviewLogs))
+                .reviewDebtStatus(resolveReviewDebtStatus(wrongs))
+                .masteryGrowthStatus(resolveMasteryGrowthStatus(wrongs))
                 .planExecutionStatus(resolvePlanExecutionStatus(activePlan, todayPlanCompletedTaskCount, todayPlanTaskCount))
                 .todayPlanCompletedTaskCount(todayPlanCompletedTaskCount)
                 .todayPlanTaskCount(todayPlanTaskCount)
@@ -395,7 +327,9 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         Map<String, List<InterviewRecord>> byWeek = new LinkedHashMap<>();
         for (InterviewRecord record : records) {
             InterviewSession session = sessionMap.get(record.getSessionId());
-            if (session == null || session.getStartTime() == null) continue;
+            if (session == null || session.getStartTime() == null) {
+                continue;
+            }
             String weekKey = formatWeek(session.getStartTime().toLocalDate());
             byWeek.computeIfAbsent(weekKey, key -> new ArrayList<>()).add(record);
         }
@@ -428,8 +362,12 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         for (InterviewRecord record : records) {
             InterviewSession session = sessionMap.get(record.getSessionId());
             Question question = questionMap.get(record.getQuestionId());
-            if (session == null || question == null || question.getCategoryId() == null) continue;
-            if (filterCategoryIds != null && !filterCategoryIds.contains(question.getCategoryId())) continue;
+            if (session == null || question == null || question.getCategoryId() == null || session.getStartTime() == null) {
+                continue;
+            }
+            if (filterCategoryIds != null && !filterCategoryIds.contains(question.getCategoryId())) {
+                continue;
+            }
             String weekKey = formatWeek(session.getStartTime().toLocalDate());
             categoryWeekScores
                     .computeIfAbsent(question.getCategoryId(), key -> new LinkedHashMap<>())
@@ -458,14 +396,365 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         return new TrendData(allWeeks, overallTrend, categoryTrends);
     }
 
-    private Map<String, Long> buildMasteryDistribution(List<WrongQuestion> wrongs, List<KnowledgeCard> cards) {
+    private List<TrendVO.MemoryTrendPoint> buildReviewActivityTrend(Long userId, int weeks) {
+        List<ReviewLog> logs = reviewLogMapper.selectList(new LambdaQueryWrapper<ReviewLog>()
+                .eq(ReviewLog::getUserId, userId)
+                .ge(ReviewLog::getCreateTime, LocalDate.now().minusWeeks(weeks).with(DayOfWeek.MONDAY).atStartOfDay())
+                .orderByAsc(ReviewLog::getCreateTime));
+        Map<String, Long> countByWeek = logs.stream()
+                .filter(log -> log.getCreateTime() != null)
+                .collect(Collectors.groupingBy(log -> formatWeek(log.getCreateTime().toLocalDate()), LinkedHashMap::new, Collectors.counting()));
+        return countByWeek.entrySet().stream()
+                .map(entry -> TrendVO.MemoryTrendPoint.builder()
+                        .week(entry.getKey())
+                        .value(BigDecimal.valueOf(entry.getValue()))
+                        .count(entry.getValue().intValue())
+                        .build())
+                .toList();
+    }
+
+    private List<TrendVO.MemoryTrendPoint> buildReviewDebtTrend(List<WrongQuestion> wrongs, LocalDate startDate) {
+        Map<String, Integer> debtByWeek = new LinkedHashMap<>();
+        for (WrongQuestion wrong : wrongs) {
+            LocalDate date = wrong.getNextReviewDate();
+            if (date == null || date.isBefore(startDate)) {
+                continue;
+            }
+            String week = formatWeek(date);
+            debtByWeek.merge(week, 1, Integer::sum);
+        }
+        return debtByWeek.entrySet().stream()
+                .map(entry -> TrendVO.MemoryTrendPoint.builder()
+                        .week(entry.getKey())
+                        .value(BigDecimal.valueOf(entry.getValue()))
+                        .count(entry.getValue())
+                        .build())
+                .toList();
+    }
+
+    private List<TrendVO.MemoryTrendPoint> buildMasteryGrowthTrend(List<WrongQuestion> wrongs, LocalDate startDate) {
+        Map<String, Integer> masteryByWeek = new LinkedHashMap<>();
+        for (WrongQuestion wrong : wrongs) {
+            if (!"mastered".equals(wrong.getMasteryLevel()) || wrong.getLastReviewTime() == null) {
+                continue;
+            }
+            LocalDate date = wrong.getLastReviewTime().toLocalDate();
+            if (date.isBefore(startDate)) {
+                continue;
+            }
+            masteryByWeek.merge(formatWeek(date), 1, Integer::sum);
+        }
+        return masteryByWeek.entrySet().stream()
+                .map(entry -> TrendVO.MemoryTrendPoint.builder()
+                        .week(entry.getKey())
+                        .value(BigDecimal.valueOf(entry.getValue()))
+                        .count(entry.getValue())
+                        .build())
+                .toList();
+    }
+
+    private Map<String, Long> buildMasteryDistribution(List<WrongQuestion> wrongs) {
         Map<String, Long> masteryDistribution = new HashMap<>();
         wrongs.forEach(wrong -> masteryDistribution.merge(
                 wrong.getMasteryLevel() != null ? wrong.getMasteryLevel() : "not_started",
                 1L,
                 Long::sum));
-        cards.forEach(card -> masteryDistribution.merge(normalizeKnowledgeMastery(card), 1L, Long::sum));
         return masteryDistribution;
+    }
+
+    private BigDecimal resolveAvgEaseFactor(List<WrongQuestion> wrongs) {
+        BigDecimal efSum = wrongs.stream()
+                .map(WrongQuestion::getEaseFactor)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        long efCount = wrongs.stream().filter(wrong -> wrong.getEaseFactor() != null).count();
+        return efCount > 0
+                ? efSum.divide(BigDecimal.valueOf(efCount), 2, RoundingMode.HALF_UP)
+                : DEFAULT_EASE_FACTOR;
+    }
+
+    private Map<Integer, Long> buildRatingDistribution(List<ReviewLog> reviewLogs) {
+        Map<Integer, Long> ratingDistribution = new HashMap<>();
+        reviewLogs.forEach(logItem -> ratingDistribution.merge(logItem.getRating(), 1L, Long::sum));
+        return ratingDistribution;
+    }
+
+    private List<MergedLogPoint> mergeLogs(Long userId, List<ReviewLog> reviewLogs) {
+        List<MergedLogPoint> mergedLogs = new ArrayList<>();
+        reviewLogs.forEach(logItem -> mergedLogs.add(new MergedLogPoint(
+                formatWeek(logItem.getCreateTime().toLocalDate()),
+                logItem.getEaseFactorAfter(),
+                logItem.getRating(),
+                resolveWrongContentType(userId, logItem.getWrongQuestionId()),
+                logItem.getCreateTime())));
+        mergedLogs.sort(Comparator.comparing(MergedLogPoint::createTime));
+        return mergedLogs;
+    }
+
+    private int resolveCurrentStreak(List<MergedLogPoint> mergedLogs) {
+        if (mergedLogs.isEmpty()) {
+            return 0;
+        }
+        LocalDate cursor = LocalDate.now();
+        Set<LocalDate> reviewDays = mergedLogs.stream().map(log -> log.createTime().toLocalDate()).collect(Collectors.toSet());
+        if (!reviewDays.contains(cursor)) {
+            cursor = cursor.minusDays(1);
+        }
+        int streak = 0;
+        while (reviewDays.contains(cursor)) {
+            streak++;
+            cursor = cursor.minusDays(1);
+        }
+        return streak;
+    }
+
+    private List<EfficiencyVO.WeeklyEF> buildEfTrend(List<MergedLogPoint> mergedLogs) {
+        Map<String, List<MergedLogPoint>> logsByWeek = mergedLogs.stream()
+                .collect(Collectors.groupingBy(MergedLogPoint::week, LinkedHashMap::new, Collectors.toList()));
+        List<EfficiencyVO.WeeklyEF> result = new ArrayList<>();
+        for (Map.Entry<String, List<MergedLogPoint>> entry : logsByWeek.entrySet()) {
+            BigDecimal lastEf = entry.getValue().stream()
+                    .map(MergedLogPoint::easeFactorAfter)
+                    .filter(Objects::nonNull)
+                    .reduce((first, second) -> second)
+                    .orElse(DEFAULT_EASE_FACTOR);
+            result.add(EfficiencyVO.WeeklyEF.builder()
+                    .week(entry.getKey())
+                    .avgEF(lastEf)
+                    .reviewCount(entry.getValue().size())
+                    .build());
+        }
+        return result;
+    }
+
+    private List<EfficiencyVO.WeeklyForgettingRate> buildForgettingRateTrend(List<MergedLogPoint> mergedLogs) {
+        Map<String, List<MergedLogPoint>> logsByWeek = mergedLogs.stream()
+                .collect(Collectors.groupingBy(MergedLogPoint::week, LinkedHashMap::new, Collectors.toList()));
+        List<EfficiencyVO.WeeklyForgettingRate> result = new ArrayList<>();
+        for (Map.Entry<String, List<MergedLogPoint>> entry : logsByWeek.entrySet()) {
+            long againCount = entry.getValue().stream().filter(log -> log.rating() == 1).count();
+            double forgettingRate = entry.getValue().isEmpty() ? 0.0 : (double) againCount / entry.getValue().size();
+            result.add(EfficiencyVO.WeeklyForgettingRate.builder()
+                    .week(entry.getKey())
+                    .forgettingRate(forgettingRate)
+                    .totalRatings(entry.getValue().size())
+                    .againCount((int) againCount)
+                    .build());
+        }
+        return result;
+    }
+
+    private List<EfficiencyVO.DebtTrendPoint> buildDebtTrendPoints(List<WrongQuestion> wrongs) {
+        Map<LocalDate, Integer> dueByDate = new LinkedHashMap<>();
+        wrongs.stream()
+                .map(WrongQuestion::getNextReviewDate)
+                .filter(Objects::nonNull)
+                .sorted()
+                .forEach(date -> dueByDate.merge(date, 1, Integer::sum));
+        return dueByDate.entrySet().stream()
+                .map(entry -> EfficiencyVO.DebtTrendPoint.builder()
+                        .label(entry.getKey().toString())
+                        .reviewDebtCount(entry.getValue())
+                        .build())
+                .toList();
+    }
+
+    private List<EfficiencyVO.MasteredGrowthPoint> buildMasteredGrowthPoints(List<WrongQuestion> wrongs) {
+        Map<LocalDate, Integer> masteryByDate = new LinkedHashMap<>();
+        wrongs.stream()
+                .filter(wrong -> "mastered".equals(wrong.getMasteryLevel()) && wrong.getLastReviewTime() != null)
+                .sorted(Comparator.comparing(WrongQuestion::getLastReviewTime))
+                .forEach(wrong -> masteryByDate.merge(wrong.getLastReviewTime().toLocalDate(), 1, Integer::sum));
+        int running = 0;
+        List<EfficiencyVO.MasteredGrowthPoint> result = new ArrayList<>();
+        for (Map.Entry<LocalDate, Integer> entry : masteryByDate.entrySet()) {
+            running += entry.getValue();
+            result.add(EfficiencyVO.MasteredGrowthPoint.builder()
+                    .label(entry.getKey().toString())
+                    .masteredCardCount(running)
+                    .build());
+        }
+        return result;
+    }
+
+    private List<EfficiencyVO.CategoryMastery> buildCategoryMastery(Long userId, List<WrongQuestion> wrongs) {
+        if (wrongs.isEmpty()) {
+            return List.of();
+        }
+
+        Set<Long> questionIds = wrongs.stream().map(WrongQuestion::getQuestionId).filter(Objects::nonNull).collect(Collectors.toSet());
+        Map<Long, Question> questionMap = questionIds.isEmpty()
+                ? Map.of()
+                : questionMapper.selectBatchIds(questionIds).stream()
+                        .collect(Collectors.toMap(Question::getId, Function.identity(), (a, b) -> a));
+        Set<Long> categoryIds = questionMap.values().stream().map(Question::getCategoryId).filter(Objects::nonNull).collect(Collectors.toSet());
+        Map<Long, String> categoryNames = new HashMap<>();
+        if (!categoryIds.isEmpty()) {
+            categoryService.listByIds(categoryIds).forEach(category -> categoryNames.put(category.getId(), category.getName()));
+        }
+
+        Map<Long, List<WrongQuestion>> wrongsByCategory = new LinkedHashMap<>();
+        for (WrongQuestion wrong : wrongs) {
+            Question question = questionMap.get(wrong.getQuestionId());
+            Long categoryId = question == null ? null : question.getCategoryId();
+            wrongsByCategory.computeIfAbsent(categoryId == null ? -1L : categoryId, key -> new ArrayList<>()).add(wrong);
+        }
+
+        return wrongsByCategory.entrySet().stream()
+                .map(entry -> {
+                    List<WrongQuestion> items = entry.getValue();
+                    int total = items.size();
+                    int mastered = (int) items.stream().filter(item -> "mastered".equals(item.getMasteryLevel())).count();
+                    int dueCount = (int) items.stream()
+                            .filter(item -> item.getNextReviewDate() != null && !item.getNextReviewDate().isAfter(LocalDate.now()))
+                            .count();
+                    BigDecimal masteryRate = total <= 0
+                            ? BigDecimal.ZERO
+                            : BigDecimal.valueOf(mastered * 100.0 / total).setScale(2, RoundingMode.HALF_UP);
+                    return EfficiencyVO.CategoryMastery.builder()
+                            .categoryId(entry.getKey() < 0 ? null : entry.getKey())
+                            .categoryName(entry.getKey() < 0 ? "未分类" : categoryNames.getOrDefault(entry.getKey(), "未分类"))
+                            .totalCards(total)
+                            .masteredCards(mastered)
+                            .dueCount(dueCount)
+                            .masteryRate(masteryRate)
+                            .build();
+                })
+                .sorted(Comparator.comparing(EfficiencyVO.CategoryMastery::getDueCount).reversed()
+                        .thenComparing(EfficiencyVO.CategoryMastery::getMasteryRate))
+                .toList();
+    }
+
+    private List<LearningInsightsVO.CategoryChange> buildCategoryChanges(List<InterviewSession> recentSessions, LocalDate thisMonday) {
+        Set<Long> sessionIds = recentSessions.stream().map(InterviewSession::getId).collect(Collectors.toSet());
+        if (sessionIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<InterviewRecord> records = recordMapper.selectList(
+                new LambdaQueryWrapper<InterviewRecord>()
+                        .in(InterviewRecord::getSessionId, sessionIds)
+                        .isNotNull(InterviewRecord::getScore));
+        Map<Long, InterviewSession> sessionMap = recentSessions.stream()
+                .collect(Collectors.toMap(InterviewSession::getId, Function.identity(), (a, b) -> a));
+        Set<Long> questionIds = records.stream().map(InterviewRecord::getQuestionId).collect(Collectors.toSet());
+        Map<Long, Question> questionMap = questionIds.isEmpty() ? Map.of() : questionMapper.selectBatchIds(questionIds).stream()
+                .collect(Collectors.toMap(Question::getId, Function.identity(), (a, b) -> a));
+        Set<Long> categoryIds = questionMap.values().stream().map(Question::getCategoryId).filter(Objects::nonNull).collect(Collectors.toSet());
+        Map<Long, String> categoryNames = new HashMap<>();
+        if (!categoryIds.isEmpty()) {
+            categoryService.listByIds(categoryIds).forEach(category -> categoryNames.put(category.getId(), category.getName()));
+        }
+
+        Map<Long, Map<String, BigDecimal>> scoresByCategory = new HashMap<>();
+        for (InterviewRecord record : records) {
+            InterviewSession session = sessionMap.get(record.getSessionId());
+            Question question = questionMap.get(record.getQuestionId());
+            if (session == null || question == null || question.getCategoryId() == null || session.getStartTime() == null) {
+                continue;
+            }
+            String period = session.getStartTime().toLocalDate().isBefore(thisMonday) ? "last" : "this";
+            scoresByCategory.computeIfAbsent(question.getCategoryId(), key -> new HashMap<>()).merge(period, record.getScore(), BigDecimal::add);
+            scoresByCategory.computeIfAbsent(question.getCategoryId(), key -> new HashMap<>()).merge(period + "_count", BigDecimal.ONE, BigDecimal::add);
+        }
+
+        return scoresByCategory.entrySet().stream()
+                .map(entry -> {
+                    BigDecimal thisScore = entry.getValue().getOrDefault("this", BigDecimal.ZERO);
+                    BigDecimal thisCount = entry.getValue().getOrDefault("this_count", BigDecimal.ZERO);
+                    BigDecimal lastScore = entry.getValue().getOrDefault("last", BigDecimal.ZERO);
+                    BigDecimal lastCount = entry.getValue().getOrDefault("last_count", BigDecimal.ZERO);
+                    BigDecimal thisWeekScore = thisCount.compareTo(BigDecimal.ZERO) > 0
+                            ? thisScore.divide(thisCount, 2, RoundingMode.HALF_UP)
+                            : BigDecimal.ZERO;
+                    BigDecimal lastWeekScore = lastCount.compareTo(BigDecimal.ZERO) > 0
+                            ? lastScore.divide(lastCount, 2, RoundingMode.HALF_UP)
+                            : BigDecimal.ZERO;
+                    return LearningInsightsVO.CategoryChange.builder()
+                            .categoryId(entry.getKey())
+                            .categoryName(categoryNames.getOrDefault(entry.getKey(), "未分类"))
+                            .thisWeekScore(thisWeekScore)
+                            .lastWeekScore(lastWeekScore)
+                            .change(thisWeekScore.subtract(lastWeekScore))
+                            .build();
+                })
+                .sorted(Comparator.comparing((LearningInsightsVO.CategoryChange change) -> change.getChange().abs()).reversed())
+                .toList();
+    }
+
+    private List<LearningInsightsVO.HourDistribution> analyzeBestHours(Long userId) {
+        List<InterviewSession> sessions = sessionMapper.selectList(
+                new LambdaQueryWrapper<InterviewSession>()
+                        .eq(InterviewSession::getUserId, userId)
+                        .eq(InterviewSession::getStatus, "finished")
+                        .select(InterviewSession::getStartTime, InterviewSession::getTotalScore)
+                        .isNotNull(InterviewSession::getStartTime)
+                        .isNotNull(InterviewSession::getTotalScore)
+                        .last("LIMIT 200"));
+        if (sessions.isEmpty()) {
+            return List.of();
+        }
+
+        Map<String, List<BigDecimal>> buckets = new LinkedHashMap<>();
+        buckets.put("上午 (6-12)", new ArrayList<>());
+        buckets.put("下午 (12-18)", new ArrayList<>());
+        buckets.put("晚上 (18-24)", new ArrayList<>());
+        buckets.put("凌晨 (0-6)", new ArrayList<>());
+        for (InterviewSession session : sessions) {
+            int hour = session.getStartTime().getHour();
+            String bucket = hour >= 6 && hour < 12 ? "上午 (6-12)"
+                    : hour < 18 ? "下午 (12-18)"
+                    : hour < 24 ? "晚上 (18-24)"
+                    : "凌晨 (0-6)";
+            buckets.get(bucket).add(session.getTotalScore());
+        }
+
+        return buckets.entrySet().stream()
+                .filter(entry -> !entry.getValue().isEmpty())
+                .map(entry -> LearningInsightsVO.HourDistribution.builder()
+                        .timeSlot(entry.getKey())
+                        .sessionCount(entry.getValue().size())
+                        .avgScore(avg(entry.getValue()))
+                        .build())
+                .sorted(Comparator.comparing(LearningInsightsVO.HourDistribution::getAvgScore).reversed())
+                .toList();
+    }
+
+    private String resolveTodayCompletionStatus(List<ReviewLog> recentReviewLogs) {
+        long todayCount = recentReviewLogs.stream()
+                .filter(log -> log.getCreateTime() != null && log.getCreateTime().toLocalDate().equals(LocalDate.now()))
+                .count();
+        if (todayCount <= 0) {
+            return "今天还没有开始错题复盘";
+        }
+        if (todayCount >= 5) {
+            return "今天的复盘节奏已经拉起来了";
+        }
+        return String.format("今天已完成 %d 次错题复盘", todayCount);
+    }
+
+    private String resolveReviewDebtStatus(List<WrongQuestion> wrongs) {
+        long dueCount = wrongs.stream()
+                .filter(item -> item.getNextReviewDate() != null && !item.getNextReviewDate().isAfter(LocalDate.now()))
+                .count();
+        if (dueCount <= 0) {
+            return "当前没有待处理的错题积压";
+        }
+        if (dueCount >= 10) {
+            return String.format("高优先级积压 %d 题，建议先清理旧错题", dueCount);
+        }
+        return String.format("还有 %d 道错题待复盘", dueCount);
+    }
+
+    private String resolveMasteryGrowthStatus(List<WrongQuestion> wrongs) {
+        long masteredCount = wrongs.stream().filter(item -> "mastered".equals(item.getMasteryLevel())).count();
+        if (masteredCount <= 0) {
+            return "还没有形成稳定掌握的题目";
+        }
+        if (masteredCount < 5) {
+            return "掌握题量还在起步阶段";
+        }
+        return String.format("已稳定掌握 %d 道题，继续保持复盘节奏", masteredCount);
     }
 
     private String resolvePlanExecutionStatus(StudyPlan activePlan, int todayCompletedTaskCount, int todayPlanTaskCount) {
@@ -559,341 +848,6 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         return "/interview";
     }
 
-    private BigDecimal resolveAvgEaseFactor(List<WrongQuestion> wrongs, List<KnowledgeCard> cards) {
-        BigDecimal wrongEfSum = wrongs.stream()
-                .map(WrongQuestion::getEaseFactor)
-                .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal cardEfSum = cards.stream()
-                .map(KnowledgeCard::getEaseFactor)
-                .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        long efCount = wrongs.stream().filter(wrong -> wrong.getEaseFactor() != null).count()
-                + cards.stream().filter(card -> card.getEaseFactor() != null).count();
-        return efCount > 0
-                ? wrongEfSum.add(cardEfSum).divide(BigDecimal.valueOf(efCount), 2, RoundingMode.HALF_UP)
-                : DEFAULT_EASE_FACTOR;
-    }
-
-    private Map<Integer, Long> buildRatingDistribution(List<ReviewLog> reviewLogs, List<KnowledgeCardLog> cardLogs) {
-        Map<Integer, Long> ratingDistribution = new HashMap<>();
-        reviewLogs.forEach(logItem -> ratingDistribution.merge(logItem.getRating(), 1L, Long::sum));
-        cardLogs.forEach(logItem -> ratingDistribution.merge(logItem.getRating(), 1L, Long::sum));
-        return ratingDistribution;
-    }
-
-    private MergedLogs mergeLogs(Long userId, List<ReviewLog> reviewLogs, List<KnowledgeCardLog> cardLogs) {
-        List<MergedLogPoint> mergedLogs = new ArrayList<>();
-        reviewLogs.forEach(logItem -> mergedLogs.add(new MergedLogPoint(
-                formatWeek(logItem.getCreateTime().toLocalDate()),
-                logItem.getEaseFactorAfter(),
-                logItem.getRating(),
-                resolveWrongContentType(userId, logItem.getWrongQuestionId()),
-                logItem.getCreateTime())));
-        cardLogs.forEach(logItem -> mergedLogs.add(new MergedLogPoint(
-                formatWeek(logItem.getCreateTime().toLocalDate()),
-                logItem.getEaseFactorAfter(),
-                logItem.getRating(),
-                "knowledge_card",
-                logItem.getCreateTime())));
-        mergedLogs.sort(Comparator.comparing(MergedLogPoint::createTime));
-
-        int streak = 0;
-        LocalDate cursor = LocalDate.now();
-        Set<LocalDate> reviewDays = mergedLogs.stream().map(log -> log.createTime().toLocalDate()).collect(Collectors.toSet());
-        if (!reviewDays.contains(cursor)) {
-            cursor = cursor.minusDays(1);
-        }
-        while (reviewDays.contains(cursor)) {
-            streak++;
-            cursor = cursor.minusDays(1);
-        }
-        return new MergedLogs(mergedLogs, streak);
-    }
-
-    private List<EfficiencyVO.WeeklyEF> buildEfTrend(List<MergedLogPoint> mergedLogs) {
-        Map<String, List<MergedLogPoint>> logsByWeek = mergedLogs.stream()
-                .collect(Collectors.groupingBy(MergedLogPoint::week, LinkedHashMap::new, Collectors.toList()));
-        List<EfficiencyVO.WeeklyEF> result = new ArrayList<>();
-        for (Map.Entry<String, List<MergedLogPoint>> entry : logsByWeek.entrySet()) {
-            BigDecimal lastEf = entry.getValue().stream()
-                    .map(MergedLogPoint::easeFactorAfter)
-                    .filter(Objects::nonNull)
-                    .reduce((first, second) -> second)
-                    .orElse(DEFAULT_EASE_FACTOR);
-            result.add(EfficiencyVO.WeeklyEF.builder()
-                    .week(entry.getKey())
-                    .avgEF(lastEf)
-                    .reviewCount(entry.getValue().size())
-                    .build());
-        }
-        return result;
-    }
-
-    private List<EfficiencyVO.WeeklyForgettingRate> buildForgettingRateTrend(List<MergedLogPoint> mergedLogs) {
-        Map<String, List<MergedLogPoint>> logsByWeek = mergedLogs.stream()
-                .collect(Collectors.groupingBy(MergedLogPoint::week, LinkedHashMap::new, Collectors.toList()));
-        List<EfficiencyVO.WeeklyForgettingRate> result = new ArrayList<>();
-        for (Map.Entry<String, List<MergedLogPoint>> entry : logsByWeek.entrySet()) {
-            long againCount = entry.getValue().stream().filter(log -> log.rating() == 1).count();
-            double forgettingRate = entry.getValue().isEmpty() ? 0.0 : (double) againCount / entry.getValue().size();
-            result.add(EfficiencyVO.WeeklyForgettingRate.builder()
-                    .week(entry.getKey())
-                    .forgettingRate(forgettingRate)
-                    .totalRatings(entry.getValue().size())
-                    .againCount((int) againCount)
-                    .build());
-        }
-        return result;
-    }
-
-    private List<EfficiencyVO.CategoryMastery> buildCategoryMastery(Long userId, List<KnowledgeCard> cards) {
-        if (cards.isEmpty()) {
-            return List.of();
-        }
-
-        Map<Long, Long> categoryByCardId = resolveCardCategories(userId, cards);
-        Set<Long> categoryIds = categoryByCardId.values().stream().filter(Objects::nonNull).collect(Collectors.toSet());
-        Map<Long, String> categoryNames = new HashMap<>();
-        if (!categoryIds.isEmpty()) {
-            categoryService.listByIds(categoryIds).forEach(category -> categoryNames.put(category.getId(), category.getName()));
-        }
-
-        Map<Long, List<KnowledgeCard>> cardsByCategory = new LinkedHashMap<>();
-        for (KnowledgeCard card : cards) {
-            Long categoryId = categoryByCardId.get(card.getId());
-            cardsByCategory.computeIfAbsent(categoryId == null ? -1L : categoryId, key -> new ArrayList<>()).add(card);
-        }
-
-        return cardsByCategory.entrySet().stream()
-                .map(entry -> {
-                    List<KnowledgeCard> items = entry.getValue();
-                    int totalCards = items.size();
-                    int masteredCards = (int) items.stream().filter(card -> "mastered".equals(card.getState())).count();
-                    int dueCount = (int) items.stream()
-                            .filter(card -> !"mastered".equals(card.getState()))
-                            .filter(card -> card.getNextReviewAt() == null || !card.getNextReviewAt().isAfter(LocalDateTime.now()))
-                            .count();
-                    BigDecimal masteryRate = totalCards <= 0
-                            ? BigDecimal.ZERO
-                            : BigDecimal.valueOf(masteredCards * 100.0 / totalCards).setScale(2, RoundingMode.HALF_UP);
-                    return EfficiencyVO.CategoryMastery.builder()
-                            .categoryId(entry.getKey() < 0 ? null : entry.getKey())
-                            .categoryName(entry.getKey() < 0 ? "未分类" : categoryNames.getOrDefault(entry.getKey(), "未分类"))
-                            .totalCards(totalCards)
-                            .masteredCards(masteredCards)
-                            .dueCount(dueCount)
-                            .masteryRate(masteryRate)
-                            .build();
-                })
-                .sorted(Comparator.comparing(EfficiencyVO.CategoryMastery::getDueCount).reversed()
-                        .thenComparing(EfficiencyVO.CategoryMastery::getMasteryRate))
-                .toList();
-    }
-
-    private Map<Long, Long> resolveCardCategories(Long userId, List<KnowledgeCard> cards) {
-        Map<Long, Long> result = new HashMap<>();
-        Set<Long> chunkIds = cards.stream()
-                .filter(card -> SOURCE_REF_KNOWLEDGE_CHUNK.equals(card.getSourceRefType()) && card.getSourceRefId() != null)
-                .map(KnowledgeCard::getSourceRefId)
-                .collect(Collectors.toSet());
-        Set<Long> wrongIds = cards.stream()
-                .filter(card -> SOURCE_REF_WRONG_QUESTION.equals(card.getSourceRefType()) && card.getSourceRefId() != null)
-                .map(KnowledgeCard::getSourceRefId)
-                .collect(Collectors.toSet());
-        Set<Long> interviewIds = cards.stream()
-                .filter(card -> SOURCE_REF_INTERVIEW_RECORD.equals(card.getSourceRefType()) && card.getSourceRefId() != null)
-                .map(KnowledgeCard::getSourceRefId)
-                .collect(Collectors.toSet());
-
-        Map<Long, KnowledgeChunk> chunkMap = chunkIds.isEmpty() ? Map.of() : knowledgeChunkMapper.selectBatchIds(chunkIds).stream()
-                .collect(Collectors.toMap(KnowledgeChunk::getId, Function.identity(), (a, b) -> a));
-        Set<Long> docIds = chunkMap.values().stream().map(KnowledgeChunk::getDocId).collect(Collectors.toSet());
-        Map<Long, KnowledgeDoc> docMap = docIds.isEmpty() ? Map.of() : knowledgeDocMapper.selectBatchIds(docIds).stream()
-                .collect(Collectors.toMap(KnowledgeDoc::getId, Function.identity(), (a, b) -> a));
-        Map<Long, WrongQuestion> wrongMap = wrongIds.isEmpty() ? Map.of() : wrongQuestionMapper.selectBatchIds(wrongIds).stream()
-                .filter(wrong -> userId.equals(wrong.getUserId()))
-                .collect(Collectors.toMap(WrongQuestion::getId, Function.identity(), (a, b) -> a));
-        Map<Long, InterviewRecord> interviewMap = interviewIds.isEmpty() ? Map.of() : recordMapper.selectBatchIds(interviewIds).stream()
-                .filter(record -> userId.equals(record.getUserId()))
-                .collect(Collectors.toMap(InterviewRecord::getId, Function.identity(), (a, b) -> a));
-
-        Set<Long> questionIds = new java.util.HashSet<>();
-        wrongMap.values().forEach(wrong -> questionIds.add(wrong.getQuestionId()));
-        interviewMap.values().forEach(record -> questionIds.add(record.getQuestionId()));
-        Map<Long, Question> questionMap = questionIds.isEmpty() ? Map.of() : questionMapper.selectBatchIds(questionIds).stream()
-                .collect(Collectors.toMap(Question::getId, Function.identity(), (a, b) -> a));
-
-        for (KnowledgeCard card : cards) {
-            Long categoryId = null;
-            if (SOURCE_REF_KNOWLEDGE_CHUNK.equals(card.getSourceRefType()) && card.getSourceRefId() != null) {
-                KnowledgeChunk chunk = chunkMap.get(card.getSourceRefId());
-                KnowledgeDoc doc = chunk == null ? null : docMap.get(chunk.getDocId());
-                categoryId = doc == null ? null : doc.getCategoryId();
-            } else if (SOURCE_REF_WRONG_QUESTION.equals(card.getSourceRefType()) && card.getSourceRefId() != null) {
-                WrongQuestion wrong = wrongMap.get(card.getSourceRefId());
-                Question question = wrong == null ? null : questionMap.get(wrong.getQuestionId());
-                categoryId = question == null ? null : question.getCategoryId();
-            } else if (SOURCE_REF_INTERVIEW_RECORD.equals(card.getSourceRefType()) && card.getSourceRefId() != null) {
-                InterviewRecord record = interviewMap.get(card.getSourceRefId());
-                Question question = record == null ? null : questionMap.get(record.getQuestionId());
-                categoryId = question == null ? null : question.getCategoryId();
-            }
-            result.put(card.getId(), categoryId);
-        }
-        return result;
-    }
-
-    private List<LearningInsightsVO.CategoryChange> buildCategoryChanges(List<InterviewSession> recentSessions, LocalDate thisMonday) {
-        Set<Long> sessionIds = recentSessions.stream().map(InterviewSession::getId).collect(Collectors.toSet());
-        if (sessionIds.isEmpty()) {
-            return List.of();
-        }
-
-        List<InterviewRecord> records = recordMapper.selectList(
-                new LambdaQueryWrapper<InterviewRecord>()
-                        .in(InterviewRecord::getSessionId, sessionIds)
-                        .isNotNull(InterviewRecord::getScore));
-        Map<Long, InterviewSession> sessionMap = recentSessions.stream()
-                .collect(Collectors.toMap(InterviewSession::getId, Function.identity(), (a, b) -> a));
-        Set<Long> questionIds = records.stream().map(InterviewRecord::getQuestionId).collect(Collectors.toSet());
-        Map<Long, Question> questionMap = questionIds.isEmpty() ? Map.of() : questionMapper.selectBatchIds(questionIds).stream()
-                .collect(Collectors.toMap(Question::getId, Function.identity(), (a, b) -> a));
-        Set<Long> categoryIds = questionMap.values().stream().map(Question::getCategoryId).filter(Objects::nonNull).collect(Collectors.toSet());
-        Map<Long, String> categoryNames = new HashMap<>();
-        if (!categoryIds.isEmpty()) {
-            categoryService.listByIds(categoryIds).forEach(category -> categoryNames.put(category.getId(), category.getName()));
-        }
-
-        Map<Long, Map<String, BigDecimal>> scoresByCategory = new HashMap<>();
-        for (InterviewRecord record : records) {
-            InterviewSession session = sessionMap.get(record.getSessionId());
-            Question question = questionMap.get(record.getQuestionId());
-            if (session == null || question == null || question.getCategoryId() == null || session.getStartTime() == null) continue;
-            String period = session.getStartTime().toLocalDate().isBefore(thisMonday) ? "last" : "this";
-            scoresByCategory.computeIfAbsent(question.getCategoryId(), key -> new HashMap<>()).merge(period, record.getScore(), BigDecimal::add);
-            scoresByCategory.computeIfAbsent(question.getCategoryId(), key -> new HashMap<>()).merge(period + "_count", BigDecimal.ONE, BigDecimal::add);
-        }
-
-        return scoresByCategory.entrySet().stream()
-                .map(entry -> {
-                    BigDecimal thisScore = entry.getValue().getOrDefault("this", BigDecimal.ZERO);
-                    BigDecimal thisCount = entry.getValue().getOrDefault("this_count", BigDecimal.ZERO);
-                    BigDecimal lastScore = entry.getValue().getOrDefault("last", BigDecimal.ZERO);
-                    BigDecimal lastCount = entry.getValue().getOrDefault("last_count", BigDecimal.ZERO);
-                    BigDecimal thisWeekScore = thisCount.compareTo(BigDecimal.ZERO) > 0
-                            ? thisScore.divide(thisCount, 2, RoundingMode.HALF_UP)
-                            : BigDecimal.ZERO;
-                    BigDecimal lastWeekScore = lastCount.compareTo(BigDecimal.ZERO) > 0
-                            ? lastScore.divide(lastCount, 2, RoundingMode.HALF_UP)
-                            : BigDecimal.ZERO;
-                    return LearningInsightsVO.CategoryChange.builder()
-                            .categoryId(entry.getKey())
-                            .categoryName(categoryNames.getOrDefault(entry.getKey(), "未分类"))
-                            .thisWeekScore(thisWeekScore)
-                            .lastWeekScore(lastWeekScore)
-                            .change(thisWeekScore.subtract(lastWeekScore))
-                            .build();
-                })
-                .sorted(Comparator.comparing((LearningInsightsVO.CategoryChange change) -> change.getChange().abs()).reversed())
-                .toList();
-    }
-
-    private List<LearningInsightsVO.HourDistribution> analyzeBestHours(Long userId) {
-        List<InterviewSession> sessions = sessionMapper.selectList(
-                new LambdaQueryWrapper<InterviewSession>()
-                        .eq(InterviewSession::getUserId, userId)
-                        .eq(InterviewSession::getStatus, "finished")
-                        .select(InterviewSession::getStartTime, InterviewSession::getTotalScore)
-                        .isNotNull(InterviewSession::getStartTime)
-                        .isNotNull(InterviewSession::getTotalScore)
-                        .last("LIMIT 200"));
-        if (sessions.isEmpty()) {
-            return List.of();
-        }
-
-        Map<String, List<BigDecimal>> buckets = new LinkedHashMap<>();
-        buckets.put("上午 (6-12)", new ArrayList<>());
-        buckets.put("下午 (12-18)", new ArrayList<>());
-        buckets.put("晚上 (18-24)", new ArrayList<>());
-        buckets.put("凌晨 (0-6)", new ArrayList<>());
-        for (InterviewSession session : sessions) {
-            int hour = session.getStartTime().getHour();
-            String bucket = hour >= 6 && hour < 12 ? "上午 (6-12)"
-                    : hour < 18 ? "下午 (12-18)"
-                    : hour < 24 ? "晚上 (18-24)"
-                    : "凌晨 (0-6)";
-            buckets.get(bucket).add(session.getTotalScore());
-        }
-
-        return buckets.entrySet().stream()
-                .filter(entry -> !entry.getValue().isEmpty())
-                .map(entry -> LearningInsightsVO.HourDistribution.builder()
-                        .timeSlot(entry.getKey())
-                        .sessionCount(entry.getValue().size())
-                        .avgScore(avg(entry.getValue()))
-                        .build())
-                .sorted(Comparator.comparing(LearningInsightsVO.HourDistribution::getAvgScore).reversed())
-                .toList();
-    }
-
-    private List<TrendVO.MemoryTrendPoint> aggregateSnapshotTrend(
-            List<DailyMemorySnapshot> snapshots,
-            Function<DailyMemorySnapshot, BigDecimal> valueExtractor,
-            Function<DailyMemorySnapshot, Integer> countExtractor) {
-        Map<String, List<DailyMemorySnapshot>> snapshotsByWeek = snapshots.stream()
-                .collect(Collectors.groupingBy(snapshot -> formatWeek(snapshot.getSnapshotDate()), LinkedHashMap::new, Collectors.toList()));
-        List<TrendVO.MemoryTrendPoint> result = new ArrayList<>();
-        for (Map.Entry<String, List<DailyMemorySnapshot>> entry : snapshotsByWeek.entrySet()) {
-            List<DailyMemorySnapshot> weekSnapshots = entry.getValue();
-            BigDecimal avgValue = avg(weekSnapshots.stream().map(valueExtractor).filter(Objects::nonNull).toList());
-            int count = weekSnapshots.stream().map(countExtractor).filter(Objects::nonNull).mapToInt(Integer::intValue).sum();
-            result.add(TrendVO.MemoryTrendPoint.builder()
-                    .week(entry.getKey())
-                    .value(avgValue)
-                    .count(count)
-                    .build());
-        }
-        return result;
-    }
-
-    private String resolveTodayCompletionStatus(DailyMemorySnapshot latest) {
-        if (latest == null || latest.getTodayCardTotal() == null || latest.getTodayCardTotal() <= 0) {
-            return "今天还没有卡片任务";
-        }
-        if (latest.getTodayCompletedCards() != null && latest.getTodayCompletedCards() >= latest.getTodayCardTotal()) {
-            return "今日记忆任务已完成";
-        }
-        return "今天还有卡片待完成";
-    }
-
-    private String resolveReviewDebtStatus(DailyMemorySnapshot latest, DailyMemorySnapshot previous) {
-        int current = latest == null || latest.getReviewDebtCount() == null ? 0 : latest.getReviewDebtCount();
-        int previousValue = previous == null || previous.getReviewDebtCount() == null ? current : previous.getReviewDebtCount();
-        if (current <= 0) {
-            return "当前没有复习积压";
-        }
-        if (current > previousValue) {
-            return "复习负债正在上升";
-        }
-        if (current < previousValue) {
-            return "复习负债正在下降";
-        }
-        return "复习负债保持稳定";
-    }
-
-    private String resolveMasteryGrowthStatus(DailyMemorySnapshot latest, DailyMemorySnapshot previous) {
-        int current = latest == null || latest.getMasteredCardCount() == null ? 0 : latest.getMasteredCardCount();
-        int previousValue = previous == null || previous.getMasteredCardCount() == null ? current : previous.getMasteredCardCount();
-        if (current > previousValue) {
-            return "掌握卡片正在增长";
-        }
-        if (current < previousValue) {
-            return "掌握卡片出现回退";
-        }
-        return current > 0 ? "掌握卡片保持稳定" : "还没有形成掌握增长";
-    }
-
     private BigDecimal defaultDecimal(BigDecimal value) {
         return value == null ? BigDecimal.ZERO : value;
     }
@@ -905,16 +859,11 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     private BigDecimal avg(List<BigDecimal> values) {
-        if (values == null || values.isEmpty()) return BigDecimal.ZERO;
+        if (values == null || values.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
         BigDecimal sum = values.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
         return sum.divide(BigDecimal.valueOf(values.size()), 2, RoundingMode.HALF_UP);
-    }
-
-    private String normalizeKnowledgeMastery(KnowledgeCard card) {
-        if ("mastered".equals(card.getState())) return "mastered";
-        if ("learning".equals(card.getState())) return "reviewing";
-        if ("weak".equals(card.getState())) return "not_started";
-        return ReviewSchedulingRules.resolveMasteryLevel(card.getEaseFactor(), card.getStreak());
     }
 
     private String resolveWrongContentType(Long userId, Long wrongQuestionId) {
@@ -925,135 +874,19 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         return "interview".equalsIgnoreCase(wrongQuestion.getSourceType()) ? "interview_card" : "wrong_card";
     }
 
-    private void ensureSnapshots(Long userId, int days) {
-        LocalDate startDate = LocalDate.now().minusDays(Math.max(days, 1) - 1L);
-        List<DailyMemorySnapshot> existing = dailyMemorySnapshotMapper.selectList(new LambdaQueryWrapper<DailyMemorySnapshot>()
-                .eq(DailyMemorySnapshot::getUserId, userId)
-                .ge(DailyMemorySnapshot::getSnapshotDate, startDate)
-                .orderByAsc(DailyMemorySnapshot::getSnapshotDate));
-        Map<LocalDate, DailyMemorySnapshot> existingByDate = existing.stream()
-                .collect(Collectors.toMap(DailyMemorySnapshot::getSnapshotDate, Function.identity(), (a, b) -> a));
-
-        List<DailyCardTask> cardTasks = dailyCardTaskMapper.selectList(new LambdaQueryWrapper<DailyCardTask>()
-                .eq(DailyCardTask::getUserId, userId)
-                .ge(DailyCardTask::getTaskDate, startDate)
-                .orderByAsc(DailyCardTask::getTaskDate));
-        Map<LocalDate, List<DailyCardTask>> cardTasksByDate = cardTasks.stream()
-                .collect(Collectors.groupingBy(DailyCardTask::getTaskDate, LinkedHashMap::new, Collectors.toList()));
-
-        List<WrongQuestion> wrongs = wrongQuestionMapper.selectList(new LambdaQueryWrapper<WrongQuestion>()
-                .eq(WrongQuestion::getUserId, userId));
-        List<KnowledgeCard> cards = knowledgeCardMapper.selectList(
-                new LambdaQueryWrapper<KnowledgeCard>()
-                        .inSql(KnowledgeCard::getTaskId,
-                                "SELECT id FROM knowledge_card_task WHERE user_id = " + userId + " AND status <> 'invalid'"));
-        List<ReviewLog> reviewLogs = reviewLogMapper.selectList(new LambdaQueryWrapper<ReviewLog>()
-                .eq(ReviewLog::getUserId, userId)
-                .ge(ReviewLog::getCreateTime, startDate.atStartOfDay()));
-        List<KnowledgeCardLog> cardLogs = knowledgeCardLogMapper.selectList(new LambdaQueryWrapper<KnowledgeCardLog>()
-                .eq(KnowledgeCardLog::getUserId, userId)
-                .ge(KnowledgeCardLog::getCreateTime, startDate.atStartOfDay()));
-
-        Map<LocalDate, Integer> reviewsPerDate = new HashMap<>();
-        reviewLogs.forEach(log -> reviewsPerDate.merge(log.getCreateTime().toLocalDate(), 1, Integer::sum));
-        cardLogs.forEach(log -> reviewsPerDate.merge(log.getCreateTime().toLocalDate(), 1, Integer::sum));
-
-        int baseMastered = (int) cards.stream().filter(card -> "mastered".equals(card.getState())).count();
-        for (int offset = 0; offset < days; offset++) {
-            LocalDate date = startDate.plusDays(offset);
-            DailyMemorySnapshot snapshot = existingByDate.get(date);
-            List<DailyCardTask> taskSnapshots = cardTasksByDate.getOrDefault(date, List.of());
-            int todayCardTotal = taskSnapshots.stream().map(DailyCardTask::getPlannedCount).filter(Objects::nonNull).mapToInt(Integer::intValue).sum();
-            int todayCompletedCards = taskSnapshots.stream().map(DailyCardTask::getCompletedCount).filter(Objects::nonNull).mapToInt(Integer::intValue).sum();
-            int dueTodayCount = taskSnapshots.stream().map(DailyCardTask::getReviewCount).filter(Objects::nonNull).mapToInt(Integer::intValue).sum();
-            int reviewedTodayCount = reviewsPerDate.getOrDefault(date, 0);
-            BigDecimal todayCompletionRate = todayCardTotal <= 0
-                    ? BigDecimal.ZERO
-                    : BigDecimal.valueOf(todayCompletedCards * 100.0 / todayCardTotal).setScale(2, RoundingMode.HALF_UP);
-            int reviewDebtCount = countDebtAtDate(wrongs, cards, date);
-            int masteredCount = countMasteredByDate(cards, date, baseMastered);
-            int studyStreak = resolveStudyStreakToDate(reviewLogs, cardLogs, date);
-
-            if (snapshot == null) {
-                snapshot = new DailyMemorySnapshot();
-                snapshot.setUserId(userId);
-                snapshot.setSnapshotDate(date);
-            }
-            snapshot.setTodayCardTotal(todayCardTotal);
-            snapshot.setTodayCompletedCards(todayCompletedCards);
-            snapshot.setTodayCompletionRate(todayCompletionRate);
-            snapshot.setReviewDebtCount(reviewDebtCount);
-            snapshot.setMasteredCardCount(masteredCount);
-            snapshot.setDueTodayCount(dueTodayCount);
-            snapshot.setReviewedTodayCount(reviewedTodayCount);
-            snapshot.setStudyStreak(studyStreak);
-            if (snapshot.getId() == null) {
-                dailyMemorySnapshotMapper.insert(snapshot);
-            } else {
-                dailyMemorySnapshotMapper.updateById(snapshot);
-            }
-        }
-    }
-
-    private int countDebtAtDate(List<WrongQuestion> wrongs, List<KnowledgeCard> cards, LocalDate date) {
-        int wrongDebt = (int) wrongs.stream()
-                .filter(wrong -> wrong.getNextReviewDate() != null && wrong.getNextReviewDate().isBefore(date))
-                .count();
-        int cardDebt = (int) cards.stream()
-                .filter(card -> !"mastered".equals(card.getState()))
-                .filter(card -> card.getNextReviewAt() != null && card.getNextReviewAt().toLocalDate().isBefore(date))
-                .count();
-        return wrongDebt + cardDebt;
-    }
-
-    private int countMasteredByDate(List<KnowledgeCard> cards, LocalDate date, int fallbackCurrent) {
-        int derived = (int) cards.stream()
-                .filter(card -> "mastered".equals(card.getState()))
-                .filter(card -> card.getLastReviewTime() == null || !card.getLastReviewTime().toLocalDate().isAfter(date))
-                .count();
-        return Math.max(derived, fallbackCurrent == 0 ? derived : Math.min(derived == 0 ? fallbackCurrent : derived, fallbackCurrent));
-    }
-
-    private int resolveStudyStreakToDate(List<ReviewLog> reviewLogs, List<KnowledgeCardLog> cardLogs, LocalDate date) {
-        Set<LocalDate> reviewDates = new java.util.HashSet<>();
-        reviewLogs.stream()
-                .map(ReviewLog::getCreateTime)
-                .filter(Objects::nonNull)
-                .map(LocalDateTime::toLocalDate)
-                .filter(logDate -> !logDate.isAfter(date))
-                .forEach(reviewDates::add);
-        cardLogs.stream()
-                .map(KnowledgeCardLog::getCreateTime)
-                .filter(Objects::nonNull)
-                .map(LocalDateTime::toLocalDate)
-                .filter(logDate -> !logDate.isAfter(date))
-                .forEach(reviewDates::add);
-
-        int streak = 0;
-        LocalDate cursor = date;
-        while (reviewDates.contains(cursor)) {
-            streak++;
-            cursor = cursor.minusDays(1);
-        }
-        return streak;
-    }
-
-    private record TrendData(
-            List<String> weeks,
-            List<TrendVO.WeeklyPoint> overallTrend,
-            List<TrendVO.CategoryTrend> categoryTrends) {
-    }
-
     private record MergedLogPoint(
             String week,
             BigDecimal easeFactorAfter,
             Integer rating,
             String contentType,
-            LocalDateTime createTime) {
+            java.time.LocalDateTime createTime
+    ) {
     }
 
-    private record MergedLogs(
-            List<MergedLogPoint> logs,
-            int currentStreak) {
+    private record TrendData(
+            List<String> weeks,
+            List<TrendVO.WeeklyPoint> overallTrend,
+            List<TrendVO.CategoryTrend> categoryTrends
+    ) {
     }
 }

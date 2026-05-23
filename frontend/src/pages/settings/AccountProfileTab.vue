@@ -5,6 +5,54 @@
         <div class="flex items-start justify-between gap-4">
           <div>
             <p class="section-kicker">
+              头像与展示
+            </p>
+            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
+              更新你的头像
+            </h3>
+            <p class="mt-3 text-sm leading-7 text-secondary">
+              上传一张清晰头像，社区、评论和导航里的个人入口都会同步显示。
+            </p>
+          </div>
+
+          <div class="account-avatar-shell">
+            <img
+              v-if="avatarPreview"
+              :src="avatarPreview"
+              alt="用户头像"
+              class="account-avatar-image"
+            />
+            <span v-else class="account-avatar-fallback">
+              {{ avatarInitial }}
+            </span>
+          </div>
+        </div>
+
+        <div class="mt-5 flex flex-wrap gap-3">
+          <input
+            ref="avatarInputRef"
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            class="sr-only"
+            @change="handleAvatarChange"
+          >
+          <el-button
+            :loading="uploadingAvatar"
+            type="primary"
+            size="large"
+            class="action-button"
+            @click="avatarInputRef?.click()"
+          >
+            {{ uploadingAvatar ? '上传中...' : '上传头像' }}
+          </el-button>
+          <span class="text-xs text-secondary">支持 PNG、JPG、WebP、GIF，建议 2MB 以内。</span>
+        </div>
+      </article>
+
+      <article class="shell-section-card p-5 sm:p-6">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="section-kicker">
               账号与邮箱
             </p>
             <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
@@ -71,51 +119,27 @@
         </div>
       </article>
 
-      <article class="shell-section-card p-5 sm:p-6">
-        <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">
-          备用登录方式
-        </h3>
-        <p class="mt-3 text-sm leading-7 text-secondary">
-          这里会显示后续可直接启用的登录方式。当前先使用账号密码登录即可。
-        </p>
-
-        <div class="mt-5 space-y-3">
-          <article class="account-provider-card">
-            <div class="flex items-center justify-between gap-3">
-              <div>
-                <div class="text-sm font-semibold text-ink">
-                  GitHub
-                </div>
-                <div class="mt-1 text-xs text-secondary">
-                  {{ githubProvider?.enabled ? '登录页已可直接使用 GitHub 登录。' : '当前还不能直接使用，开放后会在登录页显示入口。' }}
-                </div>
-              </div>
-              <span class="detail-pill">{{ githubProvider?.enabled ? '已可使用' : '尚不可用' }}</span>
-            </div>
-          </article>
-        </div>
-      </article>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import { computed, nextTick, onMounted, ref } from 'vue'
-import { fetchOAuthProvidersApi, sendEmailVerificationCodeApi, verifyEmailCodeApi } from '@/api/auth'
+import { computed, nextTick, ref } from 'vue'
+import { sendEmailVerificationCodeApi, uploadAvatarApi, verifyEmailCodeApi } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
-import type { OAuthProviderInfo } from '@/types/api'
 
 const authStore = useAuthStore()
+const avatarInputRef = ref<HTMLInputElement | null>(null)
 const verificationCode = ref('')
 const verificationInputRef = ref<{ focus?: () => void } | null>(null)
 const sendingVerificationCode = ref(false)
 const verifyingEmail = ref(false)
+const uploadingAvatar = ref(false)
 const verificationMessage = ref('')
 const verificationHint = ref('')
-const oauthProviders = ref<OAuthProviderInfo[]>([])
-
-const githubProvider = computed(() => oauthProviders.value.find((item) => item.provider === 'github') ?? null)
+const avatarPreview = computed(() => authStore.user?.avatar || '')
+const avatarInitial = computed(() => (authStore.user?.nickname || authStore.user?.username || 'U').slice(0, 1).toUpperCase())
 const emailStatusTitle = computed(() => (authStore.user?.emailVerified ? '邮箱已验证' : authStore.user?.email ? '邮箱待验证' : '尚未填写邮箱'))
 const emailStatusDescription = computed(() => {
   if (!authStore.user?.email) {
@@ -126,15 +150,6 @@ const emailStatusDescription = computed(() => {
   }
   return '建议先完成验证，后面找回密码时会更省事。'
 })
-
-const loadProviders = async () => {
-  try {
-    const response = await fetchOAuthProvidersApi()
-    oauthProviders.value = response.data
-  } catch {
-    oauthProviders.value = []
-  }
-}
 
 const handleSendVerificationCode = async () => {
   sendingVerificationCode.value = true
@@ -173,9 +188,39 @@ const handleVerifyEmail = async () => {
   }
 }
 
-onMounted(() => {
-  void loadProviders()
-})
+const resetAvatarInput = () => {
+  if (avatarInputRef.value) {
+    avatarInputRef.value.value = ''
+  }
+}
+
+const handleAvatarChange = async (event: Event) => {
+  const input = event.target as HTMLInputElement | null
+  const file = input?.files?.[0]
+  if (!file) return
+
+  if (!file.type.startsWith('image/')) {
+    ElMessage.warning('请上传图片文件')
+    resetAvatarInput()
+    return
+  }
+
+  uploadingAvatar.value = true
+  try {
+    const { data } = await uploadAvatarApi(file)
+    if (authStore.user) {
+      authStore.user = {
+        ...authStore.user,
+        avatar: data
+      }
+      authStore.persistUser()
+    }
+    ElMessage.success('头像已更新')
+  } finally {
+    uploadingAvatar.value = false
+    resetAvatarInput()
+  }
+}
 </script>
 
 <style scoped>
@@ -203,9 +248,34 @@ onMounted(() => {
   padding: 1rem;
 }
 
+.account-avatar-shell {
+  display: inline-flex;
+  height: 5rem;
+  width: 5rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  border: 1px solid rgba(var(--bc-accent-rgb), 0.18);
+  background: linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.12), transparent 72%), var(--bc-surface-muted);
+}
+
+.account-avatar-image {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+.account-avatar-fallback {
+  color: var(--bc-ink);
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
 @media (min-width: 1080px) {
   .account-overview-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

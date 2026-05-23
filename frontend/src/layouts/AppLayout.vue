@@ -1,5 +1,5 @@
 <template>
-  <div class="ambient-shell min-h-screen pb-24 md:pb-0">
+  <div class="ambient-shell app-layout-root min-h-screen pb-24 md:pb-0">
     <a
       href="#main-content"
       class="skip-link"
@@ -7,63 +7,17 @@
       跳到主要内容
     </a>
 
-    <header class="global-topbar">
-      <div class="global-topbar__left">
-        <button
-          type="button"
-          class="global-topbar__menu"
-          aria-label="切换侧边栏"
-          @click="sidebarVisible = !sidebarVisible"
-        >
-          <span />
-          <span />
-          <span />
-        </button>
-
-        <RouterLink
-          to="/dashboard"
-          class="global-topbar__brand"
-        >
-          <span class="global-topbar__brand-mark">
-            <span class="global-topbar__brand-core" />
-            <span class="global-topbar__brand-dot" />
-          </span>
-          <span class="global-topbar__brand-name">OfferPilot</span>
-        </RouterLink>
-      </div>
-
-      <div class="global-topbar__right">
-        <template v-if="authStore.isLoggedIn">
-          <NotificationDropdown />
-          <AvatarDropdown
-            :name="displayName"
-            :role="authStore.user?.role ?? 'USER'"
-            :initials="initials"
-            @logout="handleLogout"
-          />
-        </template>
-        <RouterLink
-          v-else
-          to="/login"
-          class="global-topbar__login"
-        >
-          登录
-        </RouterLink>
-      </div>
-    </header>
-
     <div
-      class="app-layout-shell pt-[56px] sm:pt-[60px]"
-      :class="{ 'app-layout-shell-sidebar-hidden': !sidebarVisible }"
+      class="app-shell"
+      :class="{ 'app-shell--sidebar-hidden': !sidebarVisible }"
     >
-      <div
-        class="desktop-rail hidden lg:block"
-        :class="{ 'desktop-rail-collapsed': !sidebarVisible }"
+      <aside
+        class="app-shell__sidebar hidden lg:block"
         :aria-hidden="!sidebarVisible"
         :inert="!sidebarVisible"
       >
-        <NavRail class="min-h-[280px] border-r border-[var(--bc-border-subtle)] lg:min-h-0 lg:overflow-y-auto" />
-      </div>
+        <DashboardSidebar />
+      </aside>
 
       <Transition name="mobile-rail-fade">
         <div
@@ -81,17 +35,65 @@
           aria-modal="true"
           aria-label="功能栏"
         >
-          <NavRail class="mobile-rail-nav h-full min-h-0" />
+          <DashboardSidebar class="mobile-rail-nav h-full min-h-0" />
         </div>
       </Transition>
 
-      <main
-        id="main-content"
-        tabindex="-1"
-        class="relative z-[1] flex min-w-0 flex-col px-4 py-4 md:px-5 md:py-5 lg:min-h-[calc(100dvh-60px)] lg:px-5 lg:py-5 xl:px-6"
-      >
-        <section class="flex flex-1">
-          <div class="app-canvas w-full max-w-[1720px]">
+      <div class="app-shell__stage">
+        <header class="app-topbar">
+          <div class="app-topbar__left">
+            <button
+              type="button"
+              class="app-topbar__menu"
+              aria-label="切换侧边栏"
+              @click="sidebarVisible = !sidebarVisible"
+            >
+              <span />
+              <span />
+              <span />
+            </button>
+
+            <button
+              type="button"
+              class="app-topbar__search"
+              @click="openSearch"
+            >
+              <span class="app-topbar__search-icon">
+                <svg
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </span>
+              <span class="app-topbar__search-text">搜索功能、页面或操作</span>
+              <span class="app-topbar__search-kbd hidden sm:inline-flex">/</span>
+            </button>
+          </div>
+
+          <div class="app-topbar__right">
+            <NotificationDropdown />
+            <AvatarDropdown
+              :name="displayName"
+              :role="authStore.user?.role ?? 'USER'"
+              :initials="initials"
+              @logout="handleLogout"
+            />
+          </div>
+        </header>
+
+        <main
+          id="main-content"
+          tabindex="-1"
+          class="app-shell__content"
+        >
+          <div class="app-canvas">
             <RouterView v-slot="{ Component, route: viewRoute }">
               <Transition
                 name="page-slide"
@@ -105,17 +107,13 @@
               </Transition>
             </RouterView>
           </div>
-        </section>
-      </main>
+        </main>
+      </div>
     </div>
 
-    <!-- Mobile bottom tab bar -->
     <MobileNavBar />
-
-    <!-- Offline overlay -->
     <OfflinePage />
 
-    <!-- Global Search Modal (Cmd+K) -->
     <el-dialog
       v-model="searchVisible"
       width="520px"
@@ -183,58 +181,60 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import NavRail from '@/components/NavRail.vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import MobileNavBar from '@/components/MobileNavBar.vue'
 import OfflinePage from '@/components/OfflinePage.vue'
 import NotificationDropdown from '@/components/NotificationDropdown.vue'
 import AvatarDropdown from '@/components/AvatarDropdown.vue'
+import DashboardSidebar from '@/pages/dashboard/DashboardSidebar.vue'
 import { useAuthStore } from '@/stores/auth'
 import type { ComponentPublicInstance } from 'vue'
 
 const authStore = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 
-// Sidebar visibility (Cmd+B)
 const sidebarVisible = ref(false)
-
-// Global search (Cmd+K)
 const searchVisible = ref(false)
 const searchQuery = ref('')
 const searchInputRef = ref<ComponentPublicInstance | null>(null)
 
 const allSearchItems = [
-  { label: '求职训练工作台', path: '/dashboard' },
-  { label: '题库训练', path: '/question' },
+  { label: '首页', path: '/dashboard' },
+  { label: '面试题集', path: '/question' },
   { label: '知识库', path: '/knowledge' },
-  { label: '问答', path: '/chat' },
+  { label: 'AI 问答', path: '/chat' },
+  { label: '我的收藏', path: '/favorites' },
   { label: '模拟面试', path: '/interview' },
-  { label: '学习计划', path: '/study-plan' },
-  { label: '简历助手', path: '/resume' },
-  { label: '投递管理', path: '/applications' },
-  { label: '卡片强化', path: '/cards' },
+  { label: '错题本', path: '/wrong' },
   { label: '复习巩固', path: '/review' },
+  { label: '学习计划', path: '/study-plan' },
+  { label: '投递管理', path: '/applications' },
+  { label: '简历助手', path: '/resume' },
   { label: '数据分析', path: '/analytics' },
   { label: '社区', path: '/community' },
-  { label: '模拟面试历史', path: '/interview/history' },
   { label: '排行榜', path: '/community/leaderboard' },
   { label: '管理后台', path: '/admin', adminOnly: true },
   { label: '账户设置', path: '/settings' }
 ]
 
 const searchItems = computed(() => allSearchItems.filter((item) => !item.adminOnly || authStore.user?.role === 'ADMIN'))
-
 const filteredSearchItems = computed(() => {
   if (!searchQuery.value) return searchItems.value
   const q = searchQuery.value.toLowerCase()
   return searchItems.value.filter((item) => item.label.toLowerCase().includes(q) || item.path.toLowerCase().includes(q))
 })
 
+const displayName = computed(() => authStore.user?.nickname || '访客')
+const initials = computed(() => displayName.value.slice(0, 1).toUpperCase())
+
 const navigateTo = (path: string) => {
   searchVisible.value = false
   searchQuery.value = ''
-  sidebarVisible.value = false
+  if (window.innerWidth < 1024) {
+    sidebarVisible.value = false
+  }
   router.push(path)
 }
 
@@ -244,31 +244,24 @@ const handleSearchNavigate = () => {
   }
 }
 
-// Keyboard shortcuts
 const handleKeydown = (e: KeyboardEvent) => {
   const isMod = e.metaKey || e.ctrlKey
+  const target = e.target as HTMLElement | null
   const isInput =
-    (e.target as HTMLElement)?.tagName === 'INPUT' ||
-    (e.target as HTMLElement)?.tagName === 'TEXTAREA' ||
-    (e.target as HTMLElement)?.contentEditable === 'true'
+    target?.tagName === 'INPUT' ||
+    target?.tagName === 'TEXTAREA' ||
+    target?.contentEditable === 'true'
 
-  // Cmd/Ctrl+K or / to open search (when not in input)
   if ((isMod && e.key === 'k') || (e.key === '/' && !isInput && !searchVisible.value)) {
     e.preventDefault()
-    searchVisible.value = true
-    nextTick(() => {
-      const input = searchInputRef.value?.$el?.querySelector('input') as HTMLInputElement | null
-      input?.focus()
-    })
+    openSearch()
   }
 
-  // Esc to close search
   if (e.key === 'Escape' && searchVisible.value) {
     e.preventDefault()
     searchVisible.value = false
   }
 
-  // Cmd/Ctrl+B to toggle sidebar
   if (isMod && e.key === 'b') {
     e.preventDefault()
     sidebarVisible.value = !sidebarVisible.value
@@ -279,21 +272,43 @@ const openSidebar = () => {
   sidebarVisible.value = true
 }
 
+const openSearch = () => {
+  searchVisible.value = true
+  nextTick(() => {
+    const input = searchInputRef.value?.$el?.querySelector('input') as HTMLInputElement | null
+    input?.focus()
+  })
+}
+
+const handleResize = () => {
+  sidebarVisible.value = window.innerWidth >= 1024
+}
+
 onMounted(() => {
   document.addEventListener('keydown', handleKeydown)
   window.addEventListener('offerpilot:open-sidebar', openSidebar)
-  if (window.innerWidth >= 1024) {
-    sidebarVisible.value = true
-  }
+  window.addEventListener('offerpilot:open-search', openSearch)
+  window.addEventListener('resize', handleResize)
+  handleResize()
 })
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
   window.removeEventListener('offerpilot:open-sidebar', openSidebar)
+  window.removeEventListener('offerpilot:open-search', openSearch)
+  window.removeEventListener('resize', handleResize)
 })
 
-const displayName = computed(() => authStore.user?.nickname || '访客')
-const initials = computed(() => displayName.value.slice(0, 1).toUpperCase())
+watch(
+  () => route.fullPath,
+  () => {
+    searchVisible.value = false
+    searchQuery.value = ''
+    if (window.innerWidth < 1024) {
+      sidebarVisible.value = false
+    }
+  }
+)
 
 const handleLogout = async () => {
   await authStore.logout()
@@ -301,14 +316,39 @@ const handleLogout = async () => {
 </script>
 
 <style scoped>
+.app-layout-root {
+  background:
+    radial-gradient(circle at 0 0, rgba(var(--bc-accent-rgb), 0.08), transparent 24%),
+    linear-gradient(180deg, #f5f8ff 0%, #eff3fb 100%);
+}
+
+.app-shell {
+  display: block;
+  --app-shell-sidebar-width: 0px;
+}
+
+.app-shell__stage {
+  min-width: 0;
+}
+
+.app-shell__content {
+  padding: 14px;
+}
+
+.app-shell__sidebar {
+  overflow: hidden;
+  padding: 12px 0 12px 14px;
+}
+
 .app-canvas {
   display: flex;
   flex: 1;
   flex-direction: column;
   min-height: 0;
-  margin-inline: auto;
+  gap: 16px;
+  margin-inline: 0;
   width: 100%;
-  max-width: 1720px;
+  max-width: none;
 }
 
 .app-canvas-page {
@@ -316,14 +356,6 @@ const handleLogout = async () => {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-}
-
-.app-layout-shell {
-  display: block;
-}
-
-.desktop-rail {
-  min-width: 0;
 }
 
 .skip-link {
@@ -346,32 +378,33 @@ const handleLogout = async () => {
   transform: translateY(0);
 }
 
-.global-topbar {
-  position: fixed;
-  inset: 0 0 auto 0;
-  z-index: 50;
+.app-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  height: 56px;
-  padding: 0 14px;
-  border-bottom: 1px solid var(--bc-border-subtle);
+  gap: 12px;
+  padding: 10px 14px 6px;
   background:
-    radial-gradient(circle at 12% 20%, rgba(var(--bc-accent-rgb), 0.08), transparent 18%),
-    linear-gradient(180deg, color-mix(in srgb, var(--panel-bg) 94%, transparent), color-mix(in srgb, var(--bc-shell) 88%, transparent));
-  box-shadow: 0 8px 24px rgba(32, 40, 53, 0.07);
-  backdrop-filter: blur(18px);
+    linear-gradient(180deg, rgba(245, 248, 255, 0.92), rgba(245, 248, 255, 0.72) 72%, transparent);
+  backdrop-filter: blur(16px);
 }
 
-.global-topbar__left,
-.global-topbar__right {
+.app-topbar__left,
+.app-topbar__right {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 
-.global-topbar__menu {
+.app-topbar__left {
+  min-width: 0;
+  flex: 1;
+}
+
+.app-topbar__menu {
   display: inline-flex;
   width: 38px;
   height: 38px;
@@ -388,96 +421,75 @@ const handleLogout = async () => {
     box-shadow var(--motion-base) var(--ease-hard);
 }
 
-.global-topbar__menu:hover {
+.app-topbar__menu:hover {
   background: rgba(var(--bc-accent-rgb), 0.08);
   box-shadow: var(--bc-shadow-hover);
 }
 
-.global-topbar__menu span {
+.app-topbar__menu span {
   width: 18px;
   height: 2px;
   border-radius: 999px;
   background: var(--bc-ink);
 }
 
-.global-topbar__brand {
+.app-topbar__search {
   display: inline-flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  width: 100%;
   align-items: center;
   gap: 10px;
-  min-width: 0;
-}
-
-.global-topbar__brand-mark {
-  position: relative;
-  display: inline-flex;
-  width: 34px;
-  height: 34px;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(var(--bc-accent-rgb), 0.14);
-  border-radius: 999px;
-  background:
-    radial-gradient(circle at 32% 32%, rgba(var(--bc-accent-rgb), 0.22), transparent 48%),
-    linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.14), rgba(var(--bc-accent-rgb), 0.06));
-  box-shadow:
-    inset 0 1px 0 rgba(var(--bc-ink-rgb), 0.05),
-    0 8px 16px rgba(var(--bc-accent-rgb), 0.12);
-}
-
-.global-topbar__brand-core {
-  position: relative;
-  width: 12px;
-  height: 12px;
-  border: 2px solid var(--bc-ink);
-  border-radius: 4px;
-  transform: rotate(45deg);
-}
-
-.global-topbar__brand-dot {
-  position: absolute;
-  right: 7px;
-  top: 7px;
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--bc-accent);
-}
-
-.global-topbar__brand-name {
-  color: var(--bc-ink);
-  font-size: 1.08rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-}
-
-.global-topbar__login {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 40px;
-  padding: 0 16px;
-  border-radius: 12px;
-  border: 1px solid var(--bc-border-subtle);
-  background: var(--interactive-bg);
-  color: var(--bc-ink);
-  font-size: 14px;
-  font-weight: 700;
-  box-shadow: var(--bc-shadow-soft);
+  min-height: 52px;
+  border-radius: 18px;
+  border: 1px solid rgba(84, 116, 198, 0.14);
+  background: rgba(255, 255, 255, 0.92);
+  color: #6f7d95;
+  padding: 0.5rem 0.9rem;
+  box-shadow: 0 8px 18px rgba(41, 62, 109, 0.05);
   transition:
-    transform var(--motion-base) var(--ease-hard),
-    box-shadow var(--motion-base) var(--ease-hard);
+    border-color var(--motion-base) var(--ease-hard),
+    box-shadow var(--motion-base) var(--ease-hard),
+    transform var(--motion-base) var(--ease-hard);
 }
 
-.global-topbar__login:hover {
+.app-topbar__search:hover {
+  border-color: rgba(84, 116, 198, 0.22);
+  box-shadow: 0 10px 20px rgba(41, 62, 109, 0.08);
   transform: translateY(-1px);
-  box-shadow: var(--bc-shadow-hover);
+}
+
+.app-topbar__search-icon {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.app-topbar__search-text {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+.app-topbar__search-kbd {
+  border-radius: 999px;
+  border: 1px solid rgba(84, 116, 198, 0.14);
+  background: rgba(246, 249, 255, 0.92);
+  color: #6c7a93;
+  padding: 0.18rem 0.52rem;
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
 .mobile-rail-overlay {
   position: fixed;
-  inset: 56px 0 0;
+  inset: 0;
   z-index: 38;
   background: rgba(16, 12, 8, 0.32);
   backdrop-filter: blur(6px);
@@ -485,16 +497,16 @@ const handleLogout = async () => {
 
 .mobile-rail-panel {
   position: fixed;
-  top: 56px;
+  top: 0;
   left: 0;
   z-index: 39;
   width: min(84vw, 320px);
-  height: calc(100dvh - 56px);
-  border-right: 1px solid var(--bc-border-subtle);
+  height: 100dvh;
+  padding: 12px 0 12px 14px;
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--panel-bg) 96%, transparent), color-mix(in srgb, var(--bc-shell) 92%, transparent)),
+    linear-gradient(180deg, rgba(244, 247, 254, 0.98), rgba(240, 244, 252, 0.95)),
     var(--bc-panel);
-  box-shadow: 24px 0 48px rgba(32, 40, 53, 0.12);
+  box-shadow: 24px 0 48px rgba(32, 40, 53, 0.16);
 }
 
 .mobile-rail-nav {
@@ -537,92 +549,96 @@ const handleLogout = async () => {
   box-shadow: var(--bc-shadow-soft);
 }
 
-@media (min-width: 640px) {
-  .global-topbar {
-    height: 60px;
-    padding: 0 16px;
-  }
-
-  .mobile-rail-overlay {
-    inset: 60px 0 0;
-  }
-
-  .mobile-rail-panel {
-    top: 60px;
-    height: calc(100dvh - 60px);
-  }
-}
-
 @media (min-width: 1024px) {
-  .app-layout-shell {
+  .app-shell {
+    --app-shell-sidebar-width: 252px;
     display: grid;
-    grid-template-columns: 252px minmax(0, 1fr);
+    grid-template-columns: var(--app-shell-sidebar-width) minmax(0, 1fr);
     align-items: start;
     transition: grid-template-columns 240ms var(--ease-hard);
   }
 
-  .app-layout-shell-sidebar-hidden {
-    grid-template-columns: 0 minmax(0, 1fr);
+  .app-shell--sidebar-hidden {
+    --app-shell-sidebar-width: 0px;
   }
 
-  .desktop-rail {
-    overflow: hidden;
+  .app-shell__sidebar {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100dvh;
+    width: var(--app-shell-sidebar-width);
+    min-width: 0;
     opacity: 1;
     transform: translateX(0);
     transition:
+      width 220ms var(--ease-hard),
       opacity 180ms var(--ease-hard),
-      transform 220ms var(--ease-hard);
+      transform 220ms var(--ease-hard),
+      padding 220ms var(--ease-hard);
   }
 
-  .desktop-rail-collapsed {
+  .app-shell--sidebar-hidden .app-shell__sidebar {
     pointer-events: none;
     opacity: 0;
+    padding-left: 0;
+    padding-right: 0;
     transform: translateX(-18px);
+  }
+
+  .app-shell__stage {
+    min-height: 100dvh;
+  }
+
+  .app-shell__content {
+    padding: 10px 18px 18px 8px;
+  }
+
+  .app-shell--sidebar-hidden .app-shell__content {
+    padding-left: 18px;
   }
 }
 
 @media (min-width: 1280px) {
-  .app-layout-shell {
-    grid-template-columns: 264px minmax(0, 1fr);
+  .app-shell {
+    --app-shell-sidebar-width: 264px;
   }
 
-  .app-layout-shell-sidebar-hidden {
-    grid-template-columns: 0 minmax(0, 1fr);
+  .app-shell--sidebar-hidden {
+    --app-shell-sidebar-width: 0px;
   }
 }
 
-@media (min-width: 1024px) {
-  .global-topbar {
-    padding-inline: 22px;
+@media (min-width: 1440px) {
+  .app-shell__content {
+    padding-right: 22px;
   }
 }
 
 @media (max-width: 767px) {
-  .global-topbar {
-    padding-inline: 12px;
+  .app-topbar {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 12px 12px 0;
   }
 
-  .global-topbar__left,
-  .global-topbar__right {
+  .app-topbar__left,
+  .app-topbar__right {
     gap: 10px;
   }
 
-  .global-topbar__brand-name {
-    font-size: 1.02rem;
+  .app-topbar__left,
+  .app-topbar__search {
+    width: 100%;
   }
 
-  .global-topbar__brand-mark {
-    width: 34px;
-    height: 34px;
+  .app-topbar__right {
+    width: 100%;
+    justify-content: flex-end;
   }
-}
 
-@media (min-width: 1024px) {
-  :global(html),
-  :global(body),
-  :global(#app) {
-    height: 100%;
-    overflow: hidden;
+  .app-shell__content {
+    padding: 12px;
   }
 }
 </style>
