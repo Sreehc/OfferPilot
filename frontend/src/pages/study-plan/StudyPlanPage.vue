@@ -421,7 +421,7 @@ const loadData = async () => {
   try {
     await Promise.all([loadSignals(), loadCurrentPlan()])
   } catch {
-    ElMessage.error('加载学习计划失败')
+    ElMessage.error('学习计划还没加载出来，请刷新页面后再试。')
   } finally {
     loading.value = false
   }
@@ -445,7 +445,7 @@ const handleGenerate = async (durationDays: number) => {
     }
     ElMessage.success(`已生成 ${durationDays} 天学习计划`)
   } catch {
-    ElMessage.error('生成学习计划失败')
+    ElMessage.error('这轮学习计划还没生成成功，请检查岗位和方向后再试。')
   } finally {
     generatingDuration.value = null
   }
@@ -462,7 +462,7 @@ const handleRefresh = async () => {
     await loadSignals()
     ElMessage.success('已按最新训练信号刷新计划')
   } catch {
-    ElMessage.error('刷新学习计划失败')
+    ElMessage.error('今日计划还没刷新成功，请稍后再试。')
   } finally {
     refreshing.value = false
   }
@@ -477,7 +477,7 @@ const handleToggleTask = async (task: StudyPlanTaskItem) => {
     currentPlan.value = response.data
     await loadSignals()
   } catch {
-    ElMessage.error('更新任务状态失败')
+    ElMessage.error('任务状态还没更新成功，请重新点一次当前操作。')
   } finally {
     updatingTaskId.value = null
   }
