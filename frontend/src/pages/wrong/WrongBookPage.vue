@@ -52,15 +52,15 @@
 
         <div v-if="loading" class="py-16 text-center">
           <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-          <p class="mt-4 text-sm text-secondary">加载错题中...</p>
+          <p class="mt-4 text-sm text-secondary">正在读取错题列表和复习优先级...</p>
         </div>
 
         <div v-else-if="wrongItems.length === 0" class="mt-6">
           <EmptyState
             class="empty-state-card"
             icon="clipboard"
-            title="先积累第一批错题"
-            description="做一轮题库训练或模拟面试后，低分题和易错题会自动进入这里。"
+            title="当前还没有错题记录"
+            description="先做一轮题库训练或模拟面试，低分题和易错题会自动进入这里，方便后续复习。"
             compact
           />
         </div>
@@ -102,7 +102,7 @@
       <aside class="wrong-book-detail">
         <div v-if="detailLoading" class="py-16 text-center">
           <div class="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-          <p class="mt-4 text-sm text-secondary">加载题目详情中...</p>
+          <p class="mt-4 text-sm text-secondary">正在读取这道错题的答案、错误原因和复习记录...</p>
         </div>
 
         <template v-else-if="selectedWrong">
@@ -185,8 +185,8 @@
           <EmptyState
             class="empty-state-card"
             icon="clipboard"
-            title="先选一道错题"
-            description="点击左侧题目后，这里会显示标准答案、错误原因和复习信息。"
+            title="先选一道错题开始复盘"
+            description="点击左侧任意题目后，这里会显示标准答案、错误原因和下一次复习安排。"
             compact
           />
         </div>
@@ -275,7 +275,7 @@ const loadList = async () => {
     totalPages.value = 0
     selectedWrongId.value = null
     selectedWrong.value = null
-    ElMessage.error('错题列表还没加载出来，请稍后再试')
+    ElMessage.error('错题列表还没加载出来，请刷新页面或稍后再试。')
   } finally {
     loading.value = false
   }
@@ -288,7 +288,7 @@ const loadDetail = async (id: number) => {
     selectedWrong.value = data
   } catch {
     selectedWrong.value = null
-    ElMessage.error('这道错题的详情还没加载出来，请换一题或稍后再试')
+    ElMessage.error('这道错题的详情还没加载出来，请换一题，或稍后再试。')
   } finally {
     detailLoading.value = false
   }
@@ -311,7 +311,7 @@ const handleUpdateMastery = async (masteryLevel: WrongQuestionItem['masteryLevel
     ElMessage.success('掌握状态已更新')
     await Promise.all([loadList(), loadDetail(selectedWrong.value.id)])
   } catch {
-    ElMessage.error('掌握状态还没更新成功，请稍后再试')
+    ElMessage.error('掌握状态还没更新成功，请重新点一次当前目标状态。')
   } finally {
     savingMastery.value = null
   }
@@ -328,7 +328,7 @@ const handleDelete = async () => {
     selectedWrong.value = null
     await loadList()
   } catch {
-    ElMessage.error('这道错题还没删除成功，请稍后再试')
+    ElMessage.error('这道错题还没删除成功，请稍后再试。')
   } finally {
     deleting.value = false
   }
@@ -346,7 +346,7 @@ const handleExport = async () => {
     URL.revokeObjectURL(url)
     ElMessage.success('错题本已导出')
   } catch {
-    ElMessage.error('错题本还没导出成功，请稍后再试')
+    ElMessage.error('错题本还没导出成功，请稍后再试。')
   } finally {
     exporting.value = false
   }
