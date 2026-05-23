@@ -178,7 +178,10 @@
                   </div>
 
                   <div class="doc-card__memory-actions">
-                    <RouterLink :to="knowledgeChatTarget(doc)" class="hard-button-primary text-sm"> 去提问 </RouterLink>
+                    <RouterLink v-if="canAskWithDocument(doc)" :to="knowledgeChatTarget(doc)" class="hard-button-primary text-sm">
+                      去提问
+                    </RouterLink>
+                    <span v-else class="detail-pill">{{ unavailableActionHint(doc) }}</span>
                   </div>
                 </div>
               </div>
@@ -518,6 +521,14 @@ const availabilityHint = (doc: KnowledgeDocItem) => {
   if (doc.indexStatus === 'failed') return '这份资料索引失败，修复后才能继续提问。'
   if (doc.parseStatus !== 'parsed') return '资料处理完成后，就可以继续提问。'
   return '索引完成后，这份资料就能继续提问。'
+}
+
+const canAskWithDocument = (doc: KnowledgeDocItem) => doc.status === 'indexed' && doc.indexStatus === 'indexed'
+
+const unavailableActionHint = (doc: KnowledgeDocItem) => {
+  if (doc.parseStatus === 'failed' || doc.indexStatus === 'failed') return '修复后再提问'
+  if (doc.parseStatus !== 'parsed') return '处理完成后可提问'
+  return '索引完成后可提问'
 }
 
 const knowledgeChatTarget = (doc: KnowledgeDocItem) => ({
