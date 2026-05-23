@@ -57,7 +57,7 @@
             <div>
               <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">1. 看时间线</h3>
               <p class="mt-2 text-sm leading-7 text-secondary">
-                先看这条投递已经走到哪里，再决定下一步推进什么。
+                看看这条投递进展到哪一步，再决定下一步。
               </p>
             </div>
           </div>
@@ -113,7 +113,7 @@
               </div>
               <div class="surface-card p-4">
                 <div class="text-xs font-semibold uppercase tracking-[0.22em] text-tertiary">复盘重点</div>
-                <p class="mt-2 text-sm leading-7 text-secondary">{{ detail.reviewSuggestion || '先记录这轮反馈，再补下一轮准备重点。' }}</p>
+                <p class="mt-2 text-sm leading-7 text-secondary">{{ detail.reviewSuggestion || '记录这轮反馈，补充下一轮准备重点。' }}</p>
               </div>
             </div>
           </article>
@@ -123,7 +123,7 @@
               <div>
                 <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">3. 推进阶段</h3>
                 <p class="mt-2 text-sm leading-7 text-secondary">
-                  先更新当前阶段，再决定要不要补新的反馈记录。
+                  更新当前阶段，需要时补充反馈记录。
                 </p>
               </div>
               <el-button :loading="refreshingAnalysis" size="large" class="hard-button-secondary" @click="handleRefreshAnalysis">

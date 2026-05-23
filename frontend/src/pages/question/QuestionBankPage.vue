@@ -1,202 +1,84 @@
 <template>
-  <div class="space-y-6">
-    <AppShellHeader>
-      <template #actions>
-        <RouterLink
-          to="/interview"
-          class="hard-button-primary"
-        >
-          去模拟面试
-        </RouterLink>
-        <RouterLink
-          to="/chat"
-          class="hard-button-secondary"
-        >
-          继续问答
-        </RouterLink>
-      </template>
-    </AppShellHeader>
-
-    <section class="space-y-4">
-      <section class="shell-section-card p-5 sm:p-6">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div class="min-w-0 max-w-2xl">
-            <h2 class="text-2xl font-semibold tracking-[-0.03em] text-ink">先筛出你现在最该练的题</h2>
-            <p class="mt-3 text-sm leading-7 text-secondary">
-              先搜题或选一个基础筛选，题目会马上出现在下面。需要更精细的范围时，再展开更多筛选。
-            </p>
+  <div class="question-bank-page">
+    <section class="shell-section-card workspace-shell overflow-hidden">
+      <div class="workspace-head">
+        <div class="workspace-head__top">
+          <div class="workspace-head__main">
+            <h1 class="workspace-title">题库训练</h1>
+            <p class="workspace-summary">先筛到要练的题，先看清题目和答案，再决定继续追问还是开始表达练习。</p>
           </div>
-          <button
-            type="button"
-            class="hard-button-secondary shrink-0"
-            @click="showAdvancedFilters = !showAdvancedFilters"
-          >
-            {{ showAdvancedFilters ? '收起更多筛选' : '展开更多筛选' }}
+          <div v-if="questions.length" class="question-toolbar__summary text-xs text-tertiary">
+            <span>共 <strong class="font-semibold text-ink">{{ total }}</strong> 题</span>
+            <span>当前页 {{ questions.length }} 题</span>
+            <span v-if="hardQuestionCount">困难 {{ hardQuestionCount }}</span>
+            <span v-if="taggedQuestionCount">带标签 {{ taggedQuestionCount }}</span>
+          </div>
+        </div>
+
+        <div class="question-toolbar__filters mt-4">
+          <el-input
+            v-model="filters.keyword"
+            clearable
+            size="default"
+            placeholder="搜索题目标题、标签、答案…"
+            class="question-toolbar__search"
+            @keyup.enter="applyFilters"
+          />
+          <el-select v-model="filters.categoryId" clearable size="default" placeholder="分类" class="w-28">
+            <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
+          </el-select>
+          <el-select v-model="filters.difficulty" clearable size="default" placeholder="难度" class="w-24">
+            <el-option label="简单" value="easy" />
+            <el-option label="中等" value="medium" />
+            <el-option label="困难" value="hard" />
+          </el-select>
+          <button type="button" class="filter-chip" @click="applyFilters">搜索</button>
+          <button type="button" class="filter-chip filter-chip--muted" @click="resetFilters">重置</button>
+          <button type="button" class="filter-chip filter-chip--muted" @click="showAdvancedFilters = !showAdvancedFilters">
+            {{ showAdvancedFilters ? '收起筛选' : '更多筛选' }}
           </button>
         </div>
 
-        <div class="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_auto]">
-            <el-input
-              v-model="filters.keyword"
-              clearable
-              size="large"
-              placeholder="搜索题目标题、标签、答案或错误示例"
-              @keyup.enter="applyFilters"
-            />
-            <el-select
-              v-model="filters.categoryId"
-              clearable
-              size="large"
-              placeholder="技术分类"
-            >
-              <el-option
-                v-for="item in categories"
-                :key="item.id"
-                :label="item.name"
-                :value="item.id"
-              />
-            </el-select>
-            <el-select
-              v-model="filters.difficulty"
-              clearable
-              size="large"
-              placeholder="难度"
-            >
-              <el-option
-                label="简单"
-                value="easy"
-              />
-              <el-option
-                label="中等"
-                value="medium"
-              />
-              <el-option
-                label="困难"
-                value="hard"
-              />
-            </el-select>
-            <el-select
-              v-model="filters.type"
-              clearable
-              size="large"
-              placeholder="题目类型"
-            >
-              <el-option label="八股题" value="concept" />
-              <el-option label="场景题" value="scenario" />
-              <el-option label="项目题" value="project" />
-              <el-option label="算法题" value="coding" />
-            </el-select>
-            <el-input
-              v-model="filters.jobDirection"
-              clearable
-              size="large"
-              placeholder="岗位方向，如 Java 后端 / 校招"
-              @keyup.enter="applyFilters"
-            />
-            <el-input
-              v-model="filters.tag"
-              clearable
-              size="large"
-              placeholder="标签，如 Redis / 并发 / 微服务"
-              @keyup.enter="applyFilters"
-            />
-            <div class="flex gap-3">
-              <el-button
-                type="primary"
-                size="large"
-                class="action-button flex-1"
-                :loading="loading"
-                @click="applyFilters"
-              >
-                刷新题库
-              </el-button>
-              <el-button
-                size="large"
-                class="hard-button-secondary !ml-0"
-                @click="resetFilters"
-              >
-                重置
-              </el-button>
-            </div>
-          </div>
+        <div v-if="showAdvancedFilters" class="question-toolbar__advanced mt-3">
+          <el-select v-model="filters.type" clearable size="default" placeholder="题型" class="w-28">
+            <el-option label="八股题" value="concept" />
+            <el-option label="场景题" value="scenario" />
+            <el-option label="项目题" value="project" />
+            <el-option label="算法题" value="coding" />
+          </el-select>
+          <el-input
+            v-model="filters.jobDirection"
+            clearable
+            size="default"
+            placeholder="岗位方向"
+            class="w-36"
+            @keyup.enter="applyFilters"
+          />
+          <el-input
+            v-model="filters.tag"
+            clearable
+            size="default"
+            placeholder="标签，如 Redis / 并发"
+            class="w-44"
+            @keyup.enter="applyFilters"
+          />
+        </div>
+      </div>
 
-        <div v-if="showAdvancedFilters" class="mt-3 grid gap-3 xl:grid-cols-[180px_220px_220px_220px_auto]">
-            <el-select
-              v-model="filters.difficulty"
-              clearable
-              size="large"
-              placeholder="难度"
-            >
-              <el-option
-                label="简单"
-                value="easy"
-              />
-              <el-option
-                label="中等"
-                value="medium"
-              />
-              <el-option
-                label="困难"
-                value="hard"
-              />
-            </el-select>
-            <el-select
-              v-model="filters.type"
-              clearable
-              size="large"
-              placeholder="题目类型"
-            >
-              <el-option label="八股题" value="concept" />
-              <el-option label="场景题" value="scenario" />
-              <el-option label="项目题" value="project" />
-              <el-option label="算法题" value="coding" />
-            </el-select>
-            <el-input
-              v-model="filters.jobDirection"
-              clearable
-              size="large"
-              placeholder="岗位方向，如 Java 后端 / 校招"
-              @keyup.enter="applyFilters"
-            />
-            <el-input
-              v-model="filters.tag"
-              clearable
-              size="large"
-              placeholder="标签，如 Redis / 并发 / 微服务"
-              @keyup.enter="applyFilters"
-            />
-            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-              <article class="question-summary-card">
-                <span>当前页题目</span>
-                <strong>{{ questions.length }}</strong>
-              </article>
-              <article class="question-summary-card">
-                <span>困难题 / 带标签题</span>
-                <strong>{{ hardQuestionCount }} / {{ taggedQuestionCount }}</strong>
-              </article>
-            </div>
-          </div>
-      </section>
+      <div class="workspace-separator"></div>
 
-      <section
-        v-if="loading"
-        class="shell-section-card min-h-[260px] p-8 text-center"
-      >
+      <div v-if="loading" class="workspace-section min-h-[260px] text-center">
         <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-        <p class="mt-4 text-sm text-secondary">
-          加载题库中...
-        </p>
-      </section>
+        <p class="mt-4 text-sm text-secondary">加载题库中...</p>
+      </div>
 
-      <section
-        v-else
-        class="space-y-4"
-      >
-        <article
-          v-for="item in questions"
-          :key="item.id"
-          class="shell-section-card question-card p-5 sm:p-6"
-        >
+      <div v-else class="workspace-section question-list-section">
+        <div v-if="questions.length" class="space-y-4">
+          <article
+            v-for="item in questions"
+            :key="item.id"
+            class="question-card p-5 sm:p-6"
+          >
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-tertiary">
@@ -218,23 +100,21 @@
             <div class="flex shrink-0 gap-2">
               <button
                 type="button"
-                class="hard-button-secondary text-sm"
+                class="favorites-toggle"
+                :class="isFavorited(item.id) ? 'favorites-toggle-active' : ''"
+                @click="toggleFavorite(item)"
+              >
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="hard-button-primary text-sm"
                 @click="openDetail(item)"
               >
-                查看详情
+                先看这道题
               </button>
-              <RouterLink
-                :to="questionChatTarget(item)"
-                class="hard-button-secondary text-sm"
-              >
-                去问这个问题
-              </RouterLink>
-              <RouterLink
-                :to="questionInterviewTarget(item)"
-                class="hard-button-primary text-sm"
-              >
-                去做表达练习
-              </RouterLink>
             </div>
           </div>
 
@@ -252,12 +132,10 @@
           <p class="mt-5 text-sm leading-7 text-secondary">
             {{ answerPreview(item.standardAnswer) }}
           </p>
-        </article>
+          </article>
+        </div>
 
-        <section
-          v-if="!questions.length"
-          class="shell-section-card p-6"
-        >
+        <section v-else class="py-2">
           <EmptyState
             icon="search"
             title="当前筛选下没有题目"
@@ -265,10 +143,7 @@
           />
         </section>
 
-        <section
-          v-if="totalPages > 1"
-          class="shell-section-card px-5 py-4"
-        >
+        <section v-if="totalPages > 1" class="workspace-separator mt-5 px-1 pt-4">
           <el-pagination
             v-model:current-page="currentPage"
             :page-size="pageSize"
@@ -277,12 +152,12 @@
             @current-change="handlePageChange"
           />
         </section>
-      </section>
+      </div>
     </section>
 
     <el-drawer
       v-model="detailVisible"
-      title="题目详情"
+      title="题目准备"
       size="min(720px, 100%)"
     >
       <template v-if="selectedQuestion">
@@ -306,6 +181,21 @@
               {{ selectedQuestion.applicableScope || '先把核心思路讲清楚，再补来源和扩展资料。' }}
               <span v-if="selectedQuestion.source"> · 来源：{{ selectedQuestion.source }}</span>
             </p>
+
+            <div class="mt-5 flex flex-wrap gap-3">
+              <RouterLink
+                :to="questionChatTarget(selectedQuestion)"
+                class="hard-button-secondary text-sm"
+              >
+                去问答页继续追问
+              </RouterLink>
+              <RouterLink
+                :to="questionInterviewTarget(selectedQuestion)"
+                class="hard-button-primary text-sm"
+              >
+                开始表达练习
+              </RouterLink>
+            </div>
           </section>
 
           <section
@@ -320,7 +210,7 @@
           </section>
 
           <section class="question-detail-block">
-            <span class="question-detail-title">先看标准答案</span>
+            <span class="question-detail-title">1. 先看标准答案</span>
             <p>{{ selectedQuestion.standardAnswer || '暂无标准答案。' }}</p>
           </section>
 
@@ -328,7 +218,7 @@
             v-if="selectedQuestion.interviewAnswer"
             class="question-detail-block"
           >
-            <span class="question-detail-title">再看面试表达</span>
+            <span class="question-detail-title">2. 再看表达示例</span>
             <p>{{ selectedQuestion.interviewAnswer }}</p>
           </section>
 
@@ -336,7 +226,7 @@
             v-if="selectedQuestion.followUpSuggestions"
             class="question-detail-block"
           >
-            <span class="question-detail-title">接着继续追问</span>
+            <span class="question-detail-title">3. 再决定怎么继续追问</span>
             <p>{{ selectedQuestion.followUpSuggestions }}</p>
           </section>
 
@@ -352,7 +242,7 @@
             v-if="selectedQuestion.scoreStandard"
             class="question-detail-block"
           >
-            <span class="question-detail-title">最后对照评分标准</span>
+            <span class="question-detail-title">4. 最后对照评分标准</span>
             <p>{{ selectedQuestion.scoreStandard }}</p>
           </section>
         </div>
@@ -363,13 +253,15 @@
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import { computed, onMounted, reactive, ref } from 'vue'
-import AppShellHeader from '@/components/AppShellHeader.vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchCategoriesApi } from '@/api/category'
 import { fetchQuestionsApi } from '@/api/question'
+import { addFavoriteApi, removeFavoriteApi, fetchFavoriteListApi } from '@/api/favorites'
 import type { CategoryItem, QuestionItem } from '@/types/api'
 
+const route = useRoute()
 const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = 12
@@ -429,7 +321,7 @@ const loadQuestions = async () => {
     questions.value = []
     total.value = 0
     totalPages.value = 0
-    ElMessage.error('题库加载失败，请稍后重试')
+    ElMessage.error('题库暂时没加载出来，请调整筛选后重试')
   } finally {
     loading.value = false
   }
@@ -517,18 +409,130 @@ const questionInterviewTarget = (question: QuestionItem) => ({
   }
 })
 
+const applyRouteFilters = () => {
+  const categoryId = Number(route.query.categoryId)
+  filters.categoryId = Number.isFinite(categoryId) && categoryId > 0 ? categoryId : undefined
+
+  const difficulty = String(route.query.difficulty || '').trim()
+  filters.difficulty = difficulty === 'easy' || difficulty === 'medium' || difficulty === 'hard'
+    ? difficulty
+    : undefined
+
+  filters.keyword = String(route.query.keyword || '').trim()
+  filters.jobDirection = String(route.query.jobDirection || '').trim()
+  filters.tag = String(route.query.tag || '').trim()
+}
+
+const favoriteIds = ref(new Set<number>())
+
+const loadFavoriteIds = async () => {
+  try {
+    const { data } = await fetchFavoriteListApi({ targetType: 'question', pageSize: 500 })
+    favoriteIds.value = new Set(data.records.map((f) => f.targetId))
+  } catch {
+    // silent
+  }
+}
+
+const isFavorited = (questionId: number) => favoriteIds.value.has(questionId)
+
+const toggleFavorite = async (item: QuestionItem) => {
+  try {
+    if (isFavorited(item.id)) {
+      const { data } = await fetchFavoriteListApi({ targetType: 'question', pageSize: 500 })
+      const fav = data.records.find((f) => f.targetId === item.id)
+      if (fav) await removeFavoriteApi(fav.id)
+      favoriteIds.value.delete(item.id)
+      ElMessage.success('已取消收藏')
+    } else {
+      await addFavoriteApi({ targetType: 'question', targetId: item.id })
+      favoriteIds.value.add(item.id)
+      ElMessage.success('已收藏')
+    }
+  } catch {
+    ElMessage.error('收藏状态没有更新成功，请稍后再试')
+  }
+}
+
 onMounted(() => {
-  void Promise.all([loadCategories(), loadQuestions()])
+  applyRouteFilters()
+  void Promise.all([loadCategories(), loadQuestions(), loadFavoriteIds()])
 })
+
+watch(
+  () => route.fullPath,
+  () => {
+    applyRouteFilters()
+    currentPage.value = 1
+    void loadQuestions()
+  }
+)
 </script>
 
 <style scoped>
-.question-page-grid {
-  display: grid;
-  gap: 1rem;
+.question-toolbar__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 16px;
+}
+
+.question-toolbar__summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px 14px;
+}
+
+.question-toolbar__filters,
+.question-toolbar__advanced {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.question-toolbar__search {
+  width: min(100%, 320px);
+}
+
+.filter-chip {
+  min-height: 2rem;
+  border-radius: 0.625rem;
+  border: 1px solid rgba(var(--bc-accent-rgb), 0.22);
+  background: rgba(var(--bc-accent-rgb), 0.06);
+  color: var(--bc-ink);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0 0.85rem;
+  cursor: pointer;
+  transition:
+    background var(--motion-fast) var(--ease-hard),
+    border-color var(--motion-fast) var(--ease-hard),
+    box-shadow var(--motion-fast) var(--ease-hard);
+}
+
+.filter-chip:hover {
+  background: rgba(var(--bc-accent-rgb), 0.12);
+  box-shadow: 0 2px 8px rgba(var(--bc-accent-rgb), 0.1);
+}
+
+.filter-chip--muted {
+  border-color: var(--bc-line);
+  background: transparent;
+  color: var(--bc-ink-secondary);
+}
+
+.filter-chip--muted:hover {
+  background: var(--interactive-hover);
+  box-shadow: none;
 }
 
 .question-card {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--bc-surface-muted);
   transition:
     transform var(--motion-fast) var(--ease-hard),
     box-shadow var(--motion-fast) var(--ease-hard);
@@ -559,6 +563,12 @@ onMounted(() => {
   border-color: rgba(var(--bc-accent-rgb), 0.24);
 }
 
+@media (max-width: 767px) {
+  .question-toolbar__summary {
+    justify-content: flex-start;
+  }
+}
+
 .question-difficulty-hard {
   color: var(--bc-coral);
   background: color-mix(in srgb, var(--bc-coral) 12%, transparent);
@@ -576,33 +586,6 @@ onMounted(() => {
   color: var(--bc-ink-secondary);
 }
 
-.question-summary-card {
-  border-radius: calc(var(--radius-md) - 4px);
-  border: 1px solid var(--bc-border-subtle);
-  background: linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.08), transparent 60%), var(--bc-surface-muted);
-  padding: 1rem;
-}
-
-.question-summary-card span {
-  display: block;
-  font-size: 0.8rem;
-  color: var(--bc-ink-secondary);
-}
-
-.question-summary-card strong {
-  display: block;
-  margin-top: 0.55rem;
-  font-size: 1.65rem;
-  line-height: 1.1;
-  color: var(--bc-ink);
-}
-
-.question-insight-grid {
-  display: grid;
-  gap: 0.9rem;
-}
-
-.question-insight-card,
 .question-detail-block {
   border-radius: calc(var(--radius-md) - 4px);
   border: 1px solid var(--bc-border-subtle);
@@ -610,7 +593,6 @@ onMounted(() => {
   padding: 1rem;
 }
 
-.question-insight-title,
 .question-detail-title {
   display: inline-flex;
   margin-bottom: 0.55rem;
@@ -621,7 +603,6 @@ onMounted(() => {
   color: var(--bc-ink-secondary);
 }
 
-.question-insight-card p,
 .question-detail-block p {
   white-space: pre-line;
   font-size: 0.95rem;
@@ -629,22 +610,35 @@ onMounted(() => {
   color: var(--bc-ink-secondary);
 }
 
-.question-insight-card-danger,
 .question-detail-block-danger {
   border-color: color-mix(in srgb, var(--bc-coral) 24%, var(--bc-border-subtle));
   background: color-mix(in srgb, var(--bc-coral) 8%, var(--bc-surface-muted));
 }
 
-@media (min-width: 1200px) {
-  .question-page-grid {
-    grid-template-columns: minmax(0, 1fr) 320px;
-    align-items: start;
-  }
+.favorites-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--bc-ink-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-@media (min-width: 900px) {
-  .question-insight-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+.favorites-toggle:hover {
+  background: rgba(var(--bc-accent-rgb), 0.1);
+  color: var(--bc-accent);
+}
+
+.favorites-toggle-active {
+  color: var(--bc-accent);
+}
+
+.favorites-toggle-active svg {
+  fill: var(--bc-accent);
 }
 </style>
