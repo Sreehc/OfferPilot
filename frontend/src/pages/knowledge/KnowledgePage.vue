@@ -375,7 +375,7 @@ const loadDocs = async () => {
     total.value = response.data.total
     totalPages.value = response.data.totalPages
   } catch {
-    ElMessage.error('文档加载失败')
+    ElMessage.error('资料列表暂时没加载出来，请切换范围或稍后重试')
   } finally {
     loadingDocs.value = false
   }

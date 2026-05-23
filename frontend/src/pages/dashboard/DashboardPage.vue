@@ -909,7 +909,7 @@ const loadDashboard = async () => {
   }
 
   if (!overviewLoaded) {
-    ElMessage.error('首页数据加载失败，请稍后重试')
+    ElMessage.error('首页暂时没加载出来，请刷新后再试')
   }
 
   loading.value = false

@@ -787,7 +787,7 @@ const loadMessages = async (sessionId: number) => {
     autoStickToBottom.value = true
     scrollToBottom(true)
   } catch {
-    ElMessage.error('会话内容加载失败')
+    ElMessage.error('这段会话暂时没加载出来，请重新点一次或稍后再试')
   } finally {
     loadingMessages.value = false
   }

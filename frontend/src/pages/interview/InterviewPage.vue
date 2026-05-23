@@ -154,9 +154,9 @@
             </el-select>
           </div>
 
-          <div v-if="allHistoryLoading" class="mt-4 py-6 text-center text-xs text-tertiary">加载中...</div>
+          <div v-if="allHistoryLoading" class="mt-4 py-6 text-center text-xs text-tertiary">正在加载最近的面试记录...</div>
           <div v-else-if="!allHistoryItems.length" class="mt-4 py-6 text-center">
-            <p class="text-xs leading-5 text-secondary">暂无面试记录。</p>
+            <p class="text-xs leading-5 text-secondary">你还没有完成过模拟面试。先开始一轮，后面这里会按时间线保留你的表现和分数。</p>
           </div>
           <div v-else class="mt-3 space-y-1">
             <RouterLink
@@ -287,7 +287,7 @@
                   </span>
                 </div>
                 <h4 class="question-spotlight__title">
-                  {{ currentQuestion?.questionTitle ?? '加载中...' }}
+                  {{ currentQuestion?.questionTitle ?? '正在加载当前问题...' }}
                 </h4>
               </div>
               <div class="question-spotlight__timer">
