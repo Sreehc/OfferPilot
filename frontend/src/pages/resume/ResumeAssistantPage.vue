@@ -131,7 +131,7 @@
               </button>
             </div>
             <div v-else class="mt-4 rounded-2xl border border-dashed border-[var(--bc-line)] p-5 text-sm text-secondary">
-              还没有简历，先上传一份开始整理。
+              当前还没有简历，先上传一份，后面这里会继续整理项目、提纲和面试表达。
             </div>
           </section>
         </article>
@@ -860,7 +860,7 @@ const loadData = async () => {
       isEditing.value = currentResume.value.parseStatus === 'failed'
     }
   } catch {
-    ElMessage.error('加载简历助手失败')
+    ElMessage.error('简历助手还没加载出来，请刷新页面后再试。')
   } finally {
     loading.value = false
   }
@@ -905,7 +905,7 @@ const handleSave = async () => {
     isEditing.value = false
     ElMessage.success('简历内容已更新')
   } catch {
-    ElMessage.error('保存简历修改失败')
+    ElMessage.error('简历修改还没保存成功，请检查内容后再试。')
   } finally {
     saving.value = false
   }
@@ -927,7 +927,7 @@ const handleRetryParse = async () => {
     isEditing.value = response.data.parseStatus === 'failed'
     ElMessage.success(response.data.parseStatus === 'parsed' ? '已重新识别简历' : '已刷新当前简历状态')
   } catch {
-    ElMessage.error('重新识别失败')
+    ElMessage.error('这份简历还没重新识别成功，请稍后再试。')
   } finally {
     retrying.value = false
   }
@@ -952,7 +952,7 @@ const handleUpload = async (file: File) => {
     }
     ElMessage.success(response.data.parseStatus === 'failed' ? '简历已上传，请检查并修正简历内容' : '简历识别完成')
   } catch (error: any) {
-    ElMessage.error(error?.message || '简历上传失败')
+    ElMessage.error(error?.message || '简历还没上传成功，请检查文件格式后再试。')
   } finally {
     uploading.value = false
   }
@@ -975,7 +975,7 @@ const handleRestoreVersion = async (versionId: string) => {
     isEditing.value = false
     ElMessage.success('已回滚到该版本')
   } catch {
-    ElMessage.error('版本回滚失败')
+    ElMessage.error('这个版本还没回滚成功，请稍后再试。')
   } finally {
     loading.value = false
   }
@@ -987,7 +987,7 @@ const handleCopyResume = async () => {
     await navigator.clipboard.writeText(interviewResume.value.exportText)
     ElMessage.success('面试提纲已复制')
   } catch {
-    ElMessage.error('复制失败，请稍后重试')
+    ElMessage.error('面试提纲还没复制成功，请稍后再试。')
   }
 }
 
