@@ -11,7 +11,7 @@
       id="auth-main"
       class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1120px] items-stretch gap-4 xl:grid-cols-[minmax(280px,0.68fr)_minmax(420px,1.32fr)]"
     >
-      <section class="shell-section-card auth-brand-panel order-2 p-6 sm:p-8 xl:order-1">
+      <section class="shell-section-card auth-brand-panel order-2 hidden p-6 sm:p-8 xl:order-1 xl:flex">
         <RouterLink
           to="/login"
           class="auth-brand-mark"
@@ -33,11 +33,11 @@
           </p>
         </div>
 
-        <div class="mt-8 max-w-2xl">
+        <div class="mt-6 max-w-xl">
           <p class="auth-support-title">
-            几步就能把账号访问找回来
+            几步就能找回访问
           </p>
-          <p class="mt-5 text-sm leading-8 text-secondary sm:text-base">
+          <p class="mt-4 text-sm leading-7 text-secondary">
             输入邮箱、验证码和新密码，完成后就能回到登录页继续使用。
           </p>
         </div>
@@ -48,15 +48,7 @@
               先确认邮箱
             </div>
             <p class="auth-feature-card__desc">
-              验证码会发到你注册时填写的邮箱里。
-            </p>
-          </div>
-          <div class="auth-feature-card">
-            <div class="auth-feature-card__title">
-              验证码有效期有限
-            </div>
-            <p class="auth-feature-card__desc">
-              收到验证码后尽快完成重置，避免过期后重新发送。
+              验证码会发到你注册时填写的邮箱里，收到后尽快完成重置。
             </p>
           </div>
         </div>
@@ -338,7 +330,7 @@ const handleResetPassword = async () => {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 1.5rem;
+  gap: 1.1rem;
   background:
     radial-gradient(circle at 16% 18%, rgba(var(--bc-accent-rgb), 0.12), transparent 30%),
     radial-gradient(circle at 82% 14%, rgba(var(--bc-cyan-rgb), 0.08), transparent 24%),
@@ -348,7 +340,7 @@ const handleResetPassword = async () => {
 
 .auth-support-title {
   font-family: theme('fontFamily.display');
-  font-size: clamp(1.5rem, 2vw, 2.35rem);
+  font-size: clamp(1.35rem, 1.8vw, 1.95rem);
   line-height: 1.05;
   letter-spacing: -0.03em;
   color: var(--bc-ink);
@@ -385,6 +377,12 @@ const handleResetPassword = async () => {
   color: var(--bc-ink-secondary);
 }
 
+@media (min-width: 1280px) {
+  .auth-trust-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .auth-inline-note {
   border-radius: 18px;
   border: 1px solid rgba(var(--bc-accent-rgb), 0.16);
@@ -406,10 +404,6 @@ const handleResetPassword = async () => {
 }
 
 @media (min-width: 768px) {
-  .auth-trust-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .verification-inline {
     grid-template-columns: minmax(0, 1fr) 168px;
     align-items: start;

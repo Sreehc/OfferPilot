@@ -11,7 +11,7 @@
       id="auth-main"
       class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1120px] items-stretch gap-4 xl:grid-cols-[minmax(280px,0.68fr)_minmax(420px,1.32fr)]"
     >
-      <section class="shell-section-card auth-brand-panel order-2 p-6 sm:p-8 xl:order-1">
+      <section class="shell-section-card auth-brand-panel order-2 hidden p-6 sm:p-8 xl:order-1 xl:flex">
         <RouterLink
           to="/login"
           class="auth-brand-mark"
@@ -33,12 +33,12 @@
           </p>
         </div>
 
-        <div class="mt-8 max-w-2xl">
+        <div class="mt-6 max-w-xl">
           <p class="auth-support-title">
-            登录后继续今天的求职训练
+            登录后直接继续训练
           </p>
-          <p class="mt-5 text-sm leading-8 text-secondary sm:text-base">
-            继续题库训练、问答、模拟面试和投递进展，训练记录都会跟着当前账号保留。
+          <p class="mt-4 text-sm leading-7 text-secondary">
+            题库、问答、模拟面试和投递进展都会跟着当前账号保留。
           </p>
         </div>
 
@@ -48,15 +48,7 @@
               训练记录会保留
             </p>
             <p class="auth-feature-card__desc">
-              登录后可以直接回到上次做到一半的训练。
-            </p>
-          </div>
-          <div class="auth-feature-card">
-            <p class="auth-feature-card__title">
-              忘记密码可找回
-            </p>
-            <p class="auth-feature-card__desc">
-              邮箱验证通过后，后续恢复账号会更直接。
+              登录后可以直接回到上次做到一半的训练，也能通过邮箱重置密码。
             </p>
           </div>
         </div>
@@ -377,7 +369,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 1.5rem;
+  gap: 1.1rem;
   background:
     radial-gradient(circle at 18% 18%, rgba(var(--bc-accent-rgb), 0.12), transparent 30%),
     radial-gradient(circle at 82% 16%, rgba(var(--bc-cyan-rgb), 0.08), transparent 24%),
@@ -387,7 +379,7 @@ onMounted(() => {
 
 .auth-support-title {
   font-family: theme('fontFamily.display');
-  font-size: clamp(1.5rem, 2vw, 2.35rem);
+  font-size: clamp(1.35rem, 1.8vw, 1.95rem);
   line-height: 1.05;
   letter-spacing: -0.03em;
   color: var(--bc-ink);
@@ -504,6 +496,12 @@ onMounted(() => {
   font-size: 12px;
   line-height: 1.6;
   color: var(--bc-ink-secondary);
+}
+
+@media (min-width: 1280px) {
+  .auth-trust-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 640px) {
