@@ -15,7 +15,7 @@
 
     <section v-if="loading" class="shell-section-card p-8 text-center">
       <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-      <p class="mt-4 text-sm text-secondary">正在加载这次面试记录...</p>
+      <p class="mt-4 text-sm text-secondary">正在读取这次面试的题目、分数和复盘建议...</p>
     </section>
 
     <section v-else-if="!detail" class="shell-section-card p-8 text-center">
@@ -111,7 +111,7 @@
 
         <div class="surface-muted mx-6 mt-4 rounded-lg p-4">
           <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">本题点评</div>
-          <p class="mt-1 text-sm leading-6 text-primary">{{ record.comment || '暂无点评' }}</p>
+          <p class="mt-1 text-sm leading-6 text-primary">{{ record.comment || '这道题还没有生成点评，先对照分数和标准答案补一轮复盘。' }}</p>
         </div>
 
         <div v-if="record.scoreBreakdown?.length" class="mx-6 mt-4 grid gap-3 md:grid-cols-3">
@@ -177,7 +177,7 @@
               <span class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">标准答案</span>
             </div>
             <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-primary">
-              {{ record.standardAnswer || '暂无标准答案' }}
+              {{ record.standardAnswer || '这道题还没有生成标准答案，先回看你的回答，再结合复盘建议补一版更完整的答案。' }}
             </p>
           </div>
         </div>
@@ -262,7 +262,7 @@ const loadData = async () => {
     const response = await interviewDetailApi(id)
     detail.value = response.data
   } catch {
-    ElMessage.error('这次面试记录暂时没加载出来，请稍后再试')
+    ElMessage.error('这次面试记录还没加载出来，请回到面试列表换一条记录，或稍后再试。')
   } finally {
     loading.value = false
   }
