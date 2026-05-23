@@ -23,14 +23,14 @@ const pageMeta = {
   applications: {
     title: '投递管理'
   },
-  cards: {
-    title: '卡片强化'
-  },
   interview: {
     title: '模拟面试'
   },
   review: {
     title: '复习巩固'
+  },
+  wrong: {
+    title: '错题本'
   },
   community: {
     title: '社区'
@@ -40,6 +40,9 @@ const pageMeta = {
   },
   admin: {
     title: '管理后台'
+  },
+  favorites: {
+    title: '我的收藏'
   }
 } as const
 
@@ -77,10 +80,8 @@ const router = createRouter({
           meta: pageMeta.knowledge
         },
         {
-          path: 'cards',
-          name: 'cards',
-          component: () => import('@/pages/cards/CardsPage.vue'),
-          meta: pageMeta.cards
+          path: 'knowledge/java-basics',
+          redirect: '/knowledge'
         },
         {
           path: 'interview',
@@ -114,9 +115,7 @@ const router = createRouter({
         },
         {
           path: 'interview/history',
-          name: 'interview-history',
-          component: () => import('@/pages/interview/InterviewHistoryPage.vue'),
-          meta: { title: '模拟面试历史' }
+          redirect: '/interview'
         },
         {
           path: 'interview/detail/:id',
@@ -125,9 +124,16 @@ const router = createRouter({
           meta: { title: '模拟面试详情' }
         },
         {
+          path: 'favorites',
+          name: 'favorites',
+          component: () => import('@/pages/favorites/FavoritesPage.vue'),
+          meta: pageMeta.favorites
+        },
+        {
           path: 'wrong',
           name: 'wrong',
-          redirect: { path: '/review', query: { tab: 'all' } }
+          component: () => import('@/pages/wrong/WrongBookPage.vue'),
+          meta: pageMeta.wrong
         },
         {
           path: 'review',

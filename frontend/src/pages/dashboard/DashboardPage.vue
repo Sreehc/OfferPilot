@@ -478,7 +478,7 @@ const weekDays = ['一', '二', '三', '四', '五', '六', '日']
 
 const quickEntries: DashboardQuickEntry[] = [
   { label: '模拟面试', description: 'AI 全真模拟', path: '/interview', icon: 'interview', tone: 'blue' },
-  { label: '知识库问答', description: 'RAG 智能问答', path: '/knowledge', icon: 'knowledge', tone: 'green' },
+  { label: '知识库', description: '查看推荐资料和个人文档', path: '/knowledge', icon: 'knowledge', tone: 'green' },
   { label: '简历助手', description: '整理简历与面试提纲', path: '/resume', icon: 'resume', tone: 'violet' },
   { label: '学习计划', description: '定制学习路径', path: '/study-plan', icon: 'plan', tone: 'cyan' },
   { label: '投递管理', description: '追踪求职进度', path: '/applications', icon: 'applications', tone: 'indigo' },
