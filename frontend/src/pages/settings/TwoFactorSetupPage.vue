@@ -97,7 +97,7 @@ const loadSetup = async () => {
     const response = await setupTwoFactorApi()
     setupData.value = response.data
   } catch {
-    ElMessage.error('初始化两步验证失败')
+    ElMessage.error('两步验证还没初始化成功，请刷新页面后再试。')
   }
 }
 
@@ -125,7 +125,7 @@ const copySecret = async () => {
     await navigator.clipboard.writeText(setupData.value.secret)
     ElMessage.success('已复制')
   } catch {
-    ElMessage.error('复制失败')
+    ElMessage.error('手动密钥还没复制成功，请稍后再试。')
   }
 }
 
@@ -134,7 +134,7 @@ const copyRecoveryCodes = async () => {
     await navigator.clipboard.writeText(recoveryCodes.value.join('\n'))
     ElMessage.success('恢复码已复制到剪贴板')
   } catch {
-    ElMessage.error('复制失败')
+    ElMessage.error('恢复码还没复制成功，请稍后再试。')
   }
 }
 

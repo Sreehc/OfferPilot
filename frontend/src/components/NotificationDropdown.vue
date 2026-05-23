@@ -91,9 +91,9 @@
           <button
             type="button"
             class="text-xs font-medium text-accent hover:underline"
-            @click="handleViewAll"
+            @click="handleClose"
           >
-            查看全部通知
+            收起通知
           </button>
         </div>
       </div>
@@ -102,6 +102,7 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
@@ -136,7 +137,7 @@ const loadNotifications = async () => {
     const res = await fetchNotificationsApi(1, 20)
     notifications.value = res.data.records
   } catch {
-    // silently ignore
+    ElMessage.error('通知列表还没加载出来，请稍后再试。')
   } finally {
     loading.value = false
   }
@@ -176,13 +177,12 @@ const handleMarkAllRead = async () => {
     notifications.value.forEach((n) => (n.isRead = true))
     unreadCount.value = 0
   } catch {
-    // silently ignore
+    ElMessage.error('通知还没全部设为已读，请稍后再试。')
   }
 }
 
-const handleViewAll = () => {
+const handleClose = () => {
   open.value = false
-  // For now, just close. A full notification page can be added in V2.
 }
 
 const typeGlyph = (type: string) => {

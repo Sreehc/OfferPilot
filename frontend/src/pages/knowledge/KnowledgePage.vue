@@ -413,7 +413,7 @@ const handleUpload = async (options: { file: File }) => {
     currentPage.value = 1
     await loadDocs()
   } catch {
-    ElMessage.error('上传失败，请检查文件格式或大小后重试')
+    ElMessage.error('这份资料还没上传成功，请检查文件格式、大小后再试。')
   } finally {
     uploading.value = false
   }
