@@ -241,13 +241,6 @@ const handleAvatarChange = async (event: Event) => {
   gap: 0.75rem;
 }
 
-.account-provider-card {
-  border-radius: calc(var(--radius-md) - 4px);
-  border: 1px solid var(--bc-border-subtle);
-  background: var(--bc-surface-muted);
-  padding: 1rem;
-}
-
 .account-avatar-shell {
   display: inline-flex;
   height: 5rem;

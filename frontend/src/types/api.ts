@@ -20,8 +20,6 @@ export interface UserInfo {
   email?: string
   emailVerified?: boolean
   emailVerifiedAt?: string
-  githubLinked?: boolean
-  githubUsername?: string
   role: string
   status?: number
   createTime?: string
@@ -51,14 +49,6 @@ export interface AuthDelivery {
   maskedEmail?: string
   expiresInMinutes?: number
   debugCode?: string
-}
-
-export interface OAuthProviderInfo {
-  provider: string
-  displayName: string
-  enabled: boolean
-  configured: boolean
-  authUrl?: string | null
 }
 
 export interface TwoFactorEnable {

@@ -4,7 +4,6 @@ import type {
   LoginDeviceItem,
   LoginLogItem,
   LoginResponse,
-  OAuthProviderInfo,
   PageResult,
   TwoFactorEnable,
   TwoFactorSetup,
@@ -56,10 +55,6 @@ export const forgotPasswordApi = (email: string) => {
 
 export const resetPasswordApi = (payload: { email: string; code: string; newPassword: string }) => {
   return request<null>({ url: '/auth/password/reset', method: 'post', data: payload })
-}
-
-export const fetchOAuthProvidersApi = () => {
-  return request<OAuthProviderInfo[]>({ url: '/auth/oauth/providers', method: 'get' })
 }
 
 export const uploadAvatarApi = (file: File) => {
