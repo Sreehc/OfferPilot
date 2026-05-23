@@ -1,9 +1,8 @@
 <template>
-  <div v-loading="loading" class="space-y-6">
-
-    <section class="shell-section-card plan-state-card p-5 sm:p-6">
-      <div class="grid gap-6">
-        <div class="min-w-0">
+  <div v-loading="loading" class="space-y-5">
+    <section class="shell-section-card plan-state-card p-4 sm:p-5">
+      <div class="workspace-head__top">
+        <div class="workspace-head__main">
           <div class="flex flex-wrap gap-2">
             <span class="hard-chip">{{ currentPlan ? planStateLabel : '先生成一份计划' }}</span>
             <span v-if="currentPlan" class="detail-pill">Day {{ currentPlan.currentDay }}</span>
@@ -11,49 +10,46 @@
             <span v-else class="detail-pill">{{ reviewPending }} 个待复习项</span>
           </div>
 
-          <p class="mt-5 font-display text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">
-            {{ currentPlan ? todayTitle : '先生成这轮训练计划' }}
+          <h1 class="mt-4 workspace-title">学习计划</h1>
+          <p class="workspace-summary">
+            {{
+              primaryNextAction?.description ||
+              (currentPlan
+                ? `${todayTitle}，先把今天这 ${currentPlan.todayTaskCount} 项做完。`
+                : '填好目标岗位和方向，直接生成今天要执行的训练清单。')
+            }}
           </p>
-          <p class="mt-4 max-w-3xl text-sm leading-7 text-secondary">
-            {{ currentPlan ? todayReason : '填好目标岗位、重点方向和技术范围后，直接生成今天就能执行的训练清单。' }}
-          </p>
-
-          <div class="mt-6 flex flex-wrap gap-3">
-            <RouterLink v-if="currentPlan" :to="primaryActionPath" class="hard-button-primary">
-              {{ primaryActionLabel }}
-            </RouterLink>
-            <a v-else href="#plan-builder" class="hard-button-primary">开始生成计划</a>
-            <button
-              v-if="currentPlan"
-              type="button"
-              class="hard-button-secondary"
-              :disabled="refreshing"
-              @click="handleRefresh"
-            >
-              刷新今日安排
-            </button>
-          </div>
-
-          <div v-if="currentPlan" class="mt-6 rounded-2xl border border-[var(--bc-border-subtle)] bg-white/60 p-4">
-            <div class="text-xs font-semibold uppercase tracking-[0.22em] text-tertiary">做完会得到什么</div>
-            <p class="mt-2 text-sm leading-7 text-secondary">{{ todayOutcome }}</p>
-          </div>
         </div>
 
-        <div class="plan-state-metrics">
-          <article class="plan-metric-card">
-            <span>{{ currentPlan ? '今日进度' : '计划模板' }}</span>
-            <strong>{{ currentPlan ? `${Math.round(currentPlan.progressRate || 0)}%` : '7 / 14 / 30 天' }}</strong>
-          </article>
-          <article class="plan-metric-card">
-            <span>{{ currentPlan ? '今日目标' : '主攻方向' }}</span>
-            <strong>{{ currentPlan ? `${currentPlan.todayTaskCount} 项任务` : topWeakPoint }}</strong>
-          </article>
-          <article class="plan-metric-card">
-            <span>{{ currentPlan ? '日均目标' : '计划入口' }}</span>
-            <strong>{{ currentPlan ? `${currentPlan.dailyTargetMinutes} 分钟` : '生成后直接执行' }}</strong>
-          </article>
+        <div class="workspace-actions">
+          <RouterLink :to="primaryActionPath" class="hard-button-primary">
+            {{ primaryActionLabel }}
+          </RouterLink>
+          <button
+            v-if="currentPlan"
+            type="button"
+            class="hard-button-secondary"
+            :disabled="refreshing"
+            @click="handleRefresh"
+          >
+            刷新今日安排
+          </button>
         </div>
+      </div>
+
+      <div class="plan-state-metrics mt-4">
+        <article class="plan-metric-card">
+          <span>{{ currentPlan ? '今日进度' : '计划模板' }}</span>
+          <strong>{{ currentPlan ? `${Math.round(currentPlan.progressRate || 0)}%` : '7 / 14 / 30 天' }}</strong>
+        </article>
+        <article class="plan-metric-card">
+          <span>{{ currentPlan ? '今日任务' : '主攻方向' }}</span>
+          <strong>{{ currentPlan ? `${currentPlan.todayTaskCount} 项` : topWeakPoint }}</strong>
+        </article>
+        <article class="plan-metric-card">
+          <span>{{ currentPlan ? '日均目标' : '计划入口' }}</span>
+          <strong>{{ currentPlan ? `${currentPlan.dailyTargetMinutes} 分钟` : '生成后直接执行' }}</strong>
+        </article>
       </div>
     </section>
 
@@ -61,10 +57,8 @@
       <article class="shell-section-card p-5 sm:p-6">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">今天先做这些</h3>
-            <p class="mt-2 text-sm leading-7 text-secondary">
-              默认先看今天可执行的任务；如果你想回看整轮安排，可以切换到全部任务。
-            </p>
+            <h3 class="text-xl font-semibold tracking-[-0.03em] text-ink">今天先做这些</h3>
+            <p class="mt-1 text-sm text-secondary">默认展示今天的任务；需要时再切到整轮安排。</p>
           </div>
           <div class="flex flex-wrap gap-2">
             <button
@@ -87,7 +81,10 @@
         </div>
 
         <div class="mt-5 h-2 overflow-hidden rounded-full bg-[var(--panel-muted)]">
-          <div class="h-full rounded-full bg-accent transition-all duration-500" :style="{ width: `${currentPlan.progressRate || 0}%` }"></div>
+          <div
+            class="h-full rounded-full bg-accent transition-all duration-500"
+            :style="{ width: `${currentPlan.progressRate || 0}%` }"
+          ></div>
         </div>
         <div class="mt-3 flex flex-wrap items-center gap-4 text-sm text-secondary">
           <span>已完成 {{ currentPlan.completedTaskCount }} / {{ currentPlan.totalTaskCount }}</span>
@@ -103,8 +100,13 @@
                   <span class="detail-pill">Day {{ task.dayIndex }}</span>
                   <span class="detail-pill">{{ moduleLabel(task.module) }}</span>
                   <span class="detail-pill">{{ task.estimatedMinutes }} 分钟</span>
-                  <span class="plan-priority" :class="priorityClass(task.priority)">{{ priorityLabel(task.priority) }}</span>
-                  <span class="plan-task-status" :class="task.status === 'completed' ? 'plan-task-status-done' : 'plan-task-status-pending'">
+                  <span class="plan-priority" :class="priorityClass(task.priority)">{{
+                    priorityLabel(task.priority)
+                  }}</span>
+                  <span
+                    class="plan-task-status"
+                    :class="task.status === 'completed' ? 'plan-task-status-done' : 'plan-task-status-pending'"
+                  >
                     {{ task.status === 'completed' ? '已完成' : '待执行' }}
                   </span>
                 </div>
@@ -116,9 +118,7 @@
               </div>
 
               <div class="flex shrink-0 flex-wrap gap-2">
-                <RouterLink :to="task.actionPath" class="hard-button-secondary text-sm">
-                  打开任务
-                </RouterLink>
+                <RouterLink :to="task.actionPath" class="hard-button-secondary text-sm"> 打开任务 </RouterLink>
                 <el-button
                   :loading="updatingTaskId === task.id"
                   size="large"
@@ -131,20 +131,23 @@
             </div>
           </article>
         </div>
-        <div v-else class="mt-5 rounded-2xl border border-dashed border-[var(--bc-line)] p-6 text-center text-sm text-secondary">
+        <div
+          v-else
+          class="mt-5 rounded-2xl border border-dashed border-[var(--bc-line)] p-6 text-center text-sm text-secondary"
+        >
           当前筛选下没有任务，切换到“全部任务”查看整轮安排。
         </div>
       </article>
 
-      <div class="space-y-4">
-        <article class="shell-section-card p-5 sm:p-6">
-          <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">
-            {{ currentPlan.planReasonSummary?.title || '这轮计划为什么先练这些' }}
+      <article class="shell-section-card p-5 sm:p-6 plan-side-card">
+        <section>
+          <h3 class="text-xl font-semibold tracking-[-0.03em] text-ink">
+            {{ currentPlan.planReasonSummary?.title || '这轮安排为什么先练这些' }}
           </h3>
           <p class="mt-3 text-sm leading-7 text-secondary">
             {{ currentPlan.planReasonSummary?.summary || currentPlan.reviewSuggestion }}
           </p>
-          <div class="mt-5 flex flex-wrap gap-2">
+          <div class="mt-4 flex flex-wrap gap-2">
             <span
               v-for="signal in currentPlan.planReasonSummary?.signals || []"
               :key="signal"
@@ -153,16 +156,16 @@
               {{ signal }}
             </span>
           </div>
-        </article>
+        </section>
 
-        <article class="shell-section-card p-5 sm:p-6">
-          <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">
-            {{ currentPlan.trendSummary?.title || '这轮计划的执行节奏' }}
-          </h3>
-          <p class="mt-3 text-sm leading-7 text-secondary">
-            {{ currentPlan.trendSummary?.summary || '先把今天的任务做完，计划会自动回流到首页和分析页。' }}
+        <section class="plan-side-card__section">
+          <h4 class="text-lg font-semibold tracking-[-0.03em] text-ink">
+            {{ currentPlan.trendSummary?.title || '执行节奏' }}
+          </h4>
+          <p class="mt-2 text-sm leading-7 text-secondary">
+            {{ currentPlan.trendSummary?.summary || '完成今天的任务后，计划会自动同步到首页和分析页。' }}
           </p>
-          <div class="mt-5 space-y-3">
+          <div class="mt-4 space-y-3">
             <div
               v-for="item in currentPlan.trendSummary?.highlights || defaultTrendHighlights"
               :key="item"
@@ -171,18 +174,16 @@
               <strong>{{ item }}</strong>
             </div>
           </div>
-        </article>
-      </div>
+        </section>
+      </article>
     </section>
 
     <section v-else id="plan-builder" class="space-y-4">
       <article class="shell-section-card p-5 sm:p-6">
         <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div class="max-w-2xl">
-            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">先定这轮训练目标</h3>
-            <p class="mt-3 text-sm leading-7 text-secondary">
-              填好岗位、重点方向和技术范围后，系统会直接生成每天要做的题库、问答、模拟面试和复习任务。
-            </p>
+            <h3 class="text-xl font-semibold tracking-[-0.03em] text-ink">先定这轮训练目标</h3>
+            <p class="mt-2 text-sm text-secondary">填好岗位和方向后，每天的任务会自动安排好。</p>
           </div>
         </div>
 
@@ -193,7 +194,13 @@
           </div>
           <div class="data-slab p-4">
             <div class="text-xs uppercase tracking-[0.22em] text-tertiary">重点方向</div>
-            <el-select v-model="focusDirection" class="mt-2 w-full" size="large" clearable placeholder="自动推断或手动指定">
+            <el-select
+              v-model="focusDirection"
+              class="mt-2 w-full"
+              size="large"
+              clearable
+              placeholder="自动推断或手动指定"
+            >
               <el-option v-for="item in directions" :key="item" :label="item" :value="item" />
             </el-select>
           </div>
@@ -212,7 +219,7 @@
           >
             直接生成 7 天计划
           </el-button>
-          <span class="detail-pill">生成后会直接拆成今天可执行的题库、问答、面试和复习任务</span>
+          <span class="detail-pill">生成后会自动安排今天的题库、问答、面试和复习任务</span>
         </div>
       </article>
 
@@ -245,7 +252,12 @@
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 import { fetchDashboardOverviewApi } from '@/api/dashboard'
-import { fetchCurrentStudyPlanApi, generateStudyPlanApi, refreshStudyPlanApi, updateStudyPlanTaskStatusApi } from '@/api/plan'
+import {
+  fetchCurrentStudyPlanApi,
+  generateStudyPlanApi,
+  refreshStudyPlanApi,
+  updateStudyPlanTaskStatusApi
+} from '@/api/plan'
 import { fetchReviewStatsApi } from '@/api/review'
 import type { DashboardOverview, ReviewStats, StudyPlan, StudyPlanTaskItem } from '@/types/api'
 
@@ -288,7 +300,9 @@ const focusDirection = ref('')
 const techStack = ref('Spring Boot, MySQL, Redis')
 
 const reviewPending = computed(() => reviewStats.value?.todayPending ?? overview.value?.reviewDebtCount ?? 0)
-const topWeakPoint = computed(() => overview.value?.weakPoints?.[0]?.categoryName ?? overview.value?.weakCategories?.[0] ?? '等待训练数据')
+const topWeakPoint = computed(
+  () => overview.value?.weakPoints?.[0]?.categoryName ?? overview.value?.weakCategories?.[0] ?? '等待训练数据'
+)
 
 const todayTasks = computed(() => {
   if (!currentPlan.value) return []
@@ -296,23 +310,29 @@ const todayTasks = computed(() => {
 })
 
 const todayPendingTasks = computed(() => todayTasks.value.filter((task) => task.status !== 'completed'))
+const primaryNextAction = computed(() => overview.value?.nextAction ?? null)
 
-const nextTask = computed(() => todayPendingTasks.value[0] ?? todayTasks.value[0] ?? currentPlan.value?.tasks.find((task) => task.status !== 'completed') ?? null)
+const nextTask = computed(
+  () =>
+    todayPendingTasks.value[0] ??
+    todayTasks.value[0] ??
+    currentPlan.value?.tasks.find((task) => task.status !== 'completed') ??
+    null
+)
 
 const todayTitle = computed(() => currentPlan.value?.todayFocusSummary?.title || '今天先完成计划里的任务')
-const todayReason = computed(() => currentPlan.value?.todayFocusSummary?.reason || currentPlan.value?.reviewSuggestion || '')
-const todayOutcome = computed(() => currentPlan.value?.todayFocusSummary?.expectedOutcome || '做完后你会更清楚下一步要补哪类题、哪段表达。')
 const planStateLabel = computed(() => {
+  if (primaryNextAction.value?.key === 'generate_plan') return '待生成'
+  if (primaryNextAction.value?.key === 'complete_today_plan') return '今日可执行'
   if (!currentPlan.value) return '待生成'
   if (currentPlan.value.todayFocusSummary?.state === 'completed') return '今日已完成'
   return '今日可执行'
 })
 const primaryActionPath = computed(() => {
-  if (!currentPlan.value) return '#plan-builder'
-  if (currentPlan.value.todayFocusSummary?.state === 'completed') return '/analytics'
-  return nextTask.value?.actionPath || '/dashboard'
+  return primaryNextAction.value?.path || (currentPlan.value ? nextTask.value?.actionPath || '/dashboard' : '/study-plan#plan-builder')
 })
 const primaryActionLabel = computed(() => {
+  if (primaryNextAction.value?.title) return primaryNextAction.value.title
   if (!currentPlan.value) return '开始生成计划'
   if (currentPlan.value.todayFocusSummary?.state === 'completed') return '查看进度走势'
   if (!nextTask.value) return '继续今天的训练'
@@ -467,13 +487,22 @@ onMounted(() => {
 .plan-state-card {
   background:
     radial-gradient(circle at top left, rgba(var(--bc-accent-rgb), 0.14), transparent 28%),
-    radial-gradient(circle at 86% 18%, rgba(var(--bc-cyan-rgb), 0.14), transparent 22%),
-    var(--bc-surface-card);
+    radial-gradient(circle at 86% 18%, rgba(var(--bc-cyan-rgb), 0.14), transparent 22%), var(--bc-surface-card);
 }
 
 .plan-state-metrics {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.65rem;
+}
+
+.plan-side-card {
+  display: grid;
+  gap: 18px;
+}
+
+.plan-side-card__section {
+  padding-top: 18px;
+  border-top: 1px solid var(--bc-border-subtle);
 }
 
 .plan-metric-card,
@@ -481,7 +510,7 @@ onMounted(() => {
   border-radius: calc(var(--radius-md) - 6px);
   border: 1px solid var(--bc-border-subtle);
   background: rgba(255, 255, 255, 0.38);
-  padding: 0.95rem 1rem;
+  padding: 0.8rem 0.9rem;
   backdrop-filter: blur(10px);
 }
 
@@ -495,18 +524,16 @@ onMounted(() => {
 .plan-metric-card strong,
 .plan-signal-row strong {
   display: block;
-  margin-top: 0.45rem;
-  font-size: 1.15rem;
+  margin-top: 0.35rem;
+  font-size: 1.05rem;
   line-height: 1.25;
   color: var(--bc-ink);
 }
 
 .plan-track-card {
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(var(--bc-accent-rgb), 0.12);
-  background:
-    linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.05), transparent 48%),
-    var(--bc-surface-card);
+  border-radius: calc(var(--radius-md) - 2px);
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--bc-surface-muted);
 }
 
 .plan-track-card__badge {
@@ -600,10 +627,6 @@ onMounted(() => {
 }
 
 @media (min-width: 1024px) {
-  .plan-state-card {
-    min-height: 260px;
-  }
-
   .plan-state-metrics {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }

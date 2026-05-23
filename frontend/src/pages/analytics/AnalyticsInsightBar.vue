@@ -41,13 +41,13 @@ const insights = computed<Insight[]>(() => {
   const list: Insight[] = []
   const d = props.data
 
-  if (d.nextActionTitle && d.nextActionPath) {
+  if (d.nextAction?.title && d.nextAction?.path) {
     list.push({
       key: 'next-action',
       icon: '→',
-      title: d.nextActionTitle,
-      description: d.nextActionDescription || '先推进这一项，再看后面的变化。',
-      to: d.nextActionPath,
+      title: d.nextAction.title,
+      description: d.nextAction.description || '推进这一项，看看后续变化。',
+      to: d.nextAction.path,
       toneClass: 'insight-card--info',
       iconClass: 'insight-icon--info'
     })
@@ -118,8 +118,8 @@ const insights = computed<Insight[]>(() => {
     list.push({
       key: 'debt-high',
       icon: '!',
-      title: '待巩固内容较多',
-      description: '先清掉积压内容，再继续新的训练，会更容易稳住节奏。',
+      title: '错题积压偏高',
+      description: '先清理到期错题，再补新训练，节奏会更稳。',
       to: '/review',
       toneClass: 'insight-card--warn',
       iconClass: 'insight-icon--warn'
@@ -142,8 +142,8 @@ const insights = computed<Insight[]>(() => {
     list.push({
       key: 'mastery-slow',
       icon: '△',
-      title: '掌握度增长放缓',
-      description: '试试减少新内容，把精力集中到复盘和巩固上。',
+      title: '掌握进度放缓',
+      description: '减少新题，优先把已有错题复盘到位。',
       to: '/review',
       toneClass: 'insight-card--info',
       iconClass: 'insight-icon--info'

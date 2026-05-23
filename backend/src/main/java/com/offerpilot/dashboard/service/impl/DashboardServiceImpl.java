@@ -1,21 +1,16 @@
 package com.offerpilot.dashboard.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.offerpilot.adaptive.service.AdaptiveService;
 import com.offerpilot.adaptive.vo.AbilityProfileVO;
-import com.offerpilot.analytics.service.AnalyticsService;
-import com.offerpilot.analytics.vo.EfficiencyVO;
-import com.offerpilot.analytics.vo.LearningInsightsVO;
-import com.offerpilot.cards.entity.KnowledgeCard;
-import com.offerpilot.cards.mapper.KnowledgeCardMapper;
-import com.offerpilot.cards.entity.KnowledgeCardTask;
-import com.offerpilot.cards.mapper.KnowledgeCardTaskMapper;
+import com.offerpilot.application.entity.JobApplication;
+import com.offerpilot.application.mapper.JobApplicationMapper;
 import com.offerpilot.common.api.ResultCode;
 import com.offerpilot.common.config.OfferPilotProperties;
 import com.offerpilot.common.exception.BusinessException;
-import com.offerpilot.application.entity.JobApplication;
-import com.offerpilot.application.mapper.JobApplicationMapper;
 import com.offerpilot.dashboard.dto.DashboardOverviewVO;
+import com.offerpilot.dashboard.dto.NextActionVO;
 import com.offerpilot.dashboard.dto.RecentInterviewVO;
 import com.offerpilot.dashboard.dto.WeakPointVO;
 import com.offerpilot.dashboard.mapper.DashboardMetricsMapper;
@@ -25,21 +20,20 @@ import com.offerpilot.plan.entity.StudyPlanTask;
 import com.offerpilot.plan.mapper.StudyPlanMapper;
 import com.offerpilot.plan.mapper.StudyPlanTaskMapper;
 import com.offerpilot.resume.entity.ResumeFile;
-import com.offerpilot.resume.entity.ResumeProject;
 import com.offerpilot.resume.mapper.ResumeFileMapper;
-import com.offerpilot.resume.mapper.ResumeProjectMapper;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.offerpilot.security.util.SecurityUtils;
+import com.offerpilot.wrong.entity.ReviewLog;
+import com.offerpilot.wrong.mapper.ReviewLogMapper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import com.offerpilot.security.util.SecurityUtils;
 
 @Slf4j
 @Service
@@ -52,15 +46,12 @@ public class DashboardServiceImpl implements DashboardService {
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
     private final AdaptiveService adaptiveService;
-    private final AnalyticsService analyticsService;
     private final OfferPilotProperties props;
-    private final KnowledgeCardTaskMapper knowledgeCardTaskMapper;
-    private final KnowledgeCardMapper knowledgeCardMapper;
+    private final JobApplicationMapper jobApplicationMapper;
+    private final ReviewLogMapper reviewLogMapper;
     private final StudyPlanMapper studyPlanMapper;
     private final StudyPlanTaskMapper studyPlanTaskMapper;
     private final ResumeFileMapper resumeFileMapper;
-    private final ResumeProjectMapper resumeProjectMapper;
-    private final JobApplicationMapper jobApplicationMapper;
 
     @Override
     public DashboardOverviewVO overview() {
@@ -69,7 +60,6 @@ public class DashboardServiceImpl implements DashboardService {
             throw new BusinessException(ResultCode.UNAUTHORIZED.getCode(), "login required");
         }
 
-        // Try cache first
         String cacheKey = CACHE_PREFIX + userId;
         try {
             String cached = redisTemplate.opsForValue().get(cacheKey);
@@ -87,7 +77,10 @@ public class DashboardServiceImpl implements DashboardService {
         int wrongCount = (int) defaultLong(dashboardMetricsMapper.countWrongQuestions(userId));
         List<RecentInterviewVO> recentInterviews = defaultList(dashboardMetricsMapper.selectRecentInterviews(userId));
         List<WeakPointVO> weakPoints = defaultList(dashboardMetricsMapper.selectWeakPoints(userId));
-        MemorySummary memorySummary = loadMemorySummary(userId);
+        StudyPlan activePlan = loadActivePlan(userId);
+        List<StudyPlanTask> todayPlanTasks = loadTodayPlanTasks(activePlan);
+        List<JobApplication> applications = loadApplications(userId);
+        ResumeFile latestResume = loadLatestResume(userId);
 
         DashboardOverviewVO result = DashboardOverviewVO.builder()
                 .learningCount(learningCount)
@@ -96,23 +89,14 @@ public class DashboardServiceImpl implements DashboardService {
                 .recentInterviews(recentInterviews)
                 .weakPoints(weakPoints)
                 .firstVisit(learningCount == 0 && wrongCount == 0)
-                .todayLearnCards(memorySummary.todayLearnCards())
-                .todayReviewCards(memorySummary.todayReviewCards())
-                .todayCompletedCards(memorySummary.todayCompletedCards())
-                .todayCardCompletionRate(memorySummary.todayCardCompletionRate())
-                .masteredCardCount(memorySummary.masteredCardCount())
-                .reviewDebtCount(memorySummary.reviewDebtCount())
-                .studyStreak(memorySummary.studyStreak())
-                .planSummary(loadPlanSummary(userId))
-                .resumeSummary(loadResumeSummary(userId))
-                .applicationSummary(loadApplicationSummary(userId))
+                .reviewDebtCount((int) defaultLong(dashboardMetricsMapper.countReviewDebt(userId)))
+                .studyStreak(resolveStudyStreak(userId))
+                .nextAction(resolveNextAction(activePlan, todayPlanTasks, applications, latestResume))
+                .applicationSummary(loadApplicationSummary(applications))
                 .build();
 
-        // Populate adaptive learning fields
         try {
             AbilityProfileVO profile = adaptiveService.getAbilityProfile(userId);
-            result.setOverallAbility(profile.getOverallAbility());
-            result.setRecommendedDifficulty(profile.getRecommendedDifficulty());
             result.setWeakCategories(profile.getWeakCategories());
             result.setSuggestedFocus(profile.getSuggestedFocus());
             result.setCategoryAbilities(profile.getCategoryAbilities());
@@ -120,24 +104,6 @@ public class DashboardServiceImpl implements DashboardService {
             log.warn("Failed to load adaptive profile for dashboard: {}", e.getMessage());
         }
 
-        // Populate analytics insights
-        try {
-            LearningInsightsVO insights = analyticsService.getLearningInsights(userId);
-            EfficiencyVO efficiency = analyticsService.getEfficiencyData(userId);
-            result.setThisWeekAvgScore(insights.getThisWeekAvgScore());
-            result.setLastWeekAvgScore(insights.getLastWeekAvgScore());
-            result.setThisWeekInterviewCount(insights.getThisWeekInterviewCount());
-            result.setCategoryChanges(insights.getCategoryChanges());
-            result.setBestStudyHours(insights.getBestStudyHours());
-            result.setTodayCompletionStatus(insights.getTodayCompletionStatus());
-            result.setCategoryMasterySummary(efficiency.getCategoryMastery());
-        } catch (Exception e) {
-            log.warn("Failed to load analytics insights for dashboard: {}", e.getMessage());
-        }
-
-        result.setNextStep(resolveNextStep(result));
-
-        // Cache the result
         try {
             String json = objectMapper.writeValueAsString(result);
             redisTemplate.opsForValue().set(cacheKey, json, props.getDashboard().getCacheTtlMinutes(), TimeUnit.MINUTES);
@@ -148,10 +114,6 @@ public class DashboardServiceImpl implements DashboardService {
         return result;
     }
 
-    /**
-     * Clear the dashboard cache for a user. Call this after interview completion,
-     * wrong book updates, or other dashboard-affecting changes.
-     */
     public void evictCache(Long userId) {
         try {
             redisTemplate.delete(CACHE_PREFIX + userId);
@@ -160,165 +122,7 @@ public class DashboardServiceImpl implements DashboardService {
         }
     }
 
-    private long defaultLong(Long value) {
-        return value == null ? 0L : value;
-    }
-
-    private BigDecimal defaultDecimal(BigDecimal value) {
-        return value == null ? BigDecimal.ZERO : value;
-    }
-
-    private <T> List<T> defaultList(List<T> value) {
-        return value == null ? List.of() : value;
-    }
-
-    private MemorySummary loadMemorySummary(Long userId) {
-        int reviewDebtCount = (int) defaultLong(dashboardMetricsMapper.countReviewDebt(userId));
-        List<KnowledgeCardTask> tasks = knowledgeCardTaskMapper.selectList(new LambdaQueryWrapper<KnowledgeCardTask>()
-                .eq(KnowledgeCardTask::getUserId, userId)
-                .ne(KnowledgeCardTask::getStatus, "invalid"));
-        if (tasks.isEmpty()) {
-            return new MemorySummary(0, 0, 0, BigDecimal.ZERO, 0, reviewDebtCount, 0);
-        }
-
-        List<Long> taskIds = tasks.stream().map(KnowledgeCardTask::getId).toList();
-        List<KnowledgeCard> cards = knowledgeCardMapper.selectList(new LambdaQueryWrapper<KnowledgeCard>()
-                .in(KnowledgeCard::getTaskId, taskIds));
-        Map<Long, Integer> currentDays = tasks.stream()
-                .collect(java.util.stream.Collectors.toMap(KnowledgeCardTask::getId, this::resolveCurrentDay));
-
-        int todayLearnCards = (int) cards.stream()
-                .filter(card -> "new".equals(card.getState()))
-                .filter(card -> card.getScheduledDay() != null && card.getScheduledDay() <= currentDays.getOrDefault(card.getTaskId(), 1))
-                .count();
-        int todayReviewCards = (int) cards.stream()
-                .filter(card -> !"new".equals(card.getState()) && !"mastered".equals(card.getState()))
-                .filter(card -> card.getNextReviewAt() == null || !card.getNextReviewAt().isAfter(java.time.LocalDateTime.now()))
-                .count();
-        int todayCompletedCards = (int) cards.stream()
-                .filter(card -> card.getLastReviewTime() != null
-                        && card.getLastReviewTime().toLocalDate().equals(java.time.LocalDate.now()))
-                .count();
-        int masteredCardCount = (int) cards.stream()
-                .filter(card -> "mastered".equals(card.getState()))
-                .count();
-        int studyStreak = resolveStudyStreak(cards);
-        int todayCardTotal = todayLearnCards + todayReviewCards;
-        BigDecimal todayCardCompletionRate = todayCardTotal <= 0
-                ? BigDecimal.ZERO
-                : BigDecimal.valueOf(todayCompletedCards)
-                        .multiply(BigDecimal.valueOf(100))
-                        .divide(BigDecimal.valueOf(todayCardTotal), 2, RoundingMode.HALF_UP);
-
-        return new MemorySummary(
-                todayLearnCards,
-                todayReviewCards,
-                todayCompletedCards,
-                todayCardCompletionRate,
-                masteredCardCount,
-                reviewDebtCount,
-                studyStreak
-        );
-    }
-
-    private int resolveCurrentDay(KnowledgeCardTask task) {
-        int totalDays = Math.max(1, task.getDays() == null ? 1 : task.getDays());
-        int currentDay = task.getCurrentDay() == null ? 1 : task.getCurrentDay();
-        if ("completed".equals(task.getStatus())) {
-            return totalDays;
-        }
-        return Math.max(1, Math.min(currentDay, totalDays));
-    }
-
-    private record MemorySummary(
-            int todayLearnCards,
-            int todayReviewCards,
-            int todayCompletedCards,
-            BigDecimal todayCardCompletionRate,
-            int masteredCardCount,
-            int reviewDebtCount,
-            int studyStreak
-    ) {
-    }
-
-    private int resolveStudyStreak(List<KnowledgeCard> cards) {
-        java.util.Set<java.time.LocalDate> reviewedDates = cards.stream()
-                .map(KnowledgeCard::getLastReviewTime)
-                .filter(java.util.Objects::nonNull)
-                .map(java.time.LocalDateTime::toLocalDate)
-                .collect(java.util.stream.Collectors.toSet());
-        if (reviewedDates.isEmpty()) {
-            return 0;
-        }
-        java.time.LocalDate cursor = java.time.LocalDate.now();
-        int streak = 0;
-        while (reviewedDates.contains(cursor)) {
-            streak++;
-            cursor = cursor.minusDays(1);
-        }
-        return streak;
-    }
-
-    private DashboardOverviewVO.PlanSummary loadPlanSummary(Long userId) {
-        StudyPlan plan = studyPlanMapper.selectOne(new LambdaQueryWrapper<StudyPlan>()
-                .eq(StudyPlan::getUserId, userId)
-                .orderByDesc(StudyPlan::getUpdateTime)
-                .last("LIMIT 1"));
-        if (plan == null) {
-            return DashboardOverviewVO.PlanSummary.builder()
-                    .title("还没有训练计划")
-                    .actionPath("/study-plan")
-                    .build();
-        }
-
-        List<StudyPlanTask> tasks = studyPlanTaskMapper.selectList(new LambdaQueryWrapper<StudyPlanTask>()
-                .eq(StudyPlanTask::getPlanId, plan.getId()));
-        int todayTaskCount = (int) tasks.stream()
-                .filter(task -> task.getDayIndex() != null && task.getDayIndex().equals(plan.getCurrentDay()))
-                .count();
-
-        return DashboardOverviewVO.PlanSummary.builder()
-                .planId(plan.getId())
-                .title(plan.getTitle())
-                .currentDay(plan.getCurrentDay())
-                .totalDays(plan.getDurationDays())
-                .todayTaskCount(todayTaskCount)
-                .completedTaskCount(plan.getCompletedTaskCount())
-                .totalTaskCount(plan.getTotalTaskCount())
-                .progressRate(defaultDecimal(plan.getProgressRate()))
-                .actionPath("/study-plan")
-                .build();
-    }
-
-    private DashboardOverviewVO.ResumeSummary loadResumeSummary(Long userId) {
-        List<ResumeFile> resumes = resumeFileMapper.selectList(new LambdaQueryWrapper<ResumeFile>()
-                .eq(ResumeFile::getUserId, userId)
-                .orderByDesc(ResumeFile::getUpdateTime));
-        if (resumes.isEmpty()) {
-            return DashboardOverviewVO.ResumeSummary.builder()
-                    .resumeCount(0)
-                    .latestResumeTitle("还没有上传简历")
-                    .projectCount(0)
-                    .actionPath("/resume")
-                    .build();
-        }
-        ResumeFile latestResume = resumes.get(0);
-        int projectCount = Math.toIntExact(resumeProjectMapper.selectCount(new LambdaQueryWrapper<ResumeProject>()
-                .eq(ResumeProject::getResumeFileId, latestResume.getId())));
-        return DashboardOverviewVO.ResumeSummary.builder()
-                .resumeId(latestResume.getId())
-                .resumeCount(resumes.size())
-                .latestResumeTitle(latestResume.getTitle())
-                .parseStatus(latestResume.getParseStatus())
-                .projectCount(projectCount)
-                .actionPath("/resume")
-                .build();
-    }
-
-    private DashboardOverviewVO.ApplicationSummary loadApplicationSummary(Long userId) {
-        List<JobApplication> applications = jobApplicationMapper.selectList(new LambdaQueryWrapper<JobApplication>()
-                .eq(JobApplication::getUserId, userId)
-                .orderByDesc(JobApplication::getUpdateTime));
+    private DashboardOverviewVO.ApplicationSummary loadApplicationSummary(List<JobApplication> applications) {
         if (applications.isEmpty()) {
             return DashboardOverviewVO.ApplicationSummary.builder()
                     .totalCount(0)
@@ -336,13 +140,16 @@ public class DashboardServiceImpl implements DashboardService {
         int offerCount = (int) applications.stream()
                 .filter(item -> "offer".equals(item.getStatus()))
                 .count();
-        BigDecimal averageMatchScore = applications.stream()
+        BigDecimal scoreSum = applications.stream()
                 .map(JobApplication::getMatchScore)
                 .filter(java.util.Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        int scoreCount = (int) applications.stream().map(JobApplication::getMatchScore).filter(java.util.Objects::nonNull).count();
+        int scoreCount = (int) applications.stream()
+                .map(JobApplication::getMatchScore)
+                .filter(java.util.Objects::nonNull)
+                .count();
         BigDecimal avgScore = scoreCount > 0
-                ? averageMatchScore.divide(BigDecimal.valueOf(scoreCount), 2, RoundingMode.HALF_UP)
+                ? scoreSum.divide(BigDecimal.valueOf(scoreCount), 2, RoundingMode.HALF_UP)
                 : BigDecimal.ZERO;
         JobApplication topApplication = applications.stream()
                 .filter(item -> item.getMatchScore() != null)
@@ -359,55 +166,141 @@ public class DashboardServiceImpl implements DashboardService {
                 .build();
     }
 
-    private DashboardOverviewVO.NextStepSummary resolveNextStep(DashboardOverviewVO overview) {
-        DashboardOverviewVO.ResumeSummary resumeSummary = overview.getResumeSummary();
-        if (resumeSummary != null && (resumeSummary.getResumeCount() == null || resumeSummary.getResumeCount() == 0)) {
-            return DashboardOverviewVO.NextStepSummary.builder()
-                    .title("先上传一份简历")
-                    .description("把简历整理好后，再继续项目追问、模拟面试和投递会更顺。")
-                    .actionPath("/resume")
+    private List<JobApplication> loadApplications(Long userId) {
+        return jobApplicationMapper.selectList(new LambdaQueryWrapper<JobApplication>()
+                .eq(JobApplication::getUserId, userId)
+                .orderByDesc(JobApplication::getUpdateTime));
+    }
+
+    private ResumeFile loadLatestResume(Long userId) {
+        List<ResumeFile> resumes = resumeFileMapper.selectList(new LambdaQueryWrapper<ResumeFile>()
+                .eq(ResumeFile::getUserId, userId)
+                .orderByDesc(ResumeFile::getUpdateTime)
+                .last("LIMIT 1"));
+        return resumes.isEmpty() ? null : resumes.get(0);
+    }
+
+    private StudyPlan loadActivePlan(Long userId) {
+        return studyPlanMapper.selectOne(new LambdaQueryWrapper<StudyPlan>()
+                .eq(StudyPlan::getUserId, userId)
+                .ne(StudyPlan::getStatus, "archived")
+                .orderByDesc(StudyPlan::getUpdateTime)
+                .last("LIMIT 1"));
+    }
+
+    private List<StudyPlanTask> loadTodayPlanTasks(StudyPlan activePlan) {
+        if (activePlan == null || activePlan.getCurrentDay() == null) {
+            return List.of();
+        }
+        return studyPlanTaskMapper.selectList(new LambdaQueryWrapper<StudyPlanTask>()
+                .eq(StudyPlanTask::getPlanId, activePlan.getId())
+                .eq(StudyPlanTask::getDayIndex, activePlan.getCurrentDay())
+                .orderByAsc(StudyPlanTask::getId));
+    }
+
+    private NextActionVO resolveNextAction(
+            StudyPlan activePlan,
+            List<StudyPlanTask> todayPlanTasks,
+            List<JobApplication> applications,
+            ResumeFile latestResume) {
+        int activeApplicationCount = (int) applications.stream()
+                .filter(item -> List.of("applied", "written", "interview").contains(item.getStatus()))
+                .count();
+        long pendingTodayTaskCount = todayPlanTasks.stream()
+                .filter(task -> !"completed".equals(task.getStatus()))
+                .count();
+
+        if (latestResume == null) {
+            return NextActionVO.builder()
+                    .key("upload_resume")
+                    .title("先上传简历")
+                    .description("先把简历整理出来，再继续项目追问、模拟面试和投递。")
+                    .path("/resume#resume-upload")
+                    .reason("当前还没有简历，后续训练和求职链路缺少基础资料。")
+                    .priority("P0")
                     .build();
         }
-
-        DashboardOverviewVO.PlanSummary planSummary = overview.getPlanSummary();
-        if (planSummary != null && planSummary.getPlanId() == null) {
-            return DashboardOverviewVO.NextStepSummary.builder()
-                    .title("先生成一份训练计划")
-                    .description("把接下来几天要练的题目、问答和面试排好，再逐项推进。")
-                    .actionPath("/study-plan")
+        if (activePlan == null) {
+            return NextActionVO.builder()
+                    .key("generate_plan")
+                    .title("先生成训练计划")
+                    .description("把接下来几天要练的题目、问答和模拟面试先排好。")
+                    .path("/study-plan#plan-builder")
+                    .reason("当前还没有学习计划，首页和计划页都缺少统一执行清单。")
+                    .priority("P0")
                     .build();
         }
-
-        if (planSummary != null && planSummary.getTodayTaskCount() != null && planSummary.getTodayTaskCount() > 0) {
-            return DashboardOverviewVO.NextStepSummary.builder()
+        if (pendingTodayTaskCount > 0) {
+            return NextActionVO.builder()
+                    .key("complete_today_plan")
                     .title("先完成今天的计划")
-                    .description(String.format("今天还有 %d 项任务待处理，先清掉这些任务再决定下一步。", planSummary.getTodayTaskCount()))
-                    .actionPath("/study-plan")
+                    .description(String.format("今天还有 %d 项计划任务待处理，先把它们推进完。", pendingTodayTaskCount))
+                    .path("/study-plan")
+                    .reason("当前已有计划且今天仍有未完成任务，应优先回到执行页。")
+                    .priority("P0")
                     .build();
         }
-
-        DashboardOverviewVO.ApplicationSummary applicationSummary = overview.getApplicationSummary();
-        if (applicationSummary != null && applicationSummary.getActiveCount() != null && applicationSummary.getActiveCount() > 0) {
-            return DashboardOverviewVO.NextStepSummary.builder()
-                    .title("继续推进正在进行的投递")
-                    .description(String.format("当前还有 %d 条投递在推进中，先更新进度或补一条面试记录。", applicationSummary.getActiveCount()))
-                    .actionPath("/applications")
+        if (activeApplicationCount > 0) {
+            return NextActionVO.builder()
+                    .key("follow_application")
+                    .title("继续推进当前投递")
+                    .description("先更新投递进度、补面试记录，避免信息断档。")
+                    .path("/applications")
+                    .reason("当前有真实投递在推进，优先处理最接近真实结果的链路。")
+                    .priority("P1")
                     .build();
         }
-
-        if (overview.getWeakPoints() != null && !overview.getWeakPoints().isEmpty()) {
-            String categoryName = overview.getWeakPoints().get(0).getCategoryName();
-            return DashboardOverviewVO.NextStepSummary.builder()
-                    .title(String.format("先补 %s", categoryName))
-                    .description("先从最薄弱的题型开始，再去问答页和模拟面试里把回答练顺。")
-                    .actionPath("/question")
-                    .build();
-        }
-
-        return DashboardOverviewVO.NextStepSummary.builder()
-                .title("开始一场新的模拟面试")
-                .description("用一次完整演练检查最近这段时间的训练有没有真正转成表达能力。")
-                .actionPath("/interview")
+        return NextActionVO.builder()
+                .key("start_interview")
+                .title("安排下一轮模拟面试")
+                .description("用一轮新的模拟面试检查这段时间的训练有没有真正转成表达能力。")
+                .path("/interview")
+                .reason("当前基础资料和计划都已具备，下一步应回到表达检验。")
+                .priority("P2")
                 .build();
+    }
+
+    private int resolveStudyStreak(Long userId) {
+        List<ReviewLog> logs = reviewLogMapper.selectList(new LambdaQueryWrapper<ReviewLog>()
+                .eq(ReviewLog::getUserId, userId)
+                .select(ReviewLog::getCreateTime)
+                .orderByDesc(ReviewLog::getCreateTime)
+                .last("LIMIT 200"));
+        if (logs.isEmpty()) {
+            return 0;
+        }
+
+        Set<LocalDate> reviewDays = logs.stream()
+                .map(ReviewLog::getCreateTime)
+                .filter(java.util.Objects::nonNull)
+                .map(java.time.LocalDateTime::toLocalDate)
+                .collect(java.util.stream.Collectors.toSet());
+        if (reviewDays.isEmpty()) {
+            return 0;
+        }
+
+        LocalDate cursor = LocalDate.now();
+        if (!reviewDays.contains(cursor)) {
+            cursor = cursor.minusDays(1);
+        }
+
+        int streak = 0;
+        while (reviewDays.contains(cursor)) {
+            streak++;
+            cursor = cursor.minusDays(1);
+        }
+        return streak;
+    }
+
+    private long defaultLong(Long value) {
+        return value == null ? 0L : value;
+    }
+
+    private BigDecimal defaultDecimal(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
+    }
+
+    private <T> List<T> defaultList(List<T> value) {
+        return value == null ? List.of() : value;
     }
 }

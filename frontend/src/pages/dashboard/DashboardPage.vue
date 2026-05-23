@@ -26,22 +26,26 @@
 
                 <section class="dashboard-hero">
                   <div class="dashboard-hero__content">
-                    <span class="dashboard-hero__eyebrow">SIMULATE INTERVIEW</span>
-                    <h2 class="dashboard-hero__title">AI 模拟面试，全真体验</h2>
+                    <span class="dashboard-hero__eyebrow">TODAY&apos;S NEXT ACTION</span>
+                    <h2 class="dashboard-hero__title">{{ dashboardNextActionTitle }}</h2>
                     <p class="dashboard-hero__description">
-                      智能追问、实时反馈、AI 评分、个性化建议，围绕你的目标岗位持续推进训练。
+                      {{ dashboardNextActionDescription }}
+                    </p>
+                    <p v-if="dashboardNextActionReason" class="dashboard-hero__reason">
+                      {{ dashboardNextActionReason }}
                     </p>
 
                     <div class="dashboard-hero__actions">
                       <RouterLink
-                        to="/interview"
+                        :to="dashboardNextActionPath"
                         class="dashboard-hero__cta"
                       >
-                        开始模拟面试
+                        {{ dashboardNextActionTitle }}
                       </RouterLink>
                     </div>
 
                     <div class="dashboard-hero__signals">
+                      <span class="dashboard-hero__signal">优先级 {{ dashboardNextActionPriority }}</span>
                       <span class="dashboard-hero__signal">连续 {{ overview.studyStreak ?? 0 }} 天训练</span>
                       <span class="dashboard-hero__signal">待巩固 {{ overview.reviewDebtCount ?? 0 }} 项</span>
                       <span class="dashboard-hero__signal">进行中 {{ overview.applicationSummary?.activeCount ?? 0 }} 条</span>
@@ -51,11 +55,11 @@
                   <div class="dashboard-hero__visual" aria-hidden="true">
                     <div class="dashboard-hero__visual-badge dashboard-hero__visual-badge--left">
                       <span class="dashboard-hero__visual-badge-dot" />
-                      实时追问
+                      当前主任务
                     </div>
                     <div class="dashboard-hero__visual-badge dashboard-hero__visual-badge--right">
                       <span class="dashboard-hero__visual-badge-dot" />
-                      AI 评分
+                      {{ dashboardNextActionPriority }}
                     </div>
                     <img
                       :src="heroIllustrationUrl"
@@ -500,6 +504,14 @@ const quickEntries: DashboardQuickEntry[] = [
 ]
 
 const greetingText = computed(() => resolveGreetingLabel())
+const dashboardNextAction = computed(() => overview.value.nextAction)
+const dashboardNextActionTitle = computed(() => dashboardNextAction.value?.title || '继续今天的训练')
+const dashboardNextActionDescription = computed(
+  () => dashboardNextAction.value?.description || '先推进当前最关键的一步，再回来看其他模块。'
+)
+const dashboardNextActionReason = computed(() => dashboardNextAction.value?.reason || '')
+const dashboardNextActionPath = computed(() => dashboardNextAction.value?.path || '/dashboard')
+const dashboardNextActionPriority = computed(() => dashboardNextAction.value?.priority || 'P1')
 const todayFormatted = computed(() =>
   new Intl.DateTimeFormat('zh-CN', {
     month: 'long',
@@ -1037,6 +1049,14 @@ onMounted(() => {
   color: rgba(255, 255, 255, 0.9);
   font-size: 0.86rem;
   line-height: 1.55;
+}
+
+.dashboard-hero__reason {
+  margin-top: 0.5rem;
+  max-width: 32rem;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.74rem;
+  line-height: 1.5;
 }
 
 .dashboard-hero__actions {

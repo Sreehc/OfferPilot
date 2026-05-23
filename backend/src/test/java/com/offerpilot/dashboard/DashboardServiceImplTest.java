@@ -21,9 +21,16 @@ import com.offerpilot.dashboard.dto.RecentInterviewVO;
 import com.offerpilot.dashboard.dto.WeakPointVO;
 import com.offerpilot.dashboard.mapper.DashboardMetricsMapper;
 import com.offerpilot.dashboard.service.impl.DashboardServiceImpl;
+import com.offerpilot.plan.entity.StudyPlan;
+import com.offerpilot.plan.entity.StudyPlanTask;
+import com.offerpilot.plan.mapper.StudyPlanMapper;
+import com.offerpilot.plan.mapper.StudyPlanTaskMapper;
+import com.offerpilot.resume.entity.ResumeFile;
+import com.offerpilot.resume.mapper.ResumeFileMapper;
 import com.offerpilot.security.util.SecurityUtils;
 import com.offerpilot.wrong.mapper.ReviewLogMapper;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,6 +60,12 @@ class DashboardServiceImplTest {
     private JobApplicationMapper jobApplicationMapper;
     @Mock
     private ReviewLogMapper reviewLogMapper;
+    @Mock
+    private StudyPlanMapper studyPlanMapper;
+    @Mock
+    private StudyPlanTaskMapper studyPlanTaskMapper;
+    @Mock
+    private ResumeFileMapper resumeFileMapper;
 
     @InjectMocks
     private DashboardServiceImpl dashboardService;
@@ -77,6 +90,8 @@ class DashboardServiceImplTest {
             when(dashboardMetricsMapper.countReviewDebt(1L)).thenReturn(null);
             when(jobApplicationMapper.selectList(org.mockito.ArgumentMatchers.any())).thenReturn(List.of());
             when(reviewLogMapper.selectList(org.mockito.ArgumentMatchers.any())).thenReturn(List.of());
+            when(studyPlanMapper.selectOne(org.mockito.ArgumentMatchers.any())).thenReturn(null);
+            when(resumeFileMapper.selectList(org.mockito.ArgumentMatchers.any())).thenReturn(List.of());
             when(adaptiveService.getAbilityProfile(1L)).thenReturn(AbilityProfileVO.builder().build());
             when(objectMapper.writeValueAsString(org.mockito.ArgumentMatchers.any(DashboardOverviewVO.class))).thenReturn("{}");
 
@@ -90,6 +105,8 @@ class DashboardServiceImplTest {
             assertTrue(result.getWeakPoints().isEmpty());
             assertEquals(0, result.getReviewDebtCount());
             assertEquals(0, result.getStudyStreak());
+            assertEquals("upload_resume", result.getNextAction().getKey());
+            assertEquals("/resume#resume-upload", result.getNextAction().getPath());
             assertEquals(0, result.getApplicationSummary().getTotalCount());
             assertEquals("还没有投递记录", result.getApplicationSummary().getTopCompany());
         }
@@ -135,8 +152,25 @@ class DashboardServiceImplTest {
             offer.setCompany("Beta");
             offer.setMatchScore(new BigDecimal("95"));
 
+            ResumeFile resume = new ResumeFile();
+            resume.setTitle("Java后端简历");
+
+            StudyPlan activePlan = new StudyPlan();
+            activePlan.setId(10L);
+            activePlan.setCurrentDay(2);
+            activePlan.setStatus("active");
+
+            StudyPlanTask pendingTask = new StudyPlanTask();
+            pendingTask.setId(100L);
+            pendingTask.setDayIndex(2);
+            pendingTask.setTaskDate(LocalDate.now());
+            pendingTask.setStatus("pending");
+
             when(jobApplicationMapper.selectList(org.mockito.ArgumentMatchers.any())).thenReturn(List.of(active, offer));
             when(reviewLogMapper.selectList(org.mockito.ArgumentMatchers.any())).thenReturn(List.of());
+            when(studyPlanMapper.selectOne(org.mockito.ArgumentMatchers.any())).thenReturn(activePlan);
+            when(studyPlanTaskMapper.selectList(org.mockito.ArgumentMatchers.any())).thenReturn(List.of(pendingTask));
+            when(resumeFileMapper.selectList(org.mockito.ArgumentMatchers.any())).thenReturn(List.of(resume));
             when(adaptiveService.getAbilityProfile(1L)).thenReturn(
                     AbilityProfileVO.builder()
                             .weakCategories(List.of("JVM"))
@@ -153,6 +187,8 @@ class DashboardServiceImplTest {
             assertEquals(1, result.getRecentInterviews().size());
             assertEquals(1, result.getWeakPoints().size());
             assertEquals(4, result.getReviewDebtCount());
+            assertEquals("complete_today_plan", result.getNextAction().getKey());
+            assertEquals("/study-plan", result.getNextAction().getPath());
             assertEquals(2, result.getApplicationSummary().getTotalCount());
             assertEquals(1, result.getApplicationSummary().getActiveCount());
             assertEquals(1, result.getApplicationSummary().getOfferCount());
@@ -183,6 +219,54 @@ class DashboardServiceImplTest {
 
             assertEquals(2, result.getLearningCount());
             verify(dashboardMetricsMapper, never()).countChatSessions(1L);
+        }
+    }
+
+    @Test
+    void overview_prefersFollowApplicationWhenTodayPlanIsDone() {
+        OfferPilotProperties.Dashboard dashboardProps = new OfferPilotProperties.Dashboard();
+        dashboardProps.setCacheTtlMinutes(5);
+
+        try (MockedStatic<SecurityUtils> mocked = mockStatic(SecurityUtils.class)) {
+            mocked.when(SecurityUtils::getCurrentUserId).thenReturn(1L);
+            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+            when(valueOperations.get("dashboard:overview:1")).thenReturn(null);
+            when(props.getDashboard()).thenReturn(dashboardProps);
+            when(dashboardMetricsMapper.countChatSessions(1L)).thenReturn(1L);
+            when(dashboardMetricsMapper.countInterviewSessions(1L)).thenReturn(1L);
+            when(dashboardMetricsMapper.averageInterviewScore(1L)).thenReturn(BigDecimal.TEN);
+            when(dashboardMetricsMapper.countWrongQuestions(1L)).thenReturn(1L);
+            when(dashboardMetricsMapper.selectRecentInterviews(1L)).thenReturn(List.of());
+            when(dashboardMetricsMapper.selectWeakPoints(1L)).thenReturn(List.of());
+            when(dashboardMetricsMapper.countReviewDebt(1L)).thenReturn(0L);
+            when(reviewLogMapper.selectList(org.mockito.ArgumentMatchers.any())).thenReturn(List.of());
+
+            ResumeFile resume = new ResumeFile();
+            resume.setTitle("已上传简历");
+            when(resumeFileMapper.selectList(org.mockito.ArgumentMatchers.any())).thenReturn(List.of(resume));
+
+            StudyPlan activePlan = new StudyPlan();
+            activePlan.setId(10L);
+            activePlan.setCurrentDay(1);
+            activePlan.setStatus("active");
+            when(studyPlanMapper.selectOne(org.mockito.ArgumentMatchers.any())).thenReturn(activePlan);
+
+            StudyPlanTask doneTask = new StudyPlanTask();
+            doneTask.setStatus("completed");
+            doneTask.setDayIndex(1);
+            when(studyPlanTaskMapper.selectList(org.mockito.ArgumentMatchers.any())).thenReturn(List.of(doneTask));
+
+            JobApplication active = new JobApplication();
+            active.setStatus("applied");
+            active.setCompany("Gamma");
+            when(jobApplicationMapper.selectList(org.mockito.ArgumentMatchers.any())).thenReturn(List.of(active));
+            when(adaptiveService.getAbilityProfile(1L)).thenReturn(AbilityProfileVO.builder().build());
+            when(objectMapper.writeValueAsString(org.mockito.ArgumentMatchers.any(DashboardOverviewVO.class))).thenReturn("{}");
+
+            DashboardOverviewVO result = dashboardService.overview();
+
+            assertEquals("follow_application", result.getNextAction().getKey());
+            assertEquals("/applications", result.getNextAction().getPath());
         }
     }
 

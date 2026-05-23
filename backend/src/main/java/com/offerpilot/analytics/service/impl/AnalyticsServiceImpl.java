@@ -8,6 +8,8 @@ import com.offerpilot.analytics.vo.TrendVO;
 import com.offerpilot.application.entity.JobApplication;
 import com.offerpilot.application.mapper.JobApplicationMapper;
 import com.offerpilot.category.service.CategoryService;
+import com.offerpilot.dashboard.dto.NextActionVO;
+import com.offerpilot.dashboard.service.DashboardService;
 import com.offerpilot.interview.entity.InterviewRecord;
 import com.offerpilot.interview.entity.InterviewSession;
 import com.offerpilot.interview.mapper.InterviewRecordMapper;
@@ -62,6 +64,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     private final StudyPlanTaskMapper studyPlanTaskMapper;
     private final ResumeFileMapper resumeFileMapper;
     private final JobApplicationMapper jobApplicationMapper;
+    private final DashboardService dashboardService;
 
     @Override
     @Transactional(readOnly = true)
@@ -218,6 +221,8 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .orderByDesc(ResumeFile::getUpdateTime));
         ResumeFile latestResume = resumes.isEmpty() ? null : resumes.get(0);
 
+        NextActionVO nextAction = dashboardService.overview().getNextAction();
+
         return LearningInsightsVO.builder()
                 .thisWeekAvgScore(thisAvg)
                 .lastWeekAvgScore(lastAvg)
@@ -238,9 +243,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .latestResumeTitle(latestResume == null ? null : latestResume.getTitle())
                 .resumeReadinessStatus(resolveResumeReadinessStatus(resumes, latestResume))
                 .interviewConversionStatus(resolveInterviewConversionStatus(thisWeekCount, activeApplicationCount, offerCount))
-                .nextActionTitle(resolveNextActionTitle(activePlan, latestResume, activeApplicationCount))
-                .nextActionDescription(resolveNextActionDescription(activePlan, latestResume, activeApplicationCount, todayPlanTaskCount))
-                .nextActionPath(resolveNextActionPath(activePlan, latestResume, activeApplicationCount))
+                .nextAction(nextAction)
                 .categoryChanges(categoryChanges)
                 .bestStudyHours(bestStudyHours)
                 .build();
@@ -804,48 +807,6 @@ public class AnalyticsServiceImpl implements AnalyticsService {
             return String.format("本周已完成 %d 场模拟面试，可以继续对照真实岗位推进", thisWeekInterviewCount);
         }
         return "先做一轮模拟面试，建立当前表达基线";
-    }
-
-    private String resolveNextActionTitle(StudyPlan activePlan, ResumeFile latestResume, int activeApplicationCount) {
-        if (latestResume == null) {
-            return "先上传简历";
-        }
-        if (activePlan == null) {
-            return "先生成训练计划";
-        }
-        if (activeApplicationCount > 0) {
-            return "继续推进当前投递";
-        }
-        return "安排下一轮模拟面试";
-    }
-
-    private String resolveNextActionDescription(StudyPlan activePlan, ResumeFile latestResume, int activeApplicationCount, int todayPlanTaskCount) {
-        if (latestResume == null) {
-            return "先把简历整理出来，再继续项目追问、模拟面试和投递。";
-        }
-        if (activePlan == null) {
-            return "把接下来几天要练的题目、问答和模拟面试先排好。";
-        }
-        if (todayPlanTaskCount > 0) {
-            return String.format("今天还有 %d 项计划任务待处理，先把它们推进完。", todayPlanTaskCount);
-        }
-        if (activeApplicationCount > 0) {
-            return "先更新投递进度、补面试记录，避免信息断档。";
-        }
-        return "用一轮新的模拟面试检查这段时间的训练有没有真正转成表达能力。";
-    }
-
-    private String resolveNextActionPath(StudyPlan activePlan, ResumeFile latestResume, int activeApplicationCount) {
-        if (latestResume == null) {
-            return "/resume";
-        }
-        if (activePlan == null) {
-            return "/study-plan";
-        }
-        if (activeApplicationCount > 0) {
-            return "/applications";
-        }
-        return "/interview";
     }
 
     private BigDecimal defaultDecimal(BigDecimal value) {

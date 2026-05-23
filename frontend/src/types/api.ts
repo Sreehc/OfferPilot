@@ -124,6 +124,15 @@ export interface NextStepSummary {
   actionPath: string
 }
 
+export interface NextAction {
+  key: 'upload_resume' | 'generate_plan' | 'complete_today_plan' | 'follow_application' | 'start_interview'
+  title: string
+  description: string
+  path: string
+  reason: string
+  priority: 'P0' | 'P1' | 'P2'
+}
+
 export interface DashboardOverview {
   learningCount: number
   averageScore: number
@@ -136,6 +145,7 @@ export interface DashboardOverview {
   weakCategories?: string[]
   suggestedFocus?: string | null
   categoryAbilities?: CategoryAbility[]
+  nextAction?: NextAction
   applicationSummary?: ApplicationSummary
 }
 
@@ -783,9 +793,7 @@ export interface LearningInsights {
   latestResumeTitle?: string
   resumeReadinessStatus?: string
   interviewConversionStatus?: string
-  nextActionTitle?: string
-  nextActionDescription?: string
-  nextActionPath?: string
+  nextAction?: NextAction
   categoryChanges: CategoryChange[]
   bestStudyHours: HourDistribution[]
 }

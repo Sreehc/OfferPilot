@@ -306,9 +306,7 @@ const learningInsights = ref<LearningInsights>({
   latestResumeTitle: '',
   resumeReadinessStatus: '',
   interviewConversionStatus: '',
-  nextActionTitle: '',
-  nextActionDescription: '',
-  nextActionPath: '',
+  nextAction: undefined,
   categoryChanges: [],
   bestStudyHours: []
 })

@@ -1,5 +1,6 @@
 package com.offerpilot.analytics.vo;
 
+import com.offerpilot.dashboard.dto.NextActionVO;
 import java.math.BigDecimal;
 import java.util.List;
 import lombok.Builder;
@@ -28,9 +29,7 @@ public class LearningInsightsVO {
     private String latestResumeTitle;
     private String resumeReadinessStatus;
     private String interviewConversionStatus;
-    private String nextActionTitle;
-    private String nextActionDescription;
-    private String nextActionPath;
+    private NextActionVO nextAction;
 
     /** Per-category week-over-week changes, sorted by |change| descending. */
     private List<CategoryChange> categoryChanges;
