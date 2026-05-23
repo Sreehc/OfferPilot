@@ -92,8 +92,8 @@
               <EmptyState
                 v-else
                 icon="chat"
-                :title="sessions.length ? '没有找到相关会话' : '还没有会话'"
-                :description="sessions.length ? '换个关键词试试。' : '新对话会显示在这里。'"
+                :title="sessionEmptyState.title"
+                :description="sessionEmptyState.description"
                 compact
                 class="session-strip__empty"
               />
@@ -235,7 +235,7 @@
                   </div>
 
                   <div v-else-if="!messages.length && !streaming" class="chat-empty-wrap">
-                    <EmptyState icon="chat" title="开始提问" :description="emptyStateDescription" compact />
+                    <EmptyState icon="chat" :title="conversationEmptyState.title" :description="conversationEmptyState.description" compact />
                     <div class="prompt-suggestions">
                       <button
                         v-for="suggestion in promptSuggestions"
@@ -421,8 +421,8 @@
           <EmptyState
             v-if="!filteredSessions.length"
             icon="chat"
-            :title="sessions.length ? '没有找到相关会话' : '还没有会话'"
-            :description="sessions.length ? '换个关键词试试。' : '新对话会显示在这里。'"
+            :title="sessionEmptyState.title"
+            :description="sessionEmptyState.description"
             compact
           />
         </div>
@@ -633,11 +633,50 @@ const composerContextHint = computed(() => {
   return '不绑定额外上下文'
 })
 
-const emptyStateDescription = computed(() => {
-  if (sourceQuestionTitle.value) {
-    return `当前会围绕「${sourceQuestionTitle.value}」继续提问。`
+const sessionEmptyState = computed(() => {
+  if (sessions.value.length) {
+    return {
+      title: '当前筛选下没有会话',
+      description: '换个关键词，或切回“全部”继续找之前的提问记录。'
+    }
   }
-  return '输入问题即可。'
+  return {
+    title: '先开始第一段问答',
+    description: '发起一轮新提问后，会话会保存在这里，方便你继续追问。'
+  }
+})
+
+const conversationEmptyState = computed(() => {
+  if (sourceDocTitle.value) {
+    return {
+      title: '围绕这份资料开始提问',
+      description: `当前会优先围绕《${sourceDocTitle.value}》检索和回答。先问一个具体问题，再继续追问细节。`
+    }
+  }
+  if (sourceQuestionTitle.value) {
+    return {
+      title: '围绕这道题继续追问',
+      description: `当前会优先围绕「${sourceQuestionTitle.value}」补答案结构、常见追问和表达方式。`
+    }
+  }
+  if (chatPath.value === 'project') {
+    return {
+      title: '结合简历开始提问',
+      description: selectedProjectId.value
+        ? '当前会优先结合你选中的项目来回答。先问一题项目追问，再继续补细节。'
+        : '先选一份简历或项目，再问一个具体问题，把经历整理成更能说出口的答案。'
+    }
+  }
+  if (chatPath.value === 'knowledge') {
+    return {
+      title: '带资料开始提问',
+      description: `当前会优先检索${knowledgeScopeLabel(knowledgeScope.value)}。先问一个具体知识点，再继续追问场景和表达。`
+    }
+  }
+  return {
+    title: '开始提问',
+    description: '先问一个具体问题，再根据回答继续追问原理、场景或表达方式。'
+  }
 })
 
 const filteredSessions = computed(() => {
@@ -787,7 +826,7 @@ const loadMessages = async (sessionId: number) => {
     autoStickToBottom.value = true
     scrollToBottom(true)
   } catch {
-    ElMessage.error('这段会话暂时没加载出来，请重新点一次或稍后再试')
+    ElMessage.error('这段会话还没加载出来，请重新点一次，或换一段会话继续查看。')
   } finally {
     loadingMessages.value = false
   }
@@ -945,7 +984,7 @@ const removeSession = async (sessionId: number) => {
     }
     await loadSessions()
   } catch {
-    ElMessage.error('删除会话失败')
+    ElMessage.error('这段会话还没删除成功，请稍后再试。')
   }
 }
 
@@ -1171,7 +1210,7 @@ const runChat = async (userMessage: string) => {
     if (error.name === 'AbortError') {
       pushErrorMessage('回答已停止。你可以继续提问，或重新发送上一条问题。')
     } else {
-      ElMessage.error('发送失败，请稍后重试')
+      ElMessage.error('这次提问没有发送成功，请检查网络后再试。')
       pushErrorMessage()
       console.error('SSE error:', error)
     }
