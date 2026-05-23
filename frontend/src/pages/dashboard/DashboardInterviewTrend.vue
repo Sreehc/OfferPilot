@@ -11,7 +11,7 @@
     </div>
 
     <div v-else-if="!trendData.length" class="mt-4 flex h-[260px] items-center justify-center">
-      <EmptyState icon="chart" title="先完成一轮模拟面试" description="开始练习后，这里会显示最近几次面试的分数变化。" compact />
+      <EmptyState icon="chart" title="当前还没有可对比的面试分数" description="先完成一轮模拟面试，后面这里会继续显示最近几次训练的分数变化。" compact />
     </div>
 
     <div v-else ref="chartRef" class="mt-4 h-[260px] w-full"></div>

@@ -6,7 +6,7 @@
         <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">回看最近几次模拟面试</h3>
       </div>
       <div class="flex gap-3">
-        <RouterLink class="accent-link text-sm font-semibold" to="/interview/history">全部历史</RouterLink>
+        <RouterLink class="accent-link text-sm font-semibold" to="/interview">全部历史</RouterLink>
         <RouterLink class="accent-link text-sm font-semibold" to="/interview">开始下一次模拟面试</RouterLink>
       </div>
     </div>
@@ -41,8 +41,8 @@
     <EmptyState
       v-else
       icon="clipboard"
-      title="还没有面试记录"
-      description="先完成一轮模拟面试，这里会显示最近结果。"
+      title="当前还没有模拟面试记录"
+      description="先完成一轮模拟面试，这里会回看最近一次训练的分数、方向和完成时间。"
       compact
       class="mt-6"
     />

@@ -257,8 +257,8 @@
                 </template>
 
                 <div v-else class="dashboard-inline-empty">
-                  <div class="dashboard-inline-empty__title">还没有模拟面试记录</div>
-                  <p class="dashboard-inline-empty__desc">完成一轮训练后，这里会展示最近一次面试摘要。</p>
+                  <div class="dashboard-inline-empty__title">当前还没有模拟面试记录</div>
+                  <p class="dashboard-inline-empty__desc">先完成一轮模拟面试，这里会展示最近一次训练的摘要和薄弱点。</p>
                   <RouterLink to="/interview" class="hard-button-primary mt-4 inline-flex">开始模拟面试</RouterLink>
                 </div>
               </article>
@@ -909,7 +909,7 @@ const loadDashboard = async () => {
   }
 
   if (!overviewLoaded) {
-    ElMessage.error('首页暂时没加载出来，请刷新后再试')
+    ElMessage.error('首页核心数据还没加载出来，请刷新页面后再试。')
   }
 
   loading.value = false
