@@ -60,7 +60,7 @@
             class="empty-state-card"
             icon="clipboard"
             title="当前还没有错题记录"
-            description="先做一轮题库训练或模拟面试，低分题和易错题会自动进入这里，方便后续复习。"
+            description="先做一轮题库训练或模拟面试，低分题和易错题会自动进来，后面这里再集中复习。"
             compact
           />
         </div>

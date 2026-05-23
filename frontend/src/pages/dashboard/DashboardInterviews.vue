@@ -41,8 +41,8 @@
     <EmptyState
       v-else
       icon="clipboard"
-      title="当前还没有模拟面试记录"
-      description="先完成一轮模拟面试，这里会回看最近一次训练的分数、方向和完成时间。"
+      title="当前还没有最近面试记录"
+      description="先完成一轮模拟面试，后面这里会继续回看最近几次训练的分数、方向和完成时间。"
       compact
       class="mt-6"
     />

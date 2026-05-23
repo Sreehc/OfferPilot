@@ -196,7 +196,7 @@
 
           <section class="question-detail-block">
             <span class="question-detail-title">1. 先看标准答案</span>
-            <p>{{ selectedQuestion.standardAnswer || '这题的标准答案还在整理，先根据题干组织一版自己的回答。' }}</p>
+            <p>{{ selectedQuestion.standardAnswer || '这道题的标准答案还没补齐，先根据题干组织一版自己的回答，再继续追问。' }}</p>
           </section>
 
           <section

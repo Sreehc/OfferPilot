@@ -156,7 +156,7 @@
 
           <div v-if="allHistoryLoading" class="mt-4 py-6 text-center text-xs text-tertiary">正在读取最近几轮模拟面试记录...</div>
           <div v-else-if="!allHistoryItems.length" class="mt-4 py-6 text-center">
-            <p class="text-xs leading-5 text-secondary">当前还没有已完成的模拟面试。先开始一轮，后面这里会按时间线保留你的分数和表现。</p>
+            <p class="text-xs leading-5 text-secondary">当前还没有已完成的模拟面试，先开始一轮，后面这里会按时间线保留你的分数和表现。</p>
           </div>
           <div v-else class="mt-3 space-y-1">
             <RouterLink
