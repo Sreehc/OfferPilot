@@ -531,6 +531,7 @@ const draft = reactive({
   selfIntro: ''
 })
 const editingProjects = ref<ResumeProjectDraft[]>([])
+const currentUser = storage.getUser()
 
 const flattenedRisks = computed(() => {
   if (!currentResume.value) return []
@@ -798,7 +799,10 @@ const handleUpload = async (file: File) => {
     hydrateDraft(response.data)
     await Promise.all([refreshResumeList(), loadInterviewResume(response.data.id)])
     isEditing.value = response.data.parseStatus === 'failed'
-    ElMessage.success(response.data.parseStatus === 'failed' ? '简历已上传，接下来请先修正解析结果' : '简历解析完成')
+    if (currentUser?.id) {
+      storage.setGuideSeen(currentUser.id)
+    }
+    ElMessage.success(response.data.parseStatus === 'failed' ? '简历已上传，请检查并修正简历内容' : '简历识别完成')
   } catch (error: any) {
     ElMessage.error(error?.message || '简历上传失败')
   } finally {

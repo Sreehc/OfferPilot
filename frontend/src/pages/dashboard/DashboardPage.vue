@@ -17,404 +17,364 @@
       </template>
 
       <template v-else>
-        <div class="dashboard-home__body-grid">
-              <div class="dashboard-home__content">
-                <section class="dashboard-home__welcome">
-                  <h1 class="dashboard-home__welcome-title">{{ greetingText }} 👋</h1>
-                  <p class="dashboard-home__welcome-kicker">今天又是努力变强的一天，加油！</p>
-                </section>
+        <div v-if="showFirstVisitGuide" class="dashboard-home__first-visit">
+          <section class="dashboard-home__welcome">
+            <h1 class="dashboard-home__welcome-title">{{ greetingText }} 👋</h1>
+            <p class="dashboard-home__welcome-kicker">先把第一步做完，再逐步打开完整工作台。</p>
+          </section>
 
-                <section class="dashboard-hero">
-                  <div class="dashboard-hero__content">
-                    <span class="dashboard-hero__eyebrow">TODAY&apos;S NEXT ACTION</span>
-                    <h2 class="dashboard-hero__title">{{ dashboardNextActionTitle }}</h2>
-                    <p class="dashboard-hero__description">
-                      {{ dashboardNextActionDescription }}
-                    </p>
-                    <p v-if="dashboardNextActionReason" class="dashboard-hero__reason">
-                      {{ dashboardNextActionReason }}
-                    </p>
+          <DashboardGuideCard
+            :eyebrow="firstVisitGuide.eyebrow"
+            :title="firstVisitGuide.title"
+            :description="firstVisitGuide.description"
+            :action-label="firstVisitGuide.actionLabel"
+            :action-to="firstVisitGuide.actionTo"
+            :hint="firstVisitGuide.hint"
+          />
 
-                    <div class="dashboard-hero__actions">
-                      <RouterLink
-                        :to="dashboardNextActionPath"
-                        class="dashboard-hero__cta"
-                      >
-                        {{ dashboardNextActionTitle }}
-                      </RouterLink>
-                    </div>
-
-                    <div class="dashboard-hero__signals">
-                      <span class="dashboard-hero__signal">优先级 {{ dashboardNextActionPriority }}</span>
-                      <span class="dashboard-hero__signal">连续 {{ overview.studyStreak ?? 0 }} 天训练</span>
-                      <span class="dashboard-hero__signal">待巩固 {{ overview.reviewDebtCount ?? 0 }} 项</span>
-                      <span class="dashboard-hero__signal">进行中 {{ overview.applicationSummary?.activeCount ?? 0 }} 条</span>
-                    </div>
-                  </div>
-
-                  <div class="dashboard-hero__visual" aria-hidden="true">
-                    <div class="dashboard-hero__visual-badge dashboard-hero__visual-badge--left">
-                      <span class="dashboard-hero__visual-badge-dot" />
-                      当前主任务
-                    </div>
-                    <div class="dashboard-hero__visual-badge dashboard-hero__visual-badge--right">
-                      <span class="dashboard-hero__visual-badge-dot" />
-                      {{ dashboardNextActionPriority }}
-                    </div>
-                    <img
-                      :src="heroIllustrationUrl"
-                      alt=""
-                      class="dashboard-hero__illustration"
-                    >
-                  </div>
-                </section>
-
-                <section class="shell-section-card dashboard-card-panel dashboard-card-panel--compact p-4 sm:p-5">
-                  <div class="dashboard-section-head">
-                    <div>
-                      <h3 class="dashboard-section-title">快速入口</h3>
-                    </div>
-                  </div>
-
-                  <div class="dashboard-quick-grid">
-                    <RouterLink
-                      v-for="entry in quickEntries"
-                      :key="entry.path"
-                      :to="entry.path"
-                      class="dashboard-quick-card"
-                    >
-                      <span
-                        class="dashboard-quick-card__icon"
-                        :class="`dashboard-quick-card__icon--${entry.tone}`"
-                      >
-                        <svg
-                          v-if="entry.icon === 'interview'"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          stroke-width="1.9"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M7.5 8.25h9m-9 3h5.25m-6.75 7.5 1.462-2.435a1.5 1.5 0 0 1 1.286-.73H18A2.25 2.25 0 0 0 20.25 13.5v-6A2.25 2.25 0 0 0 18 5.25H6A2.25 2.25 0 0 0 3.75 7.5v6A2.25 2.25 0 0 0 6 15.75h.75v3Z"
-                          />
-                        </svg>
-                        <svg
-                          v-else-if="entry.icon === 'knowledge'"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          stroke-width="1.9"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M4.5 6.75A2.25 2.25 0 0 1 6.75 4.5h9A2.25 2.25 0 0 1 18 6.75v8.25A2.25 2.25 0 0 1 15.75 17.25h-4.5l-3.75 2.25v-2.25h-.75A2.25 2.25 0 0 1 4.5 15V6.75Z"
-                          />
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M8.25 8.625h6m-6 3h4.5"
-                          />
-                        </svg>
-                        <svg
-                          v-else-if="entry.icon === 'resume'"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          stroke-width="1.9"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M15.75 3.75H7.5A2.25 2.25 0 0 0 5.25 6v12A2.25 2.25 0 0 0 7.5 20.25h9A2.25 2.25 0 0 0 18.75 18V6.75l-3-3Z"
-                          />
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M15.75 3.75V7.5h3M8.25 11.25h7.5m-7.5 3h5.25"
-                          />
-                        </svg>
-                        <svg
-                          v-else-if="entry.icon === 'plan'"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          stroke-width="1.9"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M8.25 3.75v2.25m7.5-2.25v2.25M5.25 8.25h13.5M6.75 5.25h10.5A1.5 1.5 0 0 1 18.75 6.75v10.5a1.5 1.5 0 0 1-1.5 1.5H6.75a1.5 1.5 0 0 1-1.5-1.5V6.75a1.5 1.5 0 0 1 1.5-1.5Z"
-                          />
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="m8.625 12 1.875 1.875L15.375 9"
-                          />
-                        </svg>
-                        <svg
-                          v-else-if="entry.icon === 'applications'"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          stroke-width="1.9"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M9 6.75V5.625A1.875 1.875 0 0 1 10.875 3.75h2.25A1.875 1.875 0 0 1 15 5.625V6.75m-9 1.5h12A2.25 2.25 0 0 1 20.25 10.5v6.75A2.25 2.25 0 0 1 18 19.5H6A2.25 2.25 0 0 1 3.75 17.25V10.5A2.25 2.25 0 0 1 6 8.25Z"
-                          />
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M10.5 12h3"
-                          />
-                        </svg>
-                        <svg
-                          v-else
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          stroke-width="1.9"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M8.25 6.75h7.5M8.25 10.5h7.5M8.25 14.25h4.5M6 3.75h12A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25H6A2.25 2.25 0 0 1 3.75 18V6A2.25 2.25 0 0 1 6 3.75Z"
-                          />
-                        </svg>
-                      </span>
-                      <div class="min-w-0">
-                        <div class="dashboard-quick-card__title">{{ entry.label }}</div>
-                        <div class="dashboard-quick-card__description">{{ entry.description }}</div>
-                      </div>
-                    </RouterLink>
-                  </div>
-                </section>
-
-                <section class="dashboard-summary-grid">
-                  <article class="shell-section-card dashboard-card-panel dashboard-card-panel--compact p-4 sm:p-5">
-                    <div class="dashboard-section-head">
-                      <div>
-                        <h3 class="dashboard-section-title">最近模拟面试</h3>
-                      </div>
-                      <RouterLink
-                        to="/interview"
-                        class="accent-link text-sm font-semibold"
-                      >
-                        查看全部
-                      </RouterLink>
-                    </div>
-
-                    <template v-if="recentInterviewCard">
-                      <div class="dashboard-interview-card">
-                        <div class="dashboard-interview-card__top">
-                          <div class="dashboard-interview-card__headline">
-                            <div class="dashboard-interview-card__headline-main">
-                              <div class="dashboard-interview-card__title">{{ recentInterviewTitle }}</div>
-                              <span class="dashboard-interview-card__level">
-                                {{ recentInterviewLevel }}
-                              </span>
-                            </div>
-                            <div class="dashboard-interview-card__meta">{{ recentInterviewTime }}</div>
-                          </div>
-                        </div>
-
-                        <div class="dashboard-interview-card__stats">
-                          <article
-                            v-for="item in recentInterviewStats"
-                            :key="item.label"
-                            class="dashboard-interview-card__stat"
-                          >
-                            <strong>{{ item.value }}</strong>
-                            <span>{{ item.label }}</span>
-                          </article>
-                        </div>
-
-                        <div
-                          v-if="recentInterviewTags.length"
-                          class="dashboard-interview-card__tags"
-                        >
-                          <div class="dashboard-interview-card__tags-title">薄弱点分析</div>
-                          <span
-                            v-for="tag in recentInterviewTags"
-                            :key="tag"
-                            class="dashboard-interview-card__tag"
-                          >
-                            {{ tag }}
-                          </span>
-                        </div>
-
-                        <div class="dashboard-interview-card__footer">
-                          <RouterLink
-                            :to="`/interview/detail/${recentInterviewCard.sessionId}`"
-                            class="dashboard-interview-card__detail-link"
-                          >
-                            查看详细分析
-                            <svg
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              stroke-width="1.9"
-                            >
-                              <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="m13.5 4.5 6 7.5-6 7.5M19.5 12H4.5"
-                              />
-                            </svg>
-                          </RouterLink>
-                        </div>
-                      </div>
-                    </template>
-
-                    <div v-else class="dashboard-inline-empty">
-                      <div class="dashboard-inline-empty__title">还没有模拟面试记录</div>
-                      <p class="dashboard-inline-empty__desc">完成一轮训练后，这里会展示最近一次面试摘要。</p>
-                      <RouterLink
-                        to="/interview"
-                        class="hard-button-primary mt-4 inline-flex"
-                      >
-                        开始模拟面试
-                      </RouterLink>
-                    </div>
-                  </article>
-
-                  <article class="shell-section-card dashboard-card-panel dashboard-card-panel--compact p-4 sm:p-5">
-                    <div class="dashboard-section-head">
-                      <div>
-                        <h3 class="dashboard-section-title">学习进度</h3>
-                      </div>
-                      <RouterLink
-                        to="/study-plan"
-                        class="accent-link text-sm font-semibold"
-                      >
-                        查看全部
-                      </RouterLink>
-                    </div>
-
-                    <div class="dashboard-progress-list">
-                      <article
-                        v-for="item in studyProgressItems"
-                        :key="item.label"
-                        class="dashboard-progress-item"
-                      >
-                        <div class="dashboard-progress-item__head">
-                          <span>{{ item.label }}</span>
-                          <strong>{{ item.value }}%</strong>
-                        </div>
-                        <div class="dashboard-progress-item__track">
-                          <div
-                            class="dashboard-progress-item__bar"
-                            :style="{ width: `${item.value}%` }"
-                          />
-                        </div>
-                      </article>
-                    </div>
-                  </article>
-                </section>
-
+          <section class="shell-section-card dashboard-first-visit-notes p-5 sm:p-6">
+            <div class="dashboard-section-head">
+              <div>
+                <h3 class="dashboard-section-title">首次流程</h3>
               </div>
-
-              <div class="dashboard-home__rail">
-                <section class="shell-section-card dashboard-plan-card p-4 sm:p-5">
-                  <div class="dashboard-section-head dashboard-section-head--rail">
-                    <div>
-                      <h3 class="dashboard-section-title">今日计划</h3>
-                    </div>
-                    <div class="dashboard-plan-card__date">{{ todayFormatted }}</div>
-                  </div>
-
-                  <div class="dashboard-calendar">
-                    <div class="dashboard-calendar__weekdays">
-                      <span
-                        v-for="weekday in weekDays"
-                        :key="weekday"
-                      >
-                        {{ weekday }}
-                      </span>
-                    </div>
-                    <div class="dashboard-calendar__grid">
-                      <span
-                        v-for="cell in calendarCells"
-                        :key="cell.key"
-                        class="dashboard-calendar__cell"
-                        :class="{
-                          'dashboard-calendar__cell--muted': !cell.isCurrentMonth,
-                          'dashboard-calendar__cell--today': cell.isToday,
-                          'dashboard-calendar__cell--task': cell.hasTask
-                        }"
-                      >
-                        {{ cell.label }}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div class="dashboard-plan-card__summary">
-                    <span>今日任务</span>
-                    <strong>{{ completedTodayTaskCount }}/{{ planTaskItems.length }}</strong>
-                  </div>
-
-                  <div class="dashboard-plan-card__tasks">
-                    <article
-                      v-for="task in planTaskItems"
-                      :key="task.id"
-                      class="dashboard-plan-card__task"
-                    >
-                      <span
-                        class="dashboard-plan-card__checkbox"
-                        :class="{ 'dashboard-plan-card__checkbox--checked': task.status === 'completed' }"
-                      />
-                      <div class="min-w-0 flex-1">
-                        <div class="dashboard-plan-card__task-title">{{ task.title }}</div>
-                        <div class="dashboard-plan-card__task-meta">{{ task.estimatedMinutes }} 分钟</div>
-                      </div>
-                    </article>
-                  </div>
-
-                  <RouterLink
-                    to="/study-plan"
-                    class="accent-link mt-4 inline-flex text-sm font-semibold"
-                  >
-                    查看完整计划
-                  </RouterLink>
-                </section>
-
-                <DashboardApplicationDonut
-                  :items="applicationStats"
-                  :total="applications.length"
-                />
-              </div>
+            </div>
+            <div class="dashboard-first-visit-steps">
+              <article
+                v-for="step in firstVisitSteps"
+                :key="step.key"
+                class="dashboard-first-visit-step"
+                :class="`dashboard-first-visit-step--${step.state}`"
+              >
+                <span class="dashboard-first-visit-step__index">{{ step.index }}</span>
+                <div class="min-w-0 flex-1">
+                  <div class="dashboard-first-visit-step__title">{{ step.title }}</div>
+                  <p class="dashboard-first-visit-step__description">{{ step.description }}</p>
+                </div>
+                <span class="dashboard-first-visit-step__state">{{ step.stateLabel }}</span>
+              </article>
+            </div>
+          </section>
         </div>
 
-        <section class="shell-section-card dashboard-card-panel dashboard-card-panel--compact dashboard-recommend-panel p-4 sm:p-5">
-          <div class="dashboard-section-head">
-            <div>
-              <h3 class="dashboard-section-title">推荐学习内容</h3>
-            </div>
+        <div v-else class="dashboard-home__body-grid">
+          <div class="dashboard-home__content">
+            <section class="dashboard-home__welcome">
+              <h1 class="dashboard-home__welcome-title">{{ greetingText }} 👋</h1>
+              <p class="dashboard-home__welcome-kicker">今天又是努力变强的一天，加油！</p>
+            </section>
+
+            <section class="dashboard-hero">
+              <div class="dashboard-hero__content">
+                <span class="dashboard-hero__eyebrow">TODAY&apos;S NEXT ACTION</span>
+                <h2 class="dashboard-hero__title">{{ dashboardNextActionTitle }}</h2>
+                <p class="dashboard-hero__description">{{ dashboardNextActionDescription }}</p>
+                <p v-if="dashboardNextActionReason" class="dashboard-hero__reason">{{ dashboardNextActionReason }}</p>
+
+                <div class="dashboard-hero__actions">
+                  <RouterLink :to="dashboardNextActionPath" class="dashboard-hero__cta">
+                    {{ dashboardNextActionTitle }}
+                  </RouterLink>
+                </div>
+
+                <div class="dashboard-hero__signals">
+                  <span class="dashboard-hero__signal">优先级 {{ dashboardNextActionPriority }}</span>
+                  <span class="dashboard-hero__signal">连续 {{ overview.studyStreak ?? 0 }} 天训练</span>
+                  <span class="dashboard-hero__signal">待巩固 {{ overview.reviewDebtCount ?? 0 }} 项</span>
+                  <span class="dashboard-hero__signal">进行中 {{ overview.applicationSummary?.activeCount ?? 0 }} 条</span>
+                </div>
+              </div>
+
+              <div class="dashboard-hero__visual" aria-hidden="true">
+                <div class="dashboard-hero__visual-badge dashboard-hero__visual-badge--left">
+                  <span class="dashboard-hero__visual-badge-dot" />
+                  当前主任务
+                </div>
+                <div class="dashboard-hero__visual-badge dashboard-hero__visual-badge--right">
+                  <span class="dashboard-hero__visual-badge-dot" />
+                  {{ dashboardNextActionPriority }}
+                </div>
+                <img :src="heroIllustrationUrl" alt="" class="dashboard-hero__illustration">
+              </div>
+            </section>
+
+            <section class="shell-section-card dashboard-card-panel dashboard-card-panel--compact p-4 sm:p-5">
+              <div class="dashboard-section-head">
+                <div>
+                  <h3 class="dashboard-section-title">快速入口</h3>
+                </div>
+              </div>
+
+              <div class="dashboard-quick-grid">
+                <RouterLink
+                  v-for="entry in quickEntries"
+                  :key="entry.path"
+                  :to="entry.path"
+                  class="dashboard-quick-card"
+                >
+                  <span class="dashboard-quick-card__icon" :class="`dashboard-quick-card__icon--${entry.tone}`">
+                    <svg
+                      v-if="entry.icon === 'interview'"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="1.9"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M7.5 8.25h9m-9 3h5.25m-6.75 7.5 1.462-2.435a1.5 1.5 0 0 1 1.286-.73H18A2.25 2.25 0 0 0 20.25 13.5v-6A2.25 2.25 0 0 0 18 5.25H6A2.25 2.25 0 0 0 3.75 7.5v6A2.25 2.25 0 0 0 6 15.75h.75v3Z"
+                      />
+                    </svg>
+                    <svg
+                      v-else-if="entry.icon === 'knowledge'"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="1.9"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M4.5 6.75A2.25 2.25 0 0 1 6.75 4.5h9A2.25 2.25 0 0 1 18 6.75v8.25A2.25 2.25 0 0 1 15.75 17.25h-4.5l-3.75 2.25v-2.25h-.75A2.25 2.25 0 0 1 4.5 15V6.75Z"
+                      />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 8.625h6m-6 3h4.5" />
+                    </svg>
+                    <svg
+                      v-else-if="entry.icon === 'resume'"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="1.9"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M15.75 3.75H7.5A2.25 2.25 0 0 0 5.25 6v12A2.25 2.25 0 0 0 7.5 20.25h9A2.25 2.25 0 0 0 18.75 18V6.75l-3-3Z"
+                      />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 3.75V7.5h3M8.25 11.25h7.5m-7.5 3h5.25" />
+                    </svg>
+                    <svg
+                      v-else-if="entry.icon === 'plan'"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="1.9"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M8.25 3.75v2.25m7.5-2.25v2.25M5.25 8.25h13.5M6.75 5.25h10.5A1.5 1.5 0 0 1 18.75 6.75v10.5a1.5 1.5 0 0 1-1.5 1.5H6.75a1.5 1.5 0 0 1-1.5-1.5V6.75a1.5 1.5 0 0 1 1.5-1.5Z"
+                      />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m8.625 12 1.875 1.875L15.375 9" />
+                    </svg>
+                    <svg
+                      v-else-if="entry.icon === 'applications'"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="1.9"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M9 6.75V5.625A1.875 1.875 0 0 1 10.875 3.75h2.25A1.875 1.875 0 0 1 15 5.625V6.75m-9 1.5h12A2.25 2.25 0 0 1 20.25 10.5v6.75A2.25 2.25 0 0 1 18 19.5H6A2.25 2.25 0 0 1 3.75 17.25V10.5A2.25 2.25 0 0 1 6 8.25Z"
+                      />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 12h3" />
+                    </svg>
+                    <svg
+                      v-else
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="1.9"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M8.25 6.75h7.5M8.25 10.5h7.5M8.25 14.25h4.5M6 3.75h12A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25H6A2.25 2.25 0 0 1 3.75 18V6A2.25 2.25 0 0 1 6 3.75Z"
+                      />
+                    </svg>
+                  </span>
+                  <div class="min-w-0">
+                    <div class="dashboard-quick-card__title">{{ entry.label }}</div>
+                    <div class="dashboard-quick-card__description">{{ entry.description }}</div>
+                  </div>
+                </RouterLink>
+              </div>
+            </section>
+
+            <section class="dashboard-summary-grid">
+              <article class="shell-section-card dashboard-card-panel dashboard-card-panel--compact p-4 sm:p-5">
+                <div class="dashboard-section-head">
+                  <div>
+                    <h3 class="dashboard-section-title">最近模拟面试</h3>
+                  </div>
+                  <RouterLink to="/interview" class="accent-link text-sm font-semibold">查看全部</RouterLink>
+                </div>
+
+                <template v-if="recentInterviewCard">
+                  <div class="dashboard-interview-card">
+                    <div class="dashboard-interview-card__top">
+                      <div class="dashboard-interview-card__headline">
+                        <div class="dashboard-interview-card__headline-main">
+                          <div class="dashboard-interview-card__title">{{ recentInterviewTitle }}</div>
+                          <span class="dashboard-interview-card__level">{{ recentInterviewLevel }}</span>
+                        </div>
+                        <div class="dashboard-interview-card__meta">{{ recentInterviewTime }}</div>
+                      </div>
+                    </div>
+
+                    <div class="dashboard-interview-card__stats">
+                      <article
+                        v-for="item in recentInterviewStats"
+                        :key="item.label"
+                        class="dashboard-interview-card__stat"
+                      >
+                        <strong>{{ item.value }}</strong>
+                        <span>{{ item.label }}</span>
+                      </article>
+                    </div>
+
+                    <div v-if="recentInterviewTags.length" class="dashboard-interview-card__tags">
+                      <div class="dashboard-interview-card__tags-title">薄弱点分析</div>
+                      <span v-for="tag in recentInterviewTags" :key="tag" class="dashboard-interview-card__tag">
+                        {{ tag }}
+                      </span>
+                    </div>
+
+                    <div class="dashboard-interview-card__footer">
+                      <RouterLink
+                        :to="`/interview/detail/${recentInterviewCard.sessionId}`"
+                        class="dashboard-interview-card__detail-link"
+                      >
+                        查看详细分析
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="m13.5 4.5 6 7.5-6 7.5M19.5 12H4.5" />
+                        </svg>
+                      </RouterLink>
+                    </div>
+                  </div>
+                </template>
+
+                <div v-else class="dashboard-inline-empty">
+                  <div class="dashboard-inline-empty__title">还没有模拟面试记录</div>
+                  <p class="dashboard-inline-empty__desc">完成一轮训练后，这里会展示最近一次面试摘要。</p>
+                  <RouterLink to="/interview" class="hard-button-primary mt-4 inline-flex">开始模拟面试</RouterLink>
+                </div>
+              </article>
+
+              <article class="shell-section-card dashboard-card-panel dashboard-card-panel--compact p-4 sm:p-5">
+                <div class="dashboard-section-head">
+                  <div>
+                    <h3 class="dashboard-section-title">学习进度</h3>
+                  </div>
+                  <RouterLink to="/study-plan" class="accent-link text-sm font-semibold">查看全部</RouterLink>
+                </div>
+
+                <div class="dashboard-progress-list">
+                  <article
+                    v-for="item in studyProgressItems"
+                    :key="item.label"
+                    class="dashboard-progress-item"
+                  >
+                    <div class="dashboard-progress-item__head">
+                      <span>{{ item.label }}</span>
+                      <strong>{{ item.value }}%</strong>
+                    </div>
+                    <div class="dashboard-progress-item__track">
+                      <div class="dashboard-progress-item__bar" :style="{ width: `${item.value}%` }" />
+                    </div>
+                  </article>
+                </div>
+              </article>
+            </section>
+
+            <section class="shell-section-card dashboard-card-panel dashboard-card-panel--compact dashboard-recommend-panel p-4 sm:p-5">
+              <div class="dashboard-section-head">
+                <div>
+                  <h3 class="dashboard-section-title">推荐学习内容</h3>
+                </div>
+              </div>
+
+              <div class="dashboard-recommend-grid">
+                <RouterLink
+                  v-for="item in recommendations"
+                  :key="`${item.title}-${item.path}`"
+                  :to="item.path"
+                  class="dashboard-recommend-card"
+                >
+                  <span class="dashboard-recommend-card__label" :class="`dashboard-recommend-card__label--${item.tone}`">
+                    {{ item.type }}
+                  </span>
+                  <div class="dashboard-recommend-card__title">{{ item.title }}</div>
+                  <div class="dashboard-recommend-card__meta">{{ item.category }}</div>
+                  <div class="dashboard-recommend-card__hint">{{ item.hint }}</div>
+                </RouterLink>
+              </div>
+            </section>
           </div>
 
-          <div class="dashboard-recommend-grid">
-            <RouterLink
-              v-for="item in recommendations"
-              :key="`${item.title}-${item.path}`"
-              :to="item.path"
-              class="dashboard-recommend-card"
-            >
-              <span
-                class="dashboard-recommend-card__label"
-                :class="`dashboard-recommend-card__label--${item.tone}`"
-              >
-                {{ item.type }}
-              </span>
-              <div class="dashboard-recommend-card__title">{{ item.title }}</div>
-              <div class="dashboard-recommend-card__meta">{{ item.category }}</div>
-              <div class="dashboard-recommend-card__hint">{{ item.hint }}</div>
-            </RouterLink>
+          <div class="dashboard-home__rail">
+            <section class="shell-section-card dashboard-plan-card p-4 sm:p-5">
+              <div class="dashboard-section-head dashboard-section-head--rail">
+                <div>
+                  <h3 class="dashboard-section-title">今日计划</h3>
+                </div>
+                <div class="dashboard-plan-card__date">{{ todayFormatted }}</div>
+              </div>
+
+              <div class="dashboard-calendar">
+                <div class="dashboard-calendar__weekdays">
+                  <span v-for="weekday in weekDays" :key="weekday">
+                    {{ weekday }}
+                  </span>
+                </div>
+                <div class="dashboard-calendar__grid">
+                  <span
+                    v-for="cell in calendarCells"
+                    :key="cell.key"
+                    class="dashboard-calendar__cell"
+                    :class="{
+                      'dashboard-calendar__cell--muted': !cell.isCurrentMonth,
+                      'dashboard-calendar__cell--today': cell.isToday,
+                      'dashboard-calendar__cell--task': cell.hasTask
+                    }"
+                  >
+                    {{ cell.label }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="dashboard-plan-card__summary">
+                <span>今日任务</span>
+                <strong>{{ completedTodayTaskCount }}/{{ planTaskItems.length }}</strong>
+              </div>
+
+              <div class="dashboard-plan-card__tasks">
+                <article
+                  v-for="task in planTaskItems"
+                  :key="task.id"
+                  class="dashboard-plan-card__task"
+                >
+                  <span
+                    class="dashboard-plan-card__checkbox"
+                    :class="{ 'dashboard-plan-card__checkbox--checked': task.status === 'completed' }"
+                  />
+                  <div class="min-w-0 flex-1">
+                    <div class="dashboard-plan-card__task-title">{{ task.title }}</div>
+                    <div class="dashboard-plan-card__task-meta">{{ task.estimatedMinutes }} 分钟</div>
+                  </div>
+                </article>
+              </div>
+
+              <RouterLink to="/study-plan" class="accent-link mt-4 inline-flex text-sm font-semibold">
+                查看完整计划
+              </RouterLink>
+            </section>
+
+            <DashboardApplicationDonut :items="applicationStats" :total="applications.length" />
           </div>
-        </section>
+        </div>
       </template>
     </div>
   </div>
@@ -428,14 +388,17 @@ import { fetchRecommendQuestionsApi } from '@/api/adaptive'
 import { fetchDashboardOverviewApi } from '@/api/dashboard'
 import { interviewDetailApi } from '@/api/interview'
 import { fetchCurrentStudyPlanApi } from '@/api/plan'
+import DashboardGuideCard from '@/pages/dashboard/DashboardGuideCard.vue'
 import type {
   DashboardOverview,
   InterviewDetail,
   JobApplicationItem,
   RecommendQuestion,
   StudyPlan,
-  StudyPlanTaskItem
+  StudyPlanTaskItem,
+  UserInfo
 } from '@/types/api'
+import { storage } from '@/utils/storage'
 import DashboardApplicationDonut from './DashboardApplicationDonut.vue'
 import heroIllustrationUrl from '@/assets/dashboard-hero-illustration.svg'
 
@@ -476,6 +439,24 @@ type CalendarCell = {
   hasTask: boolean
 }
 
+type FirstVisitGuideState = {
+  eyebrow: string
+  title: string
+  description: string
+  actionLabel: string
+  actionTo: string
+  hint: string
+}
+
+type FirstVisitStep = {
+  key: 'resume' | 'plan' | 'applications' | 'workbench'
+  index: string
+  title: string
+  description: string
+  state: 'done' | 'active' | 'pending'
+  stateLabel: string
+}
+
 const loading = ref(true)
 const overview = ref<DashboardOverview>({
   learningCount: 0,
@@ -491,6 +472,7 @@ const currentPlan = ref<StudyPlan | null>(null)
 const applications = ref<JobApplicationItem[]>([])
 const recentInterviewDetail = ref<InterviewDetail | null>(null)
 const recommendedQuestions = ref<RecommendQuestion[]>([])
+const currentUser = ref<UserInfo | null>(storage.getUser())
 
 const weekDays = ['一', '二', '三', '四', '五', '六', '日']
 
@@ -505,6 +487,89 @@ const quickEntries: DashboardQuickEntry[] = [
 
 const greetingText = computed(() => resolveGreetingLabel())
 const dashboardNextAction = computed(() => overview.value.nextAction)
+const guideSeen = computed(() => {
+  if (!currentUser.value?.id) return false
+  return storage.getGuideSeen(currentUser.value.id)
+})
+const hasResume = computed(() => {
+  const actionKey = dashboardNextAction.value?.key
+  if (!actionKey) return false
+  return actionKey !== 'upload_resume'
+})
+const hasPlan = computed(() => Boolean(currentPlan.value))
+const hasApplications = computed(() => applications.value.length > 0)
+const showFirstVisitGuide = computed(() => {
+  if (!overview.value.firstVisit) return false
+  if (!guideSeen.value) return true
+  return !hasResume.value || !hasPlan.value || !hasApplications.value
+})
+
+const firstVisitGuide = computed<FirstVisitGuideState>(() => {
+  if (!hasResume.value) {
+    return {
+      eyebrow: '首次使用',
+      title: '先上传一份简历',
+      description: '先把简历放进系统，后面的计划、投递和模拟面试才有明确上下文。',
+      actionLabel: '去上传简历',
+      actionTo: '/resume#resume-upload',
+      hint: '完成上传后，首页会自动切到下一步。'
+    }
+  }
+  if (!hasPlan.value) {
+    return {
+      eyebrow: '首次使用',
+      title: '先生成你的第一轮计划',
+      description: '把接下来几天的训练节奏先排好，再开始做题、问答和模拟面试。',
+      actionLabel: '去生成计划',
+      actionTo: '/study-plan#plan-builder',
+      hint: '生成成功后，会自动进入投递准备。'
+    }
+  }
+  return {
+    eyebrow: '首次使用',
+    title: '先记录第一条岗位',
+    description: '先放进一条真实岗位，后续的简历调整、问答和面试才会更贴近目标。',
+    actionLabel: '去记录岗位',
+    actionTo: '/applications#application-create',
+    hint: '录入第一条岗位后，首页会切回标准工作台。'
+  }
+})
+
+const firstVisitSteps = computed<FirstVisitStep[]>(() => [
+  {
+    key: 'resume',
+    index: '01',
+    title: '上传简历',
+    description: '让后续训练和求职动作有基础资料。',
+    state: hasResume.value ? 'done' : 'active',
+    stateLabel: hasResume.value ? '已完成' : '当前步骤'
+  },
+  {
+    key: 'plan',
+    index: '02',
+    title: '生成计划',
+    description: '把题库、问答和面试训练排成连续动作。',
+    state: hasPlan.value ? 'done' : hasResume.value ? 'active' : 'pending',
+    stateLabel: hasPlan.value ? '已完成' : hasResume.value ? '下一步' : '待开始'
+  },
+  {
+    key: 'applications',
+    index: '03',
+    title: '记录岗位',
+    description: '先接入一条真实岗位，后面的优化建议才更有目标。',
+    state: hasApplications.value ? 'done' : hasPlan.value ? 'active' : 'pending',
+    stateLabel: hasApplications.value ? '已完成' : hasPlan.value ? '下一步' : '待开始'
+  },
+  {
+    key: 'workbench',
+    index: '04',
+    title: '进入工作台',
+    description: '完成前三步后，再进入标准首页继续推进主任务。',
+    state: showFirstVisitGuide.value ? 'pending' : 'done',
+    stateLabel: showFirstVisitGuide.value ? '待解锁' : '已进入'
+  }
+])
+
 const dashboardNextActionTitle = computed(() => dashboardNextAction.value?.title || '继续今天的训练')
 const dashboardNextActionDescription = computed(
   () => dashboardNextAction.value?.description || '先推进当前最关键的一步，再回来看其他模块。'
@@ -953,6 +1018,79 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: var(--dashboard-layout-gap);
+}
+
+.dashboard-home__first-visit {
+  display: grid;
+  gap: var(--dashboard-layout-gap);
+}
+
+.dashboard-first-visit-notes {
+  border-radius: var(--dashboard-card-radius);
+  border: 1px solid var(--dashboard-border);
+  background: var(--dashboard-panel-bg);
+  box-shadow: 0 7px 18px rgba(30, 48, 90, 0.03);
+}
+
+.dashboard-first-visit-steps {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.dashboard-first-visit-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  border-radius: var(--dashboard-card-radius);
+  border: 1px solid var(--dashboard-border-strong);
+  background: var(--dashboard-soft-bg);
+  padding: 0.95rem 1rem;
+}
+
+.dashboard-first-visit-step--active {
+  border-color: rgba(61, 105, 255, 0.2);
+  background: linear-gradient(180deg, rgba(61, 105, 255, 0.08), rgba(61, 105, 255, 0.03));
+}
+
+.dashboard-first-visit-step--done {
+  border-color: rgba(69, 185, 124, 0.18);
+  background: linear-gradient(180deg, rgba(69, 185, 124, 0.08), rgba(69, 185, 124, 0.03));
+}
+
+.dashboard-first-visit-step__index {
+  display: inline-flex;
+  min-width: 2.2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(61, 105, 255, 0.1);
+  color: #3d69ff;
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 2.2rem;
+}
+
+.dashboard-first-visit-step__title {
+  color: #182d4a;
+  font-size: 0.94rem;
+  font-weight: 700;
+}
+
+.dashboard-first-visit-step__description {
+  margin-top: 0.25rem;
+  color: #7f8da4;
+  font-size: 0.82rem;
+  line-height: 1.65;
+}
+
+.dashboard-first-visit-step__state {
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: rgba(61, 105, 255, 0.08);
+  color: #4a6eff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.35rem 0.7rem;
 }
 
 .dashboard-home__body-grid {
@@ -1752,6 +1890,10 @@ onMounted(() => {
 }
 
 @media (max-width: 767px) {
+  .dashboard-first-visit-step {
+    flex-wrap: wrap;
+  }
+
   .dashboard-quick-grid,
   .dashboard-summary-grid,
   .dashboard-recommend-grid,

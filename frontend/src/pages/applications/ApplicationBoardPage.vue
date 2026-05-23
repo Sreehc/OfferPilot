@@ -270,10 +270,12 @@ import AppShellHeader from '@/components/AppShellHeader.vue'
 import { createJobApplicationApi, fetchApplicationBoardApi } from '@/api/applications'
 import { fetchResumeListApi } from '@/api/resume'
 import type { JobApplicationItem, ResumeSummaryItem } from '@/types/api'
+import { storage } from '@/utils/storage'
 
 const creating = ref(false)
 const applications = ref<JobApplicationItem[]>([])
 const resumes = ref<ResumeSummaryItem[]>([])
+const currentUser = storage.getUser()
 
 const form = reactive({
   company: '',
@@ -384,6 +386,7 @@ const handleCreate = async () => {
     ElMessage.warning('请补全公司、岗位和 JD 原文')
     return
   }
+  const isFirstApplication = applications.value.length === 0
   creating.value = true
   try {
     await createJobApplicationApi({
@@ -396,6 +399,9 @@ const handleCreate = async () => {
     })
     resetForm()
     await loadData()
+    if (isFirstApplication && currentUser?.id) {
+      storage.setGuideSeen(currentUser.id)
+    }
     ElMessage.success('岗位已记录，接下来可以继续推进这条投递')
   } catch (error: any) {
     ElMessage.error(error?.message || '创建岗位失败')

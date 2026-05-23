@@ -1,120 +1,133 @@
 <template>
-  <div class="space-y-4 interview-cockpit">
-    <AppShellHeader />
-
-    <!-- Idle state: setup + history workspace -->
-    <div v-if="phase === 'idle'" class="interview-setup-shell">
-      <section class="shell-section-card interview-setup-main p-4 sm:p-6">
-        <div class="panel-heading">
-          <h3 class="panel-heading__title">先选这轮面试怎么练</h3>
-          <p class="panel-heading__meta">先定方向、岗位和范围，再开始这轮模拟面试。完成后右侧会继续保留最近记录，方便你回看表现。</p>
-        </div>
-
-        <div class="mt-6 space-y-4">
-          <div class="data-slab p-4">
-            <div class="text-xs uppercase tracking-[0.24em] text-tertiary">方向</div>
-            <el-select v-model="direction" size="large" class="mt-2 w-full">
-              <el-option v-for="d in directions" :key="d.name" :label="d.name" :value="d.name">
-                <span>{{ d.name }}</span>
-                <span class="ml-2 text-xs text-tertiary">{{ d.desc }}</span>
-              </el-option>
-            </el-select>
+  <div class="interview-cockpit h-full">
+    <template v-if="phase === 'idle'">
+      <section class="interview-setup-bar shell-section-card workspace-shell">
+        <div class="workspace-head">
+          <div class="workspace-head__top">
+            <div class="workspace-head__main">
+              <div class="flex flex-wrap items-center gap-2">
+                <h1 class="workspace-title sm:text-[1.75rem]">模拟面试</h1>
+                <span v-if="recommendedInterview" class="detail-pill">系统推荐</span>
+              </div>
+              <p class="workspace-summary">先定这轮怎么练，再直接开始，岗位、题量和上下文都在这里一次配好。</p>
+            </div>
+            <div class="interview-setup-bar__head-actions">
+              <div v-if="voiceAvailable" class="interview-mode-switch">
+                <button
+                  type="button"
+                  class="interview-mode-switch__button"
+                  :class="interviewMode === 'text' ? 'interview-mode-switch__button-active' : ''"
+                  @click="interviewMode = 'text'"
+                >
+                  打字
+                </button>
+                <button
+                  type="button"
+                  class="interview-mode-switch__button"
+                  :class="interviewMode === 'voice' ? 'interview-mode-switch__button-active' : ''"
+                  @click="interviewMode = 'voice'"
+                >
+                  语音
+                </button>
+              </div>
+              <el-button :loading="starting" type="primary" size="large" class="action-button !min-h-11" @click="handleStart()">
+                {{ interviewMode === 'voice' && voiceAvailable ? '开始语音面试' : '开始模拟面试' }}
+              </el-button>
+            </div>
           </div>
-          <div class="data-slab p-4">
-            <div class="text-xs uppercase tracking-[0.24em] text-tertiary">目标岗位</div>
-            <el-input
-              v-model="jobRole"
-              size="large"
-              class="mt-2"
-              placeholder="例如：Java 后端开发 / 实习生 / 初级开发"
-            />
+
+          <div v-if="recommendedInterview" class="interview-setup-bar__summary">
+            <span class="detail-pill">{{ difficultyText(recommendedInterview.difficulty) || '默认' }}</span>
+            <span class="font-semibold text-ink">{{ recommendedInterview.direction }}</span>
+            <span class="text-secondary">{{ recommendedInterview.questionCount }} 题</span>
+            <span class="text-secondary">{{ recommendedInterview.reason || '系统推荐' }}</span>
           </div>
-          <div class="grid gap-4 md:grid-cols-2">
-            <div class="data-slab p-4">
-              <div class="text-xs uppercase tracking-[0.24em] text-tertiary">经验阶段</div>
-              <el-select v-model="experienceLevel" size="large" class="mt-2 w-full">
-                <el-option
-                  v-for="item in experienceLevels"
-                  :key="item.value"
-                  :label="item.label"
-                  :value="item.value"
-                />
+
+          <div class="interview-setup-grid">
+            <div>
+              <label class="flat-field-label">方向</label>
+              <el-select v-model="direction" size="default" class="w-full">
+                <el-option v-for="d in directions" :key="d.name" :label="d.name" :value="d.name" />
               </el-select>
             </div>
-            <div class="data-slab p-4">
-              <div class="text-xs uppercase tracking-[0.24em] text-tertiary">面试时长</div>
-              <el-select v-model="durationMinutes" size="large" class="mt-2 w-full">
-                <el-option
-                  v-for="minutes in durationOptions"
-                  :key="minutes"
-                  :label="`${minutes} 分钟`"
-                  :value="minutes"
-                />
+            <div>
+              <label class="flat-field-label">目标岗位</label>
+              <el-input v-model="jobRole" size="default" placeholder="Java 后端开发" />
+            </div>
+            <div>
+              <label class="flat-field-label">经验</label>
+              <el-select v-model="experienceLevel" size="default" class="w-full">
+                <el-option v-for="item in experienceLevels" :key="item.value" :label="item.label" :value="item.value" />
               </el-select>
             </div>
-          </div>
-          <div class="data-slab p-4">
-            <div class="text-xs uppercase tracking-[0.24em] text-tertiary">技术范围</div>
-            <el-input
-              v-model="techStack"
-              size="large"
-              class="mt-2"
-              placeholder="例如：Spring Boot, MySQL, Redis, MQ"
-            />
-            <p class="mt-2 text-xs leading-5 text-tertiary">
-              支持逗号分隔，本轮会优先抽取更贴近你目标技术栈的问题。
-            </p>
-          </div>
-          <div class="data-slab p-4">
-            <div class="text-xs uppercase tracking-[0.24em] text-tertiary">本轮上下文</div>
-            <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <button
-                type="button"
-                class="interview-context-chip"
-                :class="{ 'interview-context-chip-active': interviewContextPath === 'general' }"
-                @click="applyInterviewContextPath('general')"
-              >
-                通用模拟
-              </button>
-              <button
-                type="button"
-                class="interview-context-chip"
-                :class="{ 'interview-context-chip-active': interviewContextPath === 'resume' }"
-                @click="applyInterviewContextPath('resume')"
-              >
-                基于简历
-              </button>
-              <button
-                type="button"
-                class="interview-context-chip"
-                :class="{ 'interview-context-chip-active': interviewContextPath === 'project' }"
-                @click="applyInterviewContextPath('project')"
-              >
-                基于项目
-              </button>
+            <div>
+              <label class="flat-field-label">时长</label>
+              <el-select v-model="durationMinutes" size="default" class="w-full">
+                <el-option v-for="minutes in durationOptions" :key="minutes" :label="`${minutes}分钟`" :value="minutes" />
+              </el-select>
             </div>
-            <div v-if="interviewContextPath !== 'general'" class="mt-4 grid gap-3 sm:grid-cols-2">
+            <div>
+              <label class="flat-field-label">题量</label>
+              <el-input-number
+                v-model="questionCount"
+                :min="3"
+                :max="5"
+                size="default"
+                class="w-full"
+                controls-position="right"
+              />
+            </div>
+            <div>
+              <label class="flat-field-label">技术范围</label>
+              <el-input v-model="techStack" size="default" placeholder="Spring Boot, MySQL, Redis" />
+            </div>
+          </div>
+
+          <div class="interview-context-row">
+            <span class="text-xs font-semibold uppercase tracking-[0.12em] text-tertiary">上下文</span>
+            <button
+              type="button"
+              class="interview-context-chip"
+              :class="{ 'interview-context-chip-active': interviewContextPath === 'general' }"
+              @click="applyInterviewContextPath('general')"
+            >
+              通用
+            </button>
+            <button
+              type="button"
+              class="interview-context-chip"
+              :class="{ 'interview-context-chip-active': interviewContextPath === 'resume' }"
+              @click="applyInterviewContextPath('resume')"
+            >
+              基于简历
+            </button>
+            <button
+              type="button"
+              class="interview-context-chip"
+              :class="{ 'interview-context-chip-active': interviewContextPath === 'project' }"
+              @click="applyInterviewContextPath('project')"
+            >
+              基于项目
+            </button>
+            <template v-if="interviewContextPath !== 'general'">
               <el-select
                 v-model="selectedResumeId"
                 clearable
-                size="large"
-                placeholder="先选一份简历"
+                size="default"
+                placeholder="选择简历"
                 :loading="loadingResumes"
+                class="w-40"
               >
-                <el-option
-                  v-for="resume in resumes"
-                  :key="resume.id"
-                  :label="resume.title"
-                  :value="resume.id"
-                />
+                <el-option v-for="resume in resumes" :key="resume.id" :label="resume.title" :value="resume.id" />
               </el-select>
               <el-select
                 v-if="interviewContextPath === 'project'"
                 v-model="selectedProjectId"
                 clearable
-                size="large"
-                placeholder="再锁定一个项目"
+                size="default"
+                placeholder="选择项目"
                 :disabled="!selectedResumeId || !resumeProjects.length"
+                class="w-40"
               >
                 <el-option
                   v-for="project in resumeProjects"
@@ -123,187 +136,137 @@
                   :value="project.id"
                 />
               </el-select>
-            </div>
-            <p class="mt-3 text-xs leading-5 text-tertiary">
-              {{ draftContextSource?.summary }}
-            </p>
+            </template>
+            <span class="text-xs text-tertiary">{{ draftContextSource?.summary }}</span>
           </div>
-          <div class="data-slab p-4">
-            <div class="text-xs uppercase tracking-[0.24em] text-tertiary">题量</div>
-            <el-input-number v-model="questionCount" :min="3" :max="5" size="large" class="mt-2 w-full" />
-          </div>
-          <div v-if="voiceAvailable" class="data-slab p-4">
-            <div class="text-xs uppercase tracking-[0.24em] text-tertiary">作答模式</div>
-            <div class="mt-3 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                class="min-h-11 rounded-2xl border px-3 py-2 text-sm font-semibold transition-all"
-                :class="
-                  interviewMode === 'text'
-                    ? 'border-[var(--bc-line-hot)] bg-accent/10 text-ink'
-                    : 'border-[var(--bc-line)] text-secondary hover:bg-[var(--interactive-hover)]'
-                "
-                @click="interviewMode = 'text'"
-              >
-                打字作答
-              </button>
-              <button
-                type="button"
-                class="min-h-11 rounded-2xl border px-3 py-2 text-sm font-semibold transition-all"
-                :class="
-                  interviewMode === 'voice'
-                    ? 'border-[var(--bc-line-hot)] bg-accent/10 text-ink'
-                    : 'border-[var(--bc-line)] text-secondary hover:bg-[var(--interactive-hover)]'
-                "
-                @click="interviewMode = 'voice'"
-              >
-                语音作答
-              </button>
-            </div>
-          </div>
-          <el-button
-            :loading="starting"
-            type="primary"
-            size="large"
-            class="action-button w-full"
-            @click="handleStart()"
-          >
-            {{ interviewMode === 'voice' && voiceAvailable ? '开始语音模拟面试' : '开始模拟面试' }}
-          </el-button>
         </div>
       </section>
 
-      <aside class="shell-section-card interview-setup-side p-4 sm:p-6">
-        <div class="flex items-center justify-between">
-          <h3 class="interview-history__heading">最近面试</h3>
-          <RouterLink
-            v-if="recentInterviews.length > 0"
-            to="/interview/history"
-            class="text-sm font-medium text-accent transition hover:opacity-80"
-          >
-            查看全部
-          </RouterLink>
-        </div>
-
-        <div v-if="loadingHistory" class="py-8 text-center text-sm text-tertiary">加载中...</div>
-
-        <div v-else-if="recentInterviews.length === 0" class="interview-history-empty py-6 text-center">
-          <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--panel-muted)]">
-            <svg class="h-6 w-6 text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
-            </svg>
+      <section class="shell-section-card workspace-shell interview-history-shell">
+        <div class="workspace-section">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 class="workspace-section-title">面试记录</h3>
+              <p class="workspace-section-summary">开始新一轮之前，再决定要不要回看最近几轮表现。</p>
+            </div>
+            <el-select v-model="historyFilterDirection" clearable placeholder="全部方向" size="small" class="w-32">
+              <el-option v-for="d in directions" :key="d.name" :label="d.name" :value="d.name" />
+            </el-select>
           </div>
-          <p class="text-sm leading-6 text-secondary">
-            还没有面试记录。先开始一轮模拟面试，回答后这里会显示最近表现和回看入口。
-          </p>
-        </div>
 
-        <div v-else class="mt-4 space-y-2">
-          <RouterLink
-            v-for="item in recentInterviews"
-            :key="item.sessionId"
-            :to="`/interview/detail/${item.sessionId}`"
-            class="interview-history-item data-slab flex items-center gap-4 p-4 transition hover:shadow-sm"
-          >
-            <div
-              class="interview-history-item__score flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl font-mono text-lg font-bold"
-              :class="scoreClass(item.totalScore)"
+          <div v-if="allHistoryLoading" class="mt-4 py-6 text-center text-xs text-tertiary">加载中...</div>
+          <div v-else-if="!allHistoryItems.length" class="mt-4 py-6 text-center">
+            <p class="text-xs leading-5 text-secondary">暂无面试记录。</p>
+          </div>
+          <div v-else class="mt-3 space-y-1">
+            <RouterLink
+              v-for="item in allHistoryItems"
+              :key="item.sessionId"
+              :to="`/interview/detail/${item.sessionId}`"
+              class="flex items-center gap-4 rounded-xl px-3 py-2 transition hover:bg-[var(--interactive-hover)]"
             >
-              {{ Math.round(item.totalScore) }}
-            </div>
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-2">
-                <span class="font-semibold text-ink">{{ item.direction }}</span>
-                <span class="text-xs text-tertiary">{{ item.questionCount }} 题</span>
-                <span v-if="item.mode === 'voice'" class="rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
-                  语音
-                </span>
+              <div
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg font-mono text-base font-bold"
+                :class="scoreClass(item.totalScore)"
+                :style="{ background: 'rgba(var(--bc-accent-rgb), 0.08)' }"
+              >
+                {{ Math.round(item.totalScore) }}
               </div>
-              <div class="mt-1 text-xs text-tertiary">
-                {{ formatRelativeTime(item.endTime || item.startTime) }}
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm font-semibold text-ink">{{ item.direction }}</span>
+                  <span class="text-xs text-tertiary">{{ item.questionCount }} 题</span>
+                  <span
+                    v-if="item.mode === 'voice'"
+                    class="rounded-full bg-accent/10 px-1.5 py-0.5 text-xs font-medium text-accent"
+                    >语音</span
+                  >
+                  <span class="text-xs text-tertiary">{{ item.jobRole || '未设置岗位' }}</span>
+                  <span class="text-xs text-tertiary">{{ experienceLabel(item.experienceLevel) }}</span>
+                </div>
+                <div class="text-xs text-tertiary">{{ formatRelativeTime(item.endTime || item.startTime) }}</div>
               </div>
-            </div>
-            <svg class="h-4 w-4 shrink-0 text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-            </svg>
-          </RouterLink>
+              <svg
+                class="h-4 w-4 shrink-0 text-tertiary"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+            </RouterLink>
+          </div>
+
+          <div v-if="allHistoryTotalPages > 1" class="mt-4 flex justify-center">
+            <el-pagination
+              v-model:current-page="allHistoryPage"
+              :page-size="allHistoryPageSize"
+              :total="allHistoryTotal"
+              layout="prev, pager, next"
+              @current-change="loadAllHistory"
+            />
+          </div>
         </div>
-      </aside>
-    </div>
+      </section>
+    </template>
 
     <!-- Active states: two-column layout -->
-    <section v-if="phase !== 'idle'" class="grid gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
-      <aside class="shell-section-card p-4 sm:p-6">
-        <div class="panel-heading">
-          <h3 class="panel-heading__title">
-            {{
-              phase === 'finished'
-                ? '面试已完成'
-                : phase === 'result'
-                  ? '本题已评分'
-                  : '继续当前流程'
-            }}
-          </h3>
-        </div>
+    <section v-if="phase !== 'idle'" class="grid gap-3 lg:grid-cols-[260px_minmax(0,1fr)]">
+      <aside class="shell-section-card p-3 sm:p-4">
+        <h3 class="text-sm font-bold text-ink">
+          {{ phase === 'finished' ? '面试已完成' : phase === 'result' ? '本题已评分' : '继续当前流程' }}
+        </h3>
 
-        <div class="mt-6 space-y-4">
-          <div class="data-slab p-4">
+        <div class="mt-3 space-y-2">
+          <!-- Progress -->
+          <div class="flex items-center justify-between text-xs uppercase tracking-[0.22em] text-tertiary">
+            <span>进度</span>
+            <span>{{ currentQuestion?.currentIndex ?? 0 }} / {{ currentQuestion?.questionCount ?? 0 }}</span>
+          </div>
+          <div class="h-1.5 overflow-hidden rounded-full bg-[var(--panel-muted)]">
             <div
-              class="flex items-center justify-between text-xs uppercase tracking-[0.22em] text-tertiary"
-            >
-              <span>进度</span>
-              <span>{{ currentQuestion?.currentIndex ?? 0 }} / {{ currentQuestion?.questionCount ?? 0 }}</span>
-            </div>
-            <div class="mt-3 h-2 overflow-hidden rounded-full bg-[var(--panel-muted)]">
-              <div
-                class="h-full rounded-full bg-accent transition-all duration-500"
-                :style="{ width: `${progressPercent}%` }"
-              ></div>
-            </div>
+              class="h-full rounded-full bg-accent transition-all duration-500"
+              :style="{ width: `${progressPercent}%` }"
+            ></div>
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
-            <div class="data-slab p-4">
-              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">方向</div>
-              <div class="mt-2 font-semibold text-ink">{{ sessionDirection }}</div>
+          <!-- Compact info grid -->
+          <div class="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+            <div>
+              <span class="text-tertiary">方向</span>
+              <div class="font-semibold text-ink">{{ sessionDirection }}</div>
             </div>
-            <div class="data-slab p-4">
-              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">模式</div>
-              <div class="mt-2 font-semibold text-ink">
+            <div>
+              <span class="text-tertiary">模式</span>
+              <div class="font-semibold text-ink">
                 {{ interviewMode === 'voice' && voiceAvailable ? '语音' : '文字' }}
               </div>
             </div>
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div class="data-slab p-4">
-              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">目标岗位</div>
-              <div class="mt-2 font-semibold text-ink">{{ sessionJobRole || '未设置' }}</div>
+            <div>
+              <span class="text-tertiary">岗位</span>
+              <div class="font-semibold text-ink">{{ sessionJobRole || '未设置' }}</div>
             </div>
-            <div class="data-slab p-4">
-              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">经验阶段</div>
-              <div class="mt-2 font-semibold text-ink">{{ experienceLabel(sessionExperienceLevel) }}</div>
+            <div>
+              <span class="text-tertiary">经验</span>
+              <div class="font-semibold text-ink">{{ experienceLabel(sessionExperienceLevel) }}</div>
             </div>
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div class="data-slab p-4">
-              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">技术范围</div>
-              <div class="mt-2 text-sm font-semibold leading-6 text-ink">
-                {{ sessionTechStack || '通用方向题' }}
+            <div>
+              <span class="text-tertiary">技术</span>
+              <div class="font-semibold text-ink">{{ sessionTechStack || '通用' }}</div>
+            </div>
+            <div>
+              <span class="text-tertiary">配置</span>
+              <div class="font-semibold text-ink">
+                {{ sessionDurationMinutes }}分钟/{{ currentQuestion?.questionCount ?? questionCount }}题
               </div>
             </div>
-            <div class="data-slab p-4">
-              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">面试配置</div>
-              <div class="mt-2 space-y-1 text-sm font-semibold text-ink">
-                <div>{{ sessionDurationMinutes }} 分钟 / {{ currentQuestion?.questionCount ?? questionCount }} 题</div>
-                <div>{{ sessionIncludeResumeProject ? '结合项目追问' : '纯知识与表达训练' }}</div>
-              </div>
-            </div>
-          </div>
-          <div v-if="activeContextSummary" class="data-slab p-4">
-            <div class="text-xs uppercase tracking-[0.22em] text-tertiary">{{ activeContextSource?.label || '上下文' }}</div>
-            <p class="mt-2 text-sm leading-6 text-secondary">{{ activeContextSummary }}</p>
           </div>
 
+          <div v-if="activeContextSummary" class="mt-1 text-xs text-secondary">
+            <span class="font-semibold text-tertiary">{{ activeContextSource?.label || '上下文' }}：</span
+            >{{ activeContextSummary }}
+          </div>
         </div>
       </aside>
 
@@ -311,66 +274,58 @@
         <div v-if="false"></div>
 
         <div v-else-if="phase === 'answering'" class="flex flex-1 flex-col">
-          <div class="question-stage question-stage-answering">
-            <article class="question-spotlight question-spotlight-compact">
-              <div class="question-spotlight__topline">
-                <div class="question-spotlight__main">
-                  <div class="question-spotlight__meta">
-                    <span class="hard-chip">当前问题</span>
-                    <span class="question-spotlight__index">
-                      Q{{ currentQuestion?.currentIndex ?? 0 }} / {{ currentQuestion?.questionCount ?? 0 }}
-                    </span>
-                    <span v-if="currentQuestion?.contextSource?.label" class="detail-pill">
-                      {{ currentQuestion.contextSource.label }}
-                    </span>
-                  </div>
-                  <h4 class="question-spotlight__title">
-                    {{ currentQuestion?.questionTitle ?? '加载中...' }}
-                  </h4>
-                </div>
-
-                <div class="question-spotlight__timer">
-                  <span class="question-spotlight__timer-label">
-                    {{ interviewMode === 'voice' && voiceAvailable ? '语音作答' : '当前作答' }}
+          <article class="question-spotlight question-spotlight-compact">
+            <div class="question-spotlight__topline">
+              <div class="question-spotlight__main">
+                <div class="question-spotlight__meta">
+                  <span class="hard-chip">当前问题</span>
+                  <span class="question-spotlight__index">
+                    Q{{ currentQuestion?.currentIndex ?? 0 }} / {{ currentQuestion?.questionCount ?? 0 }}
                   </span>
-                  <span
-                    class="question-spotlight__timer-value"
-                    :class="countdownUrgent ? 'text-coral' : 'text-accent'"
-                  >
-                    {{ formatCountdown(countdown) }}
+                  <span v-if="currentQuestion?.contextSource?.label" class="detail-pill">
+                    {{ currentQuestion.contextSource.label }}
                   </span>
                 </div>
+                <h4 class="question-spotlight__title">
+                  {{ currentQuestion?.questionTitle ?? '加载中...' }}
+                </h4>
               </div>
-
-              <div class="question-spotlight__progress">
-                <div
-                  class="question-spotlight__progress-bar"
-                  :class="countdownUrgent ? 'bg-coral' : 'bg-accent'"
-                  :style="{ width: `${countdownPercent}%` }"
-                ></div>
+              <div class="question-spotlight__timer">
+                <span class="question-spotlight__timer-label">
+                  {{ interviewMode === 'voice' && voiceAvailable ? '语音作答' : '当前作答' }}
+                </span>
+                <span class="question-spotlight__timer-value" :class="countdownUrgent ? 'text-coral' : 'text-accent'">
+                  {{ formatCountdown(countdown) }}
+                </span>
               </div>
-            </article>
-          </div>
+            </div>
+            <div class="question-spotlight__progress">
+              <div
+                class="question-spotlight__progress-bar"
+                :class="countdownUrgent ? 'bg-coral' : 'bg-accent'"
+                :style="{ width: `${countdownPercent}%` }"
+              ></div>
+            </div>
+          </article>
 
           <template v-if="interviewMode !== 'voice' || !voiceAvailable">
-            <div class="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <span class="text-xs text-tertiary">`Ctrl + Enter` 快速提交</span>
+            <div class="mt-2 flex items-center justify-between">
+              <span class="text-xs text-tertiary">Ctrl + Enter 快速提交</span>
             </div>
             <el-input
               v-model="answerText"
               type="textarea"
-              :rows="12"
-              placeholder="先写结论，再补关键原因和权衡"
-              class="interview-answer-input mt-5 flex-1"
-              size="large"
+              :rows="8"
+              placeholder="先写结论，再补充关键原因和权衡"
+              class="interview-answer-input mt-2 flex-1"
               @keydown.ctrl.enter.prevent="handleSubmitAnswer"
             />
-            <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div class="mt-3">
               <el-button
                 :loading="submitting"
                 type="primary"
                 size="large"
-                class="action-button flex-1"
+                class="action-button w-full"
                 @click="handleSubmitAnswer"
               >
                 提交答案并评分
@@ -379,20 +334,20 @@
           </template>
 
           <template v-else>
-            <div class="mt-5 flex-1">
+            <div class="mt-3 flex-1">
               <VoiceRecorder
                 :disabled="voiceSubmitting"
                 @recorded="handleVoiceRecorded"
                 @cleared="handleVoiceCleared"
               />
             </div>
-            <div class="mt-4 flex gap-3">
+            <div class="mt-3">
               <el-button
                 :loading="voiceSubmitting"
                 :disabled="!voiceAudioBlob"
                 type="primary"
                 size="large"
-                class="action-button flex-1"
+                class="action-button w-full"
                 @click="handleVoiceSubmit"
               >
                 提交语音答案
@@ -402,68 +357,69 @@
         </div>
 
         <div v-else-if="phase === 'scoring'" class="flex flex-1 items-center justify-center">
-          <div class="w-full max-w-md text-center">
-            <div class="scoring-scan mx-auto flex h-40 w-40 items-center justify-center rounded-full">
-              <div class="h-12 w-12 animate-spin rounded-full border-4 border-accent border-t-transparent"></div>
+          <div class="w-full max-w-sm text-center">
+            <div class="scoring-scan mx-auto flex h-28 w-28 items-center justify-center rounded-full">
+              <div class="h-10 w-10 animate-spin rounded-full border-4 border-accent border-t-transparent"></div>
             </div>
-            <h4 class="mt-8 font-display text-4xl font-semibold leading-none text-ink">正在评分</h4>
+            <h4 class="mt-5 font-display text-3xl font-semibold leading-none text-ink">正在评分</h4>
           </div>
         </div>
 
-        <div v-else-if="phase === 'result'" class="space-y-4">
-          <div v-if="voiceTranscript" class="data-slab p-4">
+        <div v-else-if="phase === 'result'" class="space-y-3">
+          <div v-if="voiceTranscript" class="py-2">
             <div class="flex items-center justify-between">
-              <div class="text-xs uppercase tracking-[0.24em] text-tertiary">语音转录</div>
-              <div v-if="lastVoiceResult?.transcriptConfidence" class="font-mono text-xs text-tertiary">
+              <span class="text-xs uppercase tracking-[0.24em] text-tertiary">语音转录</span>
+              <span v-if="lastVoiceResult?.transcriptConfidence" class="font-mono text-xs text-tertiary">
                 {{ Math.round(lastVoiceResult.transcriptConfidence * 100) }}%
+              </span>
+            </div>
+            <p class="mt-1 text-sm leading-6 text-primary">{{ voiceTranscript }}</p>
+          </div>
+          <div v-if="voiceTranscript" class="flat-field-divider"></div>
+
+          <div class="score-card p-4" :class="(lastResult?.score ?? 0) >= 60 ? 'score-card-pass' : 'score-card-risk'">
+            <div class="flex items-center gap-4">
+              <div class="font-mono text-5xl font-semibold tracking-[-0.04em] text-white">{{ animatedScore }}</div>
+              <div class="min-w-0 flex-1">
+                <div class="text-xs uppercase tracking-[0.24em] text-white/65">智能评分</div>
+                <p class="mt-1 text-sm leading-6 text-white/82 line-clamp-2">{{ lastResult?.comment }}</p>
               </div>
             </div>
-            <p class="mt-2 text-sm leading-6 text-primary">{{ voiceTranscript }}</p>
           </div>
 
-          <div class="score-card p-6" :class="(lastResult?.score ?? 0) >= 60 ? 'score-card-pass' : 'score-card-risk'">
-            <div class="text-xs uppercase tracking-[0.24em] text-white/65">智能评分</div>
-            <div class="mt-3 font-mono text-6xl font-semibold tracking-[-0.04em] text-white">{{ animatedScore }}</div>
-            <p class="mt-4 text-sm leading-7 text-white/82">{{ lastResult?.comment }}</p>
+          <div v-if="lastResult?.scoreBreakdown?.length" class="flex gap-3">
+            <div v-for="item in lastResult.scoreBreakdown" :key="`${item.dimension}-${item.score}`" class="flex-1">
+              <div class="flex items-center justify-between">
+                <span class="text-xs uppercase tracking-[0.22em] text-tertiary">{{ item.dimension }}</span>
+                <span class="font-mono text-xl font-semibold tracking-[-0.03em] text-ink">{{ item.score }}</span>
+              </div>
+              <p class="mt-0.5 text-xs leading-4 text-secondary line-clamp-1">{{ item.summary }}</p>
+            </div>
           </div>
 
-          <div v-if="lastResult?.scoreBreakdown?.length" class="grid gap-3 md:grid-cols-3">
-            <div
-              v-for="item in lastResult.scoreBreakdown"
-              :key="`${item.dimension}-${item.score}`"
-              class="data-slab p-4"
+          <div class="flat-field-divider"></div>
+
+          <div v-if="lastResult?.weakPointTags?.length" class="flex flex-wrap items-center gap-2">
+            <span class="text-xs text-tertiary">薄弱点</span>
+            <span
+              v-for="tag in lastResult.weakPointTags"
+              :key="tag"
+              class="rounded-full bg-coral/10 px-2.5 py-0.5 text-xs font-semibold text-coral"
             >
-              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">{{ item.dimension }}</div>
-              <div class="mt-2 font-mono text-3xl font-semibold tracking-[-0.03em] text-ink">
-                {{ item.score }}
-              </div>
-              <p class="mt-2 text-sm leading-6 text-secondary">{{ item.summary }}</p>
-            </div>
+              {{ tag }}
+            </span>
           </div>
 
-          <div v-if="lastResult?.weakPointTags?.length || lastResult?.reviewSummary" class="grid gap-3 md:grid-cols-2">
-            <div v-if="lastResult?.weakPointTags?.length" class="data-slab p-4">
-              <div class="text-xs uppercase tracking-[0.24em] text-tertiary">薄弱点标签</div>
-              <div class="mt-3 flex flex-wrap gap-2">
-                <span
-                  v-for="tag in lastResult.weakPointTags"
-                  :key="tag"
-                  class="rounded-full bg-coral/10 px-3 py-1 text-xs font-semibold text-coral"
-                >
-                  {{ tag }}
-                </span>
-              </div>
-            </div>
-            <div v-if="lastResult?.reviewSummary" class="data-slab p-4">
-              <div class="text-xs uppercase tracking-[0.24em] text-tertiary">复盘建议</div>
-              <p class="mt-2 text-sm leading-6 text-secondary">{{ lastResult.reviewSummary }}</p>
-            </div>
+          <div v-if="lastResult?.reviewSummary" class="text-xs text-secondary">
+            <span class="font-semibold text-tertiary">复盘：</span>{{ lastResult.reviewSummary }}
           </div>
+
+          <div class="flat-field-divider"></div>
 
           <div class="grid gap-3 md:grid-cols-2">
-            <div class="data-slab p-4">
+            <div>
               <div class="flex items-center justify-between">
-                <div class="font-semibold text-ink">标准答案</div>
+                <span class="text-xs font-semibold text-ink">标准答案</span>
                 <button
                   v-if="lastResult?.standardAnswer"
                   type="button"
@@ -473,13 +429,13 @@
                   朗读
                 </button>
               </div>
-              <p class="mt-2 text-sm leading-6 text-secondary">
+              <p class="mt-1 text-xs leading-5 text-secondary line-clamp-3">
                 {{ lastResult?.standardAnswer || '暂无' }}
               </p>
             </div>
-            <div class="data-slab p-4">
+            <div>
               <div class="flex items-center justify-between">
-                <div class="font-semibold text-ink">追问</div>
+                <span class="text-xs font-semibold text-ink">追问</span>
                 <button
                   v-if="lastResult?.followUp"
                   type="button"
@@ -489,20 +445,15 @@
                   朗读
                 </button>
               </div>
-              <p class="mt-2 text-sm leading-6 text-secondary">
-                {{ lastResult?.followUp || '无' }}
-              </p>
+              <p class="mt-1 text-xs leading-5 text-secondary line-clamp-3">{{ lastResult?.followUp || '无' }}</p>
             </div>
           </div>
 
-          <div
-            v-if="lastResult?.addedToWrongBook"
-            class="rounded-2xl border border-coral/30 bg-coral/10 p-4 text-sm text-secondary"
-          >
-            <span class="font-semibold text-ink">已加入错题本</span>：该题得分低于 60 分，后续会进入间隔复习。
-          </div>
+          <p v-if="lastResult?.addedToWrongBook" class="text-xs text-coral">
+            已加入错题本 — 得分低于 60 分，后续进入间隔复习。
+          </p>
 
-          <div class="flex flex-col gap-3 sm:flex-row">
+          <div class="flex gap-3">
             <el-button
               v-if="lastResult?.hasNextQuestion"
               type="primary"
@@ -518,72 +469,56 @@
           </div>
         </div>
 
-        <div v-else-if="phase === 'finished'" class="space-y-4">
-          <div class="score-card score-card-pass p-6">
-            <div class="text-xs uppercase tracking-[0.24em] text-white/65">总分</div>
-            <div class="mt-3 font-mono text-7xl font-semibold tracking-[-0.05em] text-white">
-              {{ detail?.totalScore ?? '-' }}
-            </div>
-            <p class="mt-4 text-sm text-white/82">
-              共 {{ detail?.questionCount ?? 0 }} 题，方向：{{ detail?.direction }}
-              <span
-                v-if="detail?.mode === 'voice'"
-                class="ml-2 inline-flex items-center rounded-full bg-white/20 px-2 py-0.5 text-xs"
-                >语音面试</span
-              >
-            </p>
-          </div>
-
-          <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <div class="data-slab p-4">
-              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">目标岗位</div>
-              <div class="mt-2 text-sm font-semibold leading-6 text-ink">{{ detail?.jobRole || '未设置' }}</div>
-            </div>
-            <div class="data-slab p-4">
-              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">经验阶段</div>
-              <div class="mt-2 text-sm font-semibold leading-6 text-ink">
-                {{ experienceLabel(detail?.experienceLevel) }}
+        <div v-else-if="phase === 'finished'" class="space-y-3">
+          <div class="score-card p-4" :class="'score-card-pass'">
+            <div class="flex items-center gap-4">
+              <div class="font-mono text-5xl font-semibold tracking-[-0.05em] text-white">
+                {{ detail?.totalScore ?? '-' }}
               </div>
-            </div>
-            <div class="data-slab p-4">
-              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">技术范围</div>
-              <div class="mt-2 text-sm font-semibold leading-6 text-ink">{{ detail?.techStack || '通用方向题' }}</div>
-            </div>
-            <div class="data-slab p-4">
-              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">面试配置</div>
-              <div class="mt-2 space-y-1 text-sm font-semibold text-ink">
-                <div>{{ detail?.durationMinutes || durationMinutes }} 分钟</div>
-                <div>{{ detail?.includeResumeProject ? '结合项目复盘' : '通用问答训练' }}</div>
+              <div class="min-w-0 flex-1">
+                <div class="text-xs uppercase tracking-[0.24em] text-white/65">总分</div>
+                <p class="mt-1 text-sm text-white/82">
+                  共 {{ detail?.questionCount ?? 0 }} 题，方向：{{ detail?.direction }}
+                  <span
+                    v-if="detail?.mode === 'voice'"
+                    class="ml-2 inline-flex items-center rounded-full bg-white/20 px-2 py-0.5 text-xs"
+                    >语音</span
+                  >
+                </p>
               </div>
             </div>
           </div>
 
-          <div v-if="detail?.records?.length" class="space-y-3">
+          <div class="flex flex-wrap gap-2 text-xs">
+            <span class="detail-pill">{{ detail?.jobRole || '未设置岗位' }}</span>
+            <span class="detail-pill">{{ experienceLabel(detail?.experienceLevel) }}</span>
+            <span class="detail-pill">{{ detail?.techStack || '通用' }}</span>
+            <span class="detail-pill">{{ detail?.durationMinutes || durationMinutes }}分钟</span>
+            <span class="detail-pill">{{ detail?.includeResumeProject ? '结合项目' : '通用问答' }}</span>
+          </div>
+
+          <div v-if="detail?.records?.length" class="space-y-1">
             <div
               v-for="(record, index) in detail.records"
               :key="record.questionId"
-              class="data-slab cursor-pointer p-4 transition hover:shadow-md"
+              class="cursor-pointer rounded-xl p-2.5 transition hover:bg-[var(--interactive-hover)]"
               @click="toggleQuestion(record.questionId)"
             >
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0 flex-1">
-                  <div class="text-xs uppercase tracking-[0.22em] text-tertiary">
-                    Q{{ index + 1 }}
-                  </div>
-                  <div class="mt-1 font-semibold text-ink">{{ record.questionTitle }}</div>
-                  <p class="mt-2 text-sm leading-6 text-secondary line-clamp-2">
-                    {{ record.comment || '暂无点评' }}
-                  </p>
+                  <div class="text-xs uppercase tracking-[0.22em] text-tertiary">Q{{ index + 1 }}</div>
+                  <div class="mt-0.5 text-sm font-semibold text-ink">{{ record.questionTitle }}</div>
+                  <p class="mt-1 text-xs leading-5 text-secondary line-clamp-1">{{ record.comment || '暂无点评' }}</p>
                 </div>
                 <div class="flex shrink-0 items-center gap-2">
                   <div
-                    class="font-mono text-3xl font-semibold tracking-[-0.03em]"
+                    class="font-mono text-2xl font-semibold tracking-[-0.03em]"
                     :class="record.score >= 60 ? 'text-accent' : 'text-coral'"
                   >
                     {{ record.score ?? '-' }}
                   </div>
                   <svg
-                    class="h-4 w-4 text-tertiary transition-transform"
+                    class="h-3.5 w-3.5 text-tertiary transition-transform"
                     :class="expandedQuestions.has(record.questionId) ? 'rotate-180' : ''"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -597,64 +532,49 @@
 
               <div
                 v-if="expandedQuestions.has(record.questionId)"
-                class="mt-4 space-y-3 border-t border-[var(--bc-line)] pt-4"
+                class="mt-2 space-y-2 border-t border-[var(--bc-line)] pt-2"
               >
                 <div v-if="record.userAnswer">
-                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">
-                    我的回答
-                  </div>
-                  <p class="mt-1 whitespace-pre-wrap text-sm leading-6 text-primary">
+                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">我的回答</div>
+                  <p class="mt-0.5 whitespace-pre-wrap text-xs leading-5 text-primary line-clamp-3">
                     {{ record.userAnswer }}
                   </p>
                 </div>
                 <div v-if="record.standardAnswer">
-                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">
-                    标准答案
-                  </div>
-                  <p class="mt-1 whitespace-pre-wrap text-sm leading-6 text-primary">
+                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">标准答案</div>
+                  <p class="mt-0.5 whitespace-pre-wrap text-xs leading-5 text-primary line-clamp-3">
                     {{ record.standardAnswer }}
                   </p>
                 </div>
                 <div v-if="record.followUp">
-                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">
-                    追问
-                  </div>
-                  <p class="mt-1 text-sm leading-6 text-primary">{{ record.followUp }}</p>
+                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">追问</div>
+                  <p class="mt-0.5 text-xs leading-5 text-primary">{{ record.followUp }}</p>
                 </div>
-                <div v-if="record.scoreBreakdown?.length" class="grid gap-3 md:grid-cols-3">
+                <div v-if="record.scoreBreakdown?.length" class="flex gap-2">
                   <div
                     v-for="item in record.scoreBreakdown"
                     :key="`${record.questionId}-${item.dimension}`"
-                    class="rounded-2xl bg-[var(--panel-muted)] p-3"
+                    class="flex-1 rounded-xl bg-[var(--panel-muted)] p-2"
                   >
-                    <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">
-                      {{ item.dimension }}
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs text-tertiary">{{ item.dimension }}</span>
+                      <span class="font-mono text-lg font-semibold text-ink">{{ item.score }}</span>
                     </div>
-                    <div class="mt-2 font-mono text-2xl font-semibold tracking-[-0.03em] text-ink">
-                      {{ item.score }}
-                    </div>
-                    <p class="mt-2 text-sm leading-6 text-secondary">{{ item.summary }}</p>
+                    <p class="mt-0.5 text-xs leading-4 text-secondary line-clamp-1">{{ item.summary }}</p>
                   </div>
                 </div>
-                <div v-if="record.weakPointTags?.length">
-                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">
-                    薄弱点标签
-                  </div>
-                  <div class="mt-2 flex flex-wrap gap-2">
-                    <span
-                      v-for="tag in record.weakPointTags"
-                      :key="`${record.questionId}-${tag}`"
-                      class="rounded-full bg-coral/10 px-3 py-1 text-xs font-semibold text-coral"
-                    >
-                      {{ tag }}
-                    </span>
-                  </div>
+                <div v-if="record.weakPointTags?.length" class="flex flex-wrap gap-1.5">
+                  <span
+                    v-for="tag in record.weakPointTags"
+                    :key="`${record.questionId}-${tag}`"
+                    class="rounded-full bg-coral/10 px-2 py-0.5 text-xs font-semibold text-coral"
+                  >
+                    {{ tag }}
+                  </span>
                 </div>
                 <div v-if="record.reviewSummary">
-                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">
-                    复盘摘要
-                  </div>
-                  <p class="mt-1 whitespace-pre-wrap text-sm leading-6 text-primary">
+                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">复盘</div>
+                  <p class="mt-0.5 whitespace-pre-wrap text-xs leading-5 text-primary line-clamp-2">
                     {{ record.reviewSummary }}
                   </p>
                 </div>
@@ -662,10 +582,10 @@
             </div>
           </div>
 
-          <div class="flex flex-col gap-3 lg:flex-row">
-            <RouterLink to="/wrong" class="hard-button-secondary flex-1 text-center"> 查看错题本 </RouterLink>
-            <RouterLink to="/review" class="hard-button-secondary flex-1 text-center"> 去复习 </RouterLink>
-            <el-button type="primary" size="large" class="action-button flex-1" @click="handleNewInterview">
+          <div class="flex gap-2">
+            <RouterLink to="/wrong" class="hard-button-secondary flex-1 text-center text-sm">错题本</RouterLink>
+            <RouterLink to="/review" class="hard-button-secondary flex-1 text-center text-sm">去复习</RouterLink>
+            <el-button type="primary" size="default" class="action-button flex-1" @click="handleNewInterview">
               再来一场
             </el-button>
           </div>
@@ -679,7 +599,6 @@
 import { ElMessage } from 'element-plus'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import AppShellHeader from '@/components/AppShellHeader.vue'
 import {
   currentQuestionApi,
   fetchInterviewHistoryApi,
@@ -698,6 +617,7 @@ import type {
   InterviewCurrentQuestion,
   InterviewDetail,
   InterviewHistoryItem,
+  RecommendInterview,
   ResumeProjectItem,
   ResumeSummaryItem,
   VoiceSubmitResult
@@ -751,10 +671,18 @@ const lastResult = ref<InterviewAnswerResult | null>(null)
 const lastVoiceResult = ref<VoiceSubmitResult | null>(null)
 const detail = ref<InterviewDetail | null>(null)
 const expandedQuestions = ref<Set<string>>(new Set())
-const recentInterviews = ref<InterviewHistoryItem[]>([])
-const loadingHistory = ref(false)
+// Full history list
+const allHistoryItems = ref<InterviewHistoryItem[]>([])
+const allHistoryLoading = ref(false)
+const allHistoryPage = ref(1)
+const allHistoryPageSize = ref(10)
+const allHistoryTotal = ref(0)
+const allHistoryTotalPages = ref(0)
+const historyFilterDirection = ref('')
+
 const seededQuestionTitle = ref('')
 const seededQuestionMeta = ref('')
+const recommendedInterview = ref<RecommendInterview | null>(null)
 
 const draftContextSource = computed<ContextSource | null>(() => {
   if (interviewContextPath.value === 'project') {
@@ -771,7 +699,7 @@ const draftContextSource = computed<ContextSource | null>(() => {
         ? `本轮会优先围绕项目「${project.projectName}」出题和追问。`
         : resume
           ? `本轮会优先结合简历《${resume.title}》里的经历和项目出题。`
-          : '先选一份简历，再决定要不要锁定某个项目。'
+          : '选择一份简历，可选锁定某个项目。'
     }
   }
   if (interviewContextPath.value === 'resume') {
@@ -781,7 +709,7 @@ const draftContextSource = computed<ContextSource | null>(() => {
       label: '简历上下文',
       resumeId: selectedResumeId.value || undefined,
       resumeTitle: resume?.title,
-      summary: resume ? `本轮会优先结合简历《${resume.title}》里的经历和项目出题。` : '先选一份简历，再开始这轮面试。'
+      summary: resume ? `本轮会优先结合简历《${resume.title}》里的经历和项目出题。` : '请选择一份简历后再开始面试。'
     }
   }
   return {
@@ -793,9 +721,10 @@ const draftContextSource = computed<ContextSource | null>(() => {
   }
 })
 
-const activeContextSource = computed(() => currentQuestion.value?.contextSource || detail.value?.contextSource || draftContextSource.value)
+const activeContextSource = computed(
+  () => currentQuestion.value?.contextSource || detail.value?.contextSource || draftContextSource.value
+)
 const activeContextSummary = computed(() => activeContextSource.value?.summary || '')
-const draftIncludeResumeProject = computed(() => interviewContextPath.value !== 'general')
 
 const toggleQuestion = (questionId: string) => {
   if (expandedQuestions.value.has(questionId)) {
@@ -814,15 +743,16 @@ const sessionTechStack = computed(() => currentQuestion.value?.techStack || deta
 const sessionDurationMinutes = computed(
   () => currentQuestion.value?.durationMinutes || detail.value?.durationMinutes || durationMinutes.value
 )
-const sessionIncludeResumeProject = computed(
-  () =>
-    currentQuestion.value?.includeResumeProject ??
-    detail.value?.includeResumeProject ??
-    draftIncludeResumeProject.value
-)
 
 const experienceLabel = (value?: string) => {
   return experienceLevels.find((item) => item.value === value)?.label || '未设置'
+}
+
+const difficultyText = (value?: string) => {
+  if (value === 'easy') return '建议先做简单题'
+  if (value === 'hard') return '建议直接做困难题'
+  if (value === 'medium') return '建议做中等题'
+  return ''
 }
 
 const getCountdownSeconds = () => {
@@ -907,11 +837,11 @@ const countdownUrgent = computed(() => countdown.value <= 30)
 
 const handleStart = async (reanswerQuestionId?: number) => {
   if (interviewContextPath.value !== 'general' && !selectedResumeId.value) {
-    ElMessage.warning('先选一份简历，再开始这轮面试')
+    ElMessage.warning('请选择一份简历后再开始面试')
     return
   }
   if (interviewContextPath.value === 'project' && !selectedProjectId.value) {
-    ElMessage.warning('先锁定一个项目，再开始这轮面试')
+    ElMessage.warning('请选择一个项目后再开始面试。')
     return
   }
   starting.value = true
@@ -1044,17 +974,28 @@ const formatRelativeTime = (dateStr?: string) => {
   return new Date(dateStr).toLocaleDateString('zh-CN')
 }
 
-const loadRecentInterviews = async () => {
-  loadingHistory.value = true
+const loadAllHistory = async () => {
+  allHistoryLoading.value = true
   try {
-    const res = await fetchInterviewHistoryApi(undefined, 1, 5)
-    recentInterviews.value = res.data.records
+    const res = await fetchInterviewHistoryApi(
+      historyFilterDirection.value || undefined,
+      allHistoryPage.value,
+      allHistoryPageSize.value
+    )
+    allHistoryItems.value = res.data.records
+    allHistoryTotal.value = res.data.total
+    allHistoryTotalPages.value = res.data.totalPages
   } catch {
     // silent fail
   } finally {
-    loadingHistory.value = false
+    allHistoryLoading.value = false
   }
 }
+
+watch(historyFilterDirection, () => {
+  allHistoryPage.value = 1
+  void loadAllHistory()
+})
 
 const loadResumes = async () => {
   loadingResumes.value = true
@@ -1145,8 +1086,7 @@ const applyQuestionSeedFromRoute = () => {
 }
 
 onMounted(() => {
-  // Load recent interviews for idle state
-  void loadRecentInterviews()
+  void loadAllHistory()
   void loadResumes()
   applyQuestionSeedFromRoute()
 
@@ -1163,7 +1103,8 @@ onMounted(() => {
   void fetchRecommendInterviewApi()
     .then((res) => {
       const rec = res.data
-      if (rec && rec.direction && directions.some((d) => d.name === rec.direction)) {
+      recommendedInterview.value = rec ?? null
+      if (!seededQuestionTitle.value && rec && rec.direction && directions.some((d) => d.name === rec.direction)) {
         direction.value = rec.direction
       }
       if (rec && rec.questionCount) {
@@ -1171,6 +1112,7 @@ onMounted(() => {
       }
     })
     .catch(() => {
+      recommendedInterview.value = null
       // Silently fail — use defaults
     })
 
@@ -1193,92 +1135,126 @@ watch(selectedResumeId, async (resumeId) => {
 </script>
 
 <style scoped>
-.interview-cockpit :deep(.el-textarea__inner) {
-  min-height: 320px !important;
-  font-size: 15px;
-  line-height: 1.75;
-}
-
-.module-topbar {
+.interview-cockpit {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  flex-direction: column;
+  min-height: 0;
 }
 
-.module-topbar__title {
+.interview-setup-bar {
+  background:
+    radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.12), transparent 30%),
+    var(--bc-surface-card);
+}
+
+.interview-history-shell {
+  margin-top: 12px;
+  border: 1px solid var(--bc-border-subtle);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(var(--bc-accent-rgb), 0.03));
+}
+
+.interview-setup-bar__head {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  min-width: 0;
-}
-
-.module-topbar__title-group {
-  min-width: 0;
-}
-
-.module-topbar__title-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  min-width: 0;
   flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-.module-topbar__heading {
-  color: var(--bc-ink);
-  font-size: 1.2rem;
-  font-weight: 700;
-  line-height: 1.2;
+.interview-setup-bar__head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
 }
 
-.module-topbar__summary {
-  margin-top: 0.25rem;
-  color: var(--bc-ink-secondary);
+.interview-setup-bar__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin-top: 14px;
   font-size: 12px;
 }
 
-.module-topbar__center {
-  display: flex;
-  justify-content: center;
-  min-width: 0;
-  flex: 1;
+.interview-mode-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--panel-muted);
 }
 
-.module-topbar__action {
-  display: flex;
-  justify-content: flex-end;
-  flex-wrap: wrap;
+.interview-mode-switch__button {
+  min-height: 38px;
+  border-radius: 999px;
+  padding: 0 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--bc-ink-secondary);
+  transition: background var(--motion-fast) var(--ease-hard), color var(--motion-fast) var(--ease-hard);
 }
 
-.interview-status {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+.interview-mode-switch__button-active {
+  background: rgba(var(--bc-accent-rgb), 0.12);
+  color: var(--bc-ink);
 }
 
-.interview-setup-shell {
+.interview-setup-grid {
   display: grid;
-  gap: 1rem;
+  gap: 14px;
+  margin-top: 18px;
 }
 
-.interview-setup-main,
-.interview-setup-side {
-  min-width: 0;
+.interview-setup-grid__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.interview-cockpit :deep(.el-textarea__inner) {
+  min-height: 180px !important;
+  font-size: 14px;
+  line-height: 1.7;
 }
 
 .interview-session-card {
-  min-height: 420px;
+  min-height: 0;
+  flex: 1;
+}
+
+.flat-field-label {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bc-ink-secondary);
+  margin-bottom: 0.45rem;
+}
+
+.flat-field-divider {
+  height: 1px;
+  background: var(--bc-line);
+  opacity: 0.5;
+  margin: 0.25rem 0;
+}
+
+.flat-field-grid {
+  padding: 0.25rem 0;
 }
 
 .interview-context-chip {
-  min-height: 2.75rem;
-  border-radius: 1rem;
+  min-height: 2.2rem;
+  border-radius: 999px;
   border: 1px solid var(--bc-line);
   background: var(--panel-muted);
   color: var(--bc-ink-secondary);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 600;
+  padding: 0 0.95rem;
   transition:
     border-color var(--motion-fast) var(--ease-hard),
     background var(--motion-fast) var(--ease-hard),
@@ -1291,91 +1267,52 @@ watch(selectedResumeId, async (resumeId) => {
   color: var(--bc-ink);
 }
 
-.interview-history__heading {
-  color: var(--bc-ink);
-  font-size: 1.1rem;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.interview-history-item {
-  cursor: pointer;
-  text-decoration: none;
-}
-
-.interview-history-item__score {
-  background: rgba(var(--bc-accent-rgb), 0.08);
-}
-
-.panel-heading__title {
-  margin-top: 12px;
-  color: var(--bc-ink);
-  font-size: 1.55rem;
-  font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -0.03em;
-}
-
-.panel-heading__meta {
-  margin-top: 12px;
-  color: var(--bc-ink-secondary);
-  font-size: 14px;
-  line-height: 1.75;
-}
-
-.question-stage {
-  display: grid;
-  gap: 16px;
-}
-
-.question-stage-answering {
-  gap: 0;
+.interview-context-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--bc-border-subtle);
 }
 
 .question-spotlight {
   position: relative;
   overflow: hidden;
   border: 1px solid rgba(var(--bc-accent-rgb), 0.14);
-  border-radius: 24px;
-  padding: 22px 22px 20px;
-  background:
-    radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.18), transparent 34%),
-    var(--panel-bg);
+  border-radius: 20px;
+  padding: 16px 18px 14px;
+  background: radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.18), transparent 34%), var(--panel-bg);
   box-shadow: none;
 }
 
 .dark .question-spotlight {
-  background:
-    radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.22), transparent 34%),
-    var(--panel-bg);
-  box-shadow:
-    0 24px 50px rgba(0, 0, 0, 0.26),
-    inset 0 1px 0 rgba(var(--bc-ink-rgb), 0.04);
+  background: radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.22), transparent 34%), var(--panel-bg);
 }
 
 .question-spotlight::after {
   content: '';
   position: absolute;
-  right: -42px;
-  top: -42px;
-  width: 148px;
-  height: 148px;
+  right: -32px;
+  top: -32px;
+  width: 100px;
+  height: 100px;
   border-radius: 999px;
   border: 1px dashed rgba(var(--bc-accent-rgb), 0.26);
-  opacity: 0.8;
+  opacity: 0.6;
 }
 
 .question-spotlight__meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
 }
 
 .question-spotlight__index {
   font-family: theme('fontFamily.mono');
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -1383,34 +1320,26 @@ watch(selectedResumeId, async (resumeId) => {
 }
 
 .question-spotlight__title {
-  margin-top: 18px;
-  max-width: 820px;
+  margin-top: 10px;
+  max-width: 700px;
   font-family: theme('fontFamily.display');
-  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  font-size: clamp(1.2rem, 2.5vw, 1.8rem);
   font-weight: 600;
-  line-height: 1.08;
-  letter-spacing: -0.05em;
+  line-height: 1.15;
+  letter-spacing: -0.04em;
   color: var(--bc-ink);
   text-wrap: balance;
 }
 
-.question-spotlight__hint {
-  margin-top: 18px;
-  max-width: 760px;
-  font-size: 14px;
-  line-height: 1.8;
-  color: var(--bc-ink-secondary);
-}
-
 .question-spotlight-compact {
-  padding: 22px 24px 18px;
+  padding: 16px 18px 12px;
 }
 
 .question-spotlight__topline {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 24px;
+  gap: 16px;
 }
 
 .question-spotlight__main {
@@ -1420,33 +1349,33 @@ watch(selectedResumeId, async (resumeId) => {
 
 .question-spotlight__timer {
   display: flex;
-  min-width: 120px;
+  min-width: 90px;
   flex-direction: column;
   align-items: flex-end;
-  gap: 10px;
+  gap: 4px;
   text-align: right;
 }
 
 .question-spotlight__timer-label {
   color: var(--bc-ink-secondary);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
 .question-spotlight__timer-value {
   font-family: theme('fontFamily.mono');
-  font-size: clamp(2rem, 3vw, 3rem);
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
   font-weight: 700;
   line-height: 1;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.04em;
 }
 
 .question-spotlight__progress {
   overflow: hidden;
-  margin-top: 18px;
-  height: 8px;
+  margin-top: 10px;
+  height: 4px;
   border-radius: 999px;
   background: var(--panel-muted);
 }
@@ -1457,26 +1386,27 @@ watch(selectedResumeId, async (resumeId) => {
   transition: width 500ms ease;
 }
 
-.interview-orbit,
+@media (min-width: 900px) {
+  .interview-setup-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 .scoring-scan {
   position: relative;
   border: 1px solid rgba(var(--bc-accent-rgb), 0.14);
-  background:
-    radial-gradient(circle, rgba(var(--bc-accent-rgb), 0.18), transparent 58%),
-    var(--panel-bg);
+  background: radial-gradient(circle, rgba(var(--bc-accent-rgb), 0.18), transparent 58%), var(--panel-bg);
   box-shadow: none;
 }
 
-.interview-orbit::before,
 .scoring-scan::before {
   content: '';
   position: absolute;
-  inset: 20px;
+  inset: 14px;
   border: 1px dashed rgba(var(--bc-accent-rgb), 0.34);
   border-radius: inherit;
 }
 
-.interview-orbit::after,
 .scoring-scan::after {
   content: '';
   position: absolute;
@@ -1514,57 +1444,25 @@ watch(selectedResumeId, async (resumeId) => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .interview-orbit::after,
   .scoring-scan::after {
     animation: none;
   }
 }
 
 @media (max-width: 768px) {
-  .module-topbar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .module-topbar__title-row {
-    align-items: flex-start;
-  }
-
-  .module-topbar__center,
-  .module-topbar__action {
-    justify-content: flex-start;
-  }
-
-  .question-spotlight {
-    padding: 20px 18px 18px;
-    border-radius: 24px;
+  .interview-history-shell {
+    margin-top: 10px;
   }
 
   .question-spotlight__topline {
     flex-direction: column;
-    gap: 18px;
+    gap: 10px;
   }
 
   .question-spotlight__timer {
     min-width: 0;
     align-items: flex-start;
     text-align: left;
-  }
-
-  .question-spotlight__title {
-    font-size: 1.9rem;
-  }
-}
-
-@media (min-width: 1200px) {
-  .interview-setup-shell {
-    grid-template-columns: minmax(0, 1.05fr) 320px;
-    align-items: start;
-  }
-
-  .interview-setup-side {
-    position: sticky;
-    top: 88px;
   }
 }
 </style>

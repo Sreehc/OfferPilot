@@ -260,6 +260,7 @@ import {
 } from '@/api/plan'
 import { fetchReviewStatsApi } from '@/api/review'
 import type { DashboardOverview, ReviewStats, StudyPlan, StudyPlanTaskItem } from '@/types/api'
+import { storage } from '@/utils/storage'
 
 const directions = ['Spring', 'JVM', 'MySQL', 'Redis', '并发', '微服务']
 const planTracks = [
@@ -298,6 +299,7 @@ const taskFilter = ref<'today' | 'all'>('today')
 const targetRole = ref('Java 后端开发')
 const focusDirection = ref('')
 const techStack = ref('Spring Boot, MySQL, Redis')
+const currentUser = storage.getUser()
 
 const reviewPending = computed(() => reviewStats.value?.todayPending ?? overview.value?.reviewDebtCount ?? 0)
 const topWeakPoint = computed(
@@ -438,6 +440,9 @@ const handleGenerate = async (durationDays: number) => {
     taskFilter.value = 'today'
     syncConfigFromPlan()
     await loadSignals()
+    if (currentUser?.id) {
+      storage.setGuideSeen(currentUser.id)
+    }
     ElMessage.success(`已生成 ${durationDays} 天学习计划`)
   } catch {
     ElMessage.error('生成学习计划失败')

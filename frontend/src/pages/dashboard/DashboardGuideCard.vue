@@ -9,31 +9,26 @@
     ></div>
     <div class="relative flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
       <div class="max-w-3xl">
-        <p class="section-kicker">首次使用</p>
-        <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink sm:text-3xl">先生成第一组卡片</h3>
-        <div class="mt-5 flex flex-wrap gap-3">
-          <RouterLink v-for="action in actions" :key="action.to" :to="action.to" class="hard-button-primary">
-            {{ action.label }}
-          </RouterLink>
-        </div>
+        <p class="section-kicker">{{ eyebrow }}</p>
+        <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink sm:text-3xl">{{ title }}</h3>
+        <p class="mt-3 text-sm leading-7 text-secondary">{{ description }}</p>
+        <p v-if="hint" class="mt-2 text-xs font-semibold uppercase tracking-[0.16em] text-tertiary">{{ hint }}</p>
       </div>
-      <button type="button" class="hard-button-secondary" @click="emit('dismiss')">知道了</button>
+      <RouterLink :to="actionTo" class="hard-button-primary inline-flex min-w-[180px] justify-center">
+        {{ actionLabel }}
+      </RouterLink>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-interface QuickAction {
-  to: string
-  label: string
-}
-
 defineProps<{
-  actions: QuickAction[]
-}>()
-
-const emit = defineEmits<{
-  dismiss: []
+  eyebrow?: string
+  title: string
+  description: string
+  actionLabel: string
+  actionTo: string
+  hint?: string
 }>()
 </script>
 
