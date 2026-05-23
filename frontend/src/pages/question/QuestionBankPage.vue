@@ -5,7 +5,7 @@
         <div class="workspace-head__top">
           <div class="workspace-head__main">
             <h1 class="workspace-title">题库训练</h1>
-            <p class="workspace-summary">先筛到要练的题，先看清题目和答案，再决定继续追问还是开始表达练习。</p>
+            <p class="workspace-summary">先筛到要练的题，先看清题目和答案，再决定继续追问还是去模拟面试练表达。</p>
           </div>
           <div v-if="questions.length" class="question-toolbar__summary text-xs text-tertiary">
             <span>共 <strong class="font-semibold text-ink">{{ total }}</strong> 题</span>
@@ -157,7 +157,7 @@
 
     <el-drawer
       v-model="detailVisible"
-      title="题目准备"
+      title="先看题，再决定下一步"
       size="min(720px, 100%)"
     >
       <template v-if="selectedQuestion">
@@ -181,21 +181,6 @@
               {{ selectedQuestion.applicableScope || '先把核心思路讲清楚，再补来源和扩展资料。' }}
               <span v-if="selectedQuestion.source"> · 来源：{{ selectedQuestion.source }}</span>
             </p>
-
-            <div class="mt-5 flex flex-wrap gap-3">
-              <RouterLink
-                :to="questionChatTarget(selectedQuestion)"
-                class="hard-button-secondary text-sm"
-              >
-                去问答页继续追问
-              </RouterLink>
-              <RouterLink
-                :to="questionInterviewTarget(selectedQuestion)"
-                class="hard-button-primary text-sm"
-              >
-                开始表达练习
-              </RouterLink>
-            </div>
           </section>
 
           <section
@@ -244,6 +229,26 @@
           >
             <span class="question-detail-title">4. 最后对照评分标准</span>
             <p>{{ selectedQuestion.scoreStandard }}</p>
+          </section>
+
+          <section class="question-detail-block question-detail-block-action">
+            <span class="question-detail-title">5. 再选下一步</span>
+            <p>先看清这道题和答案，再决定是去问答继续追问，还是去模拟面试练表达。</p>
+
+            <div class="mt-4 flex flex-col gap-3 sm:flex-row">
+              <RouterLink
+                :to="questionChatTarget(selectedQuestion)"
+                class="hard-button-primary text-sm"
+              >
+                带着这道题去问答
+              </RouterLink>
+              <RouterLink
+                :to="questionInterviewTarget(selectedQuestion)"
+                class="hard-button-secondary text-sm"
+              >
+                带着这道题去模拟面试
+              </RouterLink>
+            </div>
           </section>
         </div>
       </template>
@@ -613,6 +618,11 @@ watch(
 .question-detail-block-danger {
   border-color: color-mix(in srgb, var(--bc-coral) 24%, var(--bc-border-subtle));
   background: color-mix(in srgb, var(--bc-coral) 8%, var(--bc-surface-muted));
+}
+
+.question-detail-block-action {
+  border-color: rgba(var(--bc-accent-rgb), 0.22);
+  background: rgba(var(--bc-accent-rgb), 0.06);
 }
 
 .favorites-toggle {
