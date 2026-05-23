@@ -344,7 +344,7 @@ const handleUpdateStatus = async () => {
     statusForm.note = ''
     ElMessage.success('当前阶段已更新')
   } catch (error: any) {
-    ElMessage.error(error?.message || '状态更新失败')
+    ElMessage.error(error?.message || '当前阶段还没更新成功，请检查填写内容后再试')
   } finally {
     updatingStatus.value = false
   }
@@ -382,7 +382,7 @@ const handleAddEvent = async () => {
     eventForm.feedbackTagsText = ''
     ElMessage.success('反馈已记录')
   } catch (error: any) {
-    ElMessage.error(error?.message || '记录反馈失败')
+    ElMessage.error(error?.message || '这条反馈还没记录成功，请补全信息后再试')
   } finally {
     addingEvent.value = false
   }
@@ -397,7 +397,7 @@ const handleRefreshAnalysis = async () => {
     detail.value = response.data
     ElMessage.success('JD 分析已刷新')
   } catch (error: any) {
-    ElMessage.error(error?.message || '刷新分析失败')
+    ElMessage.error(error?.message || 'JD 分析还没刷新成功，请稍后再试')
   } finally {
     refreshingAnalysis.value = false
   }
