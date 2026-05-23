@@ -9,18 +9,19 @@
         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
-        返回面试历史
+        返回模拟面试
       </button>
     </div>
 
     <section v-if="loading" class="shell-section-card p-8 text-center">
       <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-      <p class="mt-4 text-sm text-secondary">正在加载...</p>
+      <p class="mt-4 text-sm text-secondary">正在加载这次面试记录...</p>
     </section>
 
     <section v-else-if="!detail" class="shell-section-card p-8 text-center">
       <p class="text-lg font-semibold text-ink">面试记录未找到</p>
-      <RouterLink to="/interview/history" class="hard-button-primary mt-4 inline-flex">返回历史</RouterLink>
+      <p class="mt-3 text-sm leading-7 text-secondary">这次记录可能还没生成成功，先回到模拟面试页开始新一轮或检查其他历史记录。</p>
+      <RouterLink to="/interview" class="hard-button-primary mt-4 inline-flex">返回模拟面试</RouterLink>
     </section>
 
     <template v-else>
@@ -36,8 +37,7 @@
               <span>{{ detail.mode === 'voice' ? '语音面试' : '文本面试' }}</span>
               <span>{{ detail.questionCount }} 题</span>
               <span>{{ detail.durationMinutes || 20 }} 分钟</span>
-              <span>{{ detail.includeResumeProject ? '结合项目追问' : '通用知识问答' }}</span>
-              <span>{{ detail.cardsGenerated ? `已生成 ${detail.generatedCardCount || 0} 张复习卡片` : '未生成复习卡片' }}</span>
+              <span>{{ interviewContextLabel(detail.contextSource, detail.includeResumeProject) }}</span>
               <span v-if="detail.startTime">{{ formatTime(detail.startTime) }}</span>
               <span v-if="detail.endTime">~ {{ formatTime(detail.endTime) }}</span>
             </div>
@@ -50,26 +50,8 @@
               </div>
             </div>
             <div class="flex flex-wrap gap-3">
-              <el-button
-                v-if="!detail.cardsGenerated"
-                :loading="generating"
-                size="large"
-                class="hard-button-primary"
-                @click="handleGenerateCards"
-              >
-                生成复习卡片
-              </el-button>
-              <el-button
-                v-else
-                :loading="activating"
-                size="large"
-                class="hard-button-primary"
-                @click="handleActivateCards"
-              >
-                加入今日卡片
-              </el-button>
-              <RouterLink to="/cards" class="hard-button-secondary inline-flex items-center justify-center px-4">
-                查看卡片工作台
+              <RouterLink to="/wrong" class="hard-button-secondary inline-flex items-center justify-center px-4">
+                查看错题本
               </RouterLink>
             </div>
           </div>
@@ -87,7 +69,7 @@
         </article>
         <article class="shell-section-card p-5">
           <div class="text-xs uppercase tracking-[0.22em] text-tertiary">技术范围</div>
-          <div class="mt-2 text-sm font-semibold leading-6 text-ink">{{ detail.techStack || '通用方向题' }}</div>
+          <div class="mt-2 text-sm font-semibold leading-6 text-ink">{{ detail.techStack || '未限定技术范围' }}</div>
         </article>
         <article class="shell-section-card p-5">
           <div class="text-xs uppercase tracking-[0.22em] text-tertiary">面试策略</div>
@@ -200,58 +182,15 @@
           </div>
         </div>
 
-        <div v-if="record.isLowScore" class="mx-6 mb-5 rounded-2xl border border-coral/20 bg-coral/5 p-4">
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-coral">推荐复习卡片</div>
-              <p class="mt-1 text-sm text-secondary">
-                会进入 {{ detail.interviewDeckTitle || '面试诊断卡片' }}。
-              </p>
-            </div>
-            <span
-              class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"
-              :class="record.generatedCardId ? 'generated-status generated-status-ready' : 'generated-status generated-status-pending'"
-            >
-              {{ record.generatedCardId ? '已生成' : '待生成' }}
-            </span>
-          </div>
-          <div class="mt-4 grid gap-3 md:grid-cols-2">
-            <div class="surface-card p-4">
-              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">正面问题</div>
-              <p class="mt-2 text-sm leading-6 text-primary">
-                {{ record.recommendedCardFront || record.questionTitle }}
-              </p>
-            </div>
-            <div class="surface-card p-4">
-              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">背面答案</div>
-              <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-primary">
-                {{ record.recommendedCardBack || '暂无标准答案' }}
-              </p>
-            </div>
-            <div class="surface-card p-4 md:col-span-2">
-              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">解释</div>
-              <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-primary">
-                {{ record.recommendedCardExplanation || '暂无说明' }}
-              </p>
-            </div>
-            <div v-if="record.recommendedCardFollowUp" class="surface-card p-4 md:col-span-2">
-              <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">追问点</div>
-              <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-primary">
-                {{ record.recommendedCardFollowUp }}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div v-else-if="record.followUp" class="border-t border-slate-200/60 px-6 py-4 dark:border-slate-700/60">
+        <div v-if="record.followUp" class="border-t border-slate-200/60 px-6 py-4 dark:border-slate-700/60">
           <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">追问</div>
           <p class="mt-1 text-sm leading-6 text-secondary">{{ record.followUp }}</p>
         </div>
       </section>
 
       <section class="flex gap-3">
-        <RouterLink to="/interview/history" class="hard-button-secondary flex-1 text-center">
-          查看历史
+        <RouterLink to="/interview" class="hard-button-secondary flex-1 text-center">
+          模拟面试
         </RouterLink>
         <RouterLink to="/interview" class="hard-button-primary flex-1 text-center">
           再来一场
@@ -265,7 +204,7 @@
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { activateInterviewCardsApi, generateInterviewCardsApi, interviewDetailApi } from '@/api/interview'
+import { interviewDetailApi } from '@/api/interview'
 import type { InterviewDetail } from '@/types/api'
 
 const route = useRoute()
@@ -273,8 +212,6 @@ const router = useRouter()
 
 const detail = ref<InterviewDetail | null>(null)
 const loading = ref(true)
-const generating = ref(false)
-const activating = ref(false)
 const sortedRecords = computed(() => {
   if (!detail.value?.records) return []
   return [...detail.value.records].sort((a, b) => Number(b.isLowScore) - Number(a.isLowScore))
@@ -306,6 +243,13 @@ const experienceLabel = (value?: string) => {
   }
 }
 
+const interviewContextLabel = (context?: InterviewDetail['contextSource'] | null, includeResumeProject?: boolean) => {
+  if (context?.type === 'project') return '结合项目'
+  if (context?.type === 'resume') return '结合简历'
+  if (includeResumeProject) return '结合项目'
+  return '不带简历'
+}
+
 const sessionId = () => String(route.params.id || '')
 
 const loadData = async () => {
@@ -318,39 +262,9 @@ const loadData = async () => {
     const response = await interviewDetailApi(id)
     detail.value = response.data
   } catch {
-    ElMessage.error('加载面试详情失败')
+    ElMessage.error('这次面试记录暂时没加载出来，请稍后再试')
   } finally {
     loading.value = false
-  }
-}
-
-const handleGenerateCards = async () => {
-  const id = sessionId()
-  if (!id) return
-  generating.value = true
-  try {
-    const response = await generateInterviewCardsApi(id)
-    detail.value = response.data
-    ElMessage.success('已生成面试复习卡片')
-  } catch {
-    ElMessage.error('生成复习卡片失败')
-  } finally {
-    generating.value = false
-  }
-}
-
-const handleActivateCards = async () => {
-  const id = sessionId()
-  if (!id) return
-  activating.value = true
-  try {
-    await activateInterviewCardsApi(id)
-    ElMessage.success('已加入今日卡片')
-    await router.push('/cards')
-  } catch {
-    ElMessage.error('加入今日卡片失败')
-  } finally {
-    activating.value = false
   }
 }
 
@@ -366,19 +280,5 @@ onMounted(() => {
     radial-gradient(circle at 86% 18%, rgba(var(--bc-cyan-rgb), 0.28), transparent 34%),
     linear-gradient(135deg, rgba(var(--bc-accent-rgb), 0.94), rgba(75, 64, 49, 0.96));
   box-shadow: 0 16px 36px rgba(var(--bc-accent-rgb), 0.16);
-}
-
-.generated-status {
-  border: 1px solid var(--bc-border-subtle);
-}
-
-.generated-status-ready {
-  background: rgba(74, 122, 73, 0.12);
-  color: var(--bc-lime);
-}
-
-.generated-status-pending {
-  background: var(--interactive-bg);
-  color: var(--bc-coral);
 }
 </style>
