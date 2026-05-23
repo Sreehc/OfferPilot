@@ -268,6 +268,7 @@ import { fetchCategoriesApi } from '@/api/category'
 import { fetchQuestionsApi } from '@/api/question'
 import { addFavoriteApi, removeFavoriteApi, fetchFavoriteListApi } from '@/api/favorites'
 import type { CategoryItem, QuestionItem } from '@/types/api'
+import { buildQuestionChatTarget, buildQuestionInterviewTarget, questionTagList } from './questionTargets'
 
 const route = useRoute()
 const loading = ref(false)
@@ -377,10 +378,7 @@ const questionTypeLabel = (type?: string) => {
 }
 
 function tagList(tags?: string) {
-  return (tags ?? '')
-    .split(/[,\n]/)
-    .map((item) => item.trim())
-    .filter(Boolean)
+  return questionTagList(tags)
 }
 
 const answerPreview = (answer?: string, max = 180) => {
@@ -395,27 +393,9 @@ const openDetail = (question: QuestionItem) => {
   detailVisible.value = true
 }
 
-const questionChatTarget = (question: QuestionItem) => ({
-  path: '/chat',
-  query: {
-    sourceQuestionId: String(question.id),
-    sourceQuestionTitle: question.title,
-    sourceQuestionCategory: question.categoryName || '',
-    sourceQuestionTag: tagList(question.tags)[0] || '',
-    sourceQuestionDirection: question.jobDirection || ''
-  }
-})
+const questionChatTarget = (question: QuestionItem) => buildQuestionChatTarget(question)
 
-const questionInterviewTarget = (question: QuestionItem) => ({
-  path: '/interview',
-  query: {
-    sourceQuestionId: String(question.id),
-    sourceQuestionTitle: question.title,
-    sourceQuestionCategory: question.categoryName || '',
-    sourceQuestionTag: tagList(question.tags)[0] || '',
-    sourceQuestionDirection: question.jobDirection || ''
-  }
-})
+const questionInterviewTarget = (question: QuestionItem) => buildQuestionInterviewTarget(question)
 
 const applyRouteFilters = () => {
   const categoryId = Number(route.query.categoryId)

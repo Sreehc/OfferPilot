@@ -261,6 +261,7 @@ import {
 import { fetchReviewStatsApi } from '@/api/review'
 import type { DashboardOverview, ReviewStats, StudyPlan, StudyPlanTaskItem } from '@/types/api'
 import { storage } from '@/utils/storage'
+import { getStudyPlanPrimaryActionLabel, getStudyPlanPrimaryActionPath } from './studyPlanActions'
 
 const directions = ['Spring', 'JVM', 'MySQL', 'Redis', '并发', '微服务']
 const planTracks = [
@@ -331,14 +332,10 @@ const planStateLabel = computed(() => {
   return '今日可执行'
 })
 const primaryActionPath = computed(() => {
-  return primaryNextAction.value?.path || (currentPlan.value ? nextTask.value?.actionPath || '/dashboard' : '/study-plan#plan-builder')
+  return getStudyPlanPrimaryActionPath(overview.value, currentPlan.value, nextTask.value)
 })
 const primaryActionLabel = computed(() => {
-  if (primaryNextAction.value?.title) return primaryNextAction.value.title
-  if (!currentPlan.value) return '开始生成计划'
-  if (currentPlan.value.todayFocusSummary?.state === 'completed') return '查看进度走势'
-  if (!nextTask.value) return '继续今天的训练'
-  return `先做 ${moduleLabel(nextTask.value.module)}`
+  return getStudyPlanPrimaryActionLabel(overview.value, currentPlan.value, nextTask.value, moduleLabel)
 })
 
 const displayedTasks = computed(() => {

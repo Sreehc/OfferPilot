@@ -305,6 +305,7 @@ import {
 import { addFavoriteApi, removeFavoriteApi, fetchFavoriteListApi } from '@/api/favorites'
 import { EMPTY_STATE_COPY, KNOWLEDGE_STATUS_NAMES } from '@/constants/productCopy'
 import type { CategoryItem, KnowledgeDocItem } from '@/types/api'
+import { buildKnowledgeChatTarget, canAskWithKnowledgeDocument } from './knowledgeTargets'
 
 const categories = ref<CategoryItem[]>([])
 const docs = ref<KnowledgeDocItem[]>([])
@@ -524,7 +525,7 @@ const availabilityHint = (doc: KnowledgeDocItem) => {
   return '索引完成后，这份资料就能继续提问。'
 }
 
-const canAskWithDocument = (doc: KnowledgeDocItem) => doc.status === 'indexed' && doc.indexStatus === 'indexed'
+const canAskWithDocument = (doc: KnowledgeDocItem) => canAskWithKnowledgeDocument(doc)
 
 const unavailableActionHint = (doc: KnowledgeDocItem) => {
   if (doc.parseStatus === 'failed' || doc.indexStatus === 'failed') return '修复后再提问'
@@ -532,14 +533,7 @@ const unavailableActionHint = (doc: KnowledgeDocItem) => {
   return '索引完成后可提问'
 }
 
-const knowledgeChatTarget = (doc: KnowledgeDocItem) => ({
-  path: '/chat',
-  query: {
-    knowledgeScope: doc.libraryScope === 'system' ? 'system' : 'personal',
-    sourceDocId: String(doc.id),
-    sourceDocTitle: doc.title
-  }
-})
+const knowledgeChatTarget = (doc: KnowledgeDocItem) => buildKnowledgeChatTarget(doc)
 
 const docType = (fileUrl?: string): 'pdf' | 'text' => {
   if (!fileUrl) return 'text'
