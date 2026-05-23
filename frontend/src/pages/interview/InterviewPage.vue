@@ -91,7 +91,7 @@
               :class="{ 'interview-context-chip-active': interviewContextPath === 'general' }"
               @click="applyInterviewContextPath('general')"
             >
-              通用
+              不带简历
             </button>
             <button
               type="button"
@@ -99,7 +99,7 @@
               :class="{ 'interview-context-chip-active': interviewContextPath === 'resume' }"
               @click="applyInterviewContextPath('resume')"
             >
-              基于简历
+              结合简历
             </button>
             <button
               type="button"
@@ -107,7 +107,7 @@
               :class="{ 'interview-context-chip-active': interviewContextPath === 'project' }"
               @click="applyInterviewContextPath('project')"
             >
-              基于项目
+              结合项目
             </button>
             <template v-if="interviewContextPath !== 'general'">
               <el-select
@@ -253,7 +253,7 @@
             </div>
             <div>
               <span class="text-tertiary">技术</span>
-              <div class="font-semibold text-ink">{{ sessionTechStack || '通用' }}</div>
+              <div class="font-semibold text-ink">{{ sessionTechStack || '未限定' }}</div>
             </div>
             <div>
               <span class="text-tertiary">配置</span>
@@ -492,9 +492,9 @@
           <div class="flex flex-wrap gap-2 text-xs">
             <span class="detail-pill">{{ detail?.jobRole || '未设置岗位' }}</span>
             <span class="detail-pill">{{ experienceLabel(detail?.experienceLevel) }}</span>
-            <span class="detail-pill">{{ detail?.techStack || '通用' }}</span>
+            <span class="detail-pill">{{ detail?.techStack || '未限定' }}</span>
             <span class="detail-pill">{{ detail?.durationMinutes || durationMinutes }}分钟</span>
-            <span class="detail-pill">{{ detail?.includeResumeProject ? '结合项目' : '通用问答' }}</span>
+            <span class="detail-pill">{{ interviewContextLabel(detail?.contextSource, detail?.includeResumeProject) }}</span>
           </div>
 
           <div v-if="detail?.records?.length" class="space-y-1">
@@ -714,10 +714,10 @@ const draftContextSource = computed<ContextSource | null>(() => {
   }
   return {
     type: 'general',
-    label: '通用模拟',
+    label: '不带简历',
     summary: seededQuestionTitle.value
       ? `本轮会优先围绕题目「${seededQuestionTitle.value}」练表达${seededQuestionMeta.value ? `，重点参考${seededQuestionMeta.value}` : ''}。`
-      : '本轮以通用方向题为主，不绑定特定简历或项目。'
+      : '本轮以当前方向题为主，不绑定简历或项目经历。'
   }
 })
 
@@ -753,6 +753,13 @@ const difficultyText = (value?: string) => {
   if (value === 'hard') return '建议直接做困难题'
   if (value === 'medium') return '建议做中等题'
   return ''
+}
+
+const interviewContextLabel = (context?: ContextSource | null, includeResumeProject?: boolean) => {
+  if (context?.type === 'project') return '结合项目'
+  if (context?.type === 'resume') return '结合简历'
+  if (includeResumeProject) return '结合项目'
+  return '不带简历'
 }
 
 const getCountdownSeconds = () => {

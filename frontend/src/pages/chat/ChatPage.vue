@@ -71,7 +71,7 @@
                   <span class="session-pill__title">{{ session.title || '未命名会话' }}</span>
                   <div class="session-pill__meta">
                     <span class="session-mode-tag" :class="session.mode === 'rag' ? 'tag-rag' : 'tag-chat'">
-                      {{ session.mode === 'rag' ? '基于资料回答' : '自由提问' }}
+                      {{ sessionModeLabel(session) }}
                     </span>
                     <span>{{ formatSessionTime(session.lastMessageTime || session.updateTime) }}</span>
                   </div>
@@ -404,7 +404,7 @@
             <span class="session-pill__title">{{ session.title || '未命名会话' }}</span>
             <div class="session-pill__meta">
               <span class="session-mode-tag" :class="session.mode === 'rag' ? 'tag-rag' : 'tag-chat'">
-                {{ session.mode === 'rag' ? '基于资料回答' : '自由提问' }}
+                {{ sessionModeLabel(session) }}
               </span>
               <span>{{ formatSessionTime(session.lastMessageTime || session.updateTime) }}</span>
             </div>
@@ -542,8 +542,8 @@ const seededQuestionSummary = ref('')
 
 const sessionFilters: Array<{ label: string; value: SessionFilterValue }> = [
   { label: '全部', value: 'all' },
-  { label: '资料问答', value: 'rag' },
-  { label: '自由提问', value: 'chat' }
+  { label: '带资料提问', value: 'rag' },
+  { label: '直接提问', value: 'chat' }
 ]
 
 const knowledgeScopes: Array<{ label: string; value: ChatKnowledgeScope }> = [
@@ -615,7 +615,7 @@ const draftContextSource = computed<ContextSource | null>(() => {
   }
   return {
     type: 'general',
-    label: '自由提问',
+    label: '直接提问',
     summary: seededQuestionSummary.value || '当前不会绑定资料、简历或项目，适合直接追问原理、场景和表达。'
   }
 })
@@ -685,6 +685,12 @@ const confidenceLabel = (score?: number) => {
 const chatPathLabel = (value: 'general' | 'knowledge' | 'project') => {
   if (value === 'project') return '结合简历提问'
   if (value === 'knowledge') return '带资料提问'
+  return '直接提问'
+}
+
+const sessionModeLabel = (session: ChatSessionItem) => {
+  if (session.contextType === 'project' || session.contextType === 'resume') return '结合简历提问'
+  if (session.mode === 'rag') return '带资料提问'
   return '直接提问'
 }
 
