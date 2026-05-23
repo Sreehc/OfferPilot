@@ -117,7 +117,7 @@
           </article>
         </div>
         <div v-else class="px-5 py-12 text-center text-sm text-slate-500">
-          暂无题目，先新增一条或导入题库。
+          当前还没有题目，先新增一条或导入题库。
         </div>
       </section>
 

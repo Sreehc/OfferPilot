@@ -23,7 +23,7 @@
 
         <div v-if="trend.length" ref="chartRef" class="chart-shell mt-5 h-[320px] w-full"></div>
         <div v-else class="mt-5 flex h-[320px] items-center justify-center text-sm text-secondary">
-          暂无趋势数据
+          当前还没有趋势数据，先积累一段时间的用户变化后再回来查看。
         </div>
       </section>
 

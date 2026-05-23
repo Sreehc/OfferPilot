@@ -140,7 +140,7 @@ const verificationMessage = ref('')
 const verificationHint = ref('')
 const avatarPreview = computed(() => authStore.user?.avatar || '')
 const avatarInitial = computed(() => (authStore.user?.nickname || authStore.user?.username || 'U').slice(0, 1).toUpperCase())
-const emailStatusTitle = computed(() => (authStore.user?.emailVerified ? '邮箱已验证' : authStore.user?.email ? '邮箱待验证' : '尚未填写邮箱'))
+const emailStatusTitle = computed(() => (authStore.user?.emailVerified ? '邮箱已验证' : authStore.user?.email ? '邮箱待验证' : '当前未填写邮箱'))
 const emailStatusDescription = computed(() => {
   if (!authStore.user?.email) {
     return '先补一个常用邮箱，后面找回密码和接收验证码都会更方便。'

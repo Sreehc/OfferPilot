@@ -488,6 +488,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
 import { deleteChatSessionApi, fetchChatMessagesApi, fetchChatSessionsApi } from '@/api/chat'
+import { ERROR_COPY } from '@/constants/productCopy'
 import { fetchResumeDetailApi, fetchResumeListApi } from '@/api/resume'
 import type {
   ChatKnowledgeScope,
@@ -988,7 +989,7 @@ const removeSession = async (sessionId: number) => {
   }
 }
 
-const pushErrorMessage = (content = '这次回答还没生成成功，请换个问法或稍后再试。') => {
+const pushErrorMessage = (content: string = ERROR_COPY.chatAnswerFailed) => {
   messages.value.push({
     id: Date.now() + 2,
     role: 'assistant',

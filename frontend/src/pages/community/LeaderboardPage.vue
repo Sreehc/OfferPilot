@@ -58,8 +58,8 @@
         v-else
         class="empty-state-card mt-6"
         icon="trophy"
-        title="暂无排名数据"
-        description="参与社区后查看排名。"
+        :title="EMPTY_STATE_COPY.leaderboard.title"
+        :description="EMPTY_STATE_COPY.leaderboard.description"
         compact
       />
     </section>
@@ -70,6 +70,7 @@
 import { computed, onMounted, ref } from 'vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchLeaderboardApi } from '@/api/community'
+import { EMPTY_STATE_COPY } from '@/constants/productCopy'
 import type { LeaderboardEntry } from '@/types/api'
 
 const leaderboard = ref<LeaderboardEntry[]>([])

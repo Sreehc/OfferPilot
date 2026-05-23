@@ -66,11 +66,11 @@
             <EmptyState
               class="empty-state-card"
               icon="document"
-              :title="activeTab === 'my' ? '上传你的第一份学习资料' : '当前还没有可用推荐资料'"
+              :title="activeTab === 'my' ? EMPTY_STATE_COPY.knowledgePersonal.title : EMPTY_STATE_COPY.knowledgeRecommended.title"
               :description="
                 activeTab === 'my'
-                  ? '上传一份资料，处理完成后就能直接提问。'
-                  : '先切到“我的文档”上传一份资料，或调整筛选范围继续找能直接提问的内容。'
+                  ? EMPTY_STATE_COPY.knowledgePersonal.description
+                  : EMPTY_STATE_COPY.knowledgeRecommended.description
               "
             />
           </div>
@@ -265,7 +265,7 @@
               </el-select>
               <el-select v-model="filters.status" clearable placeholder="资料状态" size="large">
                 <el-option label="处理中" value="draft" />
-                <el-option label="即将就绪" value="parsed" />
+                <el-option label="待提问" value="parsed" />
                 <el-option label="可以提问" value="indexed" />
               </el-select>
               <el-input v-model="filters.keyword" clearable placeholder="搜索标题或摘要" size="large" />
@@ -303,6 +303,7 @@ import {
   uploadKnowledgeDocApi
 } from '@/api/knowledge'
 import { addFavoriteApi, removeFavoriteApi, fetchFavoriteListApi } from '@/api/favorites'
+import { EMPTY_STATE_COPY, KNOWLEDGE_STATUS_NAMES } from '@/constants/productCopy'
 import type { CategoryItem, KnowledgeDocItem } from '@/types/api'
 
 const categories = ref<CategoryItem[]>([])
@@ -408,7 +409,7 @@ const handleUpload = async (options: { file: File }) => {
   uploading.value = true
   try {
     await uploadKnowledgeDocApi(options.file, filters.categoryId)
-    ElMessage.success('文档已上传，处理完成后就可以直接提问了')
+    ElMessage.success('文档已上传，处理完成后就可以继续提问了')
     activeTab.value = 'my'
     currentPage.value = 1
     await loadDocs()
@@ -453,7 +454,7 @@ const resetFilters = () => {
 }
 
 const statusLabel = (status: KnowledgeDocItem['status']) => {
-  const map: Record<KnowledgeDocItem['status'], string> = { draft: '处理中', parsed: '即将就绪', indexed: '可以提问' }
+  const map: Record<KnowledgeDocItem['status'], string> = KNOWLEDGE_STATUS_NAMES
   return map[status]
 }
 
@@ -512,7 +513,7 @@ const availabilityLabel = (doc: KnowledgeDocItem) => {
   if (doc.status === 'indexed') return '可以提问'
   if (doc.parseStatus === 'failed' || doc.indexStatus === 'failed') return '这份资料处理失败'
   if (doc.parseStatus !== 'parsed') return '这份资料还在处理中'
-  return '即将可以提问'
+  return '这份资料待提问'
 }
 
 const availabilityHint = (doc: KnowledgeDocItem) => {
