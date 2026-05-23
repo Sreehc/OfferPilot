@@ -5,7 +5,7 @@
         <div class="workspace-head__top">
           <div class="workspace-head__main">
             <h1 class="workspace-title">题库训练</h1>
-            <p class="workspace-summary">先筛到要练的题，先看清题目和答案，再决定继续追问还是去模拟面试练表达。</p>
+            <p class="workspace-summary">先筛到要练的题，先看清题目和答案，再决定下一步是继续追问，还是去模拟面试练表达。</p>
           </div>
           <div v-if="questions.length" class="question-toolbar__summary text-xs text-tertiary">
             <span>共 <strong class="font-semibold text-ink">{{ total }}</strong> 题</span>
@@ -195,7 +195,7 @@
           </section>
 
           <section class="question-detail-block">
-            <span class="question-detail-title">1. 先看标准答案</span>
+            <span class="question-detail-title">先看标准答案</span>
             <p>{{ selectedQuestion.standardAnswer || '这道题的标准答案还没补齐，先根据题干组织一版自己的回答，再继续追问。' }}</p>
           </section>
 
@@ -203,7 +203,7 @@
             v-if="selectedQuestion.interviewAnswer"
             class="question-detail-block"
           >
-            <span class="question-detail-title">2. 再看表达示例</span>
+            <span class="question-detail-title">再看表达示例</span>
             <p>{{ selectedQuestion.interviewAnswer }}</p>
           </section>
 
@@ -211,7 +211,7 @@
             v-if="selectedQuestion.followUpSuggestions"
             class="question-detail-block"
           >
-            <span class="question-detail-title">3. 再决定怎么继续追问</span>
+            <span class="question-detail-title">再决定怎么继续追问</span>
             <p>{{ selectedQuestion.followUpSuggestions }}</p>
           </section>
 
@@ -227,27 +227,30 @@
             v-if="selectedQuestion.scoreStandard"
             class="question-detail-block"
           >
-            <span class="question-detail-title">4. 最后对照评分标准</span>
+            <span class="question-detail-title">最后对照评分标准</span>
             <p>{{ selectedQuestion.scoreStandard }}</p>
           </section>
 
           <section class="question-detail-block question-detail-block-action">
-            <span class="question-detail-title">5. 再选下一步</span>
-            <p>先看清这道题和答案，再决定是去问答继续追问，还是去模拟面试练表达。</p>
+            <span class="question-detail-title">再选下一步</span>
+            <p>先把这道题看明白，再决定接下来是继续追问细节，还是切去模拟面试练完整表达。</p>
 
-            <div class="mt-4 flex flex-col gap-3 sm:flex-row">
+            <div class="question-next-step mt-4">
               <RouterLink
                 :to="questionChatTarget(selectedQuestion)"
                 class="hard-button-primary text-sm"
               >
-                带着这道题去问答
+                去问答继续追问
               </RouterLink>
-              <RouterLink
-                :to="questionInterviewTarget(selectedQuestion)"
-                class="hard-button-secondary text-sm"
-              >
-                带着这道题去模拟面试
-              </RouterLink>
+              <div class="question-next-step__secondary">
+                <span class="question-next-step__hint">想练完整表达时，再切去模拟面试。</span>
+                <RouterLink
+                  :to="questionInterviewTarget(selectedQuestion)"
+                  class="hard-button-secondary text-sm"
+                >
+                  去模拟面试练表达
+                </RouterLink>
+              </div>
             </div>
           </section>
         </div>
@@ -382,7 +385,7 @@ function tagList(tags?: string) {
 
 const answerPreview = (answer?: string, max = 180) => {
   if (!answer?.trim()) {
-    return '这道题的标准答案还没补齐，可以先进入模拟面试或问答页继续扩展。'
+    return '这道题的标准答案还没补齐，先根据题干整理一版自己的回答。'
   }
   return answer.length > max ? `${answer.slice(0, max)}...` : answer
 }
@@ -623,6 +626,23 @@ watch(
 .question-detail-block-action {
   border-color: rgba(var(--bc-accent-rgb), 0.22);
   background: rgba(var(--bc-accent-rgb), 0.06);
+}
+
+.question-next-step {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.question-next-step__secondary {
+  display: grid;
+  gap: 0.65rem;
+  align-items: start;
+}
+
+.question-next-step__hint {
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--bc-ink-secondary);
 }
 
 .favorites-toggle {

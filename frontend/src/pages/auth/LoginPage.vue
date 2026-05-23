@@ -33,22 +33,22 @@
           </p>
         </div>
 
-        <div class="mt-6 max-w-xl">
+        <div class="mt-4 max-w-md">
           <p class="auth-support-title">
             登录后直接继续训练
           </p>
-          <p class="mt-4 text-sm leading-7 text-secondary">
+          <p class="mt-3 text-sm leading-7 text-secondary">
             题库、问答、模拟面试和投递进展都会跟着当前账号保留。
           </p>
         </div>
 
-        <div class="auth-trust-grid">
+        <div class="auth-trust-grid auth-trust-grid-compact">
           <div class="auth-feature-card">
             <p class="auth-feature-card__title">
-              训练记录会保留
+              登录后直接回到当前进度
             </p>
             <p class="auth-feature-card__desc">
-              登录后可以直接回到上次做到一半的训练，也能通过邮箱重置密码。
+              账号会继续保留训练记录，忘记密码时也能走邮箱重置。
             </p>
           </div>
         </div>
@@ -476,6 +476,10 @@ onMounted(() => {
 .auth-trust-grid {
   display: grid;
   gap: 0.85rem;
+}
+
+.auth-trust-grid-compact {
+  max-width: 22rem;
 }
 
 .auth-feature-card {

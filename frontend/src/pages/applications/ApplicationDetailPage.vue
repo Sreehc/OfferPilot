@@ -151,11 +151,11 @@
         </div>
       </section>
 
-      <section class="grid gap-4 xl:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)]">
+      <section class="grid gap-4 xl:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
         <article id="application-timeline" class="shell-section-card p-5 sm:p-6">
           <div class="flex items-start justify-between gap-3">
             <div>
-              <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">1. 回看时间线</h3>
+              <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">回看时间线</h3>
               <p class="mt-2 text-sm leading-7 text-secondary">
                 先确认这条岗位经历过什么，再补新的反馈或阶段变化。
               </p>
@@ -204,10 +204,13 @@
         </article>
 
         <div class="space-y-4">
-          <article class="shell-section-card p-5 sm:p-6">
-            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">2. 记录反馈</h3>
+          <article class="shell-section-card application-secondary-zone p-5 sm:p-6">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="detail-pill">次级动作</span>
+            </div>
+            <h3 class="mt-4 text-2xl font-semibold tracking-[-0.03em] text-ink">补一条反馈记录</h3>
             <p class="mt-2 text-sm leading-7 text-secondary">
-              面试、作业和复盘都记在这里，让时间线真正可回看。
+              只有当前阶段和下一步已经明确后，再把面试、作业和复盘补进时间线。
             </p>
 
             <div class="mt-5 space-y-4">
@@ -476,6 +479,13 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.42);
   padding: 1rem;
   backdrop-filter: blur(10px);
+}
+
+.application-secondary-zone {
+  border: 1px solid var(--bc-border-subtle);
+  background:
+    linear-gradient(180deg, rgba(var(--bc-ink-rgb), 0.015), transparent 40%),
+    var(--bc-surface-card);
 }
 
 .timeline-card {

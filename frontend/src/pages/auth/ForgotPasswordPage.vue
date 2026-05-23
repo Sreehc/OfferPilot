@@ -33,16 +33,16 @@
           </p>
         </div>
 
-        <div class="mt-6 max-w-xl">
+        <div class="mt-4 max-w-md">
           <p class="auth-support-title">
             几步就能找回访问
           </p>
-          <p class="mt-4 text-sm leading-7 text-secondary">
+          <p class="mt-3 text-sm leading-7 text-secondary">
             输入邮箱、验证码和新密码，完成后就能回到登录页继续使用。
           </p>
         </div>
 
-        <div class="auth-trust-grid">
+        <div class="auth-trust-grid auth-trust-grid-compact">
           <div class="auth-feature-card">
             <div class="auth-feature-card__title">
               先确认邮箱
@@ -355,6 +355,10 @@ const handleResetPassword = async () => {
 .auth-trust-grid {
   display: grid;
   gap: 0.85rem;
+}
+
+.auth-trust-grid-compact {
+  max-width: 22rem;
 }
 
 .auth-feature-card {

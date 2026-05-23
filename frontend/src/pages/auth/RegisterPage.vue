@@ -33,22 +33,22 @@
           </p>
         </div>
 
-        <div class="mt-6 max-w-xl">
+        <div class="mt-4 max-w-md">
           <p class="auth-support-title">
             创建账号后就能开始
           </p>
-          <p class="mt-4 text-sm leading-7 text-secondary">
+          <p class="mt-3 text-sm leading-7 text-secondary">
             先把账号和邮箱准备好，后面整理简历、上传资料和恢复账号都会更顺手。
           </p>
         </div>
 
-        <div class="auth-trust-grid">
+        <div class="auth-trust-grid auth-trust-grid-compact">
           <div class="auth-feature-card">
             <div class="auth-feature-card__title">
-              训练内容会同步保存
+              一个账号串起全部训练
             </div>
             <p class="auth-feature-card__desc">
-              题库训练、问答和投递记录都会跟着同一个账号走，邮箱也能帮你恢复登录。
+              题库、问答和投递记录都会跟着同一个账号走，邮箱也能帮你恢复登录。
             </p>
           </div>
         </div>
@@ -323,6 +323,10 @@ const handleRegister = async () => {
 .auth-trust-grid {
   display: grid;
   gap: 0.85rem;
+}
+
+.auth-trust-grid-compact {
+  max-width: 22rem;
 }
 
 .auth-feature-card {

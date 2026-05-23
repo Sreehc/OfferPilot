@@ -2,14 +2,25 @@
   <div class="auth-immersive-shell px-4 py-8 md:px-6 md:py-10">
     <div class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1120px] items-stretch gap-4 xl:grid-cols-[minmax(0,0.92fr)_minmax(360px,1.08fr)]">
       <section class="shell-section-card auth-brand-panel p-6 sm:p-8">
+        <RouterLink
+          to="/login"
+          class="auth-brand-mark"
+        >
+          <AppBrandGlyph :size="38" />
+          <div>
+            <div class="auth-brand-mark__name">OfferPilot</div>
+            <div class="auth-brand-mark__meta">AI 求职训练平台</div>
+          </div>
+        </RouterLink>
+
         <div class="flex items-center gap-3">
           <span class="state-pulse" aria-hidden="true"></span>
           <p class="section-kicker">两步验证</p>
         </div>
 
-        <div class="mt-8 max-w-2xl">
+        <div class="mt-5 max-w-md">
           <h1 class="auth-hero-title">完成最后一步验证</h1>
-          <p class="mt-5 text-sm leading-8 text-secondary sm:text-base">
+          <p class="mt-3 text-sm leading-7 text-secondary sm:text-base">
             输入验证码或恢复码以完成登录。
           </p>
         </div>
@@ -67,6 +78,7 @@ import { ElMessage } from 'element-plus'
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { verifyTwoFactorApi } from '@/api/auth'
+import AppBrandGlyph from '@/components/AppBrandGlyph.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
