@@ -69,7 +69,7 @@
 
       <div v-if="loading" class="workspace-section min-h-[260px] text-center">
         <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-        <p class="mt-4 text-sm text-secondary">加载题库中...</p>
+        <p class="mt-4 text-sm text-secondary">正在读取当前筛选下的题目...</p>
       </div>
 
       <div v-else class="workspace-section question-list-section">
@@ -138,8 +138,8 @@
         <section v-else class="py-2">
           <EmptyState
             icon="search"
-            title="当前筛选下没有题目"
-            description="换个分类、标签或关键词，再继续筛一轮。"
+            title="当前筛选下还没有可练的题目"
+            description="先换个分类、标签或关键词，再继续筛一轮，找到可以先看答案再继续追问的题目。"
           />
         </section>
 
@@ -326,7 +326,7 @@ const loadQuestions = async () => {
     questions.value = []
     total.value = 0
     totalPages.value = 0
-    ElMessage.error('题库暂时没加载出来，请调整筛选后重试')
+    ElMessage.error('题库列表还没加载出来，请调整筛选条件后再试。')
   } finally {
     loading.value = false
   }
