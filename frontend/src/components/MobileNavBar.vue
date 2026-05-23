@@ -81,6 +81,8 @@ const openSidebar = () => {
   window.dispatchEvent(new CustomEvent('offerpilot:open-sidebar'))
 }
 
+const primaryPaths = ['/dashboard', '/question', '/chat', '/interview']
+
 const items = [
   { path: '/dashboard', label: '首页', icon: IconHome },
   { path: '/question', label: '题库', icon: IconQuestion },
@@ -92,6 +94,10 @@ const items = [
 const isRouteMatch = (path?: string) => Boolean(path) && (route.path === path || route.path.startsWith(`${path}/`))
 
 const isActive = (path?: string) => {
+  if (!path) {
+    return !primaryPaths.some((itemPath) => isRouteMatch(itemPath))
+  }
+
   if (!isRouteMatch(path)) return false
 
   const matchedItems = items.filter((item) => isRouteMatch(item.path))
