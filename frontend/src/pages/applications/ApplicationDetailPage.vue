@@ -52,13 +52,112 @@
         </div>
       </section>
 
-      <section class="grid gap-4 xl:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
+      <section id="application-next-step" class="shell-section-card application-primary-zone p-5 sm:p-6">
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <div class="min-w-0 max-w-3xl">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="hard-chip">当前主任务</span>
+              <span class="detail-pill">{{ statusLabel(detail.status) }}</span>
+              <span class="detail-pill">下一节点 {{ detail.nextStepDate || '待安排' }}</span>
+            </div>
+            <h3 class="mt-5 text-2xl font-semibold tracking-[-0.03em] text-ink">先推进这条岗位的下一步</h3>
+            <p class="mt-3 text-sm leading-7 text-secondary">
+              {{ detail.nextStepSuggestion || '先更新当前阶段，再把下一轮准备重点补齐。' }}
+            </p>
+          </div>
+
+          <div class="flex shrink-0 flex-wrap gap-3">
+            <button type="button" class="hard-button-secondary" @click="scrollToTimeline">查看时间线</button>
+          </div>
+        </div>
+
+        <div class="mt-5 grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          <div class="space-y-4">
+            <div class="surface-card p-4">
+              <div class="text-xs font-semibold uppercase tracking-[0.22em] text-tertiary">当前建议</div>
+              <p class="mt-2 text-sm leading-7 text-secondary">{{ detail.nextStepSuggestion || '先推进当前阶段' }}</p>
+            </div>
+
+            <div class="surface-card p-4">
+              <div class="text-xs font-semibold uppercase tracking-[0.22em] text-tertiary">复盘重点</div>
+              <p class="mt-2 text-sm leading-7 text-secondary">{{ detail.reviewSuggestion || '记录这轮反馈，补充下一轮准备重点。' }}</p>
+            </div>
+
+            <div class="grid gap-4 md:grid-cols-2">
+              <div class="surface-card p-4">
+                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">已命中关键词</div>
+                <div class="mt-3 flex flex-wrap gap-2">
+                  <span v-for="tag in detail.jdKeywords" :key="`match-${tag}`" class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                    {{ tag }}
+                  </span>
+                  <span v-if="!detail.jdKeywords.length" class="text-sm text-secondary">当前还没有明显命中词</span>
+                </div>
+              </div>
+              <div class="surface-card p-4">
+                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">待补关键词</div>
+                <div class="mt-3 flex flex-wrap gap-2">
+                  <span v-for="tag in detail.missingKeywords" :key="`missing-${tag}`" class="rounded-full bg-coral/10 px-3 py-1 text-xs font-semibold text-coral">
+                    {{ tag }}
+                  </span>
+                  <span v-if="!detail.missingKeywords.length" class="text-sm text-secondary">当前没有明显缺口</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <article id="application-status" class="application-primary-zone__form">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <h4 class="text-xl font-semibold tracking-[-0.03em] text-ink">更新推进阶段</h4>
+                <p class="mt-2 text-sm leading-7 text-secondary">
+                  先把阶段、下一节点和当前说明补齐，再决定是否记录更细的反馈。
+                </p>
+              </div>
+              <el-button :loading="refreshingAnalysis" size="large" class="hard-button-secondary" @click="handleRefreshAnalysis">
+                刷新 JD 分析
+              </el-button>
+            </div>
+
+            <div class="mt-5 grid gap-4">
+              <div class="grid gap-4 md:grid-cols-2">
+                <div class="data-slab p-4">
+                  <div class="text-xs uppercase tracking-[0.22em] text-tertiary">当前阶段</div>
+                  <el-select v-model="statusForm.status" class="mt-2 w-full" size="large">
+                    <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
+                  </el-select>
+                </div>
+                <div class="data-slab p-4">
+                  <div class="text-xs uppercase tracking-[0.22em] text-tertiary">下一节点日期</div>
+                  <el-date-picker v-model="statusForm.nextStepDate" class="mt-2 w-full" type="date" value-format="YYYY-MM-DD" placeholder="例如：下周三" />
+                </div>
+              </div>
+
+              <div class="data-slab p-4">
+                <div class="text-xs uppercase tracking-[0.22em] text-tertiary">推进说明</div>
+                <el-input
+                  v-model="statusForm.note"
+                  class="mt-2"
+                  type="textarea"
+                  :rows="4"
+                  placeholder="例如：约了下周三一面，需要补 Redis 和缓存一致性"
+                />
+              </div>
+            </div>
+
+            <el-button :loading="updatingStatus" size="large" class="action-button mt-4 w-full" @click="handleUpdateStatus">
+              保存当前阶段
+            </el-button>
+          </article>
+        </div>
+      </section>
+
+      <section class="grid gap-4 xl:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)]">
         <article id="application-timeline" class="shell-section-card p-5 sm:p-6">
           <div class="flex items-start justify-between gap-3">
             <div>
-              <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">1. 看时间线</h3>
+              <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">1. 回看时间线</h3>
               <p class="mt-2 text-sm leading-7 text-secondary">
-                看看这条投递进展到哪一步，再决定下一步。
+                先确认这条岗位经历过什么，再补新的反馈或阶段变化。
               </p>
             </div>
           </div>
@@ -106,65 +205,7 @@
 
         <div class="space-y-4">
           <article class="shell-section-card p-5 sm:p-6">
-            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">2. 看下一步</h3>
-            <div class="mt-5 space-y-4">
-              <div class="surface-card p-4">
-                <div class="text-xs font-semibold uppercase tracking-[0.22em] text-tertiary">当前建议</div>
-                <p class="mt-2 text-sm leading-7 text-secondary">{{ detail.nextStepSuggestion || '先推进当前阶段' }}</p>
-              </div>
-              <div class="surface-card p-4">
-                <div class="text-xs font-semibold uppercase tracking-[0.22em] text-tertiary">复盘重点</div>
-                <p class="mt-2 text-sm leading-7 text-secondary">{{ detail.reviewSuggestion || '记录这轮反馈，补充下一轮准备重点。' }}</p>
-              </div>
-            </div>
-          </article>
-
-          <article id="application-status" class="shell-section-card p-5 sm:p-6">
-            <div class="flex items-center justify-between gap-3">
-              <div>
-                <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">3. 推进阶段</h3>
-                <p class="mt-2 text-sm leading-7 text-secondary">
-                  更新当前阶段，需要时补充反馈记录。
-                </p>
-              </div>
-              <el-button :loading="refreshingAnalysis" size="large" class="hard-button-secondary" @click="handleRefreshAnalysis">
-                刷新 JD 分析
-              </el-button>
-            </div>
-
-            <div class="mt-5 grid gap-4">
-              <div class="grid gap-4 md:grid-cols-2">
-                <div class="data-slab p-4">
-                  <div class="text-xs uppercase tracking-[0.22em] text-tertiary">当前阶段</div>
-                  <el-select v-model="statusForm.status" class="mt-2 w-full" size="large">
-                    <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
-                  </el-select>
-                </div>
-                <div class="data-slab p-4">
-                  <div class="text-xs uppercase tracking-[0.22em] text-tertiary">下一节点日期</div>
-                  <el-date-picker v-model="statusForm.nextStepDate" class="mt-2 w-full" type="date" value-format="YYYY-MM-DD" placeholder="例如：下周三" />
-                </div>
-              </div>
-
-              <div class="data-slab p-4">
-                <div class="text-xs uppercase tracking-[0.22em] text-tertiary">推进说明</div>
-                <el-input
-                  v-model="statusForm.note"
-                  class="mt-2"
-                  type="textarea"
-                  :rows="4"
-                  placeholder="例如：约了下周三一面，需要补 Redis 和缓存一致性"
-                />
-              </div>
-            </div>
-
-            <el-button :loading="updatingStatus" size="large" class="action-button mt-4 w-full" @click="handleUpdateStatus">
-              保存当前阶段
-            </el-button>
-          </article>
-
-          <article class="shell-section-card p-5 sm:p-6">
-            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">4. 记录反馈</h3>
+            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">2. 记录反馈</h3>
             <p class="mt-2 text-sm leading-7 text-secondary">
               面试、作业和复盘都记在这里，让时间线真正可回看。
             </p>
@@ -225,29 +266,6 @@
               <el-button :loading="addingEvent" size="large" class="action-button w-full" @click="handleAddEvent">
                 记录这次反馈
               </el-button>
-            </div>
-          </article>
-
-          <article class="shell-section-card p-5 sm:p-6">
-            <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">5. 补准备重点</h3>
-            <div class="mt-5 grid gap-4">
-              <div class="surface-card p-4">
-                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">已命中关键词</div>
-                <div class="mt-3 flex flex-wrap gap-2">
-                  <span v-for="tag in detail.jdKeywords" :key="`match-${tag}`" class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
-                    {{ tag }}
-                  </span>
-                </div>
-              </div>
-              <div class="surface-card p-4">
-                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">待补关键词</div>
-                <div class="mt-3 flex flex-wrap gap-2">
-                  <span v-for="tag in detail.missingKeywords" :key="`missing-${tag}`" class="rounded-full bg-coral/10 px-3 py-1 text-xs font-semibold text-coral">
-                    {{ tag }}
-                  </span>
-                  <span v-if="!detail.missingKeywords.length" class="text-sm text-secondary">当前没有明显缺口</span>
-                </div>
-              </div>
             </div>
           </article>
         </div>
@@ -444,6 +462,20 @@ onMounted(() => {
   font-size: 1.15rem;
   line-height: 1.25;
   color: var(--bc-ink);
+}
+
+.application-primary-zone {
+  background:
+    radial-gradient(circle at top left, rgba(var(--bc-accent-rgb), 0.08), transparent 30%),
+    var(--bc-surface-card);
+}
+
+.application-primary-zone__form {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid var(--bc-border-subtle);
+  background: rgba(255, 255, 255, 0.42);
+  padding: 1rem;
+  backdrop-filter: blur(10px);
 }
 
 .timeline-card {
