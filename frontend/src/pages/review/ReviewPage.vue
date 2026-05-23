@@ -1,45 +1,32 @@
 <template>
-  <div class="repair-workbench space-y-6">
-    <AppShellHeader />
-
-    <section class="shell-section-card p-4 sm:p-5">
-      <div class="repair-filter-row">
-        <button
-          v-for="filter in contentFilters"
-          :key="filter.value"
-          type="button"
-          class="repair-filter-chip"
-          :class="{ 'repair-filter-chip-active': selectedContentType === filter.value }"
-          @click="changeContentType(filter.value)"
-        >
-          {{ filter.label }}
-          <span class="repair-filter-chip__count">{{ contentCount(filter.value) }}</span>
-        </button>
-      </div>
-    </section>
-
+  <div class="repair-workbench space-y-5">
     <section v-if="loading" class="shell-section-card p-8 text-center">
       <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
       <p class="mt-4 text-sm text-slate-500">正在加载今天的复习任务...</p>
     </section>
 
     <template v-else>
-      <section v-if="!started" class="shell-section-card p-5 sm:p-6">
-        <div class="review-launch">
-          <div class="review-launch__head">
-            <div>
+      <section v-if="!started" class="shell-section-card workspace-shell">
+        <div class="workspace-head">
+          <div class="workspace-head__top">
+            <div class="workspace-head__main">
               <div class="flex items-center gap-2">
-                <p class="section-kicker">复习工作台</p>
-                <el-tooltip content="系统会优先把更容易忘记、逾期更久的内容排在前面。" placement="top">
-                  <span class="inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full bg-[var(--interactive-bg)] text-[10px] font-bold text-tertiary">?</span>
+                <h1 class="workspace-title">复习巩固</h1>
+                <el-tooltip content="更容易忘记和逾期更久的内容会排在前面。" placement="top">
+                  <span
+                    class="inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full bg-[var(--interactive-bg)] text-[10px] font-bold text-tertiary"
+                    >?</span
+                  >
                 </el-tooltip>
               </div>
-              <p class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink sm:text-3xl">{{ heroTitle }}</p>
+              <p class="workspace-summary">{{ heroTitle }}。{{ heroSummary }}</p>
             </div>
-            <div class="review-launch__signals">
+            <div class="review-launch__actions">
               <span class="detail-pill">待复习 {{ stats?.todayPending ?? reviewData?.totalPending ?? 0 }}</span>
               <span class="detail-pill">逾期 {{ stats?.overdueCount ?? reviewData?.overdueCount ?? 0 }}</span>
-              <span class="detail-pill">连续 {{ stats?.currentStreak ?? reviewData?.currentStreak ?? 0 }} 天</span>
+              <button type="button" class="hard-button-primary" :disabled="!reviewItems.length" @click="startReview">
+                {{ reviewItems.length ? '开始今日复习' : '当前无待复习项' }}
+              </button>
             </div>
           </div>
 
@@ -61,13 +48,56 @@
               <strong>{{ reviewData?.todayCompleted ?? 0 }}</strong>
             </article>
           </div>
+        </div>
 
-          <div class="mt-6 flex flex-wrap gap-3">
-            <button type="button" class="hard-button-primary" :disabled="!reviewItems.length" @click="startReview">
-              {{ reviewItems.length ? '开始今日复习' : '当前无待复习项' }}
-            </button>
-            <RouterLink to="/cards" class="hard-button-secondary">去今日卡片</RouterLink>
+        <div class="workspace-separator"></div>
+
+        <div v-if="reviewItems.length" class="workspace-section">
+          <div class="queue-head">
+            <div>
+              <h3 class="workspace-section-title">待复习列表</h3>
+              <p class="workspace-section-summary">从最该回看的内容开始，处理完后会自动更新今天状态。</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="detail-pill">连续 {{ stats?.currentStreak ?? reviewData?.currentStreak ?? 0 }} 天</span>
+              <RouterLink to="/wrong" class="hard-button-secondary">查看错题本</RouterLink>
+            </div>
           </div>
+
+          <div class="review-queue mt-5">
+            <article
+              v-for="item in reviewItems"
+              :key="item.reviewItemId"
+              class="repair-card p-4 sm:p-5"
+              :class="repairCardClass(item)"
+            >
+              <div class="flex items-start justify-between gap-4">
+                <div class="min-w-0 flex-1">
+                  <div class="mb-2 flex flex-wrap items-center gap-2">
+                    <span class="hard-chip !bg-amber-100 !text-amber-700">错题复习</span>
+                  </div>
+                  <h4 class="repair-card__title text-lg font-semibold leading-snug text-ink">{{ item.title }}</h4>
+                  <p class="repair-card__summary mt-2 text-sm text-secondary">
+                    {{ reviewItemSummary(item) }}
+                  </p>
+                </div>
+                <span class="hard-chip shrink-0" :class="masteryChipClass(item.masteryLevel)">
+                  {{ masteryLabel(item.masteryLevel) }}
+                </span>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div v-else class="workspace-section">
+          <EmptyState icon="review" :title="emptyStateTitle" :description="emptyStateDescription">
+            <template #action>
+              <div class="flex justify-center gap-3">
+                <RouterLink to="/wrong" class="hard-button-primary">去错题本</RouterLink>
+                <RouterLink to="/knowledge" class="hard-button-secondary">去知识库</RouterLink>
+              </div>
+            </template>
+          </EmptyState>
         </div>
       </section>
 
@@ -77,9 +107,7 @@
             <div class="flex items-center justify-between text-sm text-secondary">
               <span class="font-mono">{{ currentIndex + 1 }} / {{ reviewItems.length }}</span>
               <div class="flex flex-wrap items-center gap-2">
-                <span class="hard-chip" :class="contentChipClass(currentReviewItem.contentType)">
-                  {{ contentTypeLabel(currentReviewItem.contentType) }}
-                </span>
+                <span class="hard-chip !bg-amber-100 !text-amber-700">错题复习</span>
                 <span
                   v-if="currentReviewItem.overdueDays > 0"
                   class="rounded-full border border-coral/30 bg-coral/10 px-3 py-1 text-coral"
@@ -97,9 +125,7 @@
             </div>
           </div>
 
-          <p class="text-center text-xs text-tertiary sm:hidden">
-            左滑重来 · 右滑良好 · 点击翻转
-          </p>
+          <p class="text-center text-xs text-tertiary sm:hidden">左滑重来 · 右滑良好 · 点击翻转</p>
 
           <div
             class="flashcard-wrapper cursor-pointer"
@@ -112,16 +138,11 @@
             <div class="flashcard">
               <div class="flashcard-front memory-card p-5 sm:p-8">
                 <div class="flex items-center justify-between gap-4">
-                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-secondary">
-                    先回忆问题
-                  </div>
+                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-secondary">先回忆问题</div>
                   <span class="hard-chip">{{ masteryLabel(currentReviewItem.masteryLevel) }}</span>
                 </div>
                 <div class="mt-6 flex flex-wrap items-center gap-2">
-                  <span class="hard-chip" :class="contentChipClass(currentReviewItem.contentType)">
-                    {{ contentTypeLabel(currentReviewItem.contentType) }}
-                  </span>
-                  <span v-if="currentReviewItem.deckTitle" class="detail-pill">{{ currentReviewItem.deckTitle }}</span>
+                  <span class="hard-chip !bg-amber-100 !text-amber-700">错题复习</span>
                 </div>
                 <h3 class="mt-8 text-xl font-semibold leading-relaxed text-ink sm:text-2xl">
                   {{ currentReviewItem.title }}
@@ -130,36 +151,21 @@
               </div>
 
               <div class="flashcard-back memory-card p-5 sm:p-8">
-                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-secondary">
-                  标准答案
-                </div>
+                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-secondary">标准答案</div>
                 <p class="mt-4 whitespace-pre-wrap text-sm leading-7 text-primary">
-                  {{ currentReviewItem.answer || '暂无标准答案' }}
+                  {{ currentReviewItem.answer || '这道题的标准答案还没整理出来，先结合题目和之前错误原因补一轮复盘。' }}
                 </p>
                 <div
                   v-if="currentReviewItem.explanation"
                   class="mt-4 border-t border-slate-200/60 pt-4 dark:border-slate-700/60"
                 >
-                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-secondary">
-                    {{ currentReviewItem.contentType === 'knowledge_card' ? '解释说明' : '之前错误原因' }}
-                  </div>
+                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-secondary">之前错误原因</div>
                   <p class="mt-1 text-sm text-primary">
                     {{ currentReviewItem.explanation }}
                   </p>
                 </div>
-                <div
-                  v-if="currentReviewItem.sourceQuote && currentReviewItem.contentType === 'knowledge_card'"
-                  class="mt-4 border-t border-[var(--bc-line)] pt-4"
-                >
-                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-secondary">
-                    来源片段
-                  </div>
-                  <p class="mt-1 text-sm leading-7 text-secondary">
-                    {{ currentReviewItem.sourceQuote }}
-                  </p>
-                </div>
                 <div class="mt-4 border-t border-[var(--bc-line)] pt-4 text-xs text-secondary">
-                  记忆系数 {{ formatEaseFactor(currentReviewItem.easeFactor) }} · 间隔
+                  复盘系数 {{ formatEaseFactor(currentReviewItem.easeFactor) }} · 间隔
                   {{ currentReviewItem.intervalDays ?? 0 }} 天
                 </div>
               </div>
@@ -218,63 +224,12 @@
           <template #action>
             <div class="flex justify-center gap-3">
               <button type="button" class="hard-button-secondary" @click="resetSession">返回任务总览</button>
-              <RouterLink to="/cards" class="hard-button-primary">继续今日卡片</RouterLink>
+              <RouterLink to="/wrong" class="hard-button-primary">回到错题本</RouterLink>
             </div>
           </template>
         </EmptyState>
       </section>
 
-      <section v-else-if="reviewItems.length" class="shell-section-card p-5 sm:p-6">
-        <div class="queue-head">
-          <div>
-            <p class="section-kicker">待复习列表</p>
-            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">今天先处理这些内容</h3>
-          </div>
-          <span class="detail-pill">{{ reviewItems.length }} 项</span>
-        </div>
-
-        <div class="review-queue mt-5">
-          <article
-            v-for="item in reviewItems"
-            :key="item.reviewItemId"
-            class="repair-card p-4 sm:p-5"
-            :class="repairCardClass(item)"
-          >
-            <div class="flex items-start justify-between gap-4">
-              <div class="min-w-0 flex-1">
-                <div class="mb-2 flex flex-wrap items-center gap-2">
-                  <span class="hard-chip" :class="contentChipClass(item.contentType)">
-                    {{ contentTypeLabel(item.contentType) }}
-                  </span>
-                  <span v-if="item.deckTitle" class="detail-pill">{{ item.deckTitle }}</span>
-                </div>
-                <h4 class="repair-card__title text-lg font-semibold leading-snug text-ink">{{ item.title }}</h4>
-                <p class="repair-card__summary mt-2 text-sm text-secondary">
-                  {{ reviewItemSummary(item) }}
-                </p>
-              </div>
-              <span class="hard-chip shrink-0" :class="masteryChipClass(item.masteryLevel)">
-                {{ masteryLabel(item.masteryLevel) }}
-              </span>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section v-else class="shell-section-card p-8">
-        <EmptyState
-          icon="review"
-          :title="emptyStateTitle"
-          :description="emptyStateDescription"
-        >
-          <template #action>
-            <div class="flex justify-center gap-3">
-              <RouterLink to="/cards" class="hard-button-primary">去今日卡片</RouterLink>
-              <RouterLink to="/knowledge" class="hard-button-secondary">去知识库</RouterLink>
-            </div>
-          </template>
-        </EmptyState>
-      </section>
     </template>
   </div>
 </template>
@@ -282,7 +237,6 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
-import AppShellHeader from '@/components/AppShellHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchReviewStatsApi, fetchReviewTodayApi, submitReviewRateApi } from '@/api/review'
 import type { ReviewContentType, ReviewStats, ReviewTodayData, UnifiedReviewItem } from '@/types/api'
@@ -293,7 +247,7 @@ const started = ref(false)
 const showAnswer = ref(false)
 const currentIndex = ref(0)
 const againCount = ref(0)
-const selectedContentType = ref<ReviewContentType>('all')
+const selectedContentType = ref<ReviewContentType>('wrong_card')
 const reviewData = ref<ReviewTodayData | null>(null)
 const stats = ref<ReviewStats | null>(null)
 
@@ -301,26 +255,24 @@ let touchStartX = 0
 let touchStartY = 0
 let touchStartTime = 0
 
-const contentFilters: Array<{ value: ReviewContentType; label: string }> = [
-  { value: 'all', label: '全部' },
-  { value: 'knowledge_card', label: '知识卡片' },
-  { value: 'wrong_card', label: '错题卡片' },
-  { value: 'interview_card', label: '面试卡片' }
-]
-
 const reviewItems = computed(() => reviewData.value?.items ?? [])
 const currentReviewItem = computed(() => reviewItems.value[currentIndex.value] ?? null)
 
 const heroTitle = computed(() => {
   if (!reviewItems.value.length) {
-    return selectedContentType.value === 'interview_card' ? '这里还没有面试复习内容' : '今天没有待复习内容'
+    return '今天没有待复习错题'
   }
   return `今天先复习这 ${reviewItems.value.length} 项`
 })
 
-const selectedFilterLabel = computed(() => {
-  return contentFilters.find((item) => item.value === selectedContentType.value)?.label ?? '全部'
+const heroSummary = computed(() => {
+  if (!reviewItems.value.length) {
+    return '可以回到错题本继续补题，或者做一轮新的训练。'
+  }
+  return '先清掉今天到期和逾期的内容，再回到正常训练节奏。'
 })
+
+const selectedFilterLabel = computed(() => '错题本')
 
 const ratingButtons = [
   { rating: 1 as const, label: '重来', symbol: '↺', class: 'border-coral/30 bg-coral/10 text-coral hover:bg-coral/15' },
@@ -330,39 +282,12 @@ const ratingButtons = [
 ]
 
 const emptyStateTitle = computed(() => {
-  if (selectedContentType.value === 'interview_card') {
-    return '这里还没有面试复习项'
-  }
-  if (selectedContentType.value === 'knowledge_card') {
-    return '这里还没有到期的知识卡片'
-  }
-  if (selectedContentType.value === 'wrong_card') {
-    return '这里还没有到期的错题卡片'
-  }
-  return '今日复习已完成'
+  return '今天的到期错题已经清空'
 })
 
 const emptyStateDescription = computed(() => {
-  if (selectedContentType.value === 'interview_card') {
-    return '先完成一轮模拟面试，相关复习会出现在这里。'
-  }
-  return '先去知识库上传资料生成卡片，或去今日卡片开始学习。'
+  return '可以回到错题本补低分题，或做一轮新的模拟面试，继续给明天积累复习内容。'
 })
-
-const contentTypeLabel = (contentType: string) => {
-  const map: Record<string, string> = {
-    knowledge_card: '知识卡片',
-    wrong_card: '错题卡片',
-    interview_card: '面试卡片'
-  }
-  return map[contentType] || '复习项'
-}
-
-const contentChipClass = (contentType: string) => {
-  if (contentType === 'knowledge_card') return '!bg-cyan-100 !text-cyan-700'
-  if (contentType === 'interview_card') return '!bg-coral/10 !text-coral'
-  return '!bg-amber-100 !text-amber-700'
-}
 
 const masteryLabel = (level: string) => {
   const map: Record<string, string> = {
@@ -381,24 +306,12 @@ const masteryChipClass = (level: string) => {
 
 const repairCardClass = (item: UnifiedReviewItem) => {
   if (item.overdueDays > 0) return 'repair-card-due'
-  if (item.contentType === 'knowledge_card') return 'repair-card-active'
-  if (item.contentType === 'interview_card') return 'repair-card-due'
   return 'repair-card-new'
 }
 
 const reviewItemSummary = (item: UnifiedReviewItem) => {
   const dueLabel = item.overdueDays > 0 ? `逾期 ${item.overdueDays} 天` : '今天处理'
-  if (item.deckTitle) {
-    return `${dueLabel} · 来自 ${item.deckTitle}`
-  }
   return dueLabel
-}
-
-const contentCount = (contentType: ReviewContentType) => {
-  if (contentType === 'all') {
-    return reviewData.value?.totalPending ?? 0
-  }
-  return reviewData.value?.countsByContentType?.[contentType] ?? 0
 }
 
 const formatEaseFactor = (value?: number) => {
@@ -419,17 +332,10 @@ const loadData = async () => {
   try {
     await loadReviewData()
   } catch {
-    ElMessage.error('复习数据加载失败')
+    ElMessage.error('今天的复习任务还没加载出来，请稍后再试')
   } finally {
     loading.value = false
   }
-}
-
-const changeContentType = async (contentType: ReviewContentType) => {
-  if (selectedContentType.value === contentType) return
-  selectedContentType.value = contentType
-  resetSession()
-  await loadData()
 }
 
 const resetSession = () => {
@@ -499,7 +405,7 @@ const handleRate = async (rating: 1 | 2 | 3 | 4) => {
       currentIndex.value = reviewItems.value.length
     }
   } catch {
-    ElMessage.error('提交评分失败')
+    ElMessage.error('这道题的复习结果还没保存成功，请再试一次')
   } finally {
     submitting.value = false
   }
@@ -598,17 +504,8 @@ onMounted(() => {
 }
 
 .review-launch {
-  border-radius: 24px;
-  background:
-    radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.1), transparent 32%),
-    var(--panel-muted);
-  padding: 22px;
-}
-
-.dark .review-launch {
-  background:
-    radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.12), transparent 32%),
-    var(--panel-muted);
+  display: grid;
+  gap: 14px;
 }
 
 .review-launch__head,
@@ -617,7 +514,12 @@ onMounted(() => {
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px 16px;
+}
+
+.review-launch__copy {
+  min-width: 0;
+  flex: 1;
 }
 
 .review-launch__signals {
@@ -630,13 +532,13 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
-  margin-top: 18px;
 }
 
 .review-launch__metric {
-  border-radius: 20px;
-  background: rgba(var(--bc-accent-rgb), 0.06);
-  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--panel-muted);
+  padding: 9px 11px;
 }
 
 .review-launch__metric span,
@@ -648,11 +550,18 @@ onMounted(() => {
 
 .review-launch__metric strong {
   display: block;
-  margin-top: 8px;
+  margin-top: 6px;
   color: var(--bc-ink);
-  font-size: 1.85rem;
+  font-size: 1.1rem;
   font-weight: 780;
   letter-spacing: -0.05em;
+}
+
+.review-launch__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
 }
 
 .detail-pill {
@@ -785,15 +694,13 @@ onMounted(() => {
   border-radius: 18px;
   padding: 16px 16px 15px;
   background:
-    radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.08), transparent 36%),
-    var(--panel-muted);
+    radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.08), transparent 36%), var(--panel-muted);
   border: 1px solid rgba(var(--bc-accent-rgb), 0.12);
 }
 
 .dark .repair-card__answer {
   background:
-    radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.12), transparent 42%),
-    var(--panel-muted);
+    radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.12), transparent 42%), var(--panel-muted);
 }
 
 .repair-card__answer-label,
@@ -840,8 +747,7 @@ onMounted(() => {
   }
 
   .review-launch {
-    padding: 18px;
-    border-radius: 20px;
+    gap: 12px;
   }
 
   .review-launch__stats {
