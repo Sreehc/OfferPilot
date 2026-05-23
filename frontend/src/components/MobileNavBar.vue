@@ -2,23 +2,23 @@
   <nav
     class="mobile-nav-shell safe-area-bottom fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--bc-border-subtle)] backdrop-blur-xl md:hidden"
   >
-    <div class="flex items-center justify-around px-2 py-1.5">
+    <div class="mobile-nav-shell__grid">
       <component
         :is="item.path ? 'RouterLink' : 'button'"
         v-for="item in items"
         :key="item.path"
         v-bind="item.path ? { to: item.path } : { type: 'button' }"
-        class="flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-2 transition-all"
+        class="mobile-nav-shell__item"
         :class="
-          isActive(item.path) ? 'bg-[rgba(var(--bc-accent-rgb),0.12)] text-ink' : 'text-secondary'
+          isActive(item.path) ? 'mobile-nav-shell__item-active' : 'text-secondary'
         "
         @click="item.action?.()"
       >
         <component
           :is="item.icon"
-          class="h-5 w-5 shrink-0"
+          class="mobile-nav-shell__icon"
         />
-        <span class="text-[10px] font-medium truncate">{{ item.label }}</span>
+        <span class="mobile-nav-shell__label">{{ item.label }}</span>
       </component>
     </div>
   </nav>
@@ -119,5 +119,47 @@ const isActive = (path?: string) => {
 
 .mobile-nav-shell {
   background: var(--bc-surface-card);
+}
+
+.mobile-nav-shell__grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 0.35rem;
+  padding: 0.45rem 0.55rem 0.55rem;
+}
+
+.mobile-nav-shell__item {
+  display: flex;
+  min-width: 0;
+  min-height: 3.4rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.22rem;
+  border-radius: 1rem;
+  padding: 0.35rem 0.15rem;
+  transition: all var(--motion-fast) var(--ease-hard);
+}
+
+.mobile-nav-shell__item-active {
+  background: rgba(var(--bc-accent-rgb), 0.12);
+  color: var(--bc-ink);
+}
+
+.mobile-nav-shell__icon {
+  height: 1.2rem;
+  width: 1.2rem;
+  flex-shrink: 0;
+}
+
+.mobile-nav-shell__label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.2;
 }
 </style>
