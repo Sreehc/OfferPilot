@@ -11,7 +11,7 @@
 
     <section v-if="!detail" class="shell-section-card p-8 text-center">
       <p class="text-lg font-semibold text-ink">投递记录未找到</p>
-      <p class="mt-3 text-sm leading-7 text-secondary">这条记录可能已删除或还没同步成功，先回到看板检查其他投递，或补一条新的进展。</p>
+      <p class="mt-3 text-sm leading-7 text-secondary">这条记录可能已删除或还没同步成功。先回到投递管理检查其他机会，或补一条新的进展记录。</p>
       <RouterLink to="/applications" class="hard-button-primary mt-4 inline-flex">返回看板</RouterLink>
     </section>
 

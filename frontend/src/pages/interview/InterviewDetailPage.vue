@@ -20,7 +20,7 @@
 
     <section v-else-if="!detail" class="shell-section-card p-8 text-center">
       <p class="text-lg font-semibold text-ink">面试记录未找到</p>
-      <p class="mt-3 text-sm leading-7 text-secondary">这次记录可能还没生成成功，先回到模拟面试页开始新一轮或检查其他历史记录。</p>
+      <p class="mt-3 text-sm leading-7 text-secondary">这次记录可能还没生成成功。先回到模拟面试开始新一轮，或检查其他历史记录。</p>
       <RouterLink to="/interview" class="hard-button-primary mt-4 inline-flex">返回模拟面试</RouterLink>
     </section>
 
