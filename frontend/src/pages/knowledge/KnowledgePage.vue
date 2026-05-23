@@ -66,11 +66,11 @@
             <EmptyState
               class="empty-state-card"
               icon="document"
-              :title="activeTab === 'my' ? '上传你的第一份学习资料' : '推荐资料暂时为空'"
+              :title="activeTab === 'my' ? '上传你的第一份学习资料' : '当前还没有可用推荐资料'"
               :description="
                 activeTab === 'my'
                   ? '上传一份资料，处理完成后就能直接提问。'
-                  : '这里暂时没有可直接使用的推荐资料，稍后再来看看。'
+                  : '先切到“我的文档”上传一份资料，或调整筛选范围继续找能直接提问的内容。'
               "
             />
           </div>
