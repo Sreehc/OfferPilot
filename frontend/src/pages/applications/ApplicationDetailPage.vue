@@ -90,7 +90,7 @@
                   <span v-for="tag in detail.jdKeywords" :key="`match-${tag}`" class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
                     {{ tag }}
                   </span>
-                  <span v-if="!detail.jdKeywords.length" class="text-sm text-secondary">当前还没有明显命中词</span>
+                  <span v-if="!detail.jdKeywords.length" class="text-sm text-secondary">当前还没有明显命中词，先补一轮 JD 关键词或刷新分析结果。</span>
                 </div>
               </div>
               <div class="surface-card p-4">
@@ -198,7 +198,7 @@
             </article>
 
             <div v-if="!detail.events.length" class="rounded-2xl border border-dashed border-[var(--bc-line)] p-5 text-sm text-secondary">
-              还没有过程记录，先补一条当前状态或面试反馈。
+              当前还没有过程记录，先补一条当前状态或面试反馈，后面这里再继续串起整条时间线。
             </div>
           </div>
         </article>

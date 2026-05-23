@@ -160,7 +160,7 @@ const taskItems = computed(() => [
     name: 'twoFactor',
     label: '保护登录安全',
     description: '启用或关闭两步验证，减少账号被盗风险。',
-    meta: twoFactorStatus.value?.enabled ? '已启用两步验证' : '尚未启用两步验证',
+    meta: twoFactorStatus.value?.enabled ? '已启用两步验证' : '现在可启用两步验证',
     icon: '02'
   },
   {

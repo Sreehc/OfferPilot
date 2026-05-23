@@ -988,7 +988,7 @@ const removeSession = async (sessionId: number) => {
   }
 }
 
-const pushErrorMessage = (content = '本次回答失败，请重试。') => {
+const pushErrorMessage = (content = '这次回答还没生成成功，请换个问法或稍后再试。') => {
   messages.value.push({
     id: Date.now() + 2,
     role: 'assistant',

@@ -48,7 +48,7 @@
           <div class="shell-section-card flex flex-wrap items-center justify-between gap-3 p-4">
             <div>
               <div class="text-sm font-semibold text-ink">当前还没开启两步验证</div>
-              <p class="mt-1 text-xs leading-5 text-secondary">建议给常用账号补上这一层保护，后续异地登录会更安心。</p>
+              <p class="mt-1 text-xs leading-5 text-secondary">先给常用账号补上这一层保护，后面异地登录时会更容易拦住异常风险。</p>
             </div>
             <el-button type="primary" size="large" class="action-button" @click="showSetup = true">
               现在启用
@@ -83,7 +83,7 @@ const loadStatus = async () => {
     const response = await fetchTwoFactorStatusApi()
     status.value = response.data
   } catch {
-    ElMessage.error('暂时没拿到两步验证状态，请稍后刷新')
+    ElMessage.error('两步验证状态还没加载出来，请稍后刷新。')
   } finally {
     loading.value = false
   }
@@ -101,7 +101,7 @@ const handleDisable = async () => {
     disableCode.value = ''
     await loadStatus()
   } catch {
-    ElMessage.error('验证码不对，请核对后再试')
+    ElMessage.error('验证码还没核对成功，请检查当前验证码后再试。')
   } finally {
     disabling.value = false
   }
