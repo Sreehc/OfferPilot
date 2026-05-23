@@ -1,33 +1,27 @@
 <template>
-  <div v-loading="loading" class="space-y-6">
-    <AppShellHeader />
+  <div v-loading="loading" class="space-y-5">
+    <section class="shell-section-card resume-state-card p-4 sm:p-5">
+      <div class="workspace-head__top">
+        <div class="workspace-head__main">
+          <div class="flex flex-wrap gap-2">
+            <span class="hard-chip">{{ stateChip }}</span>
+            <span class="detail-pill">{{ resumeList.length }} 份简历</span>
+            <span v-if="currentResume" class="detail-pill">{{ currentResume.projects.length }} 个项目</span>
+            <span v-if="currentResume" class="detail-pill">{{ flattenedRisks.length }} 条待检查提醒</span>
+          </div>
 
-    <section class="shell-section-card resume-state-card p-5 sm:p-6">
-      <div class="resume-state-hero">
-        <div class="flex flex-wrap gap-2">
-          <span class="hard-chip">{{ stateChip }}</span>
-          <span class="detail-pill">{{ resumeList.length }} 份简历</span>
-          <span v-if="currentResume" class="detail-pill">{{ currentResume.projects.length }} 个项目</span>
-          <span v-if="currentResume" class="detail-pill">{{ flattenedRisks.length }} 条待检查提醒</span>
+          <h1 class="mt-4 workspace-title">简历助手</h1>
+          <p class="workspace-summary">
+            {{
+              !currentResume
+                ? '先上传一份简历，再决定是继续修正、导出提纲还是去模拟面试。'
+                : `${stateTitle}，先处理当前最关键的修改项。`
+            }}
+          </p>
         </div>
 
-        <p class="mt-5 font-display text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl">
-          {{ stateTitle }}
-        </p>
-        <p class="mt-4 max-w-3xl text-sm leading-7 text-secondary">
-          {{ stateDescription }}
-        </p>
-        <p class="mt-3 text-sm leading-7 text-secondary">
-          先把这份简历整理成你能直接讲出口的版本，再去模拟面试或导出提纲。
-        </p>
-
-        <div class="mt-6 flex flex-wrap gap-3">
-          <button
-            v-if="!currentResume"
-            type="button"
-            class="hard-button-primary"
-            @click="scrollToUpload"
-          >
+        <div class="workspace-actions">
+          <button v-if="!currentResume" type="button" class="hard-button-primary" @click="scrollToUpload">
             上传简历开始整理
           </button>
           <button
@@ -36,23 +30,12 @@
             class="hard-button-primary"
             @click="startEditing"
           >
-            先修正解析结果
+            修正简历内容
           </button>
-          <button
-            v-else-if="!isEditing"
-            type="button"
-            class="hard-button-primary"
-            @click="startEditing"
-          >
+          <button v-else-if="!isEditing" type="button" class="hard-button-primary" @click="startEditing">
             继续整理这份简历
           </button>
-          <button
-            v-else
-            type="button"
-            class="hard-button-primary"
-            :disabled="saving"
-            @click="handleSave"
-          >
+          <button v-else type="button" class="hard-button-primary" :disabled="saving" @click="handleSave">
             保存当前修改
           </button>
 
@@ -63,14 +46,9 @@
             :disabled="retrying"
             @click="handleRetryParse"
           >
-            重新解析简历
+            重新识别简历
           </button>
-          <button
-            v-if="currentResume && isEditing"
-            type="button"
-            class="hard-button-secondary"
-            @click="cancelEditing"
-          >
+          <button v-if="currentResume && isEditing" type="button" class="hard-button-secondary" @click="cancelEditing">
             取消修改
           </button>
           <button
@@ -81,16 +59,16 @@
           >
             导出面试提纲
           </button>
-          <RouterLink v-if="currentResume" to="/interview" class="hard-button-secondary">
-            去模拟面试
-          </RouterLink>
+          <RouterLink v-if="currentResume" to="/interview" class="hard-button-secondary">去模拟面试</RouterLink>
         </div>
       </div>
 
-      <div class="resume-state-metrics">
+      <div class="resume-state-metrics mt-4">
         <article class="resume-metric-card">
           <span>{{ currentResume ? '当前状态' : '主目标' }}</span>
-          <strong>{{ currentResume ? parseStatusLabel(currentResume.parseStatus, currentResume.userFixStatus) : '先上传一份简历' }}</strong>
+          <strong>{{
+            currentResume ? parseStatusLabel(currentResume.parseStatus, currentResume.userFixStatus) : '先上传一份简历'
+          }}</strong>
         </article>
         <article class="resume-metric-card">
           <span>{{ currentResume ? '下一步' : '当前入口' }}</span>
@@ -106,58 +84,60 @@
     <section class="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
       <aside class="space-y-4">
         <article id="resume-upload" class="shell-section-card p-5 sm:p-6">
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">1. 上传简历</h3>
-              <p class="mt-2 text-sm leading-7 text-secondary">先选一份简历，再继续整理项目表达、开场和面试提纲。</p>
-            </div>
-          </div>
-
-          <el-upload
-            class="mt-5 w-full"
-            drag
-            :show-file-list="false"
-            accept=".pdf,.doc,.docx"
-            :before-upload="handleUpload"
-          >
-            <div class="py-5">
-              <div class="text-base font-semibold text-ink">拖拽简历到这里，或点击上传</div>
-              <p class="mt-2 text-sm text-secondary">支持 PDF / DOC / DOCX，单个文件不超过 10MB</p>
-            </div>
-          </el-upload>
-
-          <p v-if="uploading" class="mt-3 text-sm text-secondary">正在整理简历内容，请稍候...</p>
-        </article>
-
-        <article class="shell-section-card p-5 sm:p-6">
-          <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">当前简历</h3>
-          <div v-if="resumeList.length" class="mt-5 space-y-3">
-            <button
-              v-for="item in resumeList"
-              :key="item.id"
-              type="button"
-              class="resume-list-card w-full text-left"
-              :class="selectedResumeId === item.id ? 'resume-list-card-active' : ''"
-              @click="handleSelectResume(item.id)"
-            >
-              <div class="flex items-center justify-between gap-3">
-                <div class="min-w-0">
-                  <div class="text-sm font-semibold text-ink">{{ item.title }}</div>
-                  <div class="mt-1 text-xs text-tertiary">
-                    {{ item.fileType.toUpperCase() }} · {{ formatDateTime(item.updateTime) }}
-                  </div>
-                </div>
-                <span class="detail-pill">{{ parseStatusLabel(item.parseStatus, item.userFixStatus) }}</span>
+          <section>
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <h3 class="text-xl font-semibold tracking-[-0.03em] text-ink">上传与选择简历</h3>
+                <p class="mt-2 text-sm text-secondary">先选一份简历，再继续整理项目表达、开场和提纲。</p>
               </div>
-            </button>
-          </div>
-          <div v-else class="mt-5 rounded-2xl border border-dashed border-[var(--bc-line)] p-5 text-sm text-secondary">
-            还没有简历，先上传一份开始整理。
-          </div>
+            </div>
+
+            <el-upload
+              class="mt-5 w-full"
+              drag
+              :show-file-list="false"
+              accept=".pdf,.doc,.docx"
+              :before-upload="handleUpload"
+            >
+              <div class="py-5">
+                <div class="text-base font-semibold text-ink">拖拽简历到这里，或点击上传</div>
+                <p class="mt-2 text-sm text-secondary">支持 PDF / DOC / DOCX，单个文件不超过 10MB</p>
+              </div>
+            </el-upload>
+
+            <p v-if="uploading" class="mt-3 text-sm text-secondary">正在整理简历内容，请稍候...</p>
+          </section>
+
+          <section class="resume-side-panel__section">
+            <h4 class="text-lg font-semibold tracking-[-0.03em] text-ink">当前简历</h4>
+            <div v-if="resumeList.length" class="mt-4 space-y-3">
+              <button
+                v-for="item in resumeList"
+                :key="item.id"
+                type="button"
+                class="resume-list-card w-full text-left"
+                :class="selectedResumeId === item.id ? 'resume-list-card-active' : ''"
+                @click="handleSelectResume(item.id)"
+              >
+                <div class="flex items-center justify-between gap-3">
+                  <div class="min-w-0">
+                    <div class="text-sm font-semibold text-ink">{{ item.title }}</div>
+                    <div class="mt-1 text-xs text-tertiary">
+                      {{ item.fileType.toUpperCase() }} · {{ formatDateTime(item.updateTime) }}
+                    </div>
+                  </div>
+                  <span class="detail-pill">{{ parseStatusLabel(item.parseStatus, item.userFixStatus) }}</span>
+                </div>
+              </button>
+            </div>
+            <div v-else class="mt-4 rounded-2xl border border-dashed border-[var(--bc-line)] p-5 text-sm text-secondary">
+              还没有简历，先上传一份开始整理。
+            </div>
+          </section>
         </article>
 
         <article class="shell-section-card p-5 sm:p-6">
-          <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">整理顺序</h3>
+          <h3 class="text-xl font-semibold tracking-[-0.03em] text-ink">整理顺序</h3>
           <div class="mt-5 space-y-3">
             <div v-for="step in workflowSteps" :key="step.id" class="resume-step-row">
               <div class="resume-step-index">{{ step.index }}</div>
@@ -166,6 +146,31 @@
                 <p class="mt-1 text-xs leading-6 text-secondary">{{ step.description }}</p>
               </div>
               <span class="resume-step-status" :class="step.status">{{ step.statusText }}</span>
+            </div>
+          </div>
+
+          <div v-if="currentResume && resumeVersions.length" class="resume-side-panel__section">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <h4 class="text-lg font-semibold tracking-[-0.03em] text-ink">版本历史</h4>
+                <p class="mt-1 text-sm text-secondary">每次保存修改会自动创建版本快照。</p>
+              </div>
+            </div>
+            <div class="mt-4 space-y-3">
+              <div v-for="ver in resumeVersions" :key="ver.id" class="resume-version-item">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-sm font-semibold text-ink">v{{ ver.version }}</span>
+                  <span class="text-xs text-tertiary">{{ formatDateTime(ver.createTime) }}</span>
+                </div>
+                <p class="mt-1 text-xs text-secondary">{{ ver.changeSummary || '简历内容更新' }}</p>
+                <button
+                  type="button"
+                  class="mt-2 text-xs font-semibold text-accent hover:underline"
+                  @click="handleRestoreVersion(ver.id)"
+                >
+                  回滚到此版本
+                </button>
+              </div>
             </div>
           </div>
         </article>
@@ -178,13 +183,13 @@
               <div>
                 <h3 class="text-xl font-semibold text-ink">这份简历还需要你补一手</h3>
                 <p class="mt-2 text-sm leading-7 text-secondary">
-                  {{ currentResume.parseError || '这份简历暂时没能完整解析，先检查摘要、项目和开场内容。' }}
+                  {{ currentResume.parseError || '这份简历识别不完整，请检查并补充摘要、项目和开场内容。' }}
                 </p>
               </div>
               <div class="flex flex-wrap gap-2">
-                <button type="button" class="hard-button-primary" @click="startEditing">修正解析结果</button>
+                <button type="button" class="hard-button-primary" @click="startEditing">修正简历内容</button>
                 <button type="button" class="hard-button-secondary" :disabled="retrying" @click="handleRetryParse">
-                  重新解析
+                  重新识别
                 </button>
               </div>
             </div>
@@ -194,12 +199,12 @@
         <article v-if="currentResume" class="shell-section-card p-5 sm:p-6">
           <div class="flex items-start justify-between gap-4">
             <div>
-              <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">2. 检查解析结果</h3>
-              <p class="mt-2 text-sm leading-7 text-secondary">
-                先把摘要、技能和教育信息校对一遍，再继续整理项目和开场。
-              </p>
+              <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">先修当前简历内容</h3>
+              <p class="mt-2 text-sm leading-7 text-secondary">先把摘要、技能和教育信息校对一遍，再继续整理项目和开场。</p>
             </div>
-            <button v-if="!isEditing" type="button" class="hard-button-secondary" @click="startEditing">修正解析结果</button>
+            <button v-if="!isEditing" type="button" class="hard-button-secondary" @click="startEditing">
+              修正简历内容
+            </button>
           </div>
 
           <div v-if="isEditing" class="mt-5 grid gap-4">
@@ -209,7 +214,13 @@
             </div>
             <div class="surface-card p-4">
               <div class="text-xs font-semibold uppercase tracking-[0.22em] text-tertiary">简历摘要</div>
-              <el-input v-model="draft.summary" class="mt-2" type="textarea" :rows="4" placeholder="用 2 到 3 句话讲清你的方向、技术栈和项目亮点" />
+              <el-input
+                v-model="draft.summary"
+                class="mt-2"
+                type="textarea"
+                :rows="4"
+                placeholder="用 2 到 3 句话讲清你的方向、技术栈和项目亮点"
+              />
             </div>
             <div class="grid gap-4 md:grid-cols-2">
               <div class="surface-card p-4">
@@ -224,7 +235,13 @@
               </div>
               <div class="surface-card p-4">
                 <div class="text-xs font-semibold uppercase tracking-[0.22em] text-tertiary">教育信息</div>
-                <el-input v-model="draft.education" class="mt-2" type="textarea" :rows="3" placeholder="补充学校、专业和学历" />
+                <el-input
+                  v-model="draft.education"
+                  class="mt-2"
+                  type="textarea"
+                  :rows="3"
+                  placeholder="补充学校、专业和学历"
+                />
               </div>
             </div>
           </div>
@@ -232,7 +249,9 @@
           <div v-else class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div class="data-slab p-4">
               <div class="text-xs uppercase tracking-[0.22em] text-tertiary">简历状态</div>
-              <p class="mt-2 text-sm leading-6 text-primary">{{ parseStatusLabel(currentResume.parseStatus, currentResume.userFixStatus) }}</p>
+              <p class="mt-2 text-sm leading-6 text-primary">
+                {{ parseStatusLabel(currentResume.parseStatus, currentResume.userFixStatus) }}
+              </p>
             </div>
             <div class="data-slab p-4">
               <div class="text-xs uppercase tracking-[0.22em] text-tertiary">技能标签</div>
@@ -252,7 +271,9 @@
             </div>
             <div class="data-slab p-4">
               <div class="text-xs uppercase tracking-[0.22em] text-tertiary">最后整理</div>
-              <p class="mt-2 text-sm leading-6 text-primary">{{ formatDateTime(currentResume.lastParsedAt || currentResume.updateTime) }}</p>
+              <p class="mt-2 text-sm leading-6 text-primary">
+                {{ formatDateTime(currentResume.lastParsedAt || currentResume.updateTime) }}
+              </p>
             </div>
             <div class="surface-card p-4 md:col-span-2 xl:col-span-4">
               <div class="text-xs font-semibold uppercase tracking-[0.22em] text-tertiary">当前摘要</div>
@@ -261,10 +282,51 @@
           </div>
         </article>
 
+        <!-- Resume Score Card -->
+        <article v-if="currentResume && resumeScore" class="shell-section-card p-5 sm:p-6">
+          <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">简历评分</h3>
+          <p class="mt-2 text-sm leading-7 text-secondary">根据完整度、关键词覆盖和 ATS 兼容性三个维度综合评估。</p>
+
+          <div class="mt-5 grid gap-4 md:grid-cols-4">
+            <div class="resume-score-ring">
+              <div class="resume-score-ring__value">
+                <span class="resume-score-ring__number">{{ resumeScore.overallScore }}</span>
+                <span class="resume-score-ring__label">综合分</span>
+              </div>
+            </div>
+            <div class="data-slab p-4">
+              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">完整度</div>
+              <p class="mt-2 text-lg font-semibold text-ink">{{ resumeScore.completenessScore }}%</p>
+            </div>
+            <div class="data-slab p-4">
+              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">关键词覆盖</div>
+              <p class="mt-2 text-lg font-semibold text-ink">{{ resumeScore.keywordCoverage }}%</p>
+            </div>
+            <div class="data-slab p-4">
+              <div class="text-xs uppercase tracking-[0.22em] text-tertiary">ATS 兼容性</div>
+              <p class="mt-2 text-lg font-semibold text-ink">{{ resumeScore.atsCompatibility }}%</p>
+            </div>
+          </div>
+
+          <div v-if="resumeScore.suggestions.length" class="mt-5 space-y-3">
+            <h4 class="text-sm font-semibold uppercase tracking-[0.18em] text-tertiary">优化建议</h4>
+            <div
+              v-for="(suggestion, idx) in resumeScore.suggestions"
+              :key="idx"
+              class="resume-suggestion-item"
+              :class="`resume-suggestion-${suggestion.severity}`"
+            >
+              <span class="resume-suggestion-badge">{{ severityLabel(suggestion.severity) }}</span>
+              <span class="detail-pill">{{ suggestion.field }}</span>
+              <p class="mt-1 text-sm leading-6 text-primary">{{ suggestion.message }}</p>
+            </div>
+          </div>
+        </article>
+
         <article v-if="currentResume" class="shell-section-card p-5 sm:p-6">
           <div class="flex items-start justify-between gap-4">
             <div>
-              <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">3. 检查项目追问</h3>
+              <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">项目追问与表达</h3>
               <p class="mt-2 text-sm leading-7 text-secondary">
                 每个项目都要能讲背景、职责、取舍和结果。你改完项目内容后，追问会跟着一起更新。
               </p>
@@ -273,14 +335,15 @@
           </div>
 
           <div class="mt-5 space-y-4">
-            <article
-              v-for="(project, index) in editingProjects"
-              :key="project.localId"
-              class="resume-project-card"
-            >
+            <article v-for="(project, index) in editingProjects" :key="project.localId" class="resume-project-card">
               <div class="flex items-center justify-between gap-3">
                 <div class="text-sm font-semibold text-ink">项目 {{ index + 1 }}</div>
-                <button v-if="isEditing" type="button" class="text-sm font-semibold text-coral" @click="removeProject(project.localId)">
+                <button
+                  v-if="isEditing"
+                  type="button"
+                  class="text-sm font-semibold text-coral"
+                  @click="removeProject(project.localId)"
+                >
                   删除
                 </button>
               </div>
@@ -289,7 +352,12 @@
                 <div class="grid gap-4 md:grid-cols-2">
                   <div class="surface-card p-4">
                     <div class="text-xs font-semibold uppercase tracking-[0.22em] text-tertiary">项目名称</div>
-                    <el-input v-model="project.projectName" class="mt-2" size="large" placeholder="例如：订单中心重构" />
+                    <el-input
+                      v-model="project.projectName"
+                      class="mt-2"
+                      size="large"
+                      placeholder="例如：订单中心重构"
+                    />
                   </div>
                   <div class="surface-card p-4">
                     <div class="text-xs font-semibold uppercase tracking-[0.22em] text-tertiary">你的角色</div>
@@ -298,7 +366,12 @@
                 </div>
                 <div class="surface-card p-4">
                   <div class="text-xs font-semibold uppercase tracking-[0.22em] text-tertiary">技术栈</div>
-                  <el-input v-model="project.techStack" class="mt-2" size="large" placeholder="例如：Spring Boot, MySQL, Redis" />
+                  <el-input
+                    v-model="project.techStack"
+                    class="mt-2"
+                    size="large"
+                    placeholder="例如：Spring Boot, MySQL, Redis"
+                  />
                 </div>
                 <div class="grid gap-4 md:grid-cols-2">
                   <div class="surface-card p-4">
@@ -337,7 +410,9 @@
               <div v-else class="mt-4">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                   <div class="min-w-0">
-                    <div class="text-xs font-semibold uppercase tracking-[0.22em] text-tertiary">{{ project.roleName }}</div>
+                    <div class="text-xs font-semibold uppercase tracking-[0.22em] text-tertiary">
+                      {{ project.roleName }}
+                    </div>
                     <h4 class="mt-2 text-lg font-semibold text-ink">{{ project.projectName }}</h4>
                   </div>
                   <span class="detail-pill">{{ project.techStack || '技术栈待补充' }}</span>
@@ -360,9 +435,23 @@
                   <div class="surface-card p-4">
                     <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">项目追问</div>
                     <div class="mt-3 space-y-3">
-                      <div v-for="question in project.followUpQuestions" :key="question.question" class="resume-question-item">
-                        <div class="text-xs font-semibold uppercase tracking-[0.18em] text-tertiary">{{ question.intent }}</div>
+                      <div
+                        v-for="question in project.followUpQuestions"
+                        :key="question.question"
+                        class="resume-question-item"
+                      >
+                        <div class="text-xs font-semibold uppercase tracking-[0.18em] text-tertiary">
+                          {{ question.intent }}
+                        </div>
                         <p class="mt-2 text-sm leading-6 text-primary">{{ question.question }}</p>
+                        <div class="mt-2">
+                          <RouterLink
+                            :to="{ path: '/chat', query: { q: question.question, context: project.projectName } }"
+                            class="text-xs font-semibold text-accent hover:underline"
+                          >
+                            单独练习
+                          </RouterLink>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -405,7 +494,9 @@
             />
           </div>
           <div v-else class="mt-5 surface-card p-5">
-            <p class="whitespace-pre-wrap text-sm leading-8 text-primary">{{ currentResume.selfIntro || '待补充面试开场' }}</p>
+            <p class="whitespace-pre-wrap text-sm leading-8 text-primary">
+              {{ currentResume.selfIntro || '待补充面试开场' }}
+            </p>
           </div>
         </article>
 
@@ -422,6 +513,15 @@
               <button type="button" class="hard-button-secondary" @click="handleDownloadResume">导出文本</button>
               <RouterLink to="/interview" class="hard-button-primary">去模拟面试</RouterLink>
             </div>
+          </div>
+
+          <div class="mt-4 rounded-2xl border border-accent/20 bg-accent/5 p-4">
+            <p class="text-sm leading-7 text-primary">
+              <strong>面试使用提示：</strong>
+              先用开场白讲清方向和亮点，再按项目展开顺序逐个项目说职责、取舍和结果。
+              遇到追问时，先确认问题再组织答案，不需要一口气讲完。
+              如果某个项目追问答不上来，回到简历助手继续修正内容后再练习。
+            </p>
           </div>
 
           <div class="mt-5 grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
@@ -458,7 +558,11 @@
             <article class="surface-card p-5">
               <div class="text-xs font-semibold uppercase tracking-[0.22em] text-tertiary">项目展开顺序</div>
               <div class="mt-4 space-y-4">
-                <div v-for="item in interviewResume.projectHighlights" :key="`${item.projectId || item.projectName}`" class="resume-highlight-card">
+                <div
+                  v-for="item in interviewResume.projectHighlights"
+                  :key="`${item.projectId || item.projectName}`"
+                  class="resume-highlight-card"
+                >
                   <div class="flex items-start justify-between gap-3">
                     <div>
                       <div class="text-lg font-semibold text-ink">{{ item.projectName }}</div>
@@ -478,7 +582,7 @@
         <article v-if="!currentResume" class="shell-section-card p-8 text-center">
           <p class="text-lg font-semibold text-ink">上传简历后，这里会按顺序带你往下走</p>
           <p class="mt-3 text-sm leading-7 text-secondary">
-            你会先检查解析结果，再整理项目追问，然后确认开场和面试提纲。
+            接下来检查简历内容，整理项目追问，最后确认开场和面试提纲。
           </p>
         </article>
       </section>
@@ -489,17 +593,27 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
-import AppShellHeader from '@/components/AppShellHeader.vue'
 import {
   fetchInterviewResumeApi,
   fetchLatestResumeApi,
   fetchResumeDetailApi,
   fetchResumeListApi,
+  fetchResumeScoreApi,
+  fetchResumeVersionsApi,
+  restoreResumeVersionApi,
   retryResumeParseApi,
   updateResumeApi,
   uploadResumeApi
 } from '@/api/resume'
-import type { EditableInterviewResume, ResumeFileDetail, ResumeProjectItem, ResumeSummaryItem } from '@/types/api'
+import type {
+  EditableInterviewResume,
+  ResumeFileDetail,
+  ResumeProjectItem,
+  ResumeScoreVO,
+  ResumeSummaryItem,
+  ResumeVersionVO
+} from '@/types/api'
+import { storage } from '@/utils/storage'
 
 interface ResumeProjectDraft {
   localId: string
@@ -522,6 +636,8 @@ const isEditing = ref(false)
 const resumeList = ref<ResumeSummaryItem[]>([])
 const currentResume = ref<ResumeFileDetail | null>(null)
 const interviewResume = ref<EditableInterviewResume | null>(null)
+const resumeScore = ref<ResumeScoreVO | null>(null)
+const resumeVersions = ref<ResumeVersionVO[]>([])
 const selectedResumeId = ref('')
 const draft = reactive({
   title: '',
@@ -540,7 +656,7 @@ const flattenedRisks = computed(() => {
 
 const stateChip = computed(() => {
   if (!currentResume.value) return '先上传简历'
-  if (currentResume.value.parseStatus === 'failed') return '先修正解析结果'
+  if (currentResume.value.parseStatus === 'failed') return '修正简历内容'
   if (isEditing.value) return '继续整理简历'
   return '检查项目追问'
 })
@@ -552,18 +668,9 @@ const stateTitle = computed(() => {
   return currentResume.value.title
 })
 
-const stateDescription = computed(() => {
-  if (!currentResume.value) return '上传 PDF 或 Word 简历后，你会按顺序检查解析结果、项目追问、面试开场和导出提纲。'
-  if (currentResume.value.parseStatus === 'failed') {
-    return currentResume.value.parseError || '这份简历还没整理完整，先把核心信息补齐。'
-  }
-  if (isEditing.value) return '先修正你要讲的内容，再去模拟面试。保存后，项目追问和面试提纲会一起更新。'
-  return currentResume.value.summary || '继续检查项目、开场和面试提纲。'
-})
-
 const nextActionText = computed(() => {
   if (!currentResume.value) return '上传简历'
-  if (currentResume.value.parseStatus === 'failed') return '修正解析结果'
+  if (currentResume.value.parseStatus === 'failed') return '修正简历内容'
   if (!currentResume.value.projects.length) return '补项目经历'
   return '确认开场和面试提纲'
 })
@@ -586,7 +693,7 @@ const workflowSteps = computed(() => {
     {
       id: 'parse',
       index: '02',
-      title: '检查解析结果',
+      title: '检查简历内容',
       description: '确认摘要、技能和教育信息是否可用。',
       status: parseReady ? 'done' : hasResume ? 'active' : 'pending',
       statusText: parseReady ? '可用' : hasResume ? '待修正' : '待开始'
@@ -625,9 +732,9 @@ const formatDateTime = (value?: string) => {
 
 const parseStatusLabel = (status?: string, userFixStatus?: string) => {
   if (userFixStatus === 'updated') return '已手动修正'
-  if (status === 'failed') return '解析失败'
-  if (status === 'parsed') return '解析完成'
-  if (status === 'pending') return '解析中'
+  if (status === 'failed') return '识别失败'
+  if (status === 'parsed') return '识别完成'
+  if (status === 'pending') return '识别中'
   return '待处理'
 }
 
@@ -650,9 +757,7 @@ const hydrateDraft = (resume: ResumeFileDetail) => {
   draft.skillsText = resume.skills.join(', ')
   draft.education = resume.education || ''
   draft.selfIntro = resume.selfIntro || ''
-  editingProjects.value = resume.projects.length
-    ? resume.projects.map(buildProjectDraft)
-    : [createEmptyProject()]
+  editingProjects.value = resume.projects.length ? resume.projects.map(buildProjectDraft) : [createEmptyProject()]
 }
 
 const createEmptyProject = (): ResumeProjectDraft => ({
@@ -695,6 +800,30 @@ const loadInterviewResume = async (resumeId: string) => {
   interviewResume.value = response.data
 }
 
+const loadScore = async (resumeId: string) => {
+  try {
+    const response = await fetchResumeScoreApi(resumeId)
+    resumeScore.value = response.data
+  } catch {
+    resumeScore.value = null
+  }
+}
+
+const loadVersions = async (resumeId: string) => {
+  try {
+    const response = await fetchResumeVersionsApi(resumeId)
+    resumeVersions.value = response.data
+  } catch {
+    resumeVersions.value = []
+  }
+}
+
+const severityLabel = (severity: string) => {
+  if (severity === 'critical') return '必须修复'
+  if (severity === 'warn') return '建议优化'
+  return '可选改进'
+}
+
 const handleSelectResume = async (resumeId: string) => {
   loading.value = true
   try {
@@ -702,7 +831,7 @@ const handleSelectResume = async (resumeId: string) => {
     const detailResponse = await fetchResumeDetailApi(resumeId)
     currentResume.value = detailResponse.data
     hydrateDraft(detailResponse.data)
-    await loadInterviewResume(resumeId)
+    await Promise.all([loadInterviewResume(resumeId), loadScore(resumeId), loadVersions(resumeId)])
     isEditing.value = detailResponse.data.parseStatus === 'failed'
   } finally {
     loading.value = false
@@ -723,7 +852,11 @@ const loadData = async () => {
     if (currentResume.value) {
       selectedResumeId.value = currentResume.value.id
       hydrateDraft(currentResume.value)
-      await loadInterviewResume(currentResume.value.id)
+      await Promise.all([
+        loadInterviewResume(currentResume.value.id),
+        loadScore(currentResume.value.id),
+        loadVersions(currentResume.value.id)
+      ])
       isEditing.value = currentResume.value.parseStatus === 'failed'
     }
   } catch {
@@ -763,7 +896,12 @@ const handleSave = async () => {
     })
     currentResume.value = response.data
     hydrateDraft(response.data)
-    await Promise.all([refreshResumeList(), loadInterviewResume(response.data.id)])
+    await Promise.all([
+      refreshResumeList(),
+      loadInterviewResume(response.data.id),
+      loadScore(response.data.id),
+      loadVersions(response.data.id)
+    ])
     isEditing.value = false
     ElMessage.success('简历内容已更新')
   } catch {
@@ -780,11 +918,16 @@ const handleRetryParse = async () => {
     const response = await retryResumeParseApi(currentResume.value.id)
     currentResume.value = response.data
     hydrateDraft(response.data)
-    await Promise.all([refreshResumeList(), loadInterviewResume(response.data.id)])
+    await Promise.all([
+      refreshResumeList(),
+      loadInterviewResume(response.data.id),
+      loadScore(response.data.id),
+      loadVersions(response.data.id)
+    ])
     isEditing.value = response.data.parseStatus === 'failed'
-    ElMessage.success(response.data.parseStatus === 'parsed' ? '已重新解析简历' : '已刷新当前简历状态')
+    ElMessage.success(response.data.parseStatus === 'parsed' ? '已重新识别简历' : '已刷新当前简历状态')
   } catch {
-    ElMessage.error('重新解析失败')
+    ElMessage.error('重新识别失败')
   } finally {
     retrying.value = false
   }
@@ -797,7 +940,12 @@ const handleUpload = async (file: File) => {
     currentResume.value = response.data
     selectedResumeId.value = response.data.id
     hydrateDraft(response.data)
-    await Promise.all([refreshResumeList(), loadInterviewResume(response.data.id)])
+    await Promise.all([
+      refreshResumeList(),
+      loadInterviewResume(response.data.id),
+      loadScore(response.data.id),
+      loadVersions(response.data.id)
+    ])
     isEditing.value = response.data.parseStatus === 'failed'
     if (currentUser?.id) {
       storage.setGuideSeen(currentUser.id)
@@ -809,6 +957,28 @@ const handleUpload = async (file: File) => {
     uploading.value = false
   }
   return false
+}
+
+const handleRestoreVersion = async (versionId: string) => {
+  loading.value = true
+  try {
+    const response = await restoreResumeVersionApi(versionId)
+    currentResume.value = response.data
+    selectedResumeId.value = response.data.id
+    hydrateDraft(response.data)
+    await Promise.all([
+      refreshResumeList(),
+      loadInterviewResume(response.data.id),
+      loadScore(response.data.id),
+      loadVersions(response.data.id)
+    ])
+    isEditing.value = false
+    ElMessage.success('已回滚到该版本')
+  } catch {
+    ElMessage.error('版本回滚失败')
+  } finally {
+    loading.value = false
+  }
 }
 
 const handleCopyResume = async () => {
@@ -845,18 +1015,23 @@ onMounted(() => {
 .resume-state-card {
   background:
     radial-gradient(circle at top left, rgba(var(--bc-accent-rgb), 0.11), transparent 28%),
-    radial-gradient(circle at 88% 20%, rgba(var(--bc-cyan-rgb), 0.11), transparent 18%),
-    var(--bc-surface-card);
+    radial-gradient(circle at 88% 20%, rgba(var(--bc-cyan-rgb), 0.11), transparent 18%), var(--bc-surface-card);
 }
 
 .resume-state-hero {
   min-width: 0;
 }
 
+.resume-side-panel__section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--bc-border-subtle);
+}
+
 .resume-state-metrics {
   display: grid;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
+  gap: 0.65rem;
+  margin-top: 1rem;
 }
 
 .resume-metric-card,
@@ -864,7 +1039,7 @@ onMounted(() => {
   border-radius: calc(var(--radius-md) - 6px);
   border: 1px solid var(--bc-border-subtle);
   background: rgba(255, 255, 255, 0.38);
-  padding: 0.95rem 1rem;
+  padding: 0.8rem 0.9rem;
   backdrop-filter: blur(10px);
 }
 
@@ -876,8 +1051,8 @@ onMounted(() => {
 
 .resume-metric-card strong {
   display: block;
-  margin-top: 0.45rem;
-  font-size: 1.15rem;
+  margin-top: 0.35rem;
+  font-size: 1.05rem;
   line-height: 1.25;
   color: var(--bc-ink);
 }
@@ -957,5 +1132,93 @@ onMounted(() => {
   .resume-state-metrics {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+}
+
+.resume-score-ring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--bc-surface-muted);
+  padding: 1rem;
+}
+
+.resume-score-ring__value {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.resume-score-ring__number {
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--bc-accent);
+}
+
+.resume-score-ring__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bc-ink-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.resume-suggestion-item {
+  border-radius: 16px;
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--bc-surface-muted);
+  padding: 12px 14px;
+}
+
+.resume-suggestion-critical {
+  border-color: rgba(255, 107, 107, 0.3);
+}
+
+.resume-suggestion-warn {
+  border-color: rgba(255, 183, 77, 0.3);
+}
+
+.resume-suggestion-info {
+  border-color: rgba(var(--bc-accent-rgb), 0.2);
+}
+
+.resume-suggestion-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.resume-suggestion-critical .resume-suggestion-badge {
+  background: rgba(255, 107, 107, 0.12);
+  color: var(--bc-coral);
+}
+
+.resume-suggestion-warn .resume-suggestion-badge {
+  background: rgba(255, 183, 77, 0.14);
+  color: #b7791f;
+}
+
+.resume-suggestion-info .resume-suggestion-badge {
+  background: rgba(var(--bc-accent-rgb), 0.1);
+  color: var(--bc-accent);
+}
+
+.resume-version-item {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--bc-surface-muted);
+  padding: 0.85rem 1rem;
+}
+
+.resume-version-item:hover {
+  border-color: rgba(var(--bc-accent-rgb), 0.22);
 }
 </style>
