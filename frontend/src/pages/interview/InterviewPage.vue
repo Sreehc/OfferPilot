@@ -154,9 +154,9 @@
             </el-select>
           </div>
 
-          <div v-if="allHistoryLoading" class="mt-4 py-6 text-center text-xs text-tertiary">正在加载最近的面试记录...</div>
+          <div v-if="allHistoryLoading" class="mt-4 py-6 text-center text-xs text-tertiary">正在读取最近几轮模拟面试记录...</div>
           <div v-else-if="!allHistoryItems.length" class="mt-4 py-6 text-center">
-            <p class="text-xs leading-5 text-secondary">你还没有完成过模拟面试。先开始一轮，后面这里会按时间线保留你的表现和分数。</p>
+            <p class="text-xs leading-5 text-secondary">当前还没有已完成的模拟面试。先开始一轮，后面这里会按时间线保留你的分数和表现。</p>
           </div>
           <div v-else class="mt-3 space-y-1">
             <RouterLink
@@ -882,7 +882,7 @@ const handleStart = async (reanswerQuestionId?: number) => {
     startCountdown()
     ElMessage.success(isVoice ? '语音模拟面试已开始，请点击录音按钮作答' : '模拟面试已开始，请回答第一题')
   } catch {
-    ElMessage.error('启动面试失败，请确认题库中有对应方向的题目')
+    ElMessage.error('这轮面试还没启动成功，请确认当前方向下有可用题目后再试。')
   } finally {
     starting.value = false
   }
@@ -907,7 +907,7 @@ const handleSubmitAnswer = async () => {
     lastResult.value = response.data
     phase.value = 'result'
   } catch (error: any) {
-    ElMessage.error(error?.message || '提交答案失败，请重试')
+    ElMessage.error(error?.message || '这道题还没提交成功，请检查答案后再试。')
     phase.value = 'answering'
   } finally {
     submitting.value = false
@@ -942,7 +942,7 @@ const handleVoiceSubmit = async () => {
     }
     phase.value = 'result'
   } catch {
-    ElMessage.error('语音提交失败，请重试')
+    ElMessage.error('这段语音答案还没提交成功，请重新录一段后再试。')
     phase.value = 'answering'
   } finally {
     voiceSubmitting.value = false
@@ -995,7 +995,10 @@ const loadAllHistory = async () => {
     allHistoryTotal.value = res.data.total
     allHistoryTotalPages.value = res.data.totalPages
   } catch {
-    // silent fail
+    allHistoryItems.value = []
+    allHistoryTotal.value = 0
+    allHistoryTotalPages.value = 0
+    ElMessage.error('最近的面试记录还没加载出来，请稍后再试。')
   } finally {
     allHistoryLoading.value = false
   }
@@ -1053,7 +1056,7 @@ const handleNextQuestion = async () => {
     phase.value = 'answering'
     startCountdown()
   } catch {
-    ElMessage.error('获取下一题失败')
+    ElMessage.error('下一题还没拿到，请稍后再试。')
   }
 }
 
@@ -1065,7 +1068,7 @@ const handleFinish = async () => {
     detail.value = response.data
     phase.value = 'finished'
   } catch {
-    ElMessage.error('获取面试详情失败')
+    ElMessage.error('这次面试总结还没加载出来，请稍后再试。')
   }
 }
 
