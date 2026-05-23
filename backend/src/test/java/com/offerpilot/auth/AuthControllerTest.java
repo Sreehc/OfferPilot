@@ -1,38 +1,52 @@
 package com.offerpilot.auth;
 
-import com.offerpilot.auth.controller.AuthController;
-import com.offerpilot.auth.dto.LoginRequest;
-import com.offerpilot.auth.dto.LoginResponse;
-import com.offerpilot.auth.dto.RegisterRequest;
-import com.offerpilot.auth.service.AuthService;
-import com.offerpilot.common.api.ResultCode;
-import com.offerpilot.common.exception.BusinessException;
-import com.offerpilot.user.vo.UserInfoVO;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(AuthController.class)
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.offerpilot.auth.controller.AuthController;
+import com.offerpilot.auth.dto.LoginRequest;
+import com.offerpilot.auth.dto.LoginResponse;
+import com.offerpilot.auth.dto.RegisterRequest;
+import com.offerpilot.auth.service.AuthService;
+import com.offerpilot.auth.service.LoginLogService;
+import com.offerpilot.common.api.ResultCode;
+import com.offerpilot.common.exception.BusinessException;
+import com.offerpilot.common.handler.GlobalExceptionHandler;
+import com.offerpilot.user.vo.UserInfoVO;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+@ExtendWith(MockitoExtension.class)
 class AuthControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @MockBean
+    @Mock
     private AuthService authService;
+    @Mock
+    private LoginLogService loginLogService;
+    @Mock
+    private StringRedisTemplate redisTemplate;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private MockMvc mockMvc;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @BeforeEach
+    void setUp() {
+        AuthController controller = new AuthController(authService, loginLogService, redisTemplate);
+        mockMvc = MockMvcBuilders.standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+    }
 
     @Test
     void register_success() throws Exception {
@@ -40,6 +54,7 @@ class AuthControllerTest {
         request.setUsername("testuser");
         request.setPassword("password123");
         request.setNickname("Test User");
+        request.setEmail("test@example.com");
 
         LoginResponse response = LoginResponse.builder()
                 .token("jwt-token-xxx")

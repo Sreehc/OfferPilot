@@ -5,12 +5,16 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.MybatisMapperBuilderAssistant;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.offerpilot.adaptive.service.AdaptiveService;
 import com.offerpilot.adaptive.vo.AbilityProfileVO;
 import com.offerpilot.application.entity.JobApplication;
@@ -28,10 +32,12 @@ import com.offerpilot.plan.mapper.StudyPlanTaskMapper;
 import com.offerpilot.resume.entity.ResumeFile;
 import com.offerpilot.resume.mapper.ResumeFileMapper;
 import com.offerpilot.security.util.SecurityUtils;
+import com.offerpilot.wrong.entity.ReviewLog;
 import com.offerpilot.wrong.mapper.ReviewLogMapper;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -43,6 +49,13 @@ import org.springframework.data.redis.core.ValueOperations;
 
 @ExtendWith(MockitoExtension.class)
 class DashboardServiceImplTest {
+
+    @BeforeAll
+    static void initMybatisMetadata() {
+        TableInfoHelper.initTableInfo(
+                new MybatisMapperBuilderAssistant(new MybatisConfiguration(), "test"),
+                ReviewLog.class);
+    }
 
     @Mock
     private DashboardMetricsMapper dashboardMetricsMapper;
@@ -71,7 +84,7 @@ class DashboardServiceImplTest {
     private DashboardServiceImpl dashboardService;
 
     @Test
-    void overview_emptyData_marksFirstVisitAndBuildsEmptyApplicationSummary() {
+    void overview_emptyData_marksFirstVisitAndBuildsEmptyApplicationSummary() throws Exception {
         OfferPilotProperties.Dashboard dashboardProps = new OfferPilotProperties.Dashboard();
         dashboardProps.setCacheTtlMinutes(5);
 
@@ -93,7 +106,8 @@ class DashboardServiceImplTest {
             when(studyPlanMapper.selectOne(org.mockito.ArgumentMatchers.any())).thenReturn(null);
             when(resumeFileMapper.selectList(org.mockito.ArgumentMatchers.any())).thenReturn(List.of());
             when(adaptiveService.getAbilityProfile(1L)).thenReturn(AbilityProfileVO.builder().build());
-            when(objectMapper.writeValueAsString(org.mockito.ArgumentMatchers.any(DashboardOverviewVO.class))).thenReturn("{}");
+            doReturn("{}").when(objectMapper)
+                    .writeValueAsString(org.mockito.ArgumentMatchers.any(DashboardOverviewVO.class));
 
             DashboardOverviewVO result = dashboardService.overview();
 
@@ -113,7 +127,7 @@ class DashboardServiceImplTest {
     }
 
     @Test
-    void overview_hasData_buildsApplicationSummaryAndNotFirstVisit() {
+    void overview_hasData_buildsApplicationSummaryAndNotFirstVisit() throws Exception {
         OfferPilotProperties.Dashboard dashboardProps = new OfferPilotProperties.Dashboard();
         dashboardProps.setCacheTtlMinutes(5);
 
@@ -176,7 +190,8 @@ class DashboardServiceImplTest {
                             .weakCategories(List.of("JVM"))
                             .suggestedFocus("JVM")
                             .build());
-            when(objectMapper.writeValueAsString(org.mockito.ArgumentMatchers.any(DashboardOverviewVO.class))).thenReturn("{}");
+            doReturn("{}").when(objectMapper)
+                    .writeValueAsString(org.mockito.ArgumentMatchers.any(DashboardOverviewVO.class));
 
             DashboardOverviewVO result = dashboardService.overview();
 
@@ -223,7 +238,7 @@ class DashboardServiceImplTest {
     }
 
     @Test
-    void overview_prefersFollowApplicationWhenTodayPlanIsDone() {
+    void overview_prefersFollowApplicationWhenTodayPlanIsDone() throws Exception {
         OfferPilotProperties.Dashboard dashboardProps = new OfferPilotProperties.Dashboard();
         dashboardProps.setCacheTtlMinutes(5);
 
@@ -261,7 +276,8 @@ class DashboardServiceImplTest {
             active.setCompany("Gamma");
             when(jobApplicationMapper.selectList(org.mockito.ArgumentMatchers.any())).thenReturn(List.of(active));
             when(adaptiveService.getAbilityProfile(1L)).thenReturn(AbilityProfileVO.builder().build());
-            when(objectMapper.writeValueAsString(org.mockito.ArgumentMatchers.any(DashboardOverviewVO.class))).thenReturn("{}");
+            doReturn("{}").when(objectMapper)
+                    .writeValueAsString(org.mockito.ArgumentMatchers.any(DashboardOverviewVO.class));
 
             DashboardOverviewVO result = dashboardService.overview();
 
