@@ -37,6 +37,14 @@ export const EMPTY_STATE_COPY = {
     title: '当前还没有贡献排名',
     description: '先参与社区回答，后面这里会继续更新贡献排名。'
   },
+  communityBoard: {
+    title: '当前版块还没有帖子',
+    description: '换个版块看看，或先发起一个问题，把这块讨论带起来。'
+  },
+  communityReplies: {
+    title: '当前还没有回复',
+    description: '先写下第一条回复，把这次讨论继续往前推进。'
+  },
   knowledgeRecommended: {
     title: '当前还没有可用推荐资料',
     description: '先切到“我的文档”上传一份资料，或调整筛选范围继续找能继续提问的内容。'
@@ -44,9 +52,76 @@ export const EMPTY_STATE_COPY = {
   knowledgePersonal: {
     title: '上传你的第一份学习资料',
     description: '上传一份资料，处理完成后就能继续提问。'
+  },
+  favorites: {
+    title: '当前还没有收藏内容',
+    description: '先去知识库、题库或社区标记几条重点内容，后面这里会集中回看。'
+  },
+  favoriteGroups: {
+    title: '当前还没有收藏分组',
+    description: '先新建一个分组，把同一轮复习要看的内容收在一起。'
+  },
+  wrongBook: {
+    title: '当前还没有错题记录',
+    description: '先做一轮题库训练或模拟面试，低分题和易错题会自动进来，后面这里再集中复习。'
+  },
+  interviewHistory: {
+    title: '当前还没有已完成的模拟面试',
+    description: '先开始一轮，后面这里会按时间线保留你的分数和表现。'
+  },
+  dashboardRecentInterview: {
+    title: '当前还没有最近面试摘要',
+    description: '先完成一轮模拟面试，后面这里会继续展示最近一次训练的摘要和薄弱点。'
+  },
+  deviceManage: {
+    title: '当前还没有其他登录设备',
+    description: '目前只看到这台设备。后面有新设备登录时，这里会继续保留记录，方便排查陌生登录。'
+  },
+  adminKnowledgeDocs: {
+    title: '当前还没有文档',
+    description: '先导入一份资料，后面这里再继续处理解析、索引和检索验证。'
   }
 } as const
 
 export const ERROR_COPY = {
-  chatAnswerFailed: '这次回答还没生成成功，请换个问法或稍后再试。'
+  chatAnswerFailed: '这次回答还没生成成功，请换个问法或稍后再试。',
+  communityQuestionLoadFailed: '帖子内容还没加载出来，请稍后再试；如果还是不行，先回到社区列表重新进入。',
+  notificationLoadFailed: '通知列表还没加载出来，请稍后再试。',
+  notificationMarkAllReadFailed: '通知还没全部设为已读，请稍后再试。',
+  favoritesLoadFailed: '收藏列表还没加载出来，请刷新或调整筛选后再试。',
+  favoriteRemoveFailed: '这条收藏还没取消成功，请稍后再试。',
+  favoriteBatchRemoveFailed: '这批收藏还没取消成功，请稍后再试。',
+  favoriteTagCreateFailed: '收藏分组还没创建成功，请换个名字后再试。',
+  favoriteTagDeleteFailed: '这个分组还没删除成功，请稍后再试。',
+  wrongListLoadFailed: '错题列表还没加载出来，请刷新页面或稍后再试。',
+  wrongDetailLoadFailed: '这道错题的详情还没加载出来，请换一题，或稍后再试。',
+  wrongMasteryUpdateFailed: '掌握状态还没更新成功，请重新点一次当前目标状态。',
+  wrongDeleteFailed: '这道错题还没删除成功，请稍后再试。',
+  wrongExportFailed: '错题本还没导出成功，请稍后再试。',
+  deviceLoadFailed: '登录设备还没加载出来，请刷新后再试。',
+  deviceRevokeFailed: '这台设备暂时没有撤销成功，请稍后再试。',
+  deviceRevokeAllFailed: '其他设备暂时没有全部撤销成功，请稍后再试。',
+  adminContentLoadFailed: '待审核内容还没加载出来，请刷新列表后再试。',
+  adminContentApproveFailed: '这条内容还没审核通过，请稍后再试。',
+  adminContentRejectFailed: '这条内容还没拒绝成功，请稍后再试。',
+  adminUsersLoadFailed: '用户列表还没加载出来，请刷新或调整筛选后再试。',
+  adminUserSaveFailed: '这位用户的信息还没更新成功，请稍后再试。',
+  adminUserBanFailed: '这位用户还没封禁成功，请稍后再试。',
+  adminUserUnbanFailed: '这位用户还没解封成功，请稍后再试。',
+  adminUserDetailLoadFailed: '这位用户的详情还没加载出来，请稍后再试。',
+  adminSystemConfigLoadFailed: '系统配置还没加载出来，请刷新后再试。',
+  adminSystemConfigSaveFailed: '这项配置还没保存成功，请检查改动后再试。',
+  adminInterviewGovernanceLoadFailed: '面试治理数据还没加载出来，请刷新列表后再试。',
+  adminLoginLogLoadFailed: '登录日志还没加载出来，请刷新或调整筛选后再试。',
+  adminQuestionLoadFailed: '题库列表还没加载出来，请刷新或调整筛选后再试。',
+  adminKnowledgeLoadFailed: '文档列表还没加载出来，请刷新或调整筛选后再试。',
+  adminKnowledgeSearchFailed: '检索结果还没拿到，请换个问题或稍后再试。',
+  adminKnowledgeImportFailed: '这份资料还没导入成功，请稍后再试。',
+  adminKnowledgeRechunkFailed: '这份文档还没重新切分成功，请稍后再试。',
+  adminKnowledgeReindexFailed: '这份文档的索引还没重建成功，请稍后再试。',
+  adminKnowledgeBatchRechunkFailed: '这批文档还没重新切分成功，请稍后再试。',
+  adminKnowledgeBatchReindexFailed: '这批索引还没重建成功，请稍后再试。',
+  adminQuestionExportFailed: '题库还没导出成功，请稍后再试。',
+  adminUserExportFailed: '用户列表还没导出成功，请稍后再试。',
+  adminAiLogLoadFailed: 'AI 调用日志还没加载出来，请刷新或调整筛选后再试。'
 } as const

@@ -48,7 +48,7 @@
             v-else-if="notifications.length === 0"
             icon="bell"
             title="暂时没有新通知"
-            description="新的面试结果、复习提醒和系统消息会出现在这里。"
+            description="新的面试结果、复习提醒和站内更新会出现在这里。"
             compact
           />
 
@@ -106,6 +106,7 @@ import { ElMessage } from 'element-plus'
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
+import { ERROR_COPY } from '@/constants/productCopy'
 import {
   fetchNotificationsApi,
   fetchUnreadCountApi,
@@ -137,7 +138,7 @@ const loadNotifications = async () => {
     const res = await fetchNotificationsApi(1, 20)
     notifications.value = res.data.records
   } catch {
-    ElMessage.error('通知列表还没加载出来，请稍后再试。')
+    ElMessage.error(ERROR_COPY.notificationLoadFailed)
   } finally {
     loading.value = false
   }
@@ -177,7 +178,7 @@ const handleMarkAllRead = async () => {
     notifications.value.forEach((n) => (n.isRead = true))
     unreadCount.value = 0
   } catch {
-    ElMessage.error('通知还没全部设为已读，请稍后再试。')
+    ElMessage.error(ERROR_COPY.notificationMarkAllReadFailed)
   }
 }
 

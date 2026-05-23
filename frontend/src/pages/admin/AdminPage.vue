@@ -1,27 +1,25 @@
 <template>
   <div class="space-y-6">
-    <AppShellHeader>
-      <template #actions>
-          <el-button
-            :loading="exportingQuestions"
-            size="large"
-            class="hard-button-secondary !min-h-11 !px-5"
-            @click="handleExportQuestions"
-          >
-            导出题库
-          </el-button>
-          <el-button
-            :loading="exportingUsers"
-            size="large"
-            class="hard-button-primary !min-h-11 !px-5"
-            @click="handleExportUsers"
-          >
-            导出用户
-          </el-button>
-      </template>
-    </AppShellHeader>
-
     <section class="shell-section-card p-4 sm:p-5 admin-workspace-shell">
+      <div class="mb-4 flex flex-wrap justify-end gap-3">
+        <el-button
+          :loading="exportingQuestions"
+          size="large"
+          class="hard-button-secondary !min-h-11 !px-5"
+          @click="handleExportQuestions"
+        >
+          导出题库
+        </el-button>
+        <el-button
+          :loading="exportingUsers"
+          size="large"
+          class="hard-button-primary !min-h-11 !px-5"
+          @click="handleExportUsers"
+        >
+          导出用户
+        </el-button>
+      </div>
+
       <div class="admin-tab-shell">
       <el-tabs v-model="activeTab" class="admin-tabs">
         <el-tab-pane label="系统概览" name="overview">
@@ -120,7 +118,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
-import AppShellHeader from '@/components/AppShellHeader.vue'
+import { ERROR_COPY } from '@/constants/productCopy'
 import AdminOverviewTab from './AdminOverviewTab.vue'
 import AdminUserTab from './AdminUserTab.vue'
 import AdminContentReviewTab from './AdminContentReviewTab.vue'
@@ -239,9 +237,9 @@ const builtInSeeds = [
 ]
 
 const loadCategories = async () => { const r = await fetchCategoriesApi(); categories.value = r.data }
-const loadQuestions = async () => { questionLoading.value = true; try { const r = await fetchQuestionsApi({ categoryId: questionFilter.categoryId, type: questionFilter.type, difficulty: questionFilter.difficulty, jobDirection: questionFilter.jobDirection || undefined, keyword: questionFilter.keyword || undefined, pageNum: questionPage.value, pageSize: questionPageSize.value }); questions.value = r.data.records; questionTotal.value = r.data.total; questionTotalPages.value = r.data.totalPages } catch { ElMessage.error('题库加载失败') } finally { questionLoading.value = false } }
+const loadQuestions = async () => { questionLoading.value = true; try { const r = await fetchQuestionsApi({ categoryId: questionFilter.categoryId, type: questionFilter.type, difficulty: questionFilter.difficulty, jobDirection: questionFilter.jobDirection || undefined, keyword: questionFilter.keyword || undefined, pageNum: questionPage.value, pageSize: questionPageSize.value }); questions.value = r.data.records; questionTotal.value = r.data.total; questionTotalPages.value = r.data.totalPages } catch { ElMessage.error(ERROR_COPY.adminQuestionLoadFailed) } finally { questionLoading.value = false } }
 const handleQuestionPageChange = (p: number) => { questionPage.value = p; void loadQuestions() }
-const loadKnowledgeDocs = async () => { knowledgeLoading.value = true; try { const r = await fetchKnowledgeDocsApi({ categoryId: knowledgeFilter.categoryId, libraryScope: 'system', businessType: knowledgeFilter.businessType, fileType: knowledgeFilter.fileType, parseStatus: knowledgeFilter.parseStatus, indexStatus: knowledgeFilter.indexStatus, status: knowledgeFilter.status, keyword: knowledgeFilter.keyword || undefined, pageNum: knowledgePage.value, pageSize: knowledgePageSize.value }); knowledgeDocs.value = r.data.records; knowledgeTotal.value = r.data.total; knowledgeTotalPages.value = r.data.totalPages } catch { ElMessage.error('知识文档加载失败') } finally { knowledgeLoading.value = false } }
+const loadKnowledgeDocs = async () => { knowledgeLoading.value = true; try { const r = await fetchKnowledgeDocsApi({ categoryId: knowledgeFilter.categoryId, libraryScope: 'system', businessType: knowledgeFilter.businessType, fileType: knowledgeFilter.fileType, parseStatus: knowledgeFilter.parseStatus, indexStatus: knowledgeFilter.indexStatus, status: knowledgeFilter.status, keyword: knowledgeFilter.keyword || undefined, pageNum: knowledgePage.value, pageSize: knowledgePageSize.value }); knowledgeDocs.value = r.data.records; knowledgeTotal.value = r.data.total; knowledgeTotalPages.value = r.data.totalPages } catch { ElMessage.error(ERROR_COPY.adminKnowledgeLoadFailed) } finally { knowledgeLoading.value = false } }
 const handleKnowledgePageChange = (p: number) => { knowledgePage.value = p; void loadKnowledgeDocs() }
 
 const saveCategory = async () => { if (!categoryForm.name.trim()) { ElMessage.warning('请输入分类名称'); return } categorySaving.value = true; try { if (categoryForm.id) { await updateCategoryApi(categoryForm); ElMessage.success('分类已更新') } else { await addCategoryApi(categoryForm); ElMessage.success('分类已新增') } resetCategoryForm(); await loadCategories() } catch { ElMessage.error('分类保存失败') } finally { categorySaving.value = false } }
@@ -317,18 +315,18 @@ const resetQuestionForm = () => {
 }
 const resetQuestionFilter = () => { questionFilter.categoryId = undefined; questionFilter.type = undefined; questionFilter.difficulty = undefined; questionFilter.jobDirection = ''; questionFilter.keyword = ''; void loadQuestions() }
 
-const importSeed = async (seedKey: string) => { knowledgeImporting.value = seedKey; try { await importKnowledgeSeedApi({ seedKey }); ElMessage.success('知识资料已导入'); await Promise.all([loadCategories(), loadKnowledgeDocs()]) } catch { ElMessage.error('知识资料导入失败') } finally { knowledgeImporting.value = null } }
-const rechunkDoc = async (id: number) => { knowledgeActionId.value = `rechunk-${id}`; try { await rechunkKnowledgeDocApi(id); ElMessage.success('文档已重新切分'); await loadKnowledgeDocs() } catch { ElMessage.error('重新切分失败') } finally { knowledgeActionId.value = null } }
-const reindexDoc = async (id: number) => { knowledgeActionId.value = `reindex-${id}`; try { await reindexKnowledgeDocApi(id); ElMessage.success('索引已重建'); await loadKnowledgeDocs() } catch { ElMessage.error('重建索引失败') } finally { knowledgeActionId.value = null } }
+const importSeed = async (seedKey: string) => { knowledgeImporting.value = seedKey; try { await importKnowledgeSeedApi({ seedKey }); ElMessage.success('知识资料已导入'); await Promise.all([loadCategories(), loadKnowledgeDocs()]) } catch { ElMessage.error(ERROR_COPY.adminKnowledgeImportFailed) } finally { knowledgeImporting.value = null } }
+const rechunkDoc = async (id: number) => { knowledgeActionId.value = `rechunk-${id}`; try { await rechunkKnowledgeDocApi(id); ElMessage.success('文档已重新切分'); await loadKnowledgeDocs() } catch { ElMessage.error(ERROR_COPY.adminKnowledgeRechunkFailed) } finally { knowledgeActionId.value = null } }
+const reindexDoc = async (id: number) => { knowledgeActionId.value = `reindex-${id}`; try { await reindexKnowledgeDocApi(id); ElMessage.success('索引已重建'); await loadKnowledgeDocs() } catch { ElMessage.error(ERROR_COPY.adminKnowledgeReindexFailed) } finally { knowledgeActionId.value = null } }
 const batchRechunkDocs = async (ids: number[]) => {
   if (!ids.length) { ElMessage.warning('当前列表没有解析失败文档'); return }
   knowledgeBatchActionId.value = 'rechunk-batch'
-  try { await batchRechunkKnowledgeDocsApi(ids); ElMessage.success(`已重试 ${ids.length} 份解析失败文档`); await loadKnowledgeDocs() } catch { ElMessage.error('批量重新切分失败') } finally { knowledgeBatchActionId.value = null }
+  try { await batchRechunkKnowledgeDocsApi(ids); ElMessage.success(`已重试 ${ids.length} 份解析失败文档`); await loadKnowledgeDocs() } catch { ElMessage.error(ERROR_COPY.adminKnowledgeBatchRechunkFailed) } finally { knowledgeBatchActionId.value = null }
 }
 const batchReindexDocs = async (ids: number[]) => {
   if (!ids.length) { ElMessage.warning('当前列表没有索引失败文档'); return }
   knowledgeBatchActionId.value = 'reindex-batch'
-  try { await batchReindexKnowledgeDocsApi(ids); ElMessage.success(`已重建 ${ids.length} 份失败索引`); await loadKnowledgeDocs() } catch { ElMessage.error('批量重建索引失败') } finally { knowledgeBatchActionId.value = null }
+  try { await batchReindexKnowledgeDocsApi(ids); ElMessage.success(`已重建 ${ids.length} 份失败索引`); await loadKnowledgeDocs() } catch { ElMessage.error(ERROR_COPY.adminKnowledgeBatchReindexFailed) } finally { knowledgeBatchActionId.value = null }
 }
 const resetKnowledgeFilter = () => { knowledgeFilter.categoryId = undefined; knowledgeFilter.businessType = undefined; knowledgeFilter.fileType = undefined; knowledgeFilter.parseStatus = undefined; knowledgeFilter.indexStatus = undefined; knowledgeFilter.status = undefined; knowledgeFilter.keyword = ''; void loadKnowledgeDocs() }
 
@@ -348,7 +346,7 @@ const handleExportQuestions = async () => {
     downloadBlob(response.data as unknown as BlobPart, `offerpilot-questions-${Date.now()}.xlsx`)
     ElMessage.success('题库导出成功')
   } catch {
-    ElMessage.error('题库导出失败')
+    ElMessage.error(ERROR_COPY.adminQuestionExportFailed)
   } finally {
     exportingQuestions.value = false
   }
@@ -361,7 +359,7 @@ const handleExportUsers = async () => {
     downloadBlob(response.data as unknown as BlobPart, `offerpilot-users-${Date.now()}.xlsx`)
     ElMessage.success('用户导出成功')
   } catch {
-    ElMessage.error('用户导出失败')
+    ElMessage.error(ERROR_COPY.adminUserExportFailed)
   } finally {
     exportingUsers.value = false
   }

@@ -34,7 +34,6 @@
           <el-option label="面试评分" value="interview.score" />
           <el-option label="知识检索" value="knowledge.search" />
           <el-option label="知识索引" value="knowledge.index" />
-          <el-option label="卡片生成" value="cards.generate" />
         </el-select>
         <el-select v-model="callType" clearable size="large" placeholder="按类型筛选">
           <el-option label="聊天" value="chat" />
@@ -138,6 +137,7 @@ import {
   type AdminAiLogItem,
   type AdminAiLogSummary
 } from '@/api/admin'
+import { ERROR_COPY } from '@/constants/productCopy'
 
 const logs = ref<AdminAiLogItem[]>([])
 const summary = ref<AdminAiLogSummary | null>(null)
@@ -170,7 +170,7 @@ const loadData = async () => {
     total.value = logsRes.data.total
     totalPages.value = logsRes.data.totalPages
   } catch {
-    ElMessage.error('AI 调用日志加载失败')
+    ElMessage.error(ERROR_COPY.adminAiLogLoadFailed)
   } finally {
     loading.value = false
   }

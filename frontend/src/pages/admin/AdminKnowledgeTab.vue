@@ -144,7 +144,7 @@
         </div>
 
         <div v-else class="mt-4 rounded-2xl bg-[var(--panel-muted)] px-4 py-5 text-sm text-secondary">
-          没有找到相关结果。
+          这次还没有找到相关结果，换个问题或补一份资料后再试。
         </div>
       </section>
 
@@ -180,7 +180,7 @@
           </article>
         </div>
         <div v-else class="px-5 py-12 text-center text-sm text-slate-500">
-          还没有文档，先导入一份资料。
+          {{ EMPTY_STATE_COPY.adminKnowledgeDocs.description }}
         </div>
       </section>
 
@@ -201,6 +201,7 @@
 import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { searchKnowledgeApi } from '@/api/knowledge'
+import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
 import type { CategoryItem, KnowledgeDocItem, KnowledgeSearchResult } from '@/types/api'
 
 interface KnowledgeFilter {
@@ -266,7 +267,7 @@ const runSearch = async () => {
     const response = await searchKnowledgeApi(searchQuery.value.trim())
     searchResult.value = response.data
   } catch {
-    ElMessage.error('知识检索失败')
+    ElMessage.error(ERROR_COPY.adminKnowledgeSearchFailed)
   } finally {
     searching.value = false
   }

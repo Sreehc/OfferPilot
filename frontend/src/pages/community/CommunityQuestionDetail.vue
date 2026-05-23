@@ -49,6 +49,14 @@
             <button
               v-if="isAuthor"
               type="button"
+              class="hard-button-secondary"
+              @click="handleEditQuestion"
+            >
+              编辑帖子
+            </button>
+            <button
+              v-if="isAuthor"
+              type="button"
               class="hard-button-secondary !border-red-300 !text-[var(--bc-coral)]"
               @click="handleDeleteQuestion"
             >
@@ -82,6 +90,14 @@
                     </svg>
                     <span>{{ acceptedAnswer.upvoteCount }}</span>
                   </span>
+                  <button
+                    v-if="canDeleteAnswer(acceptedAnswer)"
+                    type="button"
+                    class="forum-inline-action forum-inline-action-danger"
+                    @click="handleDeleteAnswer(acceptedAnswer.id)"
+                  >
+                    删除
+                  </button>
                 </div>
               </div>
 
@@ -119,6 +135,14 @@
                   >
                     采纳
                   </button>
+                  <button
+                    v-if="canDeleteAnswer(a)"
+                    type="button"
+                    class="forum-inline-action forum-inline-action-danger"
+                    @click="handleDeleteAnswer(a.id)"
+                  >
+                    删除
+                  </button>
                 </div>
               </div>
 
@@ -130,8 +154,8 @@
             v-if="question.answers.length === 0"
             class="empty-state-card"
             icon="chat"
-            title="还没有回复"
-            description="写下第一个回复。"
+            :title="EMPTY_STATE_COPY.communityReplies.title"
+            :description="EMPTY_STATE_COPY.communityReplies.description"
             compact
           />
         </div>
@@ -172,8 +196,10 @@
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
+import { EMPTY_STATE_COPY } from '@/constants/productCopy'
 import {
   acceptCommunityAnswerApi,
+  deleteCommunityAnswerApi,
   deleteCommunityQuestionApi,
   fetchCommunityQuestionDetailApi,
   submitCommunityAnswerApi,
@@ -256,6 +282,28 @@ async function handleDeleteQuestion() {
   await router.push('/community')
 }
 
+async function handleDeleteAnswer(answerId: number) {
+  if (!confirm('确定删除这条回答吗？')) return
+  await deleteCommunityAnswerApi(answerId)
+  await fetchQuestion()
+}
+
+function handleEditQuestion() {
+  if (!question.value) return
+  void router.push({
+    path: '/community/submit',
+    query: {
+      id: String(question.value.id)
+    }
+  })
+}
+
+function canDeleteAnswer(answer: CommunityQuestionDetail['answers'][number]) {
+  if (!question.value) return false
+  const currentUserId = authStore.user?.id
+  return Boolean(currentUserId && (answer.userId === currentUserId || question.value.userId === currentUserId))
+}
+
 function questionResolved(target: CommunityQuestion | CommunityQuestionDetail) {
   return target.accepted || target.status === 'resolved'
 }
@@ -293,6 +341,10 @@ onMounted(() => {
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
+}
+
+.forum-inline-action-danger {
+  color: var(--bc-coral);
 }
 
 .forum-post__title {

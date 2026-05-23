@@ -88,7 +88,7 @@
                 </div>
               </article>
             </div>
-            <div v-else class="mt-3 text-sm text-secondary">还没有变更记录。</div>
+            <div v-else class="mt-3 text-sm text-secondary">当前还没有变更记录，先更新一项配置，后面这里会继续保留修改历史。</div>
           </div>
         </article>
       </div>
@@ -104,6 +104,7 @@ import {
   updateAdminSystemConfigApi,
   type AdminSystemConfigItem
 } from '@/api/admin'
+import { ERROR_COPY } from '@/constants/productCopy'
 
 const loading = ref(false)
 const savingKey = ref('')
@@ -136,7 +137,7 @@ const loadConfigs = async () => {
       changeReasons[item.configKey] ||= ''
     }
   } catch {
-    ElMessage.error('系统配置加载失败')
+    ElMessage.error(ERROR_COPY.adminSystemConfigLoadFailed)
   } finally {
     loading.value = false
   }
@@ -168,7 +169,7 @@ const saveItem = async (item: AdminSystemConfigItem) => {
     expandedHistoryKey.value = item.configKey
     ElMessage.success('配置已更新')
   } catch {
-    ElMessage.error('配置保存失败')
+    ElMessage.error(ERROR_COPY.adminSystemConfigSaveFailed)
   } finally {
     savingKey.value = ''
   }

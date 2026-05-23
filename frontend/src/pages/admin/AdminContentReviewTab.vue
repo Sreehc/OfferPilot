@@ -58,6 +58,7 @@
 import { ElMessage } from 'element-plus'
 import { onMounted, ref } from 'vue'
 import { approveContentApi, fetchPendingContentApi, rejectContentApi } from '@/api/admin'
+import { ERROR_COPY } from '@/constants/productCopy'
 import type { AdminContentReviewItem } from '@/api/admin'
 
 const items = ref<AdminContentReviewItem[]>([])
@@ -80,14 +81,14 @@ const loadPending = async () => {
     items.value = res.data.records
     total.value = res.data.total
     totalPages.value = res.data.totalPages
-  } catch { ElMessage.error('加载失败') } finally { loading.value = false }
+  } catch { ElMessage.error(ERROR_COPY.adminContentLoadFailed) } finally { loading.value = false }
 }
 
 const handlePageChange = (p: number) => { pageNum.value = p; void loadPending() }
 
 const handleApprove = async (item: AdminContentReviewItem) => {
   actionId.value = `approve-${item.id}`
-  try { await approveContentApi(item.id); ElMessage.success('已通过'); await loadPending() } catch { ElMessage.error('操作失败') } finally { actionId.value = '' }
+  try { await approveContentApi(item.id); ElMessage.success('已通过'); await loadPending() } catch { ElMessage.error(ERROR_COPY.adminContentApproveFailed) } finally { actionId.value = '' }
 }
 
 const openRejectDialog = (item: AdminContentReviewItem) => {
@@ -104,7 +105,7 @@ const handleReject = async () => {
     ElMessage.success('已拒绝')
     rejectVisible.value = false
     await loadPending()
-  } catch { ElMessage.error('操作失败') } finally { rejectLoading.value = false }
+  } catch { ElMessage.error(ERROR_COPY.adminContentRejectFailed) } finally { rejectLoading.value = false }
 }
 
 const formatTime = (v?: string) => {

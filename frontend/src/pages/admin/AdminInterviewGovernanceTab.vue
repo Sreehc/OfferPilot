@@ -110,6 +110,7 @@ import {
   type AdminInterviewGovernanceItem,
   type AdminInterviewGovernanceSummary
 } from '@/api/admin'
+import { ERROR_COPY } from '@/constants/productCopy'
 
 const records = ref<AdminInterviewGovernanceItem[]>([])
 const summary = ref<AdminInterviewGovernanceSummary | null>(null)
@@ -147,7 +148,7 @@ const loadData = async () => {
     total.value = listRes.data.total
     totalPages.value = listRes.data.totalPages
   } catch {
-    ElMessage.error('面试治理数据加载失败')
+    ElMessage.error(ERROR_COPY.adminInterviewGovernanceLoadFailed)
   } finally {
     loading.value = false
   }

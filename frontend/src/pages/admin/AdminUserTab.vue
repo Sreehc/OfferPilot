@@ -121,6 +121,7 @@
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
 import { banUserApi, fetchAdminUsersApi, fetchUserDetailApi, unbanUserApi, updateAdminUserApi } from '@/api/admin'
+import { ERROR_COPY } from '@/constants/productCopy'
 import type { AdminUserDetail, AdminUserListItem } from '@/api/admin'
 
 const users = ref<AdminUserListItem[]>([])
@@ -147,7 +148,7 @@ const loadUsers = async () => {
     users.value = res.data.records
     total.value = res.data.total
     totalPages.value = res.data.totalPages
-  } catch { ElMessage.error('用户列表加载失败') } finally { loading.value = false }
+  } catch { ElMessage.error(ERROR_COPY.adminUsersLoadFailed) } finally { loading.value = false }
 }
 
 const handleSearch = () => { pageNum.value = 1; void loadUsers() }
@@ -167,16 +168,16 @@ const saveEdit = async () => {
     ElMessage.success('用户信息已更新')
     editVisible.value = false
     await loadUsers()
-  } catch { ElMessage.error('更新失败') } finally { editSaving.value = false }
+  } catch { ElMessage.error(ERROR_COPY.adminUserSaveFailed) } finally { editSaving.value = false }
 }
 
 const handleBan = async (row: AdminUserListItem) => {
   await ElMessageBox.confirm(`确认封禁用户「${row.username}」？该用户将被踢出所有设备。`, '封禁确认', { type: 'warning' })
-  try { await banUserApi(row.id); ElMessage.success('已封禁'); await loadUsers() } catch { ElMessage.error('封禁失败') }
+  try { await banUserApi(row.id); ElMessage.success('已封禁'); await loadUsers() } catch { ElMessage.error(ERROR_COPY.adminUserBanFailed) }
 }
 
 const handleUnban = async (row: AdminUserListItem) => {
-  try { await unbanUserApi(row.id); ElMessage.success('已解封'); await loadUsers() } catch { ElMessage.error('解封失败') }
+  try { await unbanUserApi(row.id); ElMessage.success('已解封'); await loadUsers() } catch { ElMessage.error(ERROR_COPY.adminUserUnbanFailed) }
 }
 
 const handleDetail = async (row: AdminUserListItem) => {
@@ -184,7 +185,7 @@ const handleDetail = async (row: AdminUserListItem) => {
     const res = await fetchUserDetailApi(row.id)
     detail.value = res.data
     detailVisible.value = true
-  } catch { ElMessage.error('加载详情失败') }
+  } catch { ElMessage.error(ERROR_COPY.adminUserDetailLoadFailed) }
 }
 
 const formatTime = (v?: string) => {

@@ -98,6 +98,7 @@
 import { ElMessage } from 'element-plus'
 import { onMounted, ref } from 'vue'
 import { fetchAdminLoginLogsApi } from '@/api/auth'
+import { ERROR_COPY } from '@/constants/productCopy'
 import type { LoginLogItem } from '@/types/api'
 
 const logs = ref<LoginLogItem[]>([])
@@ -120,7 +121,7 @@ const loadLogs = async () => {
     total.value = response.data.total
     totalPages.value = response.data.totalPages
   } catch {
-    ElMessage.error('登录日志加载失败')
+    ElMessage.error(ERROR_COPY.adminLoginLogLoadFailed)
   } finally {
     loading.value = false
   }

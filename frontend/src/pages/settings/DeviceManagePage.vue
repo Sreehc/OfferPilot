@@ -34,8 +34,8 @@
     <section v-else-if="devices.length === 0" class="shell-section-card p-6">
       <EmptyState
         icon="bell"
-        title="当前还没有其他登录设备"
-        description="目前只看到这台设备。后面有新设备登录时，这里会继续保留记录，方便排查陌生登录。"
+        :title="EMPTY_STATE_COPY.deviceManage.title"
+        :description="EMPTY_STATE_COPY.deviceManage.description"
       />
     </section>
 
@@ -104,6 +104,7 @@
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, ref } from 'vue'
 import EmptyState from '@/components/EmptyState.vue'
+import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
 import { fetchDevicesApi, revokeDeviceApi, revokeAllDevicesApi } from '@/api/auth'
 import { localizeDeviceName } from '@/utils/device'
 import type { LoginDeviceItem } from '@/types/api'
@@ -119,7 +120,7 @@ const loadDevices = async () => {
     const response = await fetchDevicesApi()
     devices.value = response.data
   } catch {
-    ElMessage.error('暂时没拿到登录设备，请刷新后再试')
+    ElMessage.error(ERROR_COPY.deviceLoadFailed)
   } finally {
     loading.value = false
   }
@@ -145,7 +146,7 @@ const handleRevoke = async (deviceId: number) => {
     ElMessage.success('设备已撤销')
     await loadDevices()
   } catch {
-    ElMessage.error('这台设备暂时没有撤销成功，请稍后再试')
+    ElMessage.error(ERROR_COPY.deviceRevokeFailed)
   } finally {
     revokingId.value = null
   }
@@ -158,7 +159,7 @@ const handleRevokeAll = async () => {
     ElMessage.success('其他设备已全部撤销')
     await loadDevices()
   } catch {
-    ElMessage.error('其他设备暂时没有全部撤销成功，请稍后再试')
+    ElMessage.error(ERROR_COPY.deviceRevokeAllFailed)
   } finally {
     revokingAll.value = false
   }

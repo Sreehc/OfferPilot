@@ -7,7 +7,7 @@
             <div class="workspace-head__main">
               <div class="flex flex-wrap items-center gap-2">
                 <h1 class="workspace-title sm:text-[1.75rem]">模拟面试</h1>
-                <span v-if="recommendedInterview" class="detail-pill">系统推荐</span>
+                <span v-if="recommendedInterview" class="detail-pill">建议起点</span>
               </div>
               <p class="workspace-summary">先定这轮怎么练，再直接开始，岗位、题量和上下文都在这里一次配好。</p>
             </div>
@@ -40,7 +40,7 @@
             <span class="detail-pill">{{ difficultyText(recommendedInterview.difficulty) || '默认' }}</span>
             <span class="font-semibold text-ink">{{ recommendedInterview.direction }}</span>
             <span class="text-secondary">{{ recommendedInterview.questionCount }} 题</span>
-            <span class="text-secondary">{{ recommendedInterview.reason || '系统推荐' }}</span>
+            <span class="text-secondary">{{ recommendedInterview.reason || '按你当前进度给出的建议起点' }}</span>
           </div>
 
           <div class="interview-setup-grid">
@@ -156,7 +156,7 @@
 
           <div v-if="allHistoryLoading" class="mt-4 py-6 text-center text-xs text-tertiary">正在读取最近几轮模拟面试记录...</div>
           <div v-else-if="!allHistoryItems.length" class="mt-4 py-6 text-center">
-            <p class="text-xs leading-5 text-secondary">当前还没有已完成的模拟面试，先开始一轮，后面这里会按时间线保留你的分数和表现。</p>
+            <p class="text-xs leading-5 text-secondary">{{ EMPTY_STATE_COPY.interviewHistory.description }}</p>
           </div>
           <div v-else class="mt-3 space-y-1">
             <RouterLink
@@ -601,6 +601,7 @@
 import { ElMessage } from 'element-plus'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { EMPTY_STATE_COPY } from '@/constants/productCopy'
 import {
   currentQuestionApi,
   fetchInterviewHistoryApi,

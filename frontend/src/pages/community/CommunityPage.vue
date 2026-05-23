@@ -1,13 +1,5 @@
 <template>
   <div class="community-forum space-y-6">
-    <AppShellHeader>
-      <template #actions>
-        <button class="hard-button-primary forum-header-bar__action text-sm" @click="$router.push('/community/submit')">
-          发起提问
-        </button>
-      </template>
-    </AppShellHeader>
-
     <section class="forum-panel shell-section-card p-4 sm:p-5">
       <div class="forum-toolbar forum-toolbar-head">
         <div class="forum-toolbar__filters">
@@ -48,6 +40,12 @@
           />
           <button type="button" class="community-search__button" @click="doSearch">搜索</button>
         </div>
+      </div>
+
+      <div class="mt-4 flex justify-end">
+        <button class="hard-button-primary forum-header-bar__action text-sm" @click="$router.push('/community/submit')">
+          发起提问
+        </button>
       </div>
 
       <div class="forum-feed__meta">
@@ -108,8 +106,8 @@
         <EmptyState
           class="empty-state-card"
           icon="chat"
-          title="当前版块还没有帖子"
-          description="换个版块看看，或直接提问。"
+          :title="EMPTY_STATE_COPY.communityBoard.title"
+          :description="EMPTY_STATE_COPY.communityBoard.description"
         >
           <template #action>
             <RouterLink to="/community/submit" class="hard-button-primary inline-flex"> 发起提问 </RouterLink>
@@ -136,8 +134,8 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { fetchCategoriesApi } from '@/api/category'
 import { fetchCommunityQuestionsApi } from '@/api/community'
-import AppShellHeader from '@/components/AppShellHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import { EMPTY_STATE_COPY } from '@/constants/productCopy'
 import type { CategoryItem, CommunityQuestion } from '@/types/api'
 
 type BoardOption = {

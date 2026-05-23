@@ -59,8 +59,8 @@
           <EmptyState
             class="empty-state-card"
             icon="clipboard"
-            title="当前还没有错题记录"
-            description="先做一轮题库训练或模拟面试，低分题和易错题会自动进来，后面这里再集中复习。"
+            :title="EMPTY_STATE_COPY.wrongBook.title"
+            :description="EMPTY_STATE_COPY.wrongBook.description"
             compact
           />
         </div>
@@ -200,6 +200,7 @@
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref, watch } from 'vue'
 import EmptyState from '@/components/EmptyState.vue'
+import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
 import {
   deleteWrongApi,
   exportWrongMarkdownApi,
@@ -275,7 +276,7 @@ const loadList = async () => {
     totalPages.value = 0
     selectedWrongId.value = null
     selectedWrong.value = null
-    ElMessage.error('错题列表还没加载出来，请刷新页面或稍后再试。')
+    ElMessage.error(ERROR_COPY.wrongListLoadFailed)
   } finally {
     loading.value = false
   }
@@ -288,7 +289,7 @@ const loadDetail = async (id: number) => {
     selectedWrong.value = data
   } catch {
     selectedWrong.value = null
-    ElMessage.error('这道错题的详情还没加载出来，请换一题，或稍后再试。')
+    ElMessage.error(ERROR_COPY.wrongDetailLoadFailed)
   } finally {
     detailLoading.value = false
   }
@@ -311,7 +312,7 @@ const handleUpdateMastery = async (masteryLevel: WrongQuestionItem['masteryLevel
     ElMessage.success('掌握状态已更新')
     await Promise.all([loadList(), loadDetail(selectedWrong.value.id)])
   } catch {
-    ElMessage.error('掌握状态还没更新成功，请重新点一次当前目标状态。')
+    ElMessage.error(ERROR_COPY.wrongMasteryUpdateFailed)
   } finally {
     savingMastery.value = null
   }
@@ -328,7 +329,7 @@ const handleDelete = async () => {
     selectedWrong.value = null
     await loadList()
   } catch {
-    ElMessage.error('这道错题还没删除成功，请稍后再试。')
+    ElMessage.error(ERROR_COPY.wrongDeleteFailed)
   } finally {
     deleting.value = false
   }
@@ -346,7 +347,7 @@ const handleExport = async () => {
     URL.revokeObjectURL(url)
     ElMessage.success('错题本已导出')
   } catch {
-    ElMessage.error('错题本还没导出成功，请稍后再试。')
+    ElMessage.error(ERROR_COPY.wrongExportFailed)
   } finally {
     exporting.value = false
   }
