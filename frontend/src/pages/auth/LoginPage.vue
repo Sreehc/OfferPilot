@@ -319,7 +319,7 @@ const handleLogin = async () => {
     if (failCount.value >= 3) {
       await refreshCaptcha()
     }
-    const message = error?.message || '登录失败，请稍后重试'
+    const message = error?.message || '登录还没成功，请检查账号、密码后再试。'
     await announce(message)
     ElMessage.error(message)
   } finally {

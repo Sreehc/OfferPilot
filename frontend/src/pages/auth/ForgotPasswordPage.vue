@@ -262,7 +262,7 @@ const handleSendCode = async () => {
     clearAnnouncement()
     ElMessage.success('验证码发送结果已更新')
   } catch (error: any) {
-    await announce(error?.message || '发送验证码失败，请稍后重试。')
+    await announce(error?.message || '验证码还没发送成功，请检查邮箱地址后再试。')
   } finally {
     sending.value = false
   }
@@ -288,7 +288,7 @@ const handleResetPassword = async () => {
     ElMessage.success('密码已重置，请重新登录')
     await router.push('/login')
   } catch (error: any) {
-    await announce(error?.message || '重置密码失败，请稍后重试。')
+    await announce(error?.message || '密码还没重置成功，请核对验证码和新密码后再试。')
     await nextTick()
     codeInputRef.value?.focus?.()
   } finally {

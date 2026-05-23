@@ -34,8 +34,8 @@
     <section v-else-if="devices.length === 0" class="shell-section-card p-6">
       <EmptyState
         icon="bell"
-        title="还没有其他登录设备"
-        description="当前设备和后续登录过的设备都会显示在这里。需要排查陌生登录时，回来检查这一页就行。"
+        title="当前还没有其他登录设备"
+        description="目前只看到这台设备。后面有新设备登录时，这里会继续保留记录，方便排查陌生登录。"
       />
     </section>
 

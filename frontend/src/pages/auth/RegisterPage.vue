@@ -256,7 +256,7 @@ const handleRegister = async () => {
     ElMessage.success('注册成功，已自动登录')
     await router.push('/dashboard')
   } catch (error: any) {
-    await announce(error?.message || '创建账号失败，请稍后重试。')
+    await announce(error?.message || '账号还没创建成功，请检查注册信息后再试。')
   } finally {
     loading.value = false
   }

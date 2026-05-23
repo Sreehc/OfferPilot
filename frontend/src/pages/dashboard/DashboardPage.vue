@@ -60,7 +60,7 @@
           <div class="dashboard-home__content">
             <section class="dashboard-home__welcome">
               <h1 class="dashboard-home__welcome-title">{{ greetingText }} 👋</h1>
-              <p class="dashboard-home__welcome-kicker">今天又是努力变强的一天，加油！</p>
+              <p class="dashboard-home__welcome-kicker">先推进今天最重要的一步。</p>
             </section>
 
             <section class="dashboard-hero">
@@ -257,8 +257,8 @@
                 </template>
 
                 <div v-else class="dashboard-inline-empty">
-                  <div class="dashboard-inline-empty__title">当前还没有模拟面试记录</div>
-                  <p class="dashboard-inline-empty__desc">先完成一轮模拟面试，这里会展示最近一次训练的摘要和薄弱点。</p>
+                  <div class="dashboard-inline-empty__title">当前还没有最近面试摘要</div>
+                  <p class="dashboard-inline-empty__desc">先完成一轮模拟面试，后面这里会继续展示最近一次训练的摘要和薄弱点。</p>
                   <RouterLink to="/interview" class="hard-button-primary mt-4 inline-flex">开始模拟面试</RouterLink>
                 </div>
               </article>
