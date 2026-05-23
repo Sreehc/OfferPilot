@@ -9,9 +9,20 @@
 
     <main
       id="auth-main"
-      class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1180px] items-stretch gap-4 xl:grid-cols-[minmax(0,0.82fr)_minmax(380px,1.18fr)]"
+      class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1120px] items-stretch gap-4 xl:grid-cols-[minmax(280px,0.68fr)_minmax(420px,1.32fr)]"
     >
       <section class="shell-section-card auth-brand-panel order-2 p-6 sm:p-8 xl:order-1">
+        <RouterLink
+          to="/login"
+          class="auth-brand-mark"
+        >
+          <AppBrandGlyph :size="38" />
+          <div>
+            <div class="auth-brand-mark__name">OfferPilot</div>
+            <div class="auth-brand-mark__meta">AI 求职训练平台</div>
+          </div>
+        </RouterLink>
+
         <div class="flex items-center gap-3">
           <span
             class="state-pulse"
@@ -24,36 +35,28 @@
 
         <div class="mt-8 max-w-2xl">
           <p class="auth-support-title">
-            回到正在推进的题目、问答和模拟面试
+            登录后继续今天的求职训练
           </p>
           <p class="mt-5 text-sm leading-8 text-secondary sm:text-base">
-            回到题库、问答、模拟面试、简历和投递记录，继续推进你当前的求职准备。
+            继续题库训练、问答、模拟面试和投递进展，训练记录都会跟着当前账号保留。
           </p>
         </div>
 
-        <div class="mt-10 grid gap-4 sm:grid-cols-3">
+        <div class="auth-trust-grid">
           <div class="auth-feature-card">
             <p class="auth-feature-card__title">
-              继续刷题
+              训练记录会保留
             </p>
             <p class="auth-feature-card__desc">
-              回到你正在准备的方向，继续筛题、看答案和补表达。
+              登录后可以直接回到上次做到一半的训练。
             </p>
           </div>
           <div class="auth-feature-card">
             <p class="auth-feature-card__title">
-              继续问答
+              忘记密码可找回
             </p>
             <p class="auth-feature-card__desc">
-              结合资料、简历或项目，把没讲清楚的问题继续问下去。
-            </p>
-          </div>
-          <div class="auth-feature-card">
-            <p class="auth-feature-card__title">
-              继续模拟面试
-            </p>
-            <p class="auth-feature-card__desc">
-              回看上次表现，再开始一轮新的模拟面试。
+              邮箱验证通过后，后续恢复账号会更直接。
             </p>
           </div>
         </div>
@@ -213,6 +216,7 @@ import { ElMessage } from 'element-plus'
 import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchCaptchaApi, type LoginPayload } from '@/api/auth'
+import AppBrandGlyph from '@/components/AppBrandGlyph.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
@@ -373,7 +377,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 2.25rem;
+  gap: 1.5rem;
   background:
     radial-gradient(circle at 18% 18%, rgba(var(--bc-accent-rgb), 0.12), transparent 30%),
     radial-gradient(circle at 82% 16%, rgba(var(--bc-cyan-rgb), 0.08), transparent 24%),
@@ -477,6 +481,11 @@ onMounted(() => {
   opacity: 0.72;
 }
 
+.auth-trust-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
 .auth-feature-card {
   border-radius: calc(var(--radius-md) - 2px);
   border: 1px solid rgba(var(--bc-accent-rgb), 0.12);
@@ -506,6 +515,10 @@ onMounted(() => {
     justify-content: center;
   }
 
+  .auth-trust-grid {
+    grid-template-columns: 1fr;
+  }
+
   .captcha-panel {
     width: 100%;
   }
@@ -517,6 +530,12 @@ onMounted(() => {
 
   .auth-provider-card :deep(button) {
     width: 100%;
+  }
+}
+
+@media (min-width: 768px) {
+  .auth-trust-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 </style>

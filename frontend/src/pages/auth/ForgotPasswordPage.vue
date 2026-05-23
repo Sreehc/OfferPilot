@@ -9,9 +9,20 @@
 
     <div
       id="auth-main"
-      class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1180px] items-stretch gap-4 xl:grid-cols-[minmax(0,0.82fr)_minmax(380px,1.18fr)]"
+      class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1120px] items-stretch gap-4 xl:grid-cols-[minmax(280px,0.68fr)_minmax(420px,1.32fr)]"
     >
       <section class="shell-section-card auth-brand-panel order-2 p-6 sm:p-8 xl:order-1">
+        <RouterLink
+          to="/login"
+          class="auth-brand-mark"
+        >
+          <AppBrandGlyph :size="38" />
+          <div>
+            <div class="auth-brand-mark__name">OfferPilot</div>
+            <div class="auth-brand-mark__meta">AI 求职训练平台</div>
+          </div>
+        </RouterLink>
+
         <div class="flex items-center gap-3">
           <span
             class="state-pulse"
@@ -24,36 +35,28 @@
 
         <div class="mt-8 max-w-2xl">
           <p class="auth-support-title">
-            用邮箱验证码把账号访问快速找回来
+            几步就能把账号访问找回来
           </p>
           <p class="mt-5 text-sm leading-8 text-secondary sm:text-base">
-            先拿到验证码，再设置新密码，很快就能回到账号里继续使用。
+            输入邮箱、验证码和新密码，完成后就能回到登录页继续使用。
           </p>
         </div>
 
-        <div class="mt-10 grid gap-4 sm:grid-cols-3">
+        <div class="auth-trust-grid">
           <div class="auth-feature-card">
             <div class="auth-feature-card__title">
-              1. 发送验证码
+              先确认邮箱
             </div>
             <p class="auth-feature-card__desc">
-              输入注册邮箱，把验证码发到你的邮箱里。
+              验证码会发到你注册时填写的邮箱里。
             </p>
           </div>
           <div class="auth-feature-card">
             <div class="auth-feature-card__title">
-              2. 输入新密码
+              验证码有效期有限
             </div>
             <p class="auth-feature-card__desc">
-              验证码有效期内提交新密码即可完成重置。
-            </p>
-          </div>
-          <div class="auth-feature-card">
-            <div class="auth-feature-card__title">
-              3. 返回登录
-            </div>
-            <p class="auth-feature-card__desc">
-              重置成功后返回登录页继续使用原账号。
+              收到验证码后尽快完成重置，避免过期后重新发送。
             </p>
           </div>
         </div>
@@ -65,7 +68,7 @@
             密码恢复
           </p>
           <h1 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">
-            先拿到验证码，再重置密码
+            获取验证码，重置密码
           </h1>
           <p class="mt-3 text-sm leading-7 text-secondary">
             如果你现在收不到邮件，可以先确认邮箱是否填写正确。
@@ -196,6 +199,7 @@ import { ElMessage } from 'element-plus'
 import { computed, nextTick, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { forgotPasswordApi, resetPasswordApi } from '@/api/auth'
+import AppBrandGlyph from '@/components/AppBrandGlyph.vue'
 
 const router = useRouter()
 const formRef = ref<FormInstance>()
@@ -334,7 +338,7 @@ const handleResetPassword = async () => {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 2.25rem;
+  gap: 1.5rem;
   background:
     radial-gradient(circle at 16% 18%, rgba(var(--bc-accent-rgb), 0.12), transparent 30%),
     radial-gradient(circle at 82% 14%, rgba(var(--bc-cyan-rgb), 0.08), transparent 24%),
@@ -354,6 +358,11 @@ const handleResetPassword = async () => {
   display: grid;
   gap: 0.75rem;
   width: 100%;
+}
+
+.auth-trust-grid {
+  display: grid;
+  gap: 0.85rem;
 }
 
 .auth-feature-card {
@@ -397,6 +406,10 @@ const handleResetPassword = async () => {
 }
 
 @media (min-width: 768px) {
+  .auth-trust-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .verification-inline {
     grid-template-columns: minmax(0, 1fr) 168px;
     align-items: start;

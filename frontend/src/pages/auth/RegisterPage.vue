@@ -9,9 +9,20 @@
 
     <main
       id="auth-main"
-      class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1180px] items-stretch gap-4 xl:grid-cols-[minmax(0,0.82fr)_minmax(380px,1.18fr)]"
+      class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1120px] items-stretch gap-4 xl:grid-cols-[minmax(280px,0.68fr)_minmax(420px,1.32fr)]"
     >
       <section class="shell-section-card auth-brand-panel order-2 p-6 sm:p-8 xl:order-1">
+        <RouterLink
+          to="/login"
+          class="auth-brand-mark"
+        >
+          <AppBrandGlyph :size="38" />
+          <div>
+            <div class="auth-brand-mark__name">OfferPilot</div>
+            <div class="auth-brand-mark__meta">AI 求职训练平台</div>
+          </div>
+        </RouterLink>
+
         <div class="flex items-center gap-3">
           <span
             class="state-pulse"
@@ -24,36 +35,28 @@
 
         <div class="mt-8 max-w-2xl">
           <p class="auth-support-title">
-            把后续资料、训练记录和投递进展放到同一个账号里
+            创建账号后就能开始训练
           </p>
           <p class="mt-5 text-sm leading-8 text-secondary sm:text-base">
             先把账号和邮箱准备好，后面整理简历、上传资料和恢复账号都会更顺手。
           </p>
         </div>
 
-        <div class="mt-10 grid gap-4 sm:grid-cols-3">
+        <div class="auth-trust-grid">
           <div class="auth-feature-card">
             <div class="auth-feature-card__title">
-              保存训练记录
+              训练内容会同步保存
             </div>
             <p class="auth-feature-card__desc">
-              题库、问答、模拟面试和投递记录都会跟着同一个账号走。
+              题库训练、问答和投递记录都会跟着同一个账号走。
             </p>
           </div>
           <div class="auth-feature-card">
             <div class="auth-feature-card__title">
-              整理你的资料
+              邮箱能帮你找回账号
             </div>
             <p class="auth-feature-card__desc">
-              上传资料、整理简历和项目后，后续训练会更连贯。
-            </p>
-          </div>
-          <div class="auth-feature-card">
-            <div class="auth-feature-card__title">
-              方便找回账号
-            </div>
-            <p class="auth-feature-card__desc">
-              先填好邮箱，后面忘记密码时可以更快恢复登录。
+              先填好常用邮箱，后面忘记密码时可以更快恢复登录。
             </p>
           </div>
         </div>
@@ -182,6 +185,7 @@ import { ElMessage } from 'element-plus'
 import { nextTick, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { RegisterPayload } from '@/api/auth'
+import AppBrandGlyph from '@/components/AppBrandGlyph.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
@@ -300,7 +304,7 @@ const handleRegister = async () => {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 2.25rem;
+  gap: 1.5rem;
   background:
     radial-gradient(circle at 16% 18%, rgba(var(--bc-accent-rgb), 0.12), transparent 30%),
     radial-gradient(circle at 82% 14%, rgba(var(--bc-cyan-rgb), 0.08), transparent 24%),
@@ -322,6 +326,11 @@ const handleRegister = async () => {
   background: linear-gradient(180deg, rgba(195, 71, 71, 0.08), transparent 72%), var(--bc-surface-muted);
   padding: 0.95rem 1rem;
   color: var(--bc-ink);
+}
+
+.auth-trust-grid {
+  display: grid;
+  gap: 0.85rem;
 }
 
 .auth-feature-card {
@@ -347,5 +356,11 @@ const handleRegister = async () => {
 .auth-links {
   display: flex;
   justify-content: center;
+}
+
+@media (min-width: 768px) {
+  .auth-trust-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 </style>
