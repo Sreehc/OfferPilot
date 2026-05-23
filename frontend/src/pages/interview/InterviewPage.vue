@@ -430,7 +430,7 @@
                 </button>
               </div>
               <p class="mt-1 text-xs leading-5 text-secondary line-clamp-3">
-                {{ lastResult?.standardAnswer || '暂无' }}
+                {{ lastResult?.standardAnswer || '这题的参考答案还没整理出来，先回看你的回答和复盘建议。' }}
               </p>
             </div>
             <div>
@@ -508,7 +508,9 @@
                 <div class="min-w-0 flex-1">
                   <div class="text-xs uppercase tracking-[0.22em] text-tertiary">Q{{ index + 1 }}</div>
                   <div class="mt-0.5 text-sm font-semibold text-ink">{{ record.questionTitle }}</div>
-                  <p class="mt-1 text-xs leading-5 text-secondary line-clamp-1">{{ record.comment || '暂无点评' }}</p>
+                  <p class="mt-1 text-xs leading-5 text-secondary line-clamp-1">
+                    {{ record.comment || '这题还没生成点评，先结合得分和标准答案补一轮复盘。' }}
+                  </p>
                 </div>
                 <div class="flex shrink-0 items-center gap-2">
                   <div

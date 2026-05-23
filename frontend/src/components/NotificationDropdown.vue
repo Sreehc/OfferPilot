@@ -39,15 +39,16 @@
 
         <!-- Notification list -->
         <div class="max-h-80 overflow-y-auto">
-          <div v-if="loading" class="flex items-center justify-center py-8">
-            <div class="h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+          <div v-if="loading" class="py-8 text-center">
+            <div class="mx-auto h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+            <p class="mt-3 text-xs text-secondary">正在加载通知...</p>
           </div>
 
           <EmptyState
             v-else-if="notifications.length === 0"
             icon="bell"
-            title="暂无通知"
-            description="新的通知会出现在这里"
+            title="暂时没有新通知"
+            description="新的面试结果、复习提醒和系统消息会出现在这里。"
             compact
           />
 

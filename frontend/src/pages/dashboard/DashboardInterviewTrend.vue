@@ -4,11 +4,14 @@
     <h3 class="mt-3 text-lg font-semibold text-ink">分数变化</h3>
 
     <div v-if="loading" class="mt-4 flex h-[260px] items-center justify-center">
-      <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+      <div class="text-center">
+        <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+        <p class="mt-3 text-sm text-secondary">正在整理最近的面试成绩...</p>
+      </div>
     </div>
 
     <div v-else-if="!trendData.length" class="mt-4 flex h-[260px] items-center justify-center">
-      <EmptyState icon="chart" title="暂无面试数据" description="完成面试后将显示趋势" compact />
+      <EmptyState icon="chart" title="先完成一轮模拟面试" description="开始练习后，这里会显示最近几次面试的分数变化。" compact />
     </div>
 
     <div v-else ref="chartRef" class="mt-4 h-[260px] w-full"></div>
