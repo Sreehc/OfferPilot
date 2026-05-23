@@ -2,7 +2,7 @@
   <div class="repair-workbench space-y-5">
     <section v-if="loading" class="shell-section-card p-8 text-center">
       <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-      <p class="mt-4 text-sm text-slate-500">正在加载今天的复习任务...</p>
+      <p class="mt-4 text-sm text-slate-500">正在整理今天到期和逾期的复习任务...</p>
     </section>
 
     <template v-else>
@@ -25,7 +25,7 @@
               <span class="detail-pill">待复习 {{ stats?.todayPending ?? reviewData?.totalPending ?? 0 }}</span>
               <span class="detail-pill">逾期 {{ stats?.overdueCount ?? reviewData?.overdueCount ?? 0 }}</span>
               <button type="button" class="hard-button-primary" :disabled="!reviewItems.length" @click="startReview">
-                {{ reviewItems.length ? '开始今日复习' : '当前无待复习项' }}
+                {{ reviewItems.length ? '开始今日复习' : '今天没有待复习项' }}
               </button>
             </div>
           </div>
@@ -332,7 +332,7 @@ const loadData = async () => {
   try {
     await loadReviewData()
   } catch {
-    ElMessage.error('今天的复习任务还没加载出来，请稍后再试')
+    ElMessage.error('今天的复习任务还没加载出来，请刷新页面或稍后再试。')
   } finally {
     loading.value = false
   }
@@ -405,7 +405,7 @@ const handleRate = async (rating: 1 | 2 | 3 | 4) => {
       currentIndex.value = reviewItems.value.length
     }
   } catch {
-    ElMessage.error('这道题的复习结果还没保存成功，请再试一次')
+    ElMessage.error('这次复习结果还没保存成功，请再点一次当前评级。')
   } finally {
     submitting.value = false
   }
