@@ -27,6 +27,7 @@
 <script setup lang="ts">
 import { h } from 'vue'
 import { useRoute } from 'vue-router'
+import { PRODUCT_PAGE_NAMES } from '@/constants/productCopy'
 
 const route = useRoute()
 
@@ -85,9 +86,9 @@ const primaryPaths = ['/dashboard', '/question', '/chat', '/interview']
 
 const items = [
   { path: '/dashboard', label: '首页', icon: IconHome },
-  { path: '/question', label: '题库', icon: IconQuestion },
-  { path: '/chat', label: '问答', icon: IconChat },
-  { path: '/interview', label: '面试', icon: IconInterview },
+  { path: '/question', label: PRODUCT_PAGE_NAMES.question, icon: IconQuestion },
+  { path: '/chat', label: PRODUCT_PAGE_NAMES.chat, icon: IconChat },
+  { path: '/interview', label: PRODUCT_PAGE_NAMES.interview, icon: IconInterview },
   { path: '', label: '更多', icon: IconMore, action: openSidebar }
 ]
 

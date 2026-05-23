@@ -187,6 +187,7 @@ import MobileNavBar from '@/components/MobileNavBar.vue'
 import OfflinePage from '@/components/OfflinePage.vue'
 import NotificationDropdown from '@/components/NotificationDropdown.vue'
 import AvatarDropdown from '@/components/AvatarDropdown.vue'
+import { PRODUCT_PAGE_NAMES } from '@/constants/productCopy'
 import DashboardSidebar from '@/pages/dashboard/DashboardSidebar.vue'
 import { useAuthStore } from '@/stores/auth'
 import type { ComponentPublicInstance } from 'vue'
@@ -202,21 +203,21 @@ const searchInputRef = ref<ComponentPublicInstance | null>(null)
 
 const allSearchItems = [
   { label: '首页', path: '/dashboard' },
-  { label: '面试题集', path: '/question' },
-  { label: '知识库', path: '/knowledge' },
-  { label: 'AI 问答', path: '/chat' },
-  { label: '我的收藏', path: '/favorites' },
-  { label: '模拟面试', path: '/interview' },
-  { label: '错题本', path: '/wrong' },
-  { label: '复习巩固', path: '/review' },
-  { label: '学习计划', path: '/study-plan' },
-  { label: '投递管理', path: '/applications' },
-  { label: '简历助手', path: '/resume' },
-  { label: '数据分析', path: '/analytics' },
+  { label: PRODUCT_PAGE_NAMES.question, path: '/question' },
+  { label: PRODUCT_PAGE_NAMES.knowledge, path: '/knowledge' },
+  { label: PRODUCT_PAGE_NAMES.chat, path: '/chat' },
+  { label: PRODUCT_PAGE_NAMES.favorites, path: '/favorites' },
+  { label: PRODUCT_PAGE_NAMES.interview, path: '/interview' },
+  { label: PRODUCT_PAGE_NAMES.wrong, path: '/wrong' },
+  { label: PRODUCT_PAGE_NAMES.review, path: '/review' },
+  { label: PRODUCT_PAGE_NAMES.studyPlan, path: '/study-plan' },
+  { label: PRODUCT_PAGE_NAMES.applications, path: '/applications' },
+  { label: PRODUCT_PAGE_NAMES.resume, path: '/resume' },
+  { label: PRODUCT_PAGE_NAMES.analytics, path: '/analytics' },
   { label: '社区', path: '/community' },
   { label: '排行榜', path: '/community/leaderboard' },
   { label: '管理后台', path: '/admin', adminOnly: true },
-  { label: '账户设置', path: '/settings' }
+  { label: PRODUCT_PAGE_NAMES.settings, path: '/settings' }
 ]
 
 const searchItems = computed(() => allSearchItems.filter((item) => !item.adminOnly || authStore.user?.role === 'ADMIN'))
