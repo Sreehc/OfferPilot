@@ -117,7 +117,7 @@
           </article>
         </div>
         <div v-else class="px-5 py-12 text-center text-sm text-slate-500">
-          当前还没有题目，先新增一条或导入题库。
+          {{ EMPTY_STATE_COPY.adminQuestionList.title }}，{{ EMPTY_STATE_COPY.adminQuestionList.description }}
         </div>
       </section>
 
@@ -137,6 +137,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { ref, watch } from 'vue'
+import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
 import type { CategoryItem, QuestionItem } from '@/types/api'
 import { importQuestionsApi } from '@/api/admin'
 
@@ -228,7 +229,7 @@ const handleImport = async (file: File) => {
     }
     emit('load')
   } catch {
-    ElMessage.error('导入失败')
+    ElMessage.error(ERROR_COPY.adminQuestionImportFailed)
   } finally {
     importing.value = false
   }

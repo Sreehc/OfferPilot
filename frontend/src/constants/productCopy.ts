@@ -33,6 +33,30 @@ export const KNOWLEDGE_STATUS_NAMES = {
 } as const
 
 export const EMPTY_STATE_COPY = {
+  analyticsTrend: {
+    title: '先推进一条主线任务',
+    description: '先安排计划、上传简历或记录投递，后面这里就会开始显示准备趋势。'
+  },
+  analyticsReviewIntensity: {
+    title: '先完成今天的错题复盘',
+    description: '开始复习后，后面这里会继续显示你的复盘节奏变化。'
+  },
+  analyticsReviewStability: {
+    title: '先连续做几次错题复盘',
+    description: '有了几次复习记录后，后面这里会继续显示稳定性变化。'
+  },
+  analyticsCategoryMastery: {
+    title: '先开始处理错题',
+    description: '完成题目复盘后，后面这里会继续显示各分类的掌握进度。'
+  },
+  analyticsMasteryDistribution: {
+    title: '先完成一轮错题复盘',
+    description: '开始复习后，后面这里会继续显示题目的当前状态分布。'
+  },
+  analyticsInterviewTrend: {
+    title: '先完成一轮模拟面试',
+    description: '开始面试练习后，后面这里会继续显示分类趋势变化。'
+  },
   leaderboard: {
     title: '当前还没有贡献排名',
     description: '先参与社区回答，后面这里会继续更新贡献排名。'
@@ -85,9 +109,41 @@ export const EMPTY_STATE_COPY = {
     title: '当前还没有分类掌握度',
     description: '先做题并完成一轮复习，后面这里会继续提醒哪类内容最该优先补齐。'
   },
+  resumeLibrary: {
+    title: '当前还没有简历',
+    description: '先上传一份，后面这里会继续整理项目、提纲和面试表达。'
+  },
+  resumeWorkspace: {
+    title: '上传简历后，这里会按顺序带你往下走',
+    description: '接下来先检查简历内容，再整理项目追问，最后确认开场和面试提纲。'
+  },
+  wrongDetailSelection: {
+    title: '先选一道错题开始复盘',
+    description: '点击左侧任意题目后，后面这里会继续显示标准答案、错误原因和下一次复习安排。'
+  },
+  applicationDetailKeywords: {
+    title: '当前还没有明显命中词',
+    description: '先补一轮 JD 关键词或刷新分析结果，再回来看这条岗位的匹配点。'
+  },
+  applicationDetailTimeline: {
+    title: '当前还没有过程记录',
+    description: '先补一条当前状态或面试反馈，后面这里再继续串起整条时间线。'
+  },
   deviceManage: {
     title: '当前还没有其他登录设备',
     description: '目前只看到这台设备。后面有新设备登录时，这里会继续保留记录，方便排查陌生登录。'
+  },
+  adminOverviewTrend: {
+    title: '当前还没有趋势数据',
+    description: '先积累一段时间的用户变化，后面这里再回来查看新增和活跃走势。'
+  },
+  adminQuestionList: {
+    title: '当前还没有题目',
+    description: '先新增一条或导入题库，后面这里再继续回看筛选结果。'
+  },
+  adminSystemConfigHistory: {
+    title: '当前还没有变更记录',
+    description: '先更新一项配置，后面这里会继续保留修改历史。'
   },
   adminKnowledgeDocs: {
     title: '当前还没有文档',
@@ -96,6 +152,9 @@ export const EMPTY_STATE_COPY = {
 } as const
 
 export const ERROR_COPY = {
+  applicationStatusUpdateFailed: '当前阶段还没更新成功，请检查填写内容后再试。',
+  applicationEventCreateFailed: '这条反馈还没记录成功，请补全信息后再试。',
+  applicationAnalysisRefreshFailed: 'JD 分析还没刷新成功，请稍后再试。',
   chatAnswerFailed: '这次回答还没生成成功，请换个问法或稍后再试。',
   chatSessionLoadFailed: '这段会话还没加载出来，请重新点一次，或换一段会话继续查看。',
   chatSessionDeleteFailed: '这段会话还没删除成功，请稍后再试。',
@@ -105,6 +164,7 @@ export const ERROR_COPY = {
   communityQuestionSaveFailed: '这次发帖还没提交成功，请检查标题和内容后再试。',
   dashboardCoreLoadFailed: '首页核心数据还没加载出来，请刷新页面后再试。',
   interviewHistoryLoadFailed: '最近的面试记录还没加载出来，请稍后再试。',
+  interviewDetailLoadFailed: '这次面试记录还没加载出来，请回到面试列表换一条记录，或稍后再试。',
   interviewNextQuestionLoadFailed: '下一题还没拿到，请稍后再试。',
   interviewSummaryLoadFailed: '这次面试总结还没加载出来，请稍后再试。',
   notificationLoadFailed: '通知列表还没加载出来，请稍后再试。',
@@ -138,11 +198,17 @@ export const ERROR_COPY = {
   adminContentLoadFailed: '待审核内容还没加载出来，请刷新列表后再试。',
   adminContentApproveFailed: '这条内容还没审核通过，请稍后再试。',
   adminContentRejectFailed: '这条内容还没拒绝成功，请稍后再试。',
+  adminOverviewLoadFailed: '后台概览数据还没加载出来，请刷新页面后再试。',
   adminUsersLoadFailed: '用户列表还没加载出来，请刷新或调整筛选后再试。',
   adminUserSaveFailed: '这位用户的信息还没更新成功，请稍后再试。',
   adminUserBanFailed: '这位用户还没封禁成功，请稍后再试。',
   adminUserUnbanFailed: '这位用户还没解封成功，请稍后再试。',
   adminUserDetailLoadFailed: '这位用户的详情还没加载出来，请稍后再试。',
+  adminCategorySaveFailed: '分类还没保存成功，请检查名称和类型后再试。',
+  adminCategoryDeleteFailed: '这个分类还没删除成功，请稍后再试。',
+  adminQuestionSaveFailed: '题目还没保存成功，请检查标题和分类后再试。',
+  adminQuestionDeleteFailed: '这道题还没删除成功，请稍后再试。',
+  adminQuestionImportFailed: '题库还没导入成功，请检查文件格式后再试。',
   adminSystemConfigLoadFailed: '系统配置还没加载出来，请刷新后再试。',
   adminSystemConfigSaveFailed: '这项配置还没保存成功，请检查改动后再试。',
   adminInterviewGovernanceLoadFailed: '面试治理数据还没加载出来，请刷新列表后再试。',

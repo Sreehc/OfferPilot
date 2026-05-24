@@ -88,7 +88,9 @@
                 </div>
               </article>
             </div>
-            <div v-else class="mt-3 text-sm text-secondary">当前还没有变更记录，先更新一项配置，后面这里会继续保留修改历史。</div>
+            <div v-else class="mt-3 text-sm text-secondary">
+              {{ EMPTY_STATE_COPY.adminSystemConfigHistory.title }}，{{ EMPTY_STATE_COPY.adminSystemConfigHistory.description }}
+            </div>
           </div>
         </article>
       </div>
@@ -104,7 +106,7 @@ import {
   updateAdminSystemConfigApi,
   type AdminSystemConfigItem
 } from '@/api/admin'
-import { ERROR_COPY } from '@/constants/productCopy'
+import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
 
 const loading = ref(false)
 const savingKey = ref('')

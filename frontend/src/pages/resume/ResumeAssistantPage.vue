@@ -131,7 +131,7 @@
               </button>
             </div>
             <div v-else class="mt-4 rounded-2xl border border-dashed border-[var(--bc-line)] p-5 text-sm text-secondary">
-              当前还没有简历，先上传一份，后面这里会继续整理项目、提纲和面试表达。
+              {{ EMPTY_STATE_COPY.resumeLibrary.title }}，{{ EMPTY_STATE_COPY.resumeLibrary.description }}
             </div>
           </section>
         </article>
@@ -580,10 +580,8 @@
         </article>
 
         <article v-if="!currentResume" class="shell-section-card p-8 text-center">
-          <p class="text-lg font-semibold text-ink">上传简历后，这里会按顺序带你往下走</p>
-          <p class="mt-3 text-sm leading-7 text-secondary">
-            接下来检查简历内容，整理项目追问，最后确认开场和面试提纲。
-          </p>
+          <p class="text-lg font-semibold text-ink">{{ EMPTY_STATE_COPY.resumeWorkspace.title }}</p>
+          <p class="mt-3 text-sm leading-7 text-secondary">{{ EMPTY_STATE_COPY.resumeWorkspace.description }}</p>
         </article>
       </section>
     </section>
@@ -605,7 +603,7 @@ import {
   updateResumeApi,
   uploadResumeApi
 } from '@/api/resume'
-import { ERROR_COPY } from '@/constants/productCopy'
+import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
 import type {
   EditableInterviewResume,
   ResumeFileDetail,

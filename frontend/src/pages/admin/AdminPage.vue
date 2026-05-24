@@ -242,9 +242,9 @@ const handleQuestionPageChange = (p: number) => { questionPage.value = p; void l
 const loadKnowledgeDocs = async () => { knowledgeLoading.value = true; try { const r = await fetchKnowledgeDocsApi({ categoryId: knowledgeFilter.categoryId, libraryScope: 'system', businessType: knowledgeFilter.businessType, fileType: knowledgeFilter.fileType, parseStatus: knowledgeFilter.parseStatus, indexStatus: knowledgeFilter.indexStatus, status: knowledgeFilter.status, keyword: knowledgeFilter.keyword || undefined, pageNum: knowledgePage.value, pageSize: knowledgePageSize.value }); knowledgeDocs.value = r.data.records; knowledgeTotal.value = r.data.total; knowledgeTotalPages.value = r.data.totalPages } catch { ElMessage.error(ERROR_COPY.adminKnowledgeLoadFailed) } finally { knowledgeLoading.value = false } }
 const handleKnowledgePageChange = (p: number) => { knowledgePage.value = p; void loadKnowledgeDocs() }
 
-const saveCategory = async () => { if (!categoryForm.name.trim()) { ElMessage.warning('请输入分类名称'); return } categorySaving.value = true; try { if (categoryForm.id) { await updateCategoryApi(categoryForm); ElMessage.success('分类已更新') } else { await addCategoryApi(categoryForm); ElMessage.success('分类已新增') } resetCategoryForm(); await loadCategories() } catch { ElMessage.error('分类保存失败') } finally { categorySaving.value = false } }
+const saveCategory = async () => { if (!categoryForm.name.trim()) { ElMessage.warning('请输入分类名称'); return } categorySaving.value = true; try { if (categoryForm.id) { await updateCategoryApi(categoryForm); ElMessage.success('分类已更新') } else { await addCategoryApi(categoryForm); ElMessage.success('分类已新增') } resetCategoryForm(); await loadCategories() } catch { ElMessage.error(ERROR_COPY.adminCategorySaveFailed) } finally { categorySaving.value = false } }
 const editCategory = (item: CategoryItem) => { categoryForm.id = item.id; categoryForm.name = item.name; categoryForm.type = item.type; categoryForm.sortOrder = item.sortOrder ?? 0; activeTab.value = 'category' }
-const removeCategory = async (id: number) => { try { await deleteCategoryApi(id); ElMessage.success('分类已删除'); await loadCategories() } catch { ElMessage.error('删除分类失败') } }
+const removeCategory = async (id: number) => { try { await deleteCategoryApi(id); ElMessage.success('分类已删除'); await loadCategories() } catch { ElMessage.error(ERROR_COPY.adminCategoryDeleteFailed) } }
 const resetCategoryForm = () => { categoryForm.id = undefined; categoryForm.name = ''; categoryForm.type = 'question'; categoryForm.sortOrder = 0 }
 
 const saveQuestion = async () => {
@@ -272,7 +272,7 @@ const saveQuestion = async () => {
     resetQuestionForm()
     await loadQuestions()
   } catch {
-    ElMessage.error('题目保存失败')
+    ElMessage.error(ERROR_COPY.adminQuestionSaveFailed)
   } finally {
     questionSaving.value = false
   }
@@ -295,7 +295,7 @@ const editQuestion = (item: QuestionItem) => {
   questionForm.source = item.source || ''
   activeTab.value = 'question'
 }
-const removeQuestion = async (id: number) => { try { await deleteQuestionApi(id); ElMessage.success('题目已删除'); await loadQuestions() } catch { ElMessage.error('删除题目失败') } }
+const removeQuestion = async (id: number) => { try { await deleteQuestionApi(id); ElMessage.success('题目已删除'); await loadQuestions() } catch { ElMessage.error(ERROR_COPY.adminQuestionDeleteFailed) } }
 const resetQuestionForm = () => {
   questionForm.id = undefined
   questionForm.title = ''

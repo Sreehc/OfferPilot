@@ -23,7 +23,7 @@
 
         <div v-if="trend.length" ref="chartRef" class="chart-shell mt-5 h-[320px] w-full"></div>
         <div v-else class="mt-5 flex h-[320px] items-center justify-center text-sm text-secondary">
-          当前还没有趋势数据，先积累一段时间的用户变化后再回来查看。
+          {{ EMPTY_STATE_COPY.adminOverviewTrend.title }}，{{ EMPTY_STATE_COPY.adminOverviewTrend.description }}
         </div>
       </section>
 
@@ -61,6 +61,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
+import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
 import { useTheme } from '@/composables/useTheme'
 import { readThemePalette } from '@/utils/theme'
 import { fetchAdminOverviewApi, fetchAdminTrendApi } from '@/api/admin'
@@ -88,7 +89,7 @@ const loadData = async () => {
     trend.value = trendRes.data
     renderChart()
   } catch {
-    ElMessage.error('加载概览数据失败')
+    ElMessage.error(ERROR_COPY.adminOverviewLoadFailed)
   } finally {
     loading.value = false
   }

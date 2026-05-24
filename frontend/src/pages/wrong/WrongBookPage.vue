@@ -185,8 +185,8 @@
           <EmptyState
             class="empty-state-card"
             icon="clipboard"
-            title="先选一道错题开始复盘"
-            description="点击左侧任意题目后，后面这里会继续显示标准答案、错误原因和下一次复习安排。"
+            :title="EMPTY_STATE_COPY.wrongDetailSelection.title"
+            :description="EMPTY_STATE_COPY.wrongDetailSelection.description"
             compact
           />
         </div>

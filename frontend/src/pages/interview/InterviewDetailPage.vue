@@ -205,6 +205,7 @@ import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { interviewDetailApi } from '@/api/interview'
+import { ERROR_COPY } from '@/constants/productCopy'
 import type { InterviewDetail } from '@/types/api'
 
 const route = useRoute()
@@ -262,7 +263,7 @@ const loadData = async () => {
     const response = await interviewDetailApi(id)
     detail.value = response.data
   } catch {
-    ElMessage.error('这次面试记录还没加载出来，请回到面试列表换一条记录，或稍后再试。')
+    ElMessage.error(ERROR_COPY.interviewDetailLoadFailed)
   } finally {
     loading.value = false
   }

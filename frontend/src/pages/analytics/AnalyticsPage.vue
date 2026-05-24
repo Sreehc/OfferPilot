@@ -60,7 +60,12 @@
             "
             class="mt-4 flex h-[340px] items-center justify-center"
           >
-            <EmptyState icon="chart" title="先推进一条主线任务" description="先安排计划、上传简历或记录投递，后面这里就会开始显示准备趋势。" compact />
+            <EmptyState
+              icon="chart"
+              :title="EMPTY_STATE_COPY.analyticsTrend.title"
+              :description="EMPTY_STATE_COPY.analyticsTrend.description"
+              compact
+            />
           </div>
           <div v-else class="mt-4">
             <div ref="trendChartRef" class="chart-shell h-[340px] w-full"></div>
@@ -84,7 +89,12 @@
           </div>
         </div>
         <div v-else-if="!efficiencyData.efTrend?.length" class="mt-5 flex h-[260px] items-center justify-center">
-          <EmptyState icon="review" title="先完成今天的错题复盘" description="开始复习后，后面这里会继续显示你的复盘节奏变化。" compact />
+          <EmptyState
+            icon="review"
+            :title="EMPTY_STATE_COPY.analyticsReviewIntensity.title"
+            :description="EMPTY_STATE_COPY.analyticsReviewIntensity.description"
+            compact
+          />
         </div>
         <div v-else class="mt-5">
           <div class="grid gap-3 sm:grid-cols-3">
@@ -124,7 +134,12 @@
           v-else-if="!efficiencyData.forgettingRateTrend?.length"
           class="mt-5 flex h-[260px] items-center justify-center"
         >
-          <EmptyState icon="review" title="先连续做几次错题复盘" description="有了几次复习记录后，后面这里会继续显示稳定性变化。" compact />
+          <EmptyState
+            icon="review"
+            :title="EMPTY_STATE_COPY.analyticsReviewStability.title"
+            :description="EMPTY_STATE_COPY.analyticsReviewStability.description"
+            compact
+          />
         </div>
         <div v-else class="mt-5">
           <div class="flex flex-wrap gap-2">
@@ -174,7 +189,12 @@
           </article>
         </div>
         <div v-else class="mt-5">
-          <EmptyState icon="chart" title="先开始处理错题" description="完成题目复盘后，后面这里会继续显示各分类的掌握进度。" compact />
+          <EmptyState
+            icon="chart"
+            :title="EMPTY_STATE_COPY.analyticsCategoryMastery.title"
+            :description="EMPTY_STATE_COPY.analyticsCategoryMastery.description"
+            compact
+          />
         </div>
       </article>
 
@@ -205,7 +225,12 @@
           </article>
         </div>
         <div v-else class="mt-5">
-          <EmptyState icon="chart" title="先完成一轮错题复盘" description="开始复习后，后面这里会继续显示题目的当前状态分布。" compact />
+          <EmptyState
+            icon="chart"
+            :title="EMPTY_STATE_COPY.analyticsMasteryDistribution.title"
+            :description="EMPTY_STATE_COPY.analyticsMasteryDistribution.description"
+            compact
+          />
         </div>
       </article>
     </section>
@@ -224,7 +249,12 @@
         </div>
       </div>
       <div v-else-if="!trendData.overallTrend?.length" class="mt-5 flex h-[300px] items-center justify-center">
-        <EmptyState icon="chart" title="先完成一轮模拟面试" description="开始面试练习后，后面这里会继续显示分类趋势变化。" compact />
+        <EmptyState
+          icon="chart"
+          :title="EMPTY_STATE_COPY.analyticsInterviewTrend.title"
+          :description="EMPTY_STATE_COPY.analyticsInterviewTrend.description"
+          compact
+        />
       </div>
       <div v-else class="mt-5">
         <div v-if="normalizedCategoryTrends.length" class="mb-4 flex flex-wrap gap-2">
@@ -257,6 +287,7 @@
 import * as echarts from 'echarts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import EmptyState from '@/components/EmptyState.vue'
+import { EMPTY_STATE_COPY } from '@/constants/productCopy'
 import { useTheme } from '@/composables/useTheme'
 import { readThemePalette } from '@/utils/theme'
 import AnalyticsInsightBar from './AnalyticsInsightBar.vue'

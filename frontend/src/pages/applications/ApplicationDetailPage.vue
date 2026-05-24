@@ -90,7 +90,9 @@
                   <span v-for="tag in detail.jdKeywords" :key="`match-${tag}`" class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
                     {{ tag }}
                   </span>
-                  <span v-if="!detail.jdKeywords.length" class="text-sm text-secondary">当前还没有明显命中词，先补一轮 JD 关键词或刷新分析结果。</span>
+                  <span v-if="!detail.jdKeywords.length" class="text-sm text-secondary">
+                    {{ EMPTY_STATE_COPY.applicationDetailKeywords.title }}，{{ EMPTY_STATE_COPY.applicationDetailKeywords.description }}
+                  </span>
                 </div>
               </div>
               <div class="surface-card p-4">
@@ -198,7 +200,7 @@
             </article>
 
             <div v-if="!detail.events.length" class="rounded-2xl border border-dashed border-[var(--bc-line)] p-5 text-sm text-secondary">
-              当前还没有过程记录，先补一条当前状态或面试反馈，后面这里再继续串起整条时间线。
+              {{ EMPTY_STATE_COPY.applicationDetailTimeline.title }}，{{ EMPTY_STATE_COPY.applicationDetailTimeline.description }}
             </div>
           </div>
         </article>
@@ -287,6 +289,7 @@ import {
   refreshApplicationAnalysisApi,
   updateApplicationStatusApi
 } from '@/api/applications'
+import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
 import type { JobApplicationDetail } from '@/types/api'
 
 const route = useRoute()
@@ -365,7 +368,7 @@ const handleUpdateStatus = async () => {
     statusForm.note = ''
     ElMessage.success('当前阶段已更新')
   } catch (error: any) {
-    ElMessage.error(error?.message || '当前阶段还没更新成功，请检查填写内容后再试')
+    ElMessage.error(error?.message || ERROR_COPY.applicationStatusUpdateFailed)
   } finally {
     updatingStatus.value = false
   }
@@ -403,7 +406,7 @@ const handleAddEvent = async () => {
     eventForm.feedbackTagsText = ''
     ElMessage.success('反馈已记录')
   } catch (error: any) {
-    ElMessage.error(error?.message || '这条反馈还没记录成功，请补全信息后再试')
+    ElMessage.error(error?.message || ERROR_COPY.applicationEventCreateFailed)
   } finally {
     addingEvent.value = false
   }
@@ -418,7 +421,7 @@ const handleRefreshAnalysis = async () => {
     detail.value = response.data
     ElMessage.success('JD 分析已刷新')
   } catch (error: any) {
-    ElMessage.error(error?.message || 'JD 分析还没刷新成功，请稍后再试')
+    ElMessage.error(error?.message || ERROR_COPY.applicationAnalysisRefreshFailed)
   } finally {
     refreshingAnalysis.value = false
   }
