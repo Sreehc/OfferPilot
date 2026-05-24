@@ -73,6 +73,18 @@ export const EMPTY_STATE_COPY = {
     title: '当前还没有最近面试摘要',
     description: '先完成一轮模拟面试，后面这里会继续展示最近一次训练的摘要和薄弱点。'
   },
+  dashboardInterviews: {
+    title: '当前还没有最近面试记录',
+    description: '先完成一轮模拟面试，后面这里会继续回看最近几次训练的分数、方向和完成时间。'
+  },
+  dashboardInterviewTrend: {
+    title: '当前还没有可回看的面试分数',
+    description: '先完成一轮模拟面试，后面这里会继续对比最近几次训练的分数变化。'
+  },
+  dashboardWeakPoints: {
+    title: '当前还没有分类掌握度',
+    description: '先做题并完成一轮复习，后面这里会继续提醒哪类内容最该优先补齐。'
+  },
   deviceManage: {
     title: '当前还没有其他登录设备',
     description: '目前只看到这台设备。后面有新设备登录时，这里会继续保留记录，方便排查陌生登录。'

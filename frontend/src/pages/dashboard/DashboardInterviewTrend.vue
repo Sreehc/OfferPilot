@@ -11,7 +11,12 @@
     </div>
 
     <div v-else-if="!trendData.length" class="mt-4 flex h-[260px] items-center justify-center">
-      <EmptyState icon="chart" title="当前还没有可回看的面试分数" description="先完成一轮模拟面试，后面这里会继续对比最近几次训练的分数变化。" compact />
+      <EmptyState
+        icon="chart"
+        :title="EMPTY_STATE_COPY.dashboardInterviewTrend.title"
+        :description="EMPTY_STATE_COPY.dashboardInterviewTrend.description"
+        compact
+      />
     </div>
 
     <div v-else ref="chartRef" class="mt-4 h-[260px] w-full"></div>
@@ -21,6 +26,7 @@
 <script setup lang="ts">
 import * as echarts from 'echarts'
 import EmptyState from '@/components/EmptyState.vue'
+import { EMPTY_STATE_COPY } from '@/constants/productCopy'
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useTheme } from '@/composables/useTheme'
 

@@ -34,8 +34,8 @@
     <EmptyState
       v-else
       icon="chart"
-      title="当前还没有分类掌握度"
-      description="先做题并完成一轮复习，后面这里会继续提醒哪类内容最该优先补齐。"
+      :title="EMPTY_STATE_COPY.dashboardWeakPoints.title"
+      :description="EMPTY_STATE_COPY.dashboardWeakPoints.description"
       compact
       class="mt-5"
     />
@@ -46,6 +46,7 @@
 import * as echarts from 'echarts'
 import EmptyState from '@/components/EmptyState.vue'
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { EMPTY_STATE_COPY } from '@/constants/productCopy'
 import type { CategoryMasteryItem } from '@/types/api'
 import { useTheme } from '@/composables/useTheme'
 

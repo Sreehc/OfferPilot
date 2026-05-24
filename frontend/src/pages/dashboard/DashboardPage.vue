@@ -257,8 +257,8 @@
                 </template>
 
                 <div v-else class="dashboard-inline-empty">
-                  <div class="dashboard-inline-empty__title">当前还没有最近面试摘要</div>
-                  <p class="dashboard-inline-empty__desc">先完成一轮模拟面试，后面这里会继续展示最近一次训练的摘要和薄弱点。</p>
+                  <div class="dashboard-inline-empty__title">{{ EMPTY_STATE_COPY.dashboardRecentInterview.title }}</div>
+                  <p class="dashboard-inline-empty__desc">{{ EMPTY_STATE_COPY.dashboardRecentInterview.description }}</p>
                   <RouterLink to="/interview" class="hard-button-primary mt-4 inline-flex">开始模拟面试</RouterLink>
                 </div>
               </article>
@@ -386,7 +386,7 @@ import { computed, onMounted, ref } from 'vue'
 import { fetchApplicationBoardApi } from '@/api/applications'
 import { fetchRecommendQuestionsApi } from '@/api/adaptive'
 import { fetchDashboardOverviewApi } from '@/api/dashboard'
-import { ERROR_COPY } from '@/constants/productCopy'
+import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
 import { interviewDetailApi } from '@/api/interview'
 import { fetchCurrentStudyPlanApi } from '@/api/plan'
 import DashboardGuideCard from '@/pages/dashboard/DashboardGuideCard.vue'
