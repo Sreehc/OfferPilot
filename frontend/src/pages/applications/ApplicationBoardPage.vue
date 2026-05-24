@@ -270,6 +270,7 @@ import AppShellHeader from '@/components/AppShellHeader.vue'
 import { createJobApplicationApi, fetchApplicationBoardApi } from '@/api/applications'
 import { fetchResumeListApi } from '@/api/resume'
 import type { JobApplicationItem, ResumeSummaryItem } from '@/types/api'
+import { markGuideSeenForCriticalAction } from '@/utils/guide'
 import { storage } from '@/utils/storage'
 
 const creating = ref(false)
@@ -399,8 +400,8 @@ const handleCreate = async () => {
     })
     resetForm()
     await loadData()
-    if (isFirstApplication && currentUser?.id) {
-      storage.setGuideSeen(currentUser.id)
+    if (isFirstApplication) {
+      markGuideSeenForCriticalAction(currentUser?.id)
     }
     ElMessage.success('岗位已记录，接下来可以继续推进这条投递')
   } catch (error: any) {

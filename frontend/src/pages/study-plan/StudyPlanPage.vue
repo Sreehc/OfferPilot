@@ -260,6 +260,7 @@ import {
 } from '@/api/plan'
 import { fetchReviewStatsApi } from '@/api/review'
 import type { DashboardOverview, ReviewStats, StudyPlan, StudyPlanTaskItem } from '@/types/api'
+import { markGuideSeenForCriticalAction } from '@/utils/guide'
 import { storage } from '@/utils/storage'
 import { getStudyPlanPrimaryActionLabel, getStudyPlanPrimaryActionPath } from './studyPlanActions'
 
@@ -437,9 +438,7 @@ const handleGenerate = async (durationDays: number) => {
     taskFilter.value = 'today'
     syncConfigFromPlan()
     await loadSignals()
-    if (currentUser?.id) {
-      storage.setGuideSeen(currentUser.id)
-    }
+    markGuideSeenForCriticalAction(currentUser?.id)
     ElMessage.success(`已生成 ${durationDays} 天学习计划`)
   } catch {
     ElMessage.error('这轮学习计划还没生成成功，请检查岗位和方向后再试。')

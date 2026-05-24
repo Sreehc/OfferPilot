@@ -613,6 +613,7 @@ import type {
   ResumeSummaryItem,
   ResumeVersionVO
 } from '@/types/api'
+import { markGuideSeenForCriticalAction } from '@/utils/guide'
 import { storage } from '@/utils/storage'
 
 interface ResumeProjectDraft {
@@ -947,9 +948,7 @@ const handleUpload = async (file: File) => {
       loadVersions(response.data.id)
     ])
     isEditing.value = response.data.parseStatus === 'failed'
-    if (currentUser?.id) {
-      storage.setGuideSeen(currentUser.id)
-    }
+    markGuideSeenForCriticalAction(currentUser?.id)
     ElMessage.success(response.data.parseStatus === 'failed' ? '简历已上传，请检查并修正简历内容' : '简历识别完成')
   } catch (error: any) {
     ElMessage.error(error?.message || '简历还没上传成功，请检查文件格式后再试。')
