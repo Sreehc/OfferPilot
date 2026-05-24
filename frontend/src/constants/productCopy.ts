@@ -129,6 +129,10 @@ export const EMPTY_STATE_COPY = {
     title: '当前还没有过程记录',
     description: '先补一条当前状态或面试反馈，后面这里再继续串起整条时间线。'
   },
+  applicationBoardFocus: {
+    title: '当前还没有可推进的岗位',
+    description: '先记录一条岗位，后面这里会继续提醒你下一步该跟进什么。'
+  },
   deviceManage: {
     title: '当前还没有其他登录设备',
     description: '目前只看到这台设备。后面有新设备登录时，这里会继续保留记录，方便排查陌生登录。'

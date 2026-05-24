@@ -149,7 +149,7 @@
             </RouterLink>
           </div>
           <div v-else class="mt-5 rounded-2xl border border-dashed border-[var(--bc-line)] p-5 text-sm text-secondary">
-            还没有可推进的岗位，先记录第一条岗位，再回来继续。
+            {{ EMPTY_STATE_COPY.applicationBoardFocus.title }}，{{ EMPTY_STATE_COPY.applicationBoardFocus.description }}
           </div>
         </article>
 
@@ -268,6 +268,7 @@ import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import AppShellHeader from '@/components/AppShellHeader.vue'
 import { createJobApplicationApi, fetchApplicationBoardApi } from '@/api/applications'
+import { EMPTY_STATE_COPY } from '@/constants/productCopy'
 import { fetchResumeListApi } from '@/api/resume'
 import type { JobApplicationItem, ResumeSummaryItem } from '@/types/api'
 import { markGuideSeenForCriticalAction } from '@/utils/guide'
