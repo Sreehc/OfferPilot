@@ -109,6 +109,10 @@ export const EMPTY_STATE_COPY = {
     title: '当前还没有分类掌握度',
     description: '先做题并完成一轮复习，后面这里会继续提醒哪类内容最该优先补齐。'
   },
+  dashboardApplicationDonut: {
+    title: '先记录一条投递',
+    description: '后面这里会继续显示每个阶段的分布变化。'
+  },
   resumeLibrary: {
     title: '当前还没有简历',
     description: '先上传一份，后面这里会继续整理项目、提纲和面试表达。'
