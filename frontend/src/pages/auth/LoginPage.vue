@@ -9,9 +9,9 @@
 
     <main
       id="auth-main"
-      class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1120px] items-stretch gap-4 xl:grid-cols-[minmax(280px,0.68fr)_minmax(420px,1.32fr)]"
+      class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1080px] items-stretch gap-4 xl:grid-cols-[minmax(248px,0.52fr)_minmax(440px,1.48fr)]"
     >
-      <section class="shell-section-card auth-brand-panel order-2 hidden p-6 sm:p-8 xl:order-1 xl:flex">
+      <section class="shell-section-card auth-brand-panel order-2 hidden p-5 sm:p-6 xl:order-1 xl:flex">
         <RouterLink
           to="/login"
           class="auth-brand-mark"
@@ -34,24 +34,12 @@
         </div>
 
         <div class="mt-4 max-w-md">
-          <p class="auth-support-title">
-            登录后直接继续训练
-          </p>
           <p class="mt-3 text-sm leading-7 text-secondary">
             题库、问答、模拟面试和投递进展都会跟着当前账号保留。
           </p>
         </div>
 
-        <div class="auth-trust-grid auth-trust-grid-compact">
-          <div class="auth-feature-card">
-            <p class="auth-feature-card__title">
-              登录后直接回到当前进度
-            </p>
-            <p class="auth-feature-card__desc">
-              账号会继续保留训练记录，忘记密码时也能走邮箱重置。
-            </p>
-          </div>
-        </div>
+        <div class="auth-side-note">账号会继续保留训练记录，忘记密码时也能走邮箱重置。</div>
       </section>
 
       <section class="shell-section-card auth-form-panel order-1 p-6 sm:p-8 md:p-10 xl:order-2">
@@ -369,20 +357,12 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 1.1rem;
+  gap: 0.9rem;
   background:
     radial-gradient(circle at 18% 18%, rgba(var(--bc-accent-rgb), 0.12), transparent 30%),
     radial-gradient(circle at 82% 16%, rgba(var(--bc-cyan-rgb), 0.08), transparent 24%),
     linear-gradient(145deg, rgba(var(--bc-ink-rgb), 0.04), transparent 42%),
     var(--panel-bg);
-}
-
-.auth-support-title {
-  font-family: theme('fontFamily.display');
-  font-size: clamp(1.35rem, 1.8vw, 1.95rem);
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-  color: var(--bc-ink);
 }
 
 .auth-feedback-banner {
@@ -473,38 +453,20 @@ onMounted(() => {
   opacity: 0.72;
 }
 
-.auth-trust-grid {
-  display: grid;
-  gap: 0.85rem;
-}
-
-.auth-trust-grid-compact {
-  max-width: 22rem;
-}
-
-.auth-feature-card {
+.auth-side-note {
+  max-width: 21rem;
   border-radius: calc(var(--radius-md) - 2px);
   border: 1px solid rgba(var(--bc-accent-rgb), 0.12);
   background: var(--panel-muted);
-  padding: 16px;
-}
-
-.auth-feature-card__title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--bc-ink);
-}
-
-.auth-feature-card__desc {
-  margin-top: 6px;
-  font-size: 12px;
-  line-height: 1.6;
+  padding: 0.9rem 1rem;
+  font-size: 0.82rem;
+  line-height: 1.65;
   color: var(--bc-ink-secondary);
 }
 
 @media (min-width: 1280px) {
-  .auth-trust-grid {
-    grid-template-columns: minmax(0, 1fr);
+  .auth-form-panel {
+    padding-inline: 2.75rem;
   }
 }
 
@@ -515,10 +477,6 @@ onMounted(() => {
 
   .auth-links {
     justify-content: center;
-  }
-
-  .auth-trust-grid {
-    grid-template-columns: 1fr;
   }
 
   .captcha-panel {
@@ -536,8 +494,8 @@ onMounted(() => {
 }
 
 @media (min-width: 768px) {
-  .auth-trust-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .auth-form-panel {
+    padding-inline: 2.5rem;
   }
 }
 </style>

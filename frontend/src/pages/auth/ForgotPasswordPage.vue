@@ -9,9 +9,9 @@
 
     <div
       id="auth-main"
-      class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1120px] items-stretch gap-4 xl:grid-cols-[minmax(280px,0.68fr)_minmax(420px,1.32fr)]"
+      class="auth-viewport mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1080px] items-stretch gap-4 xl:grid-cols-[minmax(248px,0.52fr)_minmax(440px,1.48fr)]"
     >
-      <section class="shell-section-card auth-brand-panel order-2 hidden p-6 sm:p-8 xl:order-1 xl:flex">
+      <section class="shell-section-card auth-brand-panel order-2 hidden p-5 sm:p-6 xl:order-1 xl:flex">
         <RouterLink
           to="/login"
           class="auth-brand-mark"
@@ -34,24 +34,12 @@
         </div>
 
         <div class="mt-4 max-w-md">
-          <p class="auth-support-title">
-            几步就能找回访问
-          </p>
           <p class="mt-3 text-sm leading-7 text-secondary">
             输入邮箱、验证码和新密码，完成后就能回到登录页继续使用。
           </p>
         </div>
 
-        <div class="auth-trust-grid auth-trust-grid-compact">
-          <div class="auth-feature-card">
-            <div class="auth-feature-card__title">
-              先确认邮箱
-            </div>
-            <p class="auth-feature-card__desc">
-              验证码会发到你注册时填写的邮箱里，收到后尽快完成重置。
-            </p>
-          </div>
-        </div>
+        <div class="auth-side-note">验证码会发到你注册时填写的邮箱里，收到后尽快完成重置。</div>
       </section>
 
       <section class="shell-section-card auth-form-panel order-1 p-6 sm:p-8 md:p-10 xl:order-2">
@@ -330,20 +318,12 @@ const handleResetPassword = async () => {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 1.1rem;
+  gap: 0.9rem;
   background:
     radial-gradient(circle at 16% 18%, rgba(var(--bc-accent-rgb), 0.12), transparent 30%),
     radial-gradient(circle at 82% 14%, rgba(var(--bc-cyan-rgb), 0.08), transparent 24%),
     linear-gradient(145deg, rgba(var(--bc-ink-rgb), 0.04), transparent 42%),
     var(--panel-bg);
-}
-
-.auth-support-title {
-  font-family: theme('fontFamily.display');
-  font-size: clamp(1.35rem, 1.8vw, 1.95rem);
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-  color: var(--bc-ink);
 }
 
 .verification-inline {
@@ -352,38 +332,20 @@ const handleResetPassword = async () => {
   width: 100%;
 }
 
-.auth-trust-grid {
-  display: grid;
-  gap: 0.85rem;
-}
-
-.auth-trust-grid-compact {
-  max-width: 22rem;
-}
-
-.auth-feature-card {
+.auth-side-note {
+  max-width: 21rem;
   border-radius: calc(var(--radius-md) - 4px);
   border: 1px solid var(--bc-border-subtle);
   background: var(--bc-surface-muted);
-  padding: 1rem;
-}
-
-.auth-feature-card__title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--bc-ink);
-}
-
-.auth-feature-card__desc {
-  margin-top: 0.6rem;
+  padding: 0.9rem 1rem;
   font-size: 0.88rem;
-  line-height: 1.75;
+  line-height: 1.7;
   color: var(--bc-ink-secondary);
 }
 
 @media (min-width: 1280px) {
-  .auth-trust-grid {
-    grid-template-columns: minmax(0, 1fr);
+  .auth-form-panel {
+    padding-inline: 2.75rem;
   }
 }
 
