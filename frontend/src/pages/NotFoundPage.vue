@@ -29,7 +29,7 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const authStore = useAuthStore()
 const homePath = computed(() => (authStore.isLoggedIn ? '/dashboard' : '/login'))
-const homeLabel = computed(() => (authStore.isLoggedIn ? '回到工作台' : '去登录'))
+const homeLabel = computed(() => (authStore.isLoggedIn ? '回到首页' : '去登录'))
 
 const goBack = () => {
   if (window.history.length > 1) {

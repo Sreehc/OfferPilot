@@ -165,13 +165,14 @@
           />
         </svg>
       </span>
-      <span class="truncate">个人中心</span>
+      <span class="truncate">{{ PRODUCT_PAGE_NAMES.settings }}</span>
     </RouterLink>
   </aside>
 </template>
 
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
+import { PRODUCT_PAGE_NAMES } from '@/constants/productCopy'
 import AppBrandGlyph from '@/components/AppBrandGlyph.vue'
 
 const route = useRoute()

@@ -1,48 +1,52 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { PRODUCT_PAGE_NAMES } from '@/constants/productCopy'
 import { useAuthStore } from '@/stores/auth'
 
 const pageMeta = {
   dashboard: {
-    title: '求职训练工作台'
+    title: PRODUCT_PAGE_NAMES.dashboard
   },
   question: {
-    title: '题库训练'
+    title: PRODUCT_PAGE_NAMES.question
   },
   chat: {
-    title: '问答'
+    title: PRODUCT_PAGE_NAMES.chat
   },
   knowledge: {
-    title: '知识库'
+    title: PRODUCT_PAGE_NAMES.knowledge
   },
   studyPlan: {
-    title: '学习计划'
+    title: PRODUCT_PAGE_NAMES.studyPlan
   },
   resume: {
-    title: '简历助手'
+    title: PRODUCT_PAGE_NAMES.resume
   },
   applications: {
-    title: '投递管理'
+    title: PRODUCT_PAGE_NAMES.applications
   },
   interview: {
-    title: '模拟面试'
+    title: PRODUCT_PAGE_NAMES.interview
   },
   review: {
-    title: '复习巩固'
+    title: PRODUCT_PAGE_NAMES.review
   },
   wrong: {
-    title: '错题本'
+    title: PRODUCT_PAGE_NAMES.wrong
   },
   community: {
     title: '社区'
   },
   analytics: {
-    title: '数据分析'
+    title: PRODUCT_PAGE_NAMES.analytics
   },
   admin: {
     title: '管理后台'
   },
   favorites: {
-    title: '我的收藏'
+    title: PRODUCT_PAGE_NAMES.favorites
+  },
+  settings: {
+    title: PRODUCT_PAGE_NAMES.settings
   }
 } as const
 
@@ -181,7 +185,7 @@ const router = createRouter({
           path: 'settings',
           name: 'settings',
           component: () => import('@/pages/settings/SettingsPage.vue'),
-          meta: { title: '设置' }
+          meta: pageMeta.settings
         }
       ]
     },
