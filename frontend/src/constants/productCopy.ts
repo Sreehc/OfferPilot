@@ -35,42 +35,42 @@ export const KNOWLEDGE_STATUS_NAMES = {
 export const EMPTY_STATE_COPY = {
   analyticsTrend: {
     title: '先推进一条主线任务',
-    description: '先安排计划、上传简历或记录投递，后面这里就会开始显示准备趋势。'
+    description: '先安排计划、上传简历或记录投递，再回来查看准备趋势。'
   },
   analyticsReviewIntensity: {
     title: '先完成今天的错题复盘',
-    description: '开始复习后，后面这里会继续显示你的复盘节奏变化。'
+    description: '先完成今天的错题复盘，再回来查看复盘节奏变化。'
   },
   analyticsReviewStability: {
     title: '先连续做几次错题复盘',
-    description: '有了几次复习记录后，后面这里会继续显示稳定性变化。'
+    description: '先连续完成几次复盘，再回来查看稳定性变化。'
   },
   analyticsCategoryMastery: {
     title: '先开始处理错题',
-    description: '完成题目复盘后，后面这里会继续显示各分类的掌握进度。'
+    description: '先完成题目复盘，再回来查看各分类的掌握进度。'
   },
   analyticsMasteryDistribution: {
     title: '先完成一轮错题复盘',
-    description: '开始复习后，后面这里会继续显示题目的当前状态分布。'
+    description: '先完成一轮错题复盘，再回来查看题目的当前状态分布。'
   },
   analyticsInterviewTrend: {
     title: '先完成一轮模拟面试',
-    description: '开始面试练习后，后面这里会继续显示分类趋势变化。'
+    description: '先完成一轮模拟面试，再回来查看分类趋势变化。'
   },
   leaderboard: {
-    title: '当前还没有贡献排名',
-    description: '先参与社区回答，后面这里会继续更新贡献排名。'
+    title: '还没有贡献排名',
+    description: '先参与一次社区回答，再回来查看贡献排名。'
   },
   communityBoard: {
-    title: '当前版块还没有帖子',
+    title: '这个版块还没有帖子',
     description: '换个版块看看，或先发起一个问题，把这块讨论带起来。'
   },
   communityReplies: {
-    title: '当前还没有回复',
+    title: '还没有回复',
     description: '先写下第一条回复，把这次讨论继续往前推进。'
   },
   knowledgeRecommended: {
-    title: '当前还没有可用推荐资料',
+    title: '还没有可用推荐资料',
     description: '先切到“我的文档”上传一份资料，或调整筛选范围继续找能继续提问的内容。'
   },
   knowledgePersonal: {
@@ -78,44 +78,44 @@ export const EMPTY_STATE_COPY = {
     description: '上传一份资料，处理完成后就能继续提问。'
   },
   favorites: {
-    title: '当前还没有收藏内容',
-    description: '先去知识库、题库或社区标记几条重点内容，后面这里会集中回看。'
+    title: '还没有收藏内容',
+    description: '先去知识库、题库或社区标记几条重点内容，再回来集中回看。'
   },
   favoriteGroups: {
-    title: '当前还没有收藏分组',
+    title: '还没有收藏分组',
     description: '先新建一个分组，把同一轮复习要看的内容收在一起。'
   },
   wrongBook: {
-    title: '当前还没有错题记录',
-    description: '先做一轮题库训练或模拟面试，低分题和易错题会自动进来，后面这里再集中复习。'
+    title: '还没有错题记录',
+    description: '先做一轮题库训练或模拟面试，再回来集中复习低分题和易错题。'
   },
   interviewHistory: {
-    title: '当前还没有已完成的模拟面试',
-    description: '先开始一轮，后面这里会按时间线保留你的分数和表现。'
+    title: '还没有已完成的模拟面试',
+    description: '先开始一轮，再回来查看分数、表现和时间线。'
   },
   dashboardRecentInterview: {
-    title: '当前还没有最近面试摘要',
-    description: '先完成一轮模拟面试，后面这里会继续展示最近一次训练的摘要和薄弱点。'
+    title: '还没有最近面试摘要',
+    description: '先完成一轮模拟面试，再回来查看最近一次训练的摘要和薄弱点。'
   },
   dashboardInterviews: {
-    title: '当前还没有最近面试记录',
-    description: '先完成一轮模拟面试，后面这里会继续回看最近几次训练的分数、方向和完成时间。'
+    title: '还没有最近面试记录',
+    description: '先完成一轮模拟面试，再回来查看最近几次训练的分数、方向和完成时间。'
   },
   dashboardInterviewTrend: {
-    title: '当前还没有可回看的面试分数',
-    description: '先完成一轮模拟面试，后面这里会继续对比最近几次训练的分数变化。'
+    title: '还没有可回看的面试分数',
+    description: '先完成一轮模拟面试，再回来对比最近几次训练的分数变化。'
   },
   dashboardWeakPoints: {
-    title: '当前还没有分类掌握度',
-    description: '先做题并完成一轮复习，后面这里会继续提醒哪类内容最该优先补齐。'
+    title: '还没有分类掌握度',
+    description: '先做题并完成一轮复习，再回来查看哪类内容最该优先补齐。'
   },
   dashboardApplicationDonut: {
     title: '先记录一条投递',
-    description: '后面这里会继续显示每个阶段的分布变化。'
+    description: '记录后就能在这里查看每个阶段的分布变化。'
   },
   resumeLibrary: {
-    title: '当前还没有简历',
-    description: '先上传一份，后面这里会继续整理项目、提纲和面试表达。'
+    title: '还没有简历',
+    description: '先上传一份，再回来整理项目、提纲和面试表达。'
   },
   resumeWorkspace: {
     title: '上传简历后，这里会按顺序带你往下走',
@@ -123,39 +123,39 @@ export const EMPTY_STATE_COPY = {
   },
   wrongDetailSelection: {
     title: '先选一道错题开始复盘',
-    description: '点击左侧任意题目后，后面这里会继续显示标准答案、错误原因和下一次复习安排。'
+    description: '点击左侧任意题目后，这里会显示标准答案、错误原因和下一次复习安排。'
   },
   applicationDetailKeywords: {
-    title: '当前还没有明显命中词',
+    title: '还没有明显命中词',
     description: '先补一轮 JD 关键词或刷新分析结果，再回来看这条岗位的匹配点。'
   },
   applicationDetailTimeline: {
-    title: '当前还没有过程记录',
-    description: '先补一条当前状态或面试反馈，后面这里再继续串起整条时间线。'
+    title: '还没有过程记录',
+    description: '先补一条当前状态或面试反馈，再回来串起整条时间线。'
   },
   applicationBoardFocus: {
-    title: '当前还没有可推进的岗位',
-    description: '先记录一条岗位，后面这里会继续提醒你下一步该跟进什么。'
+    title: '还没有可推进的岗位',
+    description: '先记录一条岗位，再回来查看下一步该跟进什么。'
   },
   deviceManage: {
-    title: '当前还没有其他登录设备',
-    description: '目前只看到这台设备。后面有新设备登录时，这里会继续保留记录，方便排查陌生登录。'
+    title: '还没有其他登录设备',
+    description: '目前只看到这台设备；后续如有新设备登录，这里会保留记录，方便排查陌生登录。'
   },
   adminOverviewTrend: {
-    title: '当前还没有趋势数据',
-    description: '先积累一段时间的用户变化，后面这里再回来查看新增和活跃走势。'
+    title: '还没有趋势数据',
+    description: '先积累一段时间的用户变化，再回来查看新增和活跃走势。'
   },
   adminQuestionList: {
-    title: '当前还没有题目',
-    description: '先新增一条或导入题库，后面这里再继续回看筛选结果。'
+    title: '还没有题目',
+    description: '先新增一条或导入题库，再回来查看筛选结果。'
   },
   adminSystemConfigHistory: {
-    title: '当前还没有变更记录',
-    description: '先更新一项配置，后面这里会继续保留修改历史。'
+    title: '还没有变更记录',
+    description: '先更新一项配置，再回来查看修改历史。'
   },
   adminKnowledgeDocs: {
-    title: '当前还没有文档',
-    description: '先导入一份资料，后面这里再继续处理解析、索引和检索验证。'
+    title: '还没有文档',
+    description: '先导入一份资料，再回来处理解析、索引和检索验证。'
   }
 } as const
 
