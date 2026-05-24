@@ -827,7 +827,7 @@ const loadMessages = async (sessionId: number) => {
     autoStickToBottom.value = true
     scrollToBottom(true)
   } catch {
-    ElMessage.error('这段会话还没加载出来，请重新点一次，或换一段会话继续查看。')
+    ElMessage.error(ERROR_COPY.chatSessionLoadFailed)
   } finally {
     loadingMessages.value = false
   }
@@ -985,7 +985,7 @@ const removeSession = async (sessionId: number) => {
     }
     await loadSessions()
   } catch {
-    ElMessage.error('这段会话还没删除成功，请稍后再试。')
+    ElMessage.error(ERROR_COPY.chatSessionDeleteFailed)
   }
 }
 
@@ -1211,7 +1211,7 @@ const runChat = async (userMessage: string) => {
     if (error.name === 'AbortError') {
       pushErrorMessage('回答已停止。你可以继续提问，或重新发送上一条问题。')
     } else {
-      ElMessage.error('这次提问没有发送成功，请检查网络后再试。')
+      ElMessage.error(ERROR_COPY.chatSubmitFailed)
       pushErrorMessage()
       console.error('SSE error:', error)
     }

@@ -238,6 +238,7 @@
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 import EmptyState from '@/components/EmptyState.vue'
+import { ERROR_COPY } from '@/constants/productCopy'
 import { fetchReviewStatsApi, fetchReviewTodayApi, submitReviewRateApi } from '@/api/review'
 import type { ReviewContentType, ReviewStats, ReviewTodayData, UnifiedReviewItem } from '@/types/api'
 
@@ -332,7 +333,7 @@ const loadData = async () => {
   try {
     await loadReviewData()
   } catch {
-    ElMessage.error('今天的复习任务还没加载出来，请刷新页面或稍后再试。')
+    ElMessage.error(ERROR_COPY.reviewTodayLoadFailed)
   } finally {
     loading.value = false
   }
@@ -405,7 +406,7 @@ const handleRate = async (rating: 1 | 2 | 3 | 4) => {
       currentIndex.value = reviewItems.value.length
     }
   } catch {
-    ElMessage.error('这次复习结果还没保存成功，请再点一次当前评级。')
+    ElMessage.error(ERROR_COPY.reviewSubmitFailed)
   } finally {
     submitting.value = false
   }

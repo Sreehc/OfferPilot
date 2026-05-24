@@ -601,7 +601,7 @@
 import { ElMessage } from 'element-plus'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { EMPTY_STATE_COPY } from '@/constants/productCopy'
+import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
 import {
   currentQuestionApi,
   fetchInterviewHistoryApi,
@@ -999,7 +999,7 @@ const loadAllHistory = async () => {
     allHistoryItems.value = []
     allHistoryTotal.value = 0
     allHistoryTotalPages.value = 0
-    ElMessage.error('最近的面试记录还没加载出来，请稍后再试。')
+    ElMessage.error(ERROR_COPY.interviewHistoryLoadFailed)
   } finally {
     allHistoryLoading.value = false
   }
@@ -1057,7 +1057,7 @@ const handleNextQuestion = async () => {
     phase.value = 'answering'
     startCountdown()
   } catch {
-    ElMessage.error('下一题还没拿到，请稍后再试。')
+    ElMessage.error(ERROR_COPY.interviewNextQuestionLoadFailed)
   }
 }
 
@@ -1069,7 +1069,7 @@ const handleFinish = async () => {
     detail.value = response.data
     phase.value = 'finished'
   } catch {
-    ElMessage.error('这次面试总结还没加载出来，请稍后再试。')
+    ElMessage.error(ERROR_COPY.interviewSummaryLoadFailed)
   }
 }
 

@@ -605,6 +605,7 @@ import {
   updateResumeApi,
   uploadResumeApi
 } from '@/api/resume'
+import { ERROR_COPY } from '@/constants/productCopy'
 import type {
   EditableInterviewResume,
   ResumeFileDetail,
@@ -861,7 +862,7 @@ const loadData = async () => {
       isEditing.value = currentResume.value.parseStatus === 'failed'
     }
   } catch {
-    ElMessage.error('简历助手还没加载出来，请刷新页面后再试。')
+    ElMessage.error(ERROR_COPY.resumeWorkspaceLoadFailed)
   } finally {
     loading.value = false
   }
@@ -906,7 +907,7 @@ const handleSave = async () => {
     isEditing.value = false
     ElMessage.success('简历内容已更新')
   } catch {
-    ElMessage.error('简历修改还没保存成功，请检查内容后再试。')
+    ElMessage.error(ERROR_COPY.resumeSaveFailed)
   } finally {
     saving.value = false
   }
@@ -928,7 +929,7 @@ const handleRetryParse = async () => {
     isEditing.value = response.data.parseStatus === 'failed'
     ElMessage.success(response.data.parseStatus === 'parsed' ? '已重新识别简历' : '已刷新当前简历状态')
   } catch {
-    ElMessage.error('这份简历还没重新识别成功，请稍后再试。')
+    ElMessage.error(ERROR_COPY.resumeRetryParseFailed)
   } finally {
     retrying.value = false
   }
@@ -951,7 +952,7 @@ const handleUpload = async (file: File) => {
     markGuideSeenForCriticalAction(currentUser?.id)
     ElMessage.success(response.data.parseStatus === 'failed' ? '简历已上传，请检查并修正简历内容' : '简历识别完成')
   } catch (error: any) {
-    ElMessage.error(error?.message || '简历还没上传成功，请检查文件格式后再试。')
+    ElMessage.error(error?.message || ERROR_COPY.resumeUploadFailed)
   } finally {
     uploading.value = false
   }
@@ -974,7 +975,7 @@ const handleRestoreVersion = async (versionId: string) => {
     isEditing.value = false
     ElMessage.success('已回滚到该版本')
   } catch {
-    ElMessage.error('这个版本还没回滚成功，请稍后再试。')
+    ElMessage.error(ERROR_COPY.resumeRestoreVersionFailed)
   } finally {
     loading.value = false
   }
@@ -986,7 +987,7 @@ const handleCopyResume = async () => {
     await navigator.clipboard.writeText(interviewResume.value.exportText)
     ElMessage.success('面试提纲已复制')
   } catch {
-    ElMessage.error('面试提纲还没复制成功，请稍后再试。')
+    ElMessage.error(ERROR_COPY.resumeOutlineCopyFailed)
   }
 }
 

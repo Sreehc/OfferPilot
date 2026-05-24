@@ -267,6 +267,7 @@ import EmptyState from '@/components/EmptyState.vue'
 import { fetchCategoriesApi } from '@/api/category'
 import { fetchQuestionsApi } from '@/api/question'
 import { addFavoriteApi, removeFavoriteApi, fetchFavoriteListApi } from '@/api/favorites'
+import { ERROR_COPY } from '@/constants/productCopy'
 import type { CategoryItem, QuestionItem } from '@/types/api'
 import { buildQuestionChatTarget, buildQuestionInterviewTarget, questionTagList } from './questionTargets'
 
@@ -330,7 +331,7 @@ const loadQuestions = async () => {
     questions.value = []
     total.value = 0
     totalPages.value = 0
-    ElMessage.error('题库列表还没加载出来，请调整筛选条件后再试。')
+    ElMessage.error(ERROR_COPY.questionListLoadFailed)
   } finally {
     loading.value = false
   }
@@ -438,7 +439,7 @@ const toggleFavorite = async (item: QuestionItem) => {
       ElMessage.success('已收藏')
     }
   } catch {
-    ElMessage.error('收藏状态没有更新成功，请稍后再试')
+    ElMessage.error(ERROR_COPY.questionFavoriteToggleFailed)
   }
 }
 

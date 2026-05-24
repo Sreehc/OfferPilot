@@ -303,7 +303,7 @@ import {
   uploadKnowledgeDocApi
 } from '@/api/knowledge'
 import { addFavoriteApi, removeFavoriteApi, fetchFavoriteListApi } from '@/api/favorites'
-import { EMPTY_STATE_COPY, KNOWLEDGE_STATUS_NAMES } from '@/constants/productCopy'
+import { EMPTY_STATE_COPY, ERROR_COPY, KNOWLEDGE_STATUS_NAMES } from '@/constants/productCopy'
 import type { CategoryItem, KnowledgeDocItem } from '@/types/api'
 import { buildKnowledgeChatTarget, canAskWithKnowledgeDocument } from './knowledgeTargets'
 
@@ -380,7 +380,7 @@ const loadDocs = async () => {
     total.value = response.data.total
     totalPages.value = response.data.totalPages
   } catch {
-    ElMessage.error('资料列表暂时没加载出来，请切换范围或稍后重试')
+    ElMessage.error(ERROR_COPY.knowledgeListLoadFailed)
   } finally {
     loadingDocs.value = false
   }
@@ -415,7 +415,7 @@ const handleUpload = async (options: { file: File }) => {
     currentPage.value = 1
     await loadDocs()
   } catch {
-    ElMessage.error('这份资料还没上传成功，请检查文件格式、大小后再试。')
+    ElMessage.error(ERROR_COPY.knowledgeUploadFailed)
   } finally {
     uploading.value = false
   }
@@ -437,7 +437,7 @@ const handleDelete = async (docId: number) => {
     ElMessage.success('文档已删除')
     await loadDocs()
   } catch {
-    ElMessage.error('这份文档还没删除成功，请稍后再试')
+    ElMessage.error(ERROR_COPY.knowledgeDeleteFailed)
   }
 }
 

@@ -386,6 +386,7 @@ import { computed, onMounted, ref } from 'vue'
 import { fetchApplicationBoardApi } from '@/api/applications'
 import { fetchRecommendQuestionsApi } from '@/api/adaptive'
 import { fetchDashboardOverviewApi } from '@/api/dashboard'
+import { ERROR_COPY } from '@/constants/productCopy'
 import { interviewDetailApi } from '@/api/interview'
 import { fetchCurrentStudyPlanApi } from '@/api/plan'
 import DashboardGuideCard from '@/pages/dashboard/DashboardGuideCard.vue'
@@ -909,7 +910,7 @@ const loadDashboard = async () => {
   }
 
   if (!overviewLoaded) {
-    ElMessage.error('首页核心数据还没加载出来，请刷新页面后再试。')
+    ElMessage.error(ERROR_COPY.dashboardCoreLoadFailed)
   }
 
   loading.value = false
