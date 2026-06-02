@@ -59,6 +59,9 @@
           >
             导出面试提纲
           </button>
+          <RouterLink v-if="currentResume" :to="resumeCoachAgentLink" class="hard-button-secondary">
+            交给 Agent 优化
+          </RouterLink>
           <RouterLink v-if="currentResume" to="/interview" class="hard-button-secondary">去模拟面试</RouterLink>
         </div>
       </div>
@@ -613,6 +616,7 @@ import type {
   ResumeVersionVO
 } from '@/types/api'
 import { markGuideSeenForCriticalAction } from '@/utils/guide'
+import { buildAgentWorkbenchLocation } from '@/utils/agent'
 import { storage } from '@/utils/storage'
 
 interface ResumeProjectDraft {
@@ -673,6 +677,22 @@ const nextActionText = computed(() => {
   if (currentResume.value.parseStatus === 'failed') return '修正简历内容'
   if (!currentResume.value.projects.length) return '补项目经历'
   return '确认开场和面试提纲'
+})
+const resumeCoachAgentLink = computed(() => {
+  const contextRefs = ['analytics:profile']
+  if (currentResume.value?.id) {
+    contextRefs.unshift(`resume:${currentResume.value.id}`)
+  } else {
+    contextRefs.unshift('resume:latest')
+  }
+  return buildAgentWorkbenchLocation({
+    agentType: 'resume_coach',
+    triggerSource: 'resume',
+    contextRefs,
+    userPrompt: currentResume.value?.parseStatus === 'failed'
+      ? '先修正这份简历的缺失内容，再整理成可用于面试和投递的版本。'
+      : '结合当前简历内容、项目追问和面试提纲，生成下一轮简历优化动作。'
+  })
 })
 
 const workflowSteps = computed(() => {

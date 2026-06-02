@@ -9,6 +9,9 @@
           <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">训练画像总览</h3>
           <p class="mt-1 text-sm text-secondary">这里先看长期能力、建议难度和持续薄弱点，再决定下一轮训练动作。</p>
         </div>
+        <RouterLink :to="analyticsAgentLink" class="hard-button-secondary">
+          刷新训练动作
+        </RouterLink>
       </div>
 
       <div v-if="profileLoading" class="mt-5 flex h-[220px] items-center justify-center">
@@ -145,9 +148,14 @@
                   <p class="text-sm font-semibold text-ink">领域回顾</p>
                   <p class="mt-1 text-sm text-secondary">把画像、错题、复盘债务和趋势合成一份阶段性回顾。</p>
                 </div>
-                <el-button :loading="retrospectiveLoading" class="action-button" @click="generateRetrospective">
-                  生成领域回顾
-                </el-button>
+                <div class="flex flex-wrap items-center gap-2">
+                  <RouterLink v-if="topicDetail" :to="topicPlannerAgentLink" class="hard-button-secondary text-sm">
+                    转成下一轮计划
+                  </RouterLink>
+                  <el-button :loading="retrospectiveLoading" class="action-button" @click="generateRetrospective">
+                    生成领域回顾
+                  </el-button>
+                </div>
               </div>
 
               <div v-if="retrospectiveLoading" class="topic-retrospective-shell mt-5 flex h-[220px] items-center justify-center">
@@ -485,6 +493,7 @@ import EmptyState from '@/components/EmptyState.vue'
 import { EMPTY_STATE_COPY } from '@/constants/productCopy'
 import { useTheme } from '@/composables/useTheme'
 import { readThemePalette } from '@/utils/theme'
+import { buildAgentWorkbenchLocation } from '@/utils/agent'
 import AnalyticsInsightBar from './AnalyticsInsightBar.vue'
 import {
   createAnalyticsTopicRetrospectiveApi,
@@ -675,6 +684,31 @@ const profileCategoryCards = computed(() => [...(abilityProfile.value.categoryAb
   .sort((left, right) => left.abilityScore - right.abilityScore)
   .slice(0, 4))
 const difficultyLabel = computed(() => difficultyText(abilityProfile.value.recommendedDifficulty))
+const analyticsAgentLink = computed(() =>
+  buildAgentWorkbenchLocation({
+    agentType: 'study_planner',
+    triggerSource: 'analytics',
+    contextRefs: ['analytics:profile', 'analytics:weak-topics', 'study-plan:active'],
+    userPrompt: abilityProfile.value.suggestedFocus
+      ? `围绕当前薄弱点“${abilityProfile.value.suggestedFocus}”刷新下一轮训练动作。`
+      : '根据当前训练画像刷新下一轮训练动作。'
+  })
+)
+const topicPlannerAgentLink = computed(() => {
+  if (!topicDetail.value?.categoryId) {
+    return analyticsAgentLink.value
+  }
+  return buildAgentWorkbenchLocation({
+    agentType: 'study_planner',
+    triggerSource: 'analytics',
+    contextRefs: [
+      'analytics:profile',
+      'analytics:weak-topics',
+      `analytics:topic:${topicDetail.value.categoryId}`
+    ],
+    userPrompt: `结合 ${topicDetail.value.categoryName} 的领域详情和回顾结果，生成下一轮训练动作。`
+  })
+})
 
 const summarySignals = computed(() => [
   {

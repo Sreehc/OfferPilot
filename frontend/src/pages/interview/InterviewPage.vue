@@ -785,9 +785,14 @@
                       </div>
                       <p class="mt-3 text-sm leading-6 text-primary">{{ recordingReviewSession.summary }}</p>
                     </div>
-                    <div class="recording-review-score">
-                      <span class="recording-review-score__label">复盘分</span>
-                      <span class="recording-review-score__value">{{ Math.round(recordingReviewSession.overallScore || 0) }}</span>
+                    <div class="flex flex-col items-end gap-3">
+                      <div class="recording-review-score">
+                        <span class="recording-review-score__label">复盘分</span>
+                        <span class="recording-review-score__value">{{ Math.round(recordingReviewSession.overallScore || 0) }}</span>
+                      </div>
+                      <RouterLink :to="recordingReviewAgentLink" class="hard-button-secondary text-sm">
+                        转成训练动作
+                      </RouterLink>
                     </div>
                   </div>
                 </div>
@@ -1345,6 +1350,7 @@ import type {
   UserProviderConfigItem,
   VoiceSubmitResult
 } from '@/types/api'
+import { buildAgentWorkbenchLocation } from '@/utils/agent'
 import VoiceRecorder from '@/components/VoiceRecorder.vue'
 
 const route = useRoute()
@@ -1621,6 +1627,15 @@ const copilotRealtimeConnectionLabel = computed(() => {
   return '未连接'
 })
 const recordingReviewPending = computed(() => isRecordingReviewPendingStatus(recordingReviewSession.value?.status))
+const recordingReviewAgentLink = computed(() => {
+  if (!recordingReviewSession.value) return '/agent'
+  return buildAgentWorkbenchLocation({
+    agentType: 'recording_review',
+    triggerSource: 'recording_review',
+    contextRefs: [`interview:recording-review:${recordingReviewSession.value.id}`, 'analytics:profile', 'study-plan:active'],
+    userPrompt: '把这次录音复盘的薄弱点转成下一轮训练动作。'
+  })
+})
 
 const handleStart = async (reanswerQuestionId?: number) => {
   if (interviewContextPath.value !== 'general' && !selectedResumeId.value) {

@@ -50,6 +50,9 @@
               </div>
             </div>
             <div class="flex flex-wrap gap-3">
+              <RouterLink :to="interviewReviewAgentLink" class="hard-button-secondary inline-flex items-center justify-center px-4">
+                交给 Agent 复盘
+              </RouterLink>
               <RouterLink to="/wrong" class="hard-button-secondary inline-flex items-center justify-center px-4">
                 查看错题本
               </RouterLink>
@@ -208,6 +211,7 @@ import { interviewDetailApi } from '@/api/interview'
 import { ERROR_COPY } from '@/constants/productCopy'
 import type { InterviewDetail } from '@/types/api'
 
+import { buildAgentWorkbenchLocation } from '@/utils/agent'
 const route = useRoute()
 const router = useRouter()
 
@@ -253,6 +257,26 @@ const interviewContextLabel = (context?: InterviewDetail['contextSource'] | null
 
 const sessionId = () => String(route.params.id || '')
 
+const interviewReviewAgentLink = computed(() => {
+  const id = sessionId()
+  const contextRefs = ['analytics:profile']
+  if (id) {
+    contextRefs.unshift(`interview:session:${id}`)
+  } else {
+    contextRefs.unshift('interview:latest')
+  }
+  if (detail.value?.contextSource?.type === 'resume' || detail.value?.contextSource?.type === 'project') {
+    contextRefs.push('resume:latest')
+  }
+  return buildAgentWorkbenchLocation({
+    agentType: 'interview_review',
+    triggerSource: 'interview',
+    contextRefs,
+    userPrompt: detail.value?.direction
+      ? `基于这次 ${detail.value.direction} 面试记录，总结薄弱点并安排下一轮训练。`
+      : '基于这次模拟面试记录，总结薄弱点并安排下一轮训练。'
+  })
+})
 const loadData = async () => {
   const id = sessionId()
   if (!id) {

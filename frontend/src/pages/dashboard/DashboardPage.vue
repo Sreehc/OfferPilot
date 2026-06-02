@@ -74,6 +74,9 @@
                   <RouterLink :to="dashboardNextActionPath" class="dashboard-hero__cta">
                     {{ dashboardNextActionTitle }}
                   </RouterLink>
+                  <RouterLink :to="dashboardAgentLink" class="hard-button-secondary">
+                    交给 Agent 统筹
+                  </RouterLink>
                 </div>
 
                 <div class="dashboard-hero__signals">
@@ -399,6 +402,7 @@ import type {
   StudyPlanTaskItem,
   UserInfo
 } from '@/types/api'
+import { buildAgentWorkbenchLocation } from '@/utils/agent'
 import { storage } from '@/utils/storage'
 import DashboardApplicationDonut from './DashboardApplicationDonut.vue'
 import heroIllustrationUrl from '@/assets/dashboard-hero-illustration.svg'
@@ -578,6 +582,23 @@ const dashboardNextActionDescription = computed(
 const dashboardNextActionReason = computed(() => dashboardNextAction.value?.reason || '')
 const dashboardNextActionPath = computed(() => dashboardNextAction.value?.path || '/dashboard')
 const dashboardNextActionPriority = computed(() => dashboardNextAction.value?.priority || 'P1')
+const dashboardAgentLink = computed(() => {
+  const contextRefs = ['dashboard:overview', 'analytics:profile', 'study-plan:active']
+  if (overview.value.recentInterviews.length) {
+    contextRefs.push('interview:latest')
+  }
+  if (applications.value.length) {
+    contextRefs.push('application:board')
+  }
+  return buildAgentWorkbenchLocation({
+    agentType: 'coordinator',
+    triggerSource: 'dashboard',
+    contextRefs,
+    userPrompt: dashboardNextAction.value?.title
+      ? `围绕“${dashboardNextAction.value.title}”统筹今天的训练与求职动作。`
+      : '结合当前工作台状态，整理今天最值得推进的训练与求职动作。'
+  })
+})
 const todayFormatted = computed(() =>
   new Intl.DateTimeFormat('zh-CN', {
     month: 'long',

@@ -31,6 +31,9 @@
 
             <div class="mt-6 flex flex-wrap gap-3">
               <button type="button" class="hard-button-primary" @click="scrollToStatus">继续推进这条投递</button>
+              <RouterLink :to="applicationAgentLink" class="hard-button-secondary">
+                交给 Agent 推进
+              </RouterLink>
               <button type="button" class="hard-button-secondary" @click="scrollToTimeline">查看时间线</button>
             </div>
           </div>
@@ -281,7 +284,7 @@
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   addApplicationEventApi,
@@ -291,6 +294,7 @@ import {
 } from '@/api/applications'
 import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
 import type { JobApplicationDetail } from '@/types/api'
+import { buildAgentWorkbenchLocation } from '@/utils/agent'
 
 const route = useRoute()
 const router = useRouter()
@@ -344,6 +348,23 @@ const eventTypeLabel = (value: string) => {
 
 const formatDateTime = (value?: string) => (value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '刚刚')
 const applicationId = () => String(route.params.id || '')
+const applicationAgentLink = computed(() => {
+  const id = applicationId()
+  const contextRefs = ['analytics:profile', 'resume:latest']
+  if (id) {
+    contextRefs.unshift(`application:${id}`)
+  } else {
+    contextRefs.unshift('application:board')
+  }
+  return buildAgentWorkbenchLocation({
+    agentType: 'application_strategist',
+    triggerSource: 'applications',
+    contextRefs,
+    userPrompt: detail.value?.jobTitle
+      ? `围绕 ${detail.value.company} 的 ${detail.value.jobTitle} 岗位，整理下一步推进策略。`
+      : '结合当前投递进展、JD 分析和历史反馈，整理下一步推进策略。'
+  })
+})
 
 const loadData = async () => {
   const id = applicationId()

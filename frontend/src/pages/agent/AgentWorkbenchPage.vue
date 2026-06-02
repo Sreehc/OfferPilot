@@ -276,7 +276,8 @@
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import {
   approveAgentRunApi,
   cancelAgentRunApi,
@@ -288,6 +289,8 @@ import {
 import EmptyState from '@/components/EmptyState.vue'
 import { PRODUCT_PAGE_NAMES } from '@/constants/productCopy'
 import type { AgentRun } from '@/types/api'
+
+const route = useRoute()
 
 type QuickStart = {
   label: string
@@ -311,6 +314,7 @@ const agentOptions = [
 
 const triggerOptions = [
   { label: '手动发起', value: 'manual' },
+  { label: '工作台', value: 'dashboard' },
   { label: PRODUCT_PAGE_NAMES.analytics, value: 'analytics' },
   { label: '录音复盘', value: 'recording_review' },
   { label: '实时面试', value: 'interview_live' },
@@ -320,12 +324,17 @@ const triggerOptions = [
 ] as const
 
 const contextRefOptions = [
+  'dashboard:overview',
   'analytics:profile',
+  'analytics:topic:{id}',
   'analytics:weak-topics',
   'interview:latest',
+  'interview:session:{id}',
   'interview:recording-review',
   'resume:latest',
+  'resume:{id}',
   'application:board',
+  'application:{id}',
   'study-plan:active',
   'settings:providers'
 ]
@@ -357,12 +366,21 @@ const quickStarts: QuickStart[] = [
   }
 ]
 
-const form = reactive({
+const defaultForm: {
+  agentType: string
+  triggerSource: string
+  streamMode: string
+  userPrompt: string
+} = {
   agentType: 'coordinator',
   triggerSource: 'manual',
-  contextRefs: [] as string[],
   streamMode: 'sync',
   userPrompt: ''
+}
+
+const form = reactive({
+  ...defaultForm,
+  contextRefs: [] as string[]
 })
 
 const runs = ref<AgentRun[]>([])
@@ -370,6 +388,44 @@ const selectedRun = ref<AgentRun | null>(null)
 const loading = ref(false)
 const creating = ref(false)
 const actionLoading = ref('')
+
+const parseQueryList = (value: unknown) => {
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => String(item || '').split(',')).map((item) => item.trim()).filter(Boolean)
+  }
+  if (typeof value === 'string') {
+    return value.split(',').map((item) => item.trim()).filter(Boolean)
+  }
+  return []
+}
+
+const resetForm = () => {
+  form.agentType = defaultForm.agentType
+  form.triggerSource = defaultForm.triggerSource
+  form.contextRefs = []
+  form.streamMode = defaultForm.streamMode
+  form.userPrompt = defaultForm.userPrompt
+}
+
+const applyRoutePrefill = () => {
+  resetForm()
+  if (typeof route.query.agentType === 'string' && route.query.agentType.trim()) {
+    form.agentType = route.query.agentType.trim()
+  }
+  if (typeof route.query.triggerSource === 'string' && route.query.triggerSource.trim()) {
+    form.triggerSource = route.query.triggerSource.trim()
+  }
+  if (typeof route.query.streamMode === 'string' && route.query.streamMode.trim()) {
+    form.streamMode = route.query.streamMode.trim()
+  }
+  if (typeof route.query.userPrompt === 'string') {
+    form.userPrompt = route.query.userPrompt
+  }
+  const contextRefs = parseQueryList(route.query.contextRefs)
+  if (contextRefs.length) {
+    form.contextRefs = contextRefs
+  }
+}
 
 const applyQuickStart = (item: QuickStart) => {
   form.agentType = item.agentType
@@ -529,7 +585,12 @@ const handleCreate = async () => {
 }
 
 onMounted(() => {
+  applyRoutePrefill()
   void loadRuns()
+})
+
+watch(() => route.fullPath, () => {
+  applyRoutePrefill()
 })
 </script>
 
