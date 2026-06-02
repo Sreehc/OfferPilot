@@ -93,6 +93,24 @@ public class UserProviderConfigServiceImpl implements UserProviderConfigService 
         return listCurrentUserConfigs();
     }
 
+    @Override
+    @Transactional
+    public List<UserProviderConfigItemVO> checkCurrentUserConfigs() {
+        Long userId = requireCurrentUserId();
+        List<UserProviderConfig> stored = userProviderConfigMapper.selectList(
+                new LambdaQueryWrapper<UserProviderConfig>()
+                        .eq(UserProviderConfig::getUserId, userId));
+        for (UserProviderConfig config : stored) {
+            ScopeDefinition definition = DEFINITIONS.get(normalizeScope(config.getProviderScope()));
+            if (definition == null) {
+                continue;
+            }
+            applyCompleteness(config, definition);
+            userProviderConfigMapper.updateById(config);
+        }
+        return listCurrentUserConfigs();
+    }
+
     private void applyRequest(UserProviderConfig config, ProviderConfigUpdateItemRequest request) {
         if (request.getEnabled() != null) {
             config.setEnabled(request.getEnabled());

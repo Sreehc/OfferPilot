@@ -30,3 +30,10 @@ export const updateProviderConfigsApi = (configs: ProviderConfigUpdateItemPayloa
     data: { configs }
   })
 }
+
+export const checkProviderConfigsApi = () => {
+  return request<UserProviderConfigItem[]>({
+    url: '/settings/providers/check',
+    method: 'post'
+  })
+}

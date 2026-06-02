@@ -9,6 +9,16 @@
         这些配置按当前账号独立保存。后续的知识库、JD 备面、录音复盘和实时 Copilot
         都会先检查这里的配置完整性，再决定是否允许继续。
       </p>
+      <div class="mt-4 flex justify-end">
+        <el-button
+          size="large"
+          class="action-button"
+          :loading="checking"
+          @click="handleCheck"
+        >
+          {{ checking ? '检测中...' : '重新检测状态' }}
+        </el-button>
+      </div>
     </section>
 
     <div v-if="loading" class="provider-grid">
@@ -159,13 +169,19 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
-import { fetchProviderConfigsApi, updateProviderConfigsApi, type ProviderConfigUpdateItemPayload } from '@/api/settings'
+import {
+  checkProviderConfigsApi,
+  fetchProviderConfigsApi,
+  updateProviderConfigsApi,
+  type ProviderConfigUpdateItemPayload
+} from '@/api/settings'
 import type { ProviderScope, UserProviderConfigItem } from '@/types/api'
 
 type ProviderDraft = ProviderConfigUpdateItemPayload
 
 const loading = ref(true)
 const savingScope = ref<ProviderScope | ''>('')
+const checking = ref(false)
 const configs = ref<UserProviderConfigItem[]>([])
 const draftByScope = reactive<Record<string, ProviderDraft>>({})
 
@@ -233,6 +249,20 @@ const handleSave = async (scope: ProviderScope) => {
     ElMessage.error('配置保存失败，请检查字段后重试。')
   } finally {
     savingScope.value = ''
+  }
+}
+
+const handleCheck = async () => {
+  checking.value = true
+  try {
+    const { data } = await checkProviderConfigsApi()
+    configs.value = data
+    data.forEach(fillDraft)
+    ElMessage.success('已刷新 provider 状态')
+  } catch {
+    ElMessage.error('状态检测失败，请稍后重试。')
+  } finally {
+    checking.value = false
   }
 }
 

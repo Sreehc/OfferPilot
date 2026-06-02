@@ -8,4 +8,6 @@ public interface UserProviderConfigService {
     List<UserProviderConfigItemVO> listCurrentUserConfigs();
 
     List<UserProviderConfigItemVO> updateCurrentUserConfigs(List<ProviderConfigUpdateItemRequest> requests);
+
+    List<UserProviderConfigItemVO> checkCurrentUserConfigs();
 }

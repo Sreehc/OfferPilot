@@ -1369,6 +1369,7 @@ import { fetchRecommendInterviewApi } from '@/api/adaptive'
 import { fetchResumeDetailApi, fetchResumeListApi } from '@/api/resume'
 import { fetchProviderConfigsApi } from '@/api/settings'
 import EmptyState from '@/components/EmptyState.vue'
+import { isProviderStatusMissing } from '@/utils/providerReadiness'
 import type {
   CopilotPrepSession,
   CopilotRealtimeSession,
@@ -1517,7 +1518,7 @@ const copilotProviderItems = computed(() =>
   providerConfigs.value.filter((item) => ['asr', 'search', 'voiceprint'].includes(item.scope))
 )
 const missingCopilotProviders = computed(() =>
-  copilotProviderItems.value.filter((item) => item.status !== 'ready')
+  copilotProviderItems.value.filter((item) => isProviderStatusMissing(item.status))
 )
 
 const toggleQuestion = (questionId: string) => {

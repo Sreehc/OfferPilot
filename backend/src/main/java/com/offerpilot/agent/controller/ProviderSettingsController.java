@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,5 +34,11 @@ public class ProviderSettingsController {
     @PutMapping
     public Result<List<UserProviderConfigItemVO>> update(@Valid @RequestBody ProviderConfigUpdateRequest request) {
         return Result.success(userProviderConfigService.updateCurrentUserConfigs(request.getConfigs()));
+    }
+
+    @Operation(summary = "重新检测当前用户 Provider 配置状态")
+    @PostMapping("/check")
+    public Result<List<UserProviderConfigItemVO>> check() {
+        return Result.success(userProviderConfigService.checkCurrentUserConfigs());
     }
 }
