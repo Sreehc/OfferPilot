@@ -24,6 +24,10 @@ import com.offerpilot.analytics.vo.ProfileTopicDetailVO;
 import com.offerpilot.analytics.vo.ProfileTopicRetrospectiveVO;
 import com.offerpilot.application.service.JobApplicationService;
 import com.offerpilot.application.vo.JobApplicationVO;
+import com.offerpilot.dashboard.dto.DashboardOverviewVO;
+import com.offerpilot.dashboard.dto.NextActionVO;
+import com.offerpilot.dashboard.dto.WeakPointVO;
+import com.offerpilot.dashboard.service.DashboardService;
 import com.offerpilot.interview.service.InterviewCopilotRealtimeService;
 import com.offerpilot.interview.vo.JobPrepSessionVO;
 import com.offerpilot.interview.vo.RecordingReviewSessionVO;
@@ -62,6 +66,8 @@ class AgentRunServiceImplTest {
     private PlanService planService;
     @Mock
     private AnalyticsService analyticsService;
+    @Mock
+    private DashboardService dashboardService;
     @Mock
     private InterviewService interviewService;
     @Mock
@@ -373,6 +379,42 @@ class AgentRunServiceImplTest {
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("优先推进下周的一面")));
         assertTrue(Boolean.TRUE.equals(result.getRequiresApproval()));
         assertNotNull(result.getApprovalSummary());
+    }
+
+    @Test
+    void createRun_coordinatorUsesDashboardOverviewContext() {
+        WeakPointVO weakPoint = new WeakPointVO();
+        weakPoint.setCategoryName("系统设计");
+        weakPoint.setWrongCount(3);
+        when(dashboardService.overview()).thenReturn(DashboardOverviewVO.builder()
+                .reviewDebtCount(4)
+                .studyStreak(6)
+                .weakPoints(List.of(weakPoint))
+                .applicationSummary(DashboardOverviewVO.ApplicationSummary.builder()
+                        .activeCount(2)
+                        .actionPath("/applications")
+                        .build())
+                .nextAction(NextActionVO.builder()
+                        .key("review_debt")
+                        .title("清理今日复习债务")
+                        .description("先处理到期待复盘和低分点。")
+                        .path("/review")
+                        .reason("还有 4 项待巩固内容没有消化。")
+                        .priority("P1")
+                        .build())
+                .build());
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "coordinator",
+                "dashboard",
+                List.of("dashboard:overview"),
+                "帮我统筹今天的工作台动作"));
+
+        assertEquals("/review", result.getNextActionPath());
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("清理今日复习债务")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("4 项待巩固")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("2 条进行中投递")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("系统设计")));
     }
 
     @Test

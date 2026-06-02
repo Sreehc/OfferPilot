@@ -20,6 +20,9 @@ import com.offerpilot.application.service.JobApplicationService;
 import com.offerpilot.application.vo.JobApplicationVO;
 import com.offerpilot.common.api.ResultCode;
 import com.offerpilot.common.exception.BusinessException;
+import com.offerpilot.dashboard.dto.DashboardOverviewVO;
+import com.offerpilot.dashboard.dto.NextActionVO;
+import com.offerpilot.dashboard.service.DashboardService;
 import com.offerpilot.interview.dto.JobPrepSessionCreateRequest;
 import com.offerpilot.interview.service.InterviewCopilotRealtimeService;
 import com.offerpilot.interview.service.InterviewJobPrepService;
@@ -61,6 +64,7 @@ public class AgentRunServiceImpl implements AgentRunService {
     private final ObjectMapper objectMapper;
     private final PlanService planService;
     private final AnalyticsService analyticsService;
+    private final DashboardService dashboardService;
     private final InterviewService interviewService;
     private final InterviewRecordingReviewService interviewRecordingReviewService;
     private final InterviewJobPrepService interviewJobPrepService;
@@ -609,6 +613,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         AbilityProfileVO abilityProfile = null;
         ProfileTopicDetailVO topicDetail = null;
         ProfileTopicRetrospectiveVO topicRetrospective = null;
+        DashboardOverviewVO dashboardOverview = null;
         StudyPlanCurrentVO currentPlan = null;
         InterviewDetailVO interviewDetail = null;
         RecordingReviewSessionVO recordingReview = null;
@@ -617,6 +622,10 @@ public class AgentRunServiceImpl implements AgentRunService {
         JobPrepSessionVO jobPrepSession = null;
         CopilotRealtimeSessionVO copilotRealtimeSession = null;
         List<UserProviderConfigItemVO> providerConfigs = null;
+
+        if (hasContext(contextRefs, "dashboard:overview")) {
+            dashboardOverview = loadOptional("dashboard overview", dashboardService::overview);
+        }
 
         if (hasContext(contextRefs, "analytics:profile") || hasContext(contextRefs, "analytics:weak-topics")) {
             abilityProfile = loadOptional("analytics profile", () -> analyticsService.getAbilityProfile(userId));
@@ -702,6 +711,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                 abilityProfile,
                 topicDetail,
                 topicRetrospective,
+                dashboardOverview,
                 currentPlan,
                 interviewDetail,
                 recordingReview,
@@ -819,6 +829,32 @@ public class AgentRunServiceImpl implements AgentRunService {
 
     private List<String> coordinatorRecommendations(ContextSnapshot snapshot) {
         List<String> recommendations = new ArrayList<>();
+        if (snapshot.dashboardOverview() != null) {
+            DashboardOverviewVO dashboardOverview = snapshot.dashboardOverview();
+            NextActionVO nextAction = dashboardOverview.getNextAction();
+            if (nextAction != null && StringUtils.hasText(nextAction.getTitle())) {
+                recommendations.add("工作台当前主动作是「" + nextAction.getTitle() + "」，优先级 "
+                        + defaultText(nextAction.getPriority(), "P1") + "。");
+                if (StringUtils.hasText(nextAction.getReason())) {
+                    recommendations.add("这一步优先的原因是：" + abbreviate(nextAction.getReason(), 40));
+                }
+            }
+            if (defaultInt(dashboardOverview.getReviewDebtCount()) > 0) {
+                recommendations.add("工作台里还有 " + defaultInt(dashboardOverview.getReviewDebtCount())
+                        + " 项待巩固内容，今天要给复习债务留出处理时间。");
+            }
+            if (dashboardOverview.getApplicationSummary() != null
+                    && defaultInt(dashboardOverview.getApplicationSummary().getActiveCount()) > 0) {
+                recommendations.add("当前还有 "
+                        + defaultInt(dashboardOverview.getApplicationSummary().getActiveCount())
+                        + " 条进行中投递，注意把训练节奏和投递推进对齐。");
+            }
+            if (!nullSafeList(dashboardOverview.getWeakPoints()).isEmpty()) {
+                recommendations.add("工作台薄弱点首先暴露在 "
+                        + defaultText(dashboardOverview.getWeakPoints().get(0).getCategoryName(), "当前薄弱领域")
+                        + "，适合优先转成训练动作。");
+            }
+        }
         if (snapshot.application() != null) {
             recommendations.add("先推进 " + defaultText(snapshot.application().getCompany(), "当前岗位")
                     + " 的投递动作，再决定是否扩展到下一批岗位。");
@@ -1007,6 +1043,11 @@ public class AgentRunServiceImpl implements AgentRunService {
     }
 
     private String resolveCoordinatorNextActionPath(ContextSnapshot snapshot) {
+        if (snapshot.dashboardOverview() != null
+                && snapshot.dashboardOverview().getNextAction() != null
+                && StringUtils.hasText(snapshot.dashboardOverview().getNextAction().getPath())) {
+            return snapshot.dashboardOverview().getNextAction().getPath().trim();
+        }
         if (snapshot.recordingReview() != null) {
             return "/interview";
         }
@@ -1539,6 +1580,7 @@ public class AgentRunServiceImpl implements AgentRunService {
 
     private record ContextSnapshot(AbilityProfileVO abilityProfile, ProfileTopicDetailVO topicDetail,
                                    ProfileTopicRetrospectiveVO topicRetrospective,
+                                   DashboardOverviewVO dashboardOverview,
                                    StudyPlanCurrentVO currentPlan,
                                    InterviewDetailVO interviewDetail, RecordingReviewSessionVO recordingReview,
                                    ResumeFileVO resume, JobApplicationVO application,
