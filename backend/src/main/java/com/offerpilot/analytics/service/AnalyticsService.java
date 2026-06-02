@@ -1,5 +1,6 @@
 package com.offerpilot.analytics.service;
 
+import com.offerpilot.adaptive.vo.AbilityProfileVO;
 import com.offerpilot.analytics.vo.EfficiencyVO;
 import com.offerpilot.analytics.vo.LearningInsightsVO;
 import com.offerpilot.analytics.vo.TrendVO;
@@ -23,4 +24,9 @@ public interface AnalyticsService {
      * category changes, and best study hours.
      */
     LearningInsightsVO getLearningInsights(Long userId);
+
+    /**
+     * Long-term ability profile used by analytics/profile views.
+     */
+    AbilityProfileVO getAbilityProfile(Long userId);
 }

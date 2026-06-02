@@ -1,5 +1,6 @@
 package com.offerpilot.analytics.controller;
 
+import com.offerpilot.adaptive.vo.AbilityProfileVO;
 import com.offerpilot.analytics.service.AnalyticsService;
 import com.offerpilot.analytics.vo.EfficiencyVO;
 import com.offerpilot.analytics.vo.LearningInsightsVO;
@@ -43,6 +44,12 @@ public class AnalyticsController {
     @GetMapping("/insights")
     public Result<LearningInsightsVO> insights() {
         return Result.success(analyticsService.getLearningInsights(currentUserId()));
+    }
+
+    @Operation(summary = "能力画像", description = "返回长期能力画像、薄弱分类和建议难度")
+    @GetMapping("/profile")
+    public Result<AbilityProfileVO> profile() {
+        return Result.success(analyticsService.getAbilityProfile(currentUserId()));
     }
 
     private Long currentUserId() {

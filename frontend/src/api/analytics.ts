@@ -1,5 +1,5 @@
 import { request } from '@/utils/http'
-import type { AbilityTrend, EfficiencyData, LearningInsights } from '@/types/api'
+import type { AbilityProfile, AbilityTrend, EfficiencyData, LearningInsights } from '@/types/api'
 
 export const fetchAbilityTrendApi = (weeks = 12, categoryIds?: number[]) => {
   const params: Record<string, unknown> = { weeks }
@@ -23,6 +23,13 @@ export const fetchEfficiencyApi = () => {
 export const fetchLearningInsightsApi = () => {
   return request<LearningInsights>({
     url: '/analytics/insights',
+    method: 'get',
+  })
+}
+
+export const fetchAnalyticsProfileApi = () => {
+  return request<AbilityProfile>({
+    url: '/analytics/profile',
     method: 'get',
   })
 }

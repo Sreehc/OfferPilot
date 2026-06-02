@@ -1,6 +1,8 @@
 package com.offerpilot.analytics.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.offerpilot.adaptive.service.AdaptiveService;
+import com.offerpilot.adaptive.vo.AbilityProfileVO;
 import com.offerpilot.analytics.service.AnalyticsService;
 import com.offerpilot.analytics.vo.EfficiencyVO;
 import com.offerpilot.analytics.vo.LearningInsightsVO;
@@ -65,6 +67,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     private final ResumeFileMapper resumeFileMapper;
     private final JobApplicationMapper jobApplicationMapper;
     private final DashboardService dashboardService;
+    private final AdaptiveService adaptiveService;
 
     @Override
     @Transactional(readOnly = true)
@@ -247,6 +250,12 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .categoryChanges(categoryChanges)
                 .bestStudyHours(bestStudyHours)
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AbilityProfileVO getAbilityProfile(Long userId) {
+        return adaptiveService.getAbilityProfile(userId);
     }
 
     private List<TrendVO.PlanTrendPoint> buildPlanProgressTrend(Long userId, int weeks) {

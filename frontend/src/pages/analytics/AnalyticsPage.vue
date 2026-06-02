@@ -3,11 +3,89 @@
     <AnalyticsInsightBar :data="learningInsights" />
 
     <section class="shell-section-card p-4 sm:p-5">
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p class="section-kicker">长期画像</p>
+          <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">训练画像总览</h3>
+          <p class="mt-1 text-sm text-secondary">这里先看长期能力、建议难度和持续薄弱点，再决定下一轮训练动作。</p>
+        </div>
+      </div>
+
+      <div v-if="profileLoading" class="mt-5 flex h-[220px] items-center justify-center">
+        <div class="text-center">
+          <div class="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+          <p class="mt-3 text-sm text-secondary">正在加载训练画像...</p>
+        </div>
+      </div>
+      <div v-else-if="!abilityProfile.categoryAbilities.length" class="mt-5">
+        <EmptyState
+          icon="chart"
+          title="训练画像还没形成"
+          description="先完成几轮题库、复盘或模拟面试，这里会开始沉淀长期趋势。"
+          compact
+        />
+      </div>
+      <div v-else class="mt-5 grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
+        <div class="profile-summary-shell">
+          <article class="profile-summary-card">
+            <p class="profile-summary-card__label">综合能力</p>
+            <p class="profile-summary-card__value">{{ Math.round(abilityProfile.overallAbility || 0) }}</p>
+            <p class="profile-summary-card__hint">当前能力画像会结合面试记录和错题表现持续刷新。</p>
+          </article>
+          <article class="profile-summary-card profile-summary-card--accent">
+            <p class="profile-summary-card__label">建议难度</p>
+            <p class="profile-summary-card__value">{{ difficultyLabel }}</p>
+            <p class="profile-summary-card__hint">
+              {{ abilityProfile.suggestedFocus ? `当前建议先收紧 ${abilityProfile.suggestedFocus}。` : '目前没有明确的单一薄弱主题。' }}
+            </p>
+          </article>
+        </div>
+
+        <div class="profile-detail-shell">
+          <div>
+            <p class="text-sm font-semibold text-ink">持续薄弱点</p>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <span
+                v-for="category in weakCategoryChips"
+                :key="category"
+                class="detail-pill"
+              >
+                {{ category }}
+              </span>
+            </div>
+          </div>
+
+          <div class="mt-5 grid gap-3 sm:grid-cols-2">
+            <article
+              v-for="item in profileCategoryCards"
+              :key="`${item.categoryId}-${item.categoryName}`"
+              class="profile-category-card"
+              :class="{ 'profile-category-card--weak': item.isWeak }"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="text-lg font-semibold text-ink">{{ item.categoryName }}</p>
+                  <p class="mt-1 text-xs uppercase tracking-[0.16em] text-tertiary">
+                    推荐难度 · {{ difficultyText(item.recommendedDifficulty) }}
+                  </p>
+                </div>
+                <span class="font-mono text-2xl font-semibold text-ink">{{ Math.round(item.abilityScore) }}</span>
+              </div>
+              <p class="mt-3 text-sm leading-6 text-secondary">
+                模拟面试 {{ item.interviewCount }} 场 · 错题 {{ item.wrongCount }} 题
+              </p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shell-section-card p-4 sm:p-5">
       <div class="grid gap-4 xl:grid-cols-[288px_minmax(0,1fr)] xl:items-stretch">
         <aside class="analytics-overview">
           <div>
             <p class="section-kicker">本周总览</p>
-            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">先判断准备节奏有没有往前走</h3>
+            <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">准备趋势</h3>
           </div>
 
           <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
@@ -27,8 +105,8 @@
         <div class="analytics-main-chart">
           <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">当前主线有没有继续推进</h3>
-              <p class="mt-1 text-sm text-secondary">优先看计划、投递、简历和模拟面试这四条主线是否在前进。</p>
+              <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">主线进展</h3>
+              <p class="mt-1 text-sm text-secondary">这里汇总计划、投递、简历和模拟面试的进展。</p>
             </div>
             <div class="mode-switch grid grid-cols-3 gap-2">
               <button
@@ -47,7 +125,7 @@
           <div v-if="trendLoading" class="mt-4 flex h-[340px] items-center justify-center">
             <div class="text-center">
               <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-              <p class="mt-3 text-sm text-secondary">正在整理准备趋势...</p>
+              <p class="mt-3 text-sm text-secondary">正在加载准备趋势...</p>
             </div>
           </div>
           <div
@@ -85,7 +163,7 @@
         <div v-if="efficiencyLoading" class="mt-5 flex h-[260px] items-center justify-center">
           <div class="text-center">
             <div class="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-            <p class="mt-3 text-sm text-secondary">正在整理复盘强度...</p>
+            <p class="mt-3 text-sm text-secondary">正在加载复盘强度...</p>
           </div>
         </div>
         <div v-else-if="!efficiencyData.efTrend?.length" class="mt-5 flex h-[260px] items-center justify-center">
@@ -127,7 +205,7 @@
         <div v-if="efficiencyLoading" class="mt-5 flex h-[260px] items-center justify-center">
           <div class="text-center">
             <div class="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-            <p class="mt-3 text-sm text-secondary">正在整理复盘稳定性...</p>
+            <p class="mt-3 text-sm text-secondary">正在加载复盘稳定性...</p>
           </div>
         </div>
         <div
@@ -245,7 +323,7 @@
       <div v-if="trendLoading" class="mt-5 flex h-[300px] items-center justify-center">
         <div class="text-center">
           <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-          <p class="mt-3 text-sm text-secondary">正在整理面试趋势...</p>
+          <p class="mt-3 text-sm text-secondary">正在加载面试趋势...</p>
         </div>
       </div>
       <div v-else-if="!trendData.overallTrend?.length" class="mt-5 flex h-[300px] items-center justify-center">
@@ -291,8 +369,8 @@ import { EMPTY_STATE_COPY } from '@/constants/productCopy'
 import { useTheme } from '@/composables/useTheme'
 import { readThemePalette } from '@/utils/theme'
 import AnalyticsInsightBar from './AnalyticsInsightBar.vue'
-import { fetchAbilityTrendApi, fetchEfficiencyApi, fetchLearningInsightsApi } from '@/api/analytics'
-import type { AbilityTrend, EfficiencyData, LearningInsights } from '@/types/api'
+import { fetchAbilityTrendApi, fetchAnalyticsProfileApi, fetchEfficiencyApi, fetchLearningInsightsApi } from '@/api/analytics'
+import type { AbilityProfile, AbilityTrend, EfficiencyData, LearningInsights } from '@/types/api'
 
 const weekOptions = [
   { label: '4 周', value: 4 },
@@ -304,6 +382,7 @@ const selectedWeeks = ref(12)
 const selectedCategories = ref<number[]>([])
 const trendLoading = ref(true)
 const efficiencyLoading = ref(true)
+const profileLoading = ref(true)
 const trendData = ref<AbilityTrend>({
   weeks: [],
   reviewActivityTrend: [],
@@ -352,6 +431,13 @@ const learningInsights = ref<LearningInsights>({
   nextAction: undefined,
   categoryChanges: [],
   bestStudyHours: []
+})
+const abilityProfile = ref<AbilityProfile>({
+  overallAbility: 0,
+  recommendedDifficulty: 'easy',
+  categoryAbilities: [],
+  weakCategories: [],
+  suggestedFocus: null
 })
 const { theme } = useTheme()
 
@@ -447,36 +533,43 @@ const masteryItems = computed(() => {
 })
 
 const categoryMasteryItems = computed(() => efficiencyData.value.categoryMastery || [])
+const weakCategoryChips = computed(() => abilityProfile.value.weakCategories?.length
+  ? abilityProfile.value.weakCategories
+  : ['暂无持续薄弱点'])
+const profileCategoryCards = computed(() => [...(abilityProfile.value.categoryAbilities || [])]
+  .sort((left, right) => left.abilityScore - right.abilityScore)
+  .slice(0, 4))
+const difficultyLabel = computed(() => difficultyText(abilityProfile.value.recommendedDifficulty))
 
 const summarySignals = computed(() => [
   {
     label: '当前重点',
-    value: learningInsights.value.activePlanTitle || '先生成计划',
-    detail: learningInsights.value.planExecutionStatus || '先生成一份训练计划',
+    value: learningInsights.value.activePlanTitle || '暂无计划',
+    detail: learningInsights.value.planExecutionStatus || '生成一份训练计划后，这里会显示执行进度',
     toneClass: ''
   },
   {
     label: '活跃投递',
     value: `${learningInsights.value.applicationActiveCount ?? 0} 条`,
-    detail: learningInsights.value.applicationStatus || '先录入岗位',
+    detail: learningInsights.value.applicationStatus || '录入岗位后，这里会显示投递进展',
     toneClass: 'summary-slab-cyan'
   },
   {
     label: '简历准备',
     value: `${learningInsights.value.resumeCount ?? 0} 份`,
-    detail: learningInsights.value.resumeReadinessStatus || '先上传一份简历',
+    detail: learningInsights.value.resumeReadinessStatus || '上传简历后，这里会显示准备状态',
     toneClass: 'summary-slab-lime'
   },
   {
     label: '本周模拟面试',
     value: `${learningInsights.value.thisWeekInterviewCount ?? 0} 场`,
-    detail: learningInsights.value.interviewConversionStatus || '先做一轮模拟面试',
+    detail: learningInsights.value.interviewConversionStatus || '完成模拟面试后，这里会显示趋势变化',
     toneClass: 'summary-slab-amber'
   },
   {
     label: '到期待复盘',
     value: `${latestReviewDebtCount.value} 题`,
-    detail: latestReviewDebtCount.value > 0 ? '先把到期错题清一轮，再补新的训练。' : '当前没有到期错题，可以继续推进新训练。',
+    detail: latestReviewDebtCount.value > 0 ? '处理到期错题后，安排新的训练。' : '目前没有到期错题，可以安排新的训练。',
     toneClass: ''
   }
 ])
@@ -489,9 +582,9 @@ const changeWeeks = (w: number) => {
 const toggleCategory = (catId: number) => {
   const idx = selectedCategories.value.indexOf(catId)
   if (idx >= 0) {
-    selectedCategories.value.splice(idx, 1)
+    selectedCategories.value = selectedCategories.value.filter((id) => id !== catId)
   } else {
-    selectedCategories.value.push(catId)
+    selectedCategories.value = [...selectedCategories.value, catId]
   }
 }
 
@@ -521,17 +614,30 @@ const loadTrend = async () => {
 
 const loadEfficiency = async () => {
   efficiencyLoading.value = true
+  profileLoading.value = true
   try {
-    const [efficiencyRes, insightsRes] = await Promise.all([fetchEfficiencyApi(), fetchLearningInsightsApi()])
+    const [efficiencyRes, insightsRes, profileRes] = await Promise.all([
+      fetchEfficiencyApi(),
+      fetchLearningInsightsApi(),
+      fetchAnalyticsProfileApi()
+    ])
     efficiencyData.value = efficiencyRes.data
     learningInsights.value = insightsRes.data
+    abilityProfile.value = profileRes.data
     nextTick(() => {
       renderEFChart()
       renderFRChart()
     })
   } finally {
     efficiencyLoading.value = false
+    profileLoading.value = false
   }
+}
+
+const difficultyText = (value?: string) => {
+  if (value === 'hard') return '高强度'
+  if (value === 'medium') return '中强度'
+  return '基础巩固'
 }
 
 const buildChartBase = () => {
@@ -885,7 +991,7 @@ watch(theme, () => {
 }
 
 .mode-switch__item {
-  min-height: 36px;
+  min-height: 40px;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -893,7 +999,10 @@ watch(theme, () => {
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  transition: all 180ms ease;
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .mode-switch__item:hover {
@@ -910,6 +1019,94 @@ watch(theme, () => {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.profile-summary-shell {
+  display: grid;
+  gap: 12px;
+}
+
+.profile-summary-card {
+  border-radius: calc(var(--radius-md) - 2px);
+  border: 1px solid var(--bc-border-subtle);
+  background:
+    linear-gradient(180deg, rgba(var(--bc-cyan-rgb), 0.08), transparent 55%),
+    var(--panel-bg);
+  padding: 18px;
+}
+
+.profile-summary-card--accent {
+  background:
+    linear-gradient(180deg, rgba(var(--bc-amber-rgb), 0.08), transparent 55%),
+    var(--panel-bg);
+}
+
+.profile-summary-card__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--bc-ink-tertiary);
+}
+
+.profile-summary-card__value {
+  margin-top: 0.9rem;
+  font-family: theme('fontFamily.mono');
+  font-size: clamp(2rem, 3vw, 2.8rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--bc-ink);
+}
+
+.profile-summary-card__hint {
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--bc-ink-secondary);
+}
+
+.profile-detail-shell {
+  border-radius: calc(var(--radius-md) - 2px);
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--panel-muted);
+  padding: 18px;
+}
+
+.detail-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--bc-coral-rgb), 0.24);
+  background: rgba(var(--bc-coral-rgb), 0.1);
+  padding: 0 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--bc-ink);
+}
+
+.profile-category-card {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--panel-bg);
+  padding: 16px;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.profile-category-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(var(--bc-cyan-rgb), 0.28);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+}
+
+.profile-category-card--weak {
+  border-color: rgba(var(--bc-coral-rgb), 0.28);
+  background:
+    linear-gradient(180deg, rgba(var(--bc-coral-rgb), 0.08), transparent 58%),
+    var(--panel-bg);
 }
 
 .analytics-overview-card {
@@ -970,11 +1167,11 @@ watch(theme, () => {
 }
 
 .category-chip {
-  min-height: 36px;
+  min-height: 40px;
   border-radius: 999px;
   border: 1px solid var(--bc-border-subtle);
   background: var(--interactive-bg);
-  padding: 0 14px;
+  padding: 0 15px;
   font-size: 12px;
   font-weight: 700;
   color: var(--bc-ink-secondary);
