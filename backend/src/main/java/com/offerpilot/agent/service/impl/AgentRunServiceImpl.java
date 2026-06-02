@@ -290,9 +290,9 @@ public class AgentRunServiceImpl implements AgentRunService {
                 List.of("查看转写片段", "提取薄弱点", "确认是否转成正式训练动作"),
                 "/interview",
                 true,
-                "refresh_study_plan",
-                "审批通过后会刷新学习计划，把这次录音复盘结论转成正式训练动作。",
-                writeObject(payload, "{}"));
+                "save_recording_review_action",
+                "审批通过后会把这次录音复盘结论保存为正式训练动作，并写入当前学习计划。",
+                writeObject(resolveRecordingReviewActionPayload(snapshot, payload), "{}"));
     }
 
     private RunBlueprint buildResumeCoachBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
@@ -476,6 +476,7 @@ public class AgentRunServiceImpl implements AgentRunService {
             case "save_job_prep_draft" -> executeJobPrepDraftAction(userId, run.getApprovalPayloadJson());
             case "save_resume_follow_up_draft" -> executeResumeFollowUpDraftAction(userId, run.getApprovalPayloadJson());
             case "save_application_strategy" -> executeApplicationStrategyAction(userId, run.getApprovalPayloadJson());
+            case "save_recording_review_action" -> executeRecordingReviewAction(userId, run.getApprovalPayloadJson());
             default -> new ExecutionResult("已完成审批。");
         };
     }
@@ -541,6 +542,23 @@ public class AgentRunServiceImpl implements AgentRunService {
         return new ExecutionResult("已把简历追问草稿写回「"
                 + defaultText(resume.getTitle(), "当前简历")
                 + "」，可继续在简历页整理和消费。");
+    }
+
+    private ExecutionResult executeRecordingReviewAction(Long userId, String payloadJson) {
+        RecordingReviewActionPayload payload = readObject(payloadJson, RecordingReviewActionPayload.class);
+        if (payload == null || payload.recordingReviewSessionId() == null) {
+            return new ExecutionResult("当前缺少录音复盘对象，暂未保存正式训练动作。");
+        }
+        planService.saveRecordingReviewAction(
+                userId,
+                payload.recordingReviewSessionId(),
+                payload.focusDirection(),
+                payload.targetRole(),
+                payload.techStack(),
+                payload.taskTitle(),
+                payload.taskDescription(),
+                payload.actionPath());
+        return new ExecutionResult("已把这次录音复盘结论写成正式训练任务，可继续在学习计划页执行。");
     }
 
     private ContextSnapshot resolveContextSnapshot(Long userId, List<String> contextRefs) {
@@ -758,6 +776,35 @@ public class AgentRunServiceImpl implements AgentRunService {
             return null;
         }
         return new ResumeFollowUpDraftPayload(resumeId, summary, recommendations);
+    }
+
+    private RecordingReviewActionPayload resolveRecordingReviewActionPayload(
+            ContextSnapshot snapshot, StudyPlanPayload studyPlanPayload) {
+        RecordingReviewSessionVO recordingReview = snapshot.recordingReview();
+        if (recordingReview == null || recordingReview.getId() == null) {
+            return null;
+        }
+        String focusDirection = firstNonBlank(
+                recordingReview.getDirection(),
+                studyPlanPayload == null ? null : studyPlanPayload.focusDirection(),
+                snapshot.abilityProfile() == null ? null : snapshot.abilityProfile().getSuggestedFocus());
+        String targetRole = firstNonBlank(
+                recordingReview.getJobRole(),
+                studyPlanPayload == null ? null : studyPlanPayload.targetRole(),
+                snapshot.jobPrepSession() == null ? null : snapshot.jobPrepSession().getJobTitle());
+        String taskTitle = "录音复盘专项 | "
+                + defaultText(firstItem(recordingReview.getWeakPoints()), defaultText(focusDirection, "表达修正"));
+        String taskDescription = "基于本次录音复盘，优先处理 "
+                + defaultText(joinLimited(recordingReview.getWeakPoints(), 2, "、"), "表达结构和案例支撑")
+                + "。下一步先回听片段，再把建议动作带入一轮模拟或专项训练。";
+        return new RecordingReviewActionPayload(
+                recordingReview.getId(),
+                focusDirection,
+                targetRole,
+                studyPlanPayload == null ? null : studyPlanPayload.techStack(),
+                taskTitle,
+                taskDescription,
+                "/interview?recordingReview=" + recordingReview.getId());
     }
 
     private String resolveCoordinatorNextActionPath(ContextSnapshot snapshot) {
@@ -1233,6 +1280,11 @@ public class AgentRunServiceImpl implements AgentRunService {
     }
 
     private record ResumeFollowUpDraftPayload(Long resumeId, String summary, List<String> recommendations) {
+    }
+
+    private record RecordingReviewActionPayload(Long recordingReviewSessionId, String focusDirection, String targetRole,
+                                                String techStack, String taskTitle, String taskDescription,
+                                                String actionPath) {
     }
 
     private record ProviderRequirement(String scope, String label, boolean required, String missingMessage) {

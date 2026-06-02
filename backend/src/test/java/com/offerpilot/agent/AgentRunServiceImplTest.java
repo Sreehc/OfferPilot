@@ -24,6 +24,7 @@ import com.offerpilot.analytics.vo.ProfileTopicDetailVO;
 import com.offerpilot.application.service.JobApplicationService;
 import com.offerpilot.application.vo.JobApplicationVO;
 import com.offerpilot.interview.vo.JobPrepSessionVO;
+import com.offerpilot.interview.vo.RecordingReviewSessionVO;
 import com.offerpilot.interview.service.InterviewJobPrepService;
 import com.offerpilot.interview.service.InterviewRecordingReviewService;
 import com.offerpilot.interview.service.InterviewService;
@@ -346,6 +347,38 @@ class AgentRunServiceImplTest {
         assertEquals("approved", approved.getStatus());
         assertTrue(approved.getExecutionSummary().contains("简历追问草稿"));
         assertTrue(approved.getExecutionSummary().contains("Java 后端简历"));
+    }
+
+    @Test
+    void approveRun_persistsRecordingReviewAsFormalTrainingAction() {
+        when(interviewRecordingReviewService.detail(1L, 55L)).thenReturn(RecordingReviewSessionVO.builder()
+                .id(55L)
+                .direction("Java 后端")
+                .jobRole("后端开发")
+                .overallScore(new BigDecimal("61"))
+                .weakPoints(List.of("表达结构", "项目案例支撑"))
+                .suggestedActions(List.of("先回听薄弱片段", "再补 1 次专项模拟"))
+                .build());
+
+        AgentRunVO created = agentRunService.createRun(1L, request(
+                "recording_review",
+                "recording_review",
+                List.of("interview:recording-review:55", "study-plan:active"),
+                "把这次复盘变成今天的训练动作"));
+
+        AgentRunVO approved = agentRunService.approveRun(1L, Long.valueOf(String.valueOf(created.getId())), null);
+
+        verify(planService).saveRecordingReviewAction(
+                org.mockito.ArgumentMatchers.eq(1L),
+                org.mockito.ArgumentMatchers.eq(55L),
+                org.mockito.ArgumentMatchers.eq("Java 后端"),
+                org.mockito.ArgumentMatchers.eq("后端开发"),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.contains("录音复盘专项"),
+                org.mockito.ArgumentMatchers.contains("表达结构"),
+                org.mockito.ArgumentMatchers.eq("/interview?recordingReview=55"));
+        assertEquals("approved", approved.getStatus());
+        assertTrue(approved.getExecutionSummary().contains("正式训练任务"));
     }
 
     private AgentRunCreateRequest request(String agentType, String triggerSource, List<String> contextRefs, String prompt) {

@@ -142,6 +142,50 @@ public class PlanServiceImpl implements PlanService {
         return toCurrentVO(synced, loadPlanTasks(synced.getId()), overview);
     }
 
+    @Override
+    @Transactional
+    public StudyPlanCurrentVO saveRecordingReviewAction(Long userId, Long recordingReviewSessionId,
+                                                        String focusDirection, String targetRole, String techStack,
+                                                        String taskTitle, String taskDescription, String actionPath) {
+        StudyPlan plan = ensurePlanForRecordingReview(userId, focusDirection, targetRole, techStack);
+        StudyPlan synced = syncPlanState(plan);
+        String normalizedActionPath = firstNonBlank(
+                actionPath,
+                recordingReviewSessionId == null ? null : "/interview?recordingReview=" + recordingReviewSessionId,
+                "/interview");
+
+        StudyPlanTask existingTask = studyPlanTaskMapper.selectOne(new LambdaQueryWrapper<StudyPlanTask>()
+                .eq(StudyPlanTask::getPlanId, synced.getId())
+                .eq(StudyPlanTask::getUserId, userId)
+                .eq(StudyPlanTask::getModule, "recording_review")
+                .eq(StudyPlanTask::getActionPath, normalizedActionPath)
+                .orderByDesc(StudyPlanTask::getId)
+                .last("LIMIT 1"));
+        if (existingTask == null) {
+            StudyPlanTask task = buildTask(
+                    synced,
+                    synced.getCurrentDay(),
+                    LocalDate.now(),
+                    "recording_review",
+                    firstNonBlank(taskTitle, "录音复盘转训练动作"),
+                    firstNonBlank(taskDescription, "把这次录音复盘的薄弱点整理成下一轮可执行训练动作。"),
+                    normalizedActionPath,
+                    25,
+                    "high");
+            studyPlanTaskMapper.insert(task);
+        } else {
+            existingTask.setTitle(firstNonBlank(taskTitle, existingTask.getTitle(), "录音复盘转训练动作"));
+            existingTask.setDescription(firstNonBlank(taskDescription, existingTask.getDescription(),
+                    "把这次录音复盘的薄弱点整理成下一轮可执行训练动作。"));
+            existingTask.setPriority("high");
+            existingTask.setTaskDate(LocalDate.now());
+            studyPlanTaskMapper.updateById(existingTask);
+        }
+
+        StudyPlan latestPlan = syncPlanState(getOwnedPlan(userId, synced.getId()));
+        return toCurrentVO(latestPlan, loadPlanTasks(latestPlan.getId()), dashboardService.overview());
+    }
+
     private StudyPlan getOwnedPlan(Long userId, Long planId) {
         StudyPlan plan = studyPlanMapper.selectById(planId);
         if (plan == null || !plan.getUserId().equals(userId)) {
@@ -158,6 +202,25 @@ public class PlanServiceImpl implements PlanService {
             activePlan.setStatus("archived");
             studyPlanMapper.updateById(activePlan);
         }
+    }
+
+    private StudyPlan ensurePlanForRecordingReview(Long userId, String focusDirection, String targetRole, String techStack) {
+        StudyPlan plan = studyPlanMapper.selectOne(new LambdaQueryWrapper<StudyPlan>()
+                .eq(StudyPlan::getUserId, userId)
+                .eq(StudyPlan::getStatus, "active")
+                .orderByDesc(StudyPlan::getId)
+                .last("LIMIT 1"));
+        if (plan != null) {
+            return plan;
+        }
+
+        StudyPlanGenerateRequest request = new StudyPlanGenerateRequest();
+        request.setDurationDays(7);
+        request.setFocusDirection(firstNonBlank(focusDirection, "录音复盘专项"));
+        request.setTargetRole(firstNonBlank(targetRole, "Java 后端开发"));
+        request.setTechStack(firstNonBlank(techStack, focusDirection, "表达复盘"));
+        StudyPlanCurrentVO generated = generate(userId, request);
+        return getOwnedPlan(userId, generated.getId());
     }
 
     private void validateDuration(Integer durationDays) {
@@ -487,6 +550,7 @@ public class PlanServiceImpl implements PlanService {
             case "chat" -> "先用问答把知识点压缩成能直接说出口的回答，再进入下一步训练。";
             case "review" -> "先把待复习项清掉，避免旧问题反复拖累今天的训练效果。";
             case "interview" -> "先用一场模拟面试检验今天的准备，确认回答结构能不能真正落地。";
+            case "recording_review" -> "先把这次录音复盘的薄弱片段重新收紧，再带入下一轮专项训练或模拟。";
             default -> "先完成当前这项训练，再继续推进后面的安排。";
         };
     }
@@ -494,11 +558,15 @@ public class PlanServiceImpl implements PlanService {
     private String buildExpectedOutcome(List<StudyPlanTask> todayTasks, String targetRole) {
         boolean includesInterview = todayTasks.stream().anyMatch(task -> "interview".equals(task.getModule()));
         boolean includesChat = todayTasks.stream().anyMatch(task -> "chat".equals(task.getModule()));
+        boolean includesRecordingReview = todayTasks.stream().anyMatch(task -> "recording_review".equals(task.getModule()));
         if (includesInterview) {
             return "做完后你会知道这套准备能不能支撑 " + targetRole + " 的真实面试表达。";
         }
         if (includesChat) {
             return "做完后你会把今天的知识点整理成更稳的口头表达，而不只是停留在理解层。";
+        }
+        if (includesRecordingReview) {
+            return "做完后你会把真实录音里暴露的问题沉淀成下一轮可执行的训练动作。";
         }
         return "做完后你会把今天最该补的短板推进一轮，并为下一步训练腾出明确优先级。";
     }

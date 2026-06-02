@@ -12,4 +12,8 @@ public interface PlanService {
     StudyPlanCurrentVO updateTaskStatus(Long userId, Long taskId, StudyPlanTaskStatusRequest request);
 
     StudyPlanCurrentVO refresh(Long userId, Long planId);
+
+    StudyPlanCurrentVO saveRecordingReviewAction(Long userId, Long recordingReviewSessionId,
+                                                 String focusDirection, String targetRole, String techStack,
+                                                 String taskTitle, String taskDescription, String actionPath);
 }
