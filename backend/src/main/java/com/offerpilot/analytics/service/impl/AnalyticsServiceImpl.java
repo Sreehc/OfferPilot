@@ -298,6 +298,8 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                         .toList())
                 .orElse(List.of());
 
+        String evidenceStatus = resolveTopicEvidenceStatus(categoryAbility, categoryMastery, recentScores);
+        String evidenceSummary = buildTopicEvidenceSummary(categoryAbility, categoryMastery, recentScores, evidenceStatus);
         List<String> focusRecommendations = buildTopicRecommendations(categoryAbility, categoryMastery, recentScores);
         String summary = buildTopicSummary(categoryAbility, categoryMastery, recentScores);
 
@@ -314,6 +316,9 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .masteredCards(categoryMastery.getMasteredCards())
                 .dueCount(categoryMastery.getDueCount())
                 .masteryRate(categoryMastery.getMasteryRate())
+                .evidenceStatus(evidenceStatus)
+                .evidenceSummary(evidenceSummary)
+                .retrospectiveReady(!"insufficient".equals(evidenceStatus))
                 .summary(summary)
                 .focusRecommendations(focusRecommendations)
                 .recentScores(recentScores)
@@ -336,6 +341,8 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .categoryName(detail.getCategoryName())
                 .title("近 8 周「" + detail.getCategoryName() + "」领域回顾")
                 .stage(stage)
+                .evidenceStatus(detail.getEvidenceStatus())
+                .evidenceSummary(detail.getEvidenceSummary())
                 .summary(buildRetrospectiveSummary(detail, stage, riskSignals))
                 .keySignals(keySignals)
                 .riskSignals(riskSignals)
@@ -373,6 +380,9 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     private String buildRetrospectiveSummary(ProfileTopicDetailVO detail, String stage, List<String> riskSignals) {
+        if ("insufficient".equals(detail.getEvidenceStatus())) {
+            return "「" + detail.getCategoryName() + "」当前证据还不够完整，这份领域回顾会优先基于已有训练记录给出阶段性建议。";
+        }
         String stageText = switch (stage) {
             case "stable" -> "已经进入相对稳定区间";
             case "needs_attention" -> "当前仍是需要优先处理的薄弱领域";
@@ -451,6 +461,12 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                                                    EfficiencyVO.CategoryMastery categoryMastery,
                                                    List<ProfileTopicDetailVO.WeeklyTopicScore> recentScores) {
         LinkedHashSet<String> suggestions = new LinkedHashSet<>();
+        String evidenceStatus = resolveTopicEvidenceStatus(categoryAbility, categoryMastery, recentScores);
+        if ("insufficient".equals(evidenceStatus)) {
+            suggestions.add("当前领域证据还不够完整，先补 1 次定向模拟或录音复盘，再看长期画像变化。");
+        } else if ("forming".equals(evidenceStatus)) {
+            suggestions.add("当前领域画像还在形成中，建议继续补 1-2 次同主题训练，把趋势拉实。");
+        }
         if (Boolean.TRUE.equals(categoryAbility.getIsWeak())) {
             suggestions.add("先围绕这个主题做一轮基础巩固，再回到高强度模拟。");
         }
@@ -494,7 +510,56 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 trendText = last >= first ? "，近几周趋势在回升" : "，近几周趋势有回落";
             }
         }
-        return "主题「" + categoryAbility.getCategoryName() + "」" + abilityText + reviewText + recordingText + trendText + "。";
+        String evidenceText = switch (resolveTopicEvidenceStatus(categoryAbility, categoryMastery, recentScores)) {
+            case "insufficient" -> "，当前证据还不够完整";
+            case "forming" -> "，当前画像仍在形成中";
+            default -> "";
+        };
+        return "主题「" + categoryAbility.getCategoryName() + "」" + abilityText + reviewText + recordingText + trendText + evidenceText + "。";
+    }
+
+    private String resolveTopicEvidenceStatus(CategoryAbilityVO categoryAbility,
+                                              EfficiencyVO.CategoryMastery categoryMastery,
+                                              List<ProfileTopicDetailVO.WeeklyTopicScore> recentScores) {
+        int evidenceUnits = safeInt(categoryAbility.getInterviewCount())
+                + safeInt(categoryAbility.getRecordingReviewCount())
+                + (safeInt(categoryAbility.getWrongCount()) > 0 ? 1 : 0)
+                + (safeInt(categoryMastery.getDueCount()) > 0 ? 1 : 0);
+        if (evidenceUnits <= 1 && recentScores.size() <= 1) {
+            return "insufficient";
+        }
+        if (evidenceUnits <= 3 || recentScores.size() <= 1) {
+            return "forming";
+        }
+        return "ready";
+    }
+
+    private String buildTopicEvidenceSummary(CategoryAbilityVO categoryAbility,
+                                             EfficiencyVO.CategoryMastery categoryMastery,
+                                             List<ProfileTopicDetailVO.WeeklyTopicScore> recentScores,
+                                             String evidenceStatus) {
+        int interviews = safeInt(categoryAbility.getInterviewCount());
+        int recordingReviews = safeInt(categoryAbility.getRecordingReviewCount());
+        int wrongCount = safeInt(categoryAbility.getWrongCount());
+        int dueCount = safeInt(categoryMastery.getDueCount());
+        return switch (evidenceStatus) {
+            case "insufficient" -> "当前只沉淀了少量训练证据："
+                    + interviews + " 场模拟面试、"
+                    + recordingReviews + " 次录音复盘、"
+                    + wrongCount + " 道相关错题。建议先补 1-2 次同主题训练。";
+            case "forming" -> "当前领域画像还在形成中，已沉淀 "
+                    + interviews + " 场模拟面试、"
+                    + recordingReviews + " 次录音复盘、"
+                    + wrongCount + " 道相关错题"
+                    + (dueCount > 0 ? "，以及 " + dueCount + " 个待复盘点" : "")
+                    + "。";
+            default -> "当前领域证据已经比较完整，最近趋势点 "
+                    + recentScores.size() + " 个，支持继续做稳定性回顾和下一轮动作规划。";
+        };
+    }
+
+    private int safeInt(Integer value) {
+        return value == null ? 0 : value;
     }
 
     private List<TrendVO.ApplicationTrendPoint> buildApplicationActivityTrend(Long userId, int weeks) {

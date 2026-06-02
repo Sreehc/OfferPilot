@@ -15,6 +15,8 @@ public class ProfileTopicRetrospectiveVO {
     private String categoryName;
     private String title;
     private String stage;
+    private String evidenceStatus;
+    private String evidenceSummary;
     private String summary;
     private List<String> keySignals;
     private List<String> riskSignals;

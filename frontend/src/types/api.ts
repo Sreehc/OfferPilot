@@ -856,6 +856,9 @@ export interface ProfileTopicDetail {
   masteredCards: number
   dueCount: number
   masteryRate: number
+  evidenceStatus?: 'insufficient' | 'forming' | 'ready' | string
+  evidenceSummary?: string
+  retrospectiveReady?: boolean
   summary: string
   focusRecommendations: string[]
   recentScores: ProfileTopicWeeklyScore[]
@@ -866,6 +869,8 @@ export interface ProfileTopicRetrospective {
   categoryName: string
   title: string
   stage: string
+  evidenceStatus?: 'insufficient' | 'forming' | 'ready' | string
+  evidenceSummary?: string
   summary: string
   keySignals: string[]
   riskSignals: string[]

@@ -111,6 +111,16 @@
                 </div>
               </div>
 
+              <div
+                v-if="topicDetail.evidenceStatus !== 'ready'"
+                class="copilot-prep-provider-alert mt-5"
+              >
+                <p class="text-sm font-semibold text-ink">{{ topicEvidenceTitle }}</p>
+                <p class="mt-2 text-sm leading-6 text-secondary">
+                  {{ topicDetail.evidenceSummary || '当前领域证据还不够完整，建议先补几轮同主题训练。' }}
+                </p>
+              </div>
+
               <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
                 <article class="topic-detail-stat">
                   <p class="topic-detail-stat__label">模拟面试</p>
@@ -160,13 +170,23 @@
               <div class="mt-5 flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p class="text-sm font-semibold text-ink">领域回顾</p>
-                  <p class="mt-1 text-sm text-secondary">把画像、错题、复盘债务和趋势合成一份阶段性回顾。</p>
+                  <p class="mt-1 text-sm text-secondary">
+                    {{
+                      topicDetail.retrospectiveReady
+                        ? '把画像、错题、复盘债务和趋势合成一份阶段性回顾。'
+                        : '当前会先基于已有证据生成阶段性回顾，建议继续补训练后再刷新一次。'
+                    }}
+                  </p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                   <RouterLink v-if="topicDetail" :to="topicPlannerAgentLink" class="hard-button-secondary text-sm">
                     转成下一轮计划
                   </RouterLink>
-                  <el-button :loading="retrospectiveLoading" class="action-button" @click="generateRetrospective">
+                  <el-button
+                    :loading="retrospectiveLoading"
+                    class="action-button"
+                    @click="generateRetrospective"
+                  >
                     生成领域回顾
                   </el-button>
                 </div>
@@ -193,6 +213,16 @@
                       按回顾刷新计划
                     </RouterLink>
                   </div>
+                </div>
+
+                <div
+                  v-if="topicRetrospective.evidenceStatus !== 'ready'"
+                  class="copilot-prep-provider-alert mt-5"
+                >
+                  <p class="text-sm font-semibold text-ink">这份领域回顾基于有限证据生成</p>
+                  <p class="mt-2 text-sm leading-6 text-secondary">
+                    {{ topicRetrospective.evidenceSummary || '当前证据还不够完整，建议继续补训练后再刷新回顾。' }}
+                  </p>
                 </div>
 
                 <div class="mt-5 grid gap-4 xl:grid-cols-3">
@@ -709,6 +739,10 @@ const difficultyLabel = computed(() => difficultyText(abilityProfile.value.recom
 const profileEvidenceTitle = computed(() => {
   if (abilityProfile.value.evidenceStatus === 'forming') return '训练画像正在形成中'
   return '训练画像还没形成'
+})
+const topicEvidenceTitle = computed(() => {
+  if (topicDetail.value?.evidenceStatus === 'forming') return '当前领域画像正在形成中'
+  return '当前领域证据还不够完整'
 })
 const analyticsAgentLink = computed(() =>
   buildAgentWorkbenchLocation({

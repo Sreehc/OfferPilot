@@ -350,6 +350,8 @@ class AnalyticsServiceImplTest {
         ProfileTopicDetailVO detail = analyticsService.getProfileTopicDetail(1L, 7L);
 
         assertEquals(1, detail.getRecordingReviewCount());
+        assertEquals("ready", detail.getEvidenceStatus());
+        assertEquals(Boolean.TRUE, detail.getRetrospectiveReady());
         assertTrue(detail.getSummary().contains("真实录音复盘证据"));
         assertTrue(detail.getFocusRecommendations().stream()
                 .anyMatch(item -> item.contains("真实录音复盘里暴露的表达问题")));
@@ -419,6 +421,8 @@ class AnalyticsServiceImplTest {
 
         ProfileTopicRetrospectiveVO retrospective = analyticsService.buildProfileTopicRetrospective(1L, 8L);
 
+        assertEquals("forming", retrospective.getEvidenceStatus());
+        assertTrue(retrospective.getEvidenceSummary().contains("画像还在形成中"));
         assertTrue(retrospective.getRiskSignals().stream()
                 .anyMatch(item -> item.contains("缺真实录音复盘证据")));
         assertTrue(retrospective.getNextActions().stream()

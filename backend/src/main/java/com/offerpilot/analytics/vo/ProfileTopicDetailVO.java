@@ -24,6 +24,9 @@ public class ProfileTopicDetailVO {
     private Integer masteredCards;
     private Integer dueCount;
     private BigDecimal masteryRate;
+    private String evidenceStatus;
+    private String evidenceSummary;
+    private Boolean retrospectiveReady;
     private String summary;
     private List<String> focusRecommendations;
     private List<WeeklyTopicScore> recentScores;
