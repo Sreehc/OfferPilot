@@ -17,6 +17,7 @@ public class RecordingReviewSessionVO {
     private String jobRole;
     private String notes;
     private String status;
+    private String statusMessage;
     private String transcript;
     private BigDecimal transcriptConfidence;
     private Integer transcriptTimeMs;

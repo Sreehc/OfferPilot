@@ -480,7 +480,8 @@ export interface RecordingReviewSession {
   jobRole?: string
   notes?: string
   status: string
-  transcript: string
+  statusMessage?: string
+  transcript?: string
   transcriptConfidence?: number
   transcriptTimeMs?: number
   overallScore?: number

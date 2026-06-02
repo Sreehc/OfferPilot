@@ -735,7 +735,7 @@
             </div>
 
             <div class="recording-review-result-shell">
-              <div v-if="recordingReviewLoading" class="flex h-full min-h-[280px] items-center justify-center">
+              <div v-if="recordingReviewLoading && !recordingReviewSession" class="flex h-full min-h-[280px] items-center justify-center">
                 <div class="text-center">
                   <div class="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
                   <p class="mt-3 text-sm text-secondary">正在转写录音并生成复盘...</p>
@@ -749,6 +749,28 @@
                   compact
                 />
               </div>
+              <div v-else-if="recordingReviewPending" class="recording-review-status-shell">
+                <div class="recording-review-status-pill">
+                  {{ recordingReviewStatusLabel(recordingReviewSession.status) }}
+                </div>
+                <h4 class="mt-4 font-display text-2xl font-semibold text-ink">录音已接收，正在后台处理中</h4>
+                <p class="mt-3 text-sm leading-6 text-secondary">
+                  {{ recordingReviewSession.statusMessage || recordingReviewSession.summary || '系统正在依次执行上传校验、转写和复盘整理。' }}
+                </p>
+                <div class="mt-5 flex items-center gap-3">
+                  <div class="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+                  <span class="text-xs text-tertiary">页面会自动刷新状态，不需要重复上传。</span>
+                </div>
+              </div>
+              <div v-else-if="recordingReviewSession.status === 'failed'" class="recording-review-status-shell recording-review-status-shell--failed">
+                <div class="recording-review-status-pill recording-review-status-pill--failed">
+                  {{ recordingReviewStatusLabel(recordingReviewSession.status) }}
+                </div>
+                <h4 class="mt-4 font-display text-2xl font-semibold text-ink">这段录音还没成功生成复盘</h4>
+                <p class="mt-3 text-sm leading-6 text-secondary">
+                  {{ recordingReviewSession.statusMessage || recordingReviewSession.summary || '请重新上传更清晰的录音，或先检查 ASR provider。' }}
+                </p>
+              </div>
               <div v-else class="space-y-4">
                 <div class="recording-review-summary-card">
                   <div class="flex flex-wrap items-start justify-between gap-3">
@@ -756,6 +778,7 @@
                       <div class="flex flex-wrap items-center gap-2">
                         <span class="detail-pill">{{ recordingReviewSession.direction || '未设方向' }}</span>
                         <span class="detail-pill">{{ recordingReviewSession.jobRole || '未设岗位' }}</span>
+                        <span class="detail-pill">{{ recordingReviewStatusLabel(recordingReviewSession.status) }}</span>
                         <span v-if="recordingReviewSession.transcriptConfidence" class="detail-pill">
                           置信度 {{ Math.round(recordingReviewSession.transcriptConfidence * 100) }}%
                         </span>
@@ -1293,6 +1316,7 @@ import {
   currentQuestionApi,
   fetchCopilotRealtimeSessionApi,
   fetchInterviewHistoryApi,
+  fetchRecordingReviewApi,
   fetchVoiceStatusApi,
   interviewDetailApi,
   startInterviewApi,
@@ -1499,6 +1523,7 @@ const getCountdownSeconds = () => {
 const countdown = ref(getCountdownSeconds())
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 let copilotRealtimeSocket: WebSocket | null = null
+let recordingReviewPollingTimer: ReturnType<typeof setTimeout> | null = null
 
 const formatCountdown = (seconds: number) => {
   const m = Math.floor(seconds / 60)
@@ -1533,9 +1558,17 @@ const closeCopilotRealtimeSocket = () => {
   }
 }
 
+const stopRecordingReviewPolling = () => {
+  if (recordingReviewPollingTimer) {
+    clearTimeout(recordingReviewPollingTimer)
+    recordingReviewPollingTimer = null
+  }
+}
+
 onBeforeUnmount(() => {
   stopCountdown()
   closeCopilotRealtimeSocket()
+  stopRecordingReviewPolling()
 })
 
 // Score animation
@@ -1587,6 +1620,7 @@ const copilotRealtimeConnectionLabel = computed(() => {
   if (copilotRealtimeSocketState.value === 'error') return '连接失败'
   return '未连接'
 })
+const recordingReviewPending = computed(() => isRecordingReviewPendingStatus(recordingReviewSession.value?.status))
 
 const handleStart = async (reanswerQuestionId?: number) => {
   if (interviewContextPath.value !== 'general' && !selectedResumeId.value) {
@@ -2064,12 +2098,40 @@ const handleCreateRecordingReview = async () => {
       audioFile: recordingReviewFile.value
     })
     recordingReviewSession.value = response.data
-    ElMessage.success('录音复盘结果已生成。')
+    if (isRecordingReviewPendingStatus(response.data.status)) {
+      scheduleRecordingReviewPoll(response.data.id)
+      ElMessage.success('录音已上传，正在后台转写。')
+    } else {
+      ElMessage.success('录音复盘结果已生成。')
+    }
   } catch (error: any) {
     ElMessage.error(error?.message || '录音复盘生成失败，请检查文件后重试。')
   } finally {
     recordingReviewLoading.value = false
   }
+}
+
+const scheduleRecordingReviewPoll = (sessionId: string, delay = 2200) => {
+  stopRecordingReviewPolling()
+  recordingReviewPollingTimer = setTimeout(async () => {
+    try {
+      const previousStatus = recordingReviewSession.value?.status
+      const response = await fetchRecordingReviewApi(sessionId)
+      recordingReviewSession.value = response.data
+      if (isRecordingReviewPendingStatus(response.data.status)) {
+        scheduleRecordingReviewPoll(sessionId)
+        return
+      }
+      if (previousStatus !== response.data.status && response.data.status === 'ready') {
+        ElMessage.success('录音复盘已生成。')
+      }
+      if (previousStatus !== response.data.status && response.data.status === 'failed') {
+        ElMessage.error(response.data.statusMessage || '录音复盘失败，请重新上传更清晰的录音。')
+      }
+    } catch {
+      scheduleRecordingReviewPoll(sessionId, 3200)
+    }
+  }, delay)
 }
 
 const formatSegmentOffset = (ms?: number) => {
@@ -2084,6 +2146,17 @@ const signalLabel = (signalType?: string) => {
   if (signalType === 'structure') return '结构表达'
   if (signalType === 'reasoning') return '原因 / 取舍'
   return '普通片段'
+}
+
+const isRecordingReviewPendingStatus = (status?: string) => ['processing', 'transcribing', 'analyzing'].includes(status || '')
+
+const recordingReviewStatusLabel = (status?: string) => {
+  if (status === 'processing') return '等待转写'
+  if (status === 'transcribing') return '转写中'
+  if (status === 'analyzing') return '复盘生成中'
+  if (status === 'failed') return '处理失败'
+  if (status === 'ready') return '已完成'
+  return status || '未知'
 }
 
 const realtimeStatusText = (status?: string) => {
@@ -2334,6 +2407,40 @@ watch(selectedJobPrepApplicationId, (applicationId) => {
   border: 1px solid var(--bc-border-subtle);
   background: var(--panel-muted);
   padding: 18px;
+}
+
+.recording-review-status-shell {
+  display: flex;
+  min-height: 280px;
+  flex-direction: column;
+  justify-content: center;
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid rgba(var(--bc-accent-rgb), 0.18);
+  background: linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.06), rgba(255, 255, 255, 0.92));
+  padding: 24px;
+}
+
+.recording-review-status-shell--failed {
+  border-color: rgba(var(--bc-coral-rgb), 0.18);
+  background: linear-gradient(180deg, rgba(var(--bc-coral-rgb), 0.06), rgba(255, 255, 255, 0.94));
+}
+
+.recording-review-status-pill {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--bc-accent-rgb), 0.22);
+  background: rgba(var(--bc-accent-rgb), 0.08);
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--bc-ink);
+}
+
+.recording-review-status-pill--failed {
+  border-color: rgba(var(--bc-coral-rgb), 0.22);
+  background: rgba(var(--bc-coral-rgb), 0.08);
 }
 
 .recording-review-summary-card {

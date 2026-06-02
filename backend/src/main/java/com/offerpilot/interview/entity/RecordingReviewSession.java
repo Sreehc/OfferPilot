@@ -16,6 +16,7 @@ public class RecordingReviewSession extends BaseEntity {
     private String notes;
     private String audioUrl;
     private String status;
+    private String statusMessage;
     private String transcript;
     private BigDecimal transcriptConfidence;
     private Integer transcriptTimeMs;
