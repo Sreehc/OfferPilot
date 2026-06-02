@@ -9,7 +9,7 @@
           管理你的账号、安全和数据
         </h1>
         <p class="settings-hero__description">
-          先看当前账号状态，再进入对应任务。常用的安全操作和登录记录都集中在这里。
+          在这里管理账号、安全设置和登录记录。
         </p>
       </div>
 
@@ -73,6 +73,9 @@
         <div v-else-if="activeTab === 'devices'" class="settings-tab-content">
           <DeviceManagePage />
         </div>
+        <div v-else-if="activeTab === 'providers'" class="settings-tab-content">
+          <ProviderSettingsTab />
+        </div>
         <div v-else class="settings-tab-content">
           <LoginHistoryTab />
         </div>
@@ -90,6 +93,7 @@ import AccountProfileTab from './AccountProfileTab.vue'
 import DataExportTab from './DataExportTab.vue'
 import DeviceManagePage from './DeviceManagePage.vue'
 import LoginHistoryTab from './LoginHistoryTab.vue'
+import ProviderSettingsTab from './ProviderSettingsTab.vue'
 import TwoFactorTab from './TwoFactorTab.vue'
 
 const authStore = useAuthStore()
@@ -105,7 +109,7 @@ const emailStatusHint = computed(() => {
   if (!authStore.user?.email) return '补一个常用邮箱，方便找回密码和接收验证码。'
   return authStore.user.emailVerified
     ? '这个邮箱已经可以用于恢复账号和接收安全提醒。'
-    : '建议先完成邮箱验证，后续找回账号会更顺。'
+    : '建议完成邮箱验证，方便后续找回账号。'
 })
 
 const twoFactorSummary = computed(() => {
@@ -132,7 +136,7 @@ const taskItems = computed(() => [
     name: 'account',
     label: '更新账号资料',
     description: '头像、邮箱验证和基础资料都在这里维护。',
-    meta: authStore.user?.emailVerified ? '邮箱已验证' : '建议先完成邮箱验证',
+    meta: authStore.user?.emailVerified ? '邮箱已验证' : '建议完成邮箱验证',
     icon: '01'
   },
   {
@@ -157,11 +161,18 @@ const taskItems = computed(() => [
     icon: '04'
   },
   {
+    name: 'providers',
+    label: '配置 AI 与外部服务',
+    description: '为问答、知识库、录音复盘和 Copilot 保存专属 provider 配置。',
+    meta: '后续高级能力会先检查这里',
+    icon: '05'
+  },
+  {
     name: 'dataExport',
     label: '导出个人数据',
     description: '下载面试记录、错题和复习数据，留存到本地。',
     meta: '按需导出训练数据',
-    icon: '05'
+    icon: '06'
   }
 ])
 

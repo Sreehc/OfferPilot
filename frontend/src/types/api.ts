@@ -55,6 +55,32 @@ export interface TwoFactorEnable {
   recoveryCodes: string[]
 }
 
+export type ProviderScope = 'llm' | 'embedding' | 'asr' | 'search' | 'oss' | 'voiceprint'
+
+export interface UserProviderConfigItem {
+  scope: ProviderScope
+  label: string
+  description: string
+  enabled: boolean
+  configured: boolean
+  status: 'missing' | 'incomplete' | 'saved' | 'ready' | string
+  statusMessage: string
+  providerName?: string
+  baseUrl?: string
+  model?: string
+  apiKeyMasked?: string
+  accessKeyMasked?: string
+  secretKeyMasked?: string
+  endpoint?: string
+  bucket?: string
+  regionName?: string
+  dimensions?: number
+  lastCheckedAt?: string
+  lastCheckStatus?: string
+  lastCheckMessage?: string
+  updateTime?: string
+}
+
 export interface RecentInterviewItem {
   sessionId: string
   direction: string
