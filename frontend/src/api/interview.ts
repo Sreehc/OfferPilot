@@ -5,6 +5,7 @@ import type {
   InterviewDetail,
   InterviewHistoryItem,
   JobPrepSession,
+  RecordingReviewSession,
   VoiceSubmitResult
 } from '@/types/api'
 import type { PageResult } from '@/types/api'
@@ -49,6 +50,13 @@ export interface JobPrepSessionCreatePayload {
   jdText?: string
 }
 
+export interface RecordingReviewCreatePayload {
+  direction?: string
+  jobRole?: string
+  notes?: string
+  audioFile: File
+}
+
 export const startInterviewApi = (payload: InterviewStartPayload) => {
   return request<InterviewCurrentQuestion>({ url: '/interview/start', method: 'post', data: payload })
 }
@@ -81,6 +89,24 @@ export const createJobPrepSessionApi = (payload: JobPrepSessionCreatePayload) =>
 
 export const fetchJobPrepSessionApi = (sessionId: string) => {
   return request<JobPrepSession>({ url: `/interview/job-prep/sessions/${sessionId}`, method: 'get' })
+}
+
+export const createRecordingReviewApi = (payload: RecordingReviewCreatePayload) => {
+  const formData = new FormData()
+  if (payload.direction) formData.append('direction', payload.direction)
+  if (payload.jobRole) formData.append('jobRole', payload.jobRole)
+  if (payload.notes) formData.append('notes', payload.notes)
+  formData.append('audio', payload.audioFile)
+  return request<RecordingReviewSession>({
+    url: '/interview/recording-reviews',
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}
+
+export const fetchRecordingReviewApi = (sessionId: string) => {
+  return request<RecordingReviewSession>({ url: `/interview/recording-reviews/${sessionId}`, method: 'get' })
 }
 
 // ── Voice Interview APIs ──────────────────────────

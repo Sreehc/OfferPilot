@@ -405,6 +405,33 @@ export interface JobPrepSession {
   updateTime?: string
 }
 
+export interface RecordingReviewSegment {
+  id: string
+  segmentIndex: number
+  transcriptText: string
+  startOffsetMs?: number
+  endOffsetMs?: number
+  signalType?: string
+}
+
+export interface RecordingReviewSession {
+  id: string
+  direction?: string
+  jobRole?: string
+  notes?: string
+  status: string
+  transcript: string
+  transcriptConfidence?: number
+  transcriptTimeMs?: number
+  overallScore?: number
+  summary: string
+  strengths: string[]
+  weakPoints: string[]
+  suggestedActions: string[]
+  segments: RecordingReviewSegment[]
+  updateTime?: string
+}
+
 export interface StudyPlanTaskItem {
   id: string
   dayIndex: number

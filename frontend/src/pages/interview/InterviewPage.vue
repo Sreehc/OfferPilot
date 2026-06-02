@@ -323,6 +323,157 @@
         </div>
       </section>
 
+      <section class="shell-section-card workspace-shell interview-recording-review-shell">
+        <div class="workspace-section">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <h3 class="workspace-section-title">录音复盘</h3>
+                <span class="detail-pill">真实面试回放</span>
+              </div>
+              <p class="workspace-section-summary">上传一段真实面试录音，系统会先转写，再给出结构化复盘、薄弱点和下一步训练动作。</p>
+            </div>
+            <el-button
+              :loading="recordingReviewLoading"
+              :disabled="!voiceAvailable || !recordingReviewFile"
+              type="primary"
+              size="large"
+              class="action-button !min-h-11"
+              @click="handleCreateRecordingReview"
+            >
+              生成录音复盘
+            </el-button>
+          </div>
+
+          <div class="recording-review-grid mt-5">
+            <div class="space-y-4">
+              <div v-if="!voiceAvailable" class="recording-review-provider-alert">
+                <p class="text-sm font-semibold text-ink">ASR 未配置</p>
+                <p class="mt-2 text-sm leading-6 text-secondary">
+                  录音复盘依赖语音识别服务。请先到设置页完成 `ASR provider` 配置，再回来上传录音。
+                </p>
+              </div>
+
+              <div>
+                <label class="flat-field-label">复盘方向</label>
+                <el-input v-model="direction" placeholder="例如 Spring / MySQL / 一面综合" />
+              </div>
+
+              <div>
+                <label class="flat-field-label">目标岗位</label>
+                <el-input v-model="jobRole" placeholder="Java 后端开发" />
+              </div>
+
+              <div>
+                <label class="flat-field-label">场景备注</label>
+                <el-input
+                  v-model="recordingReviewNotes"
+                  type="textarea"
+                  :rows="4"
+                  placeholder="例如：一面主要问项目、缓存和线程池，这段录音是 Redis 部分。"
+                />
+              </div>
+
+              <div>
+                <label class="flat-field-label">录音文件</label>
+                <label class="recording-review-upload">
+                  <input accept="audio/*,.webm,.wav,.mp3,.m4a,.ogg" class="hidden" type="file" @change="handleRecordingFileChange" />
+                  <span class="recording-review-upload__title">
+                    {{ recordingReviewFile ? recordingReviewFile.name : '选择录音文件' }}
+                  </span>
+                  <span class="recording-review-upload__hint">支持 webm / wav / mp3 / m4a / ogg，最大 15MB</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="recording-review-result-shell">
+              <div v-if="recordingReviewLoading" class="flex h-full min-h-[280px] items-center justify-center">
+                <div class="text-center">
+                  <div class="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+                  <p class="mt-3 text-sm text-secondary">正在转写录音并生成复盘...</p>
+                </div>
+              </div>
+              <div v-else-if="!recordingReviewSession" class="flex h-full min-h-[280px] items-center justify-center">
+                <EmptyState
+                  icon="review"
+                  title="先上传一段真实录音"
+                  description="这里会展示转写文本、片段信号、优点、薄弱点和下一步训练动作。"
+                  compact
+                />
+              </div>
+              <div v-else class="space-y-4">
+                <div class="recording-review-summary-card">
+                  <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="detail-pill">{{ recordingReviewSession.direction || '未设方向' }}</span>
+                        <span class="detail-pill">{{ recordingReviewSession.jobRole || '未设岗位' }}</span>
+                        <span v-if="recordingReviewSession.transcriptConfidence" class="detail-pill">
+                          置信度 {{ Math.round(recordingReviewSession.transcriptConfidence * 100) }}%
+                        </span>
+                      </div>
+                      <p class="mt-3 text-sm leading-6 text-primary">{{ recordingReviewSession.summary }}</p>
+                    </div>
+                    <div class="recording-review-score">
+                      <span class="recording-review-score__label">复盘分</span>
+                      <span class="recording-review-score__value">{{ Math.round(recordingReviewSession.overallScore || 0) }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="grid gap-3 xl:grid-cols-2">
+                  <article class="recording-review-panel">
+                    <p class="recording-review-panel__title">转写文本</p>
+                    <p class="mt-3 whitespace-pre-wrap text-sm leading-6 text-primary">{{ recordingReviewSession.transcript }}</p>
+                  </article>
+
+                  <article class="recording-review-panel">
+                    <p class="recording-review-panel__title">建议动作</p>
+                    <ul class="recording-review-list mt-3">
+                      <li v-for="item in recordingReviewSession.suggestedActions" :key="item">{{ item }}</li>
+                    </ul>
+                  </article>
+                </div>
+
+                <div class="grid gap-3 xl:grid-cols-2">
+                  <article class="recording-review-panel">
+                    <p class="recording-review-panel__title">这次做得好的地方</p>
+                    <ul class="recording-review-list mt-3">
+                      <li v-for="item in recordingReviewSession.strengths" :key="item">{{ item }}</li>
+                    </ul>
+                  </article>
+
+                  <article class="recording-review-panel">
+                    <p class="recording-review-panel__title">当前薄弱点</p>
+                    <ul class="recording-review-list mt-3">
+                      <li v-for="item in recordingReviewSession.weakPoints" :key="item">{{ item }}</li>
+                    </ul>
+                  </article>
+                </div>
+
+                <article class="recording-review-panel">
+                  <p class="recording-review-panel__title">转写片段</p>
+                  <div class="mt-3 space-y-2">
+                    <div
+                      v-for="segment in recordingReviewSession.segments"
+                      :key="segment.id"
+                      class="recording-review-segment"
+                    >
+                      <div class="flex flex-wrap items-center gap-2 text-xs text-secondary">
+                        <span class="font-mono text-ink">#{{ segment.segmentIndex }}</span>
+                        <span>{{ signalLabel(segment.signalType) }}</span>
+                        <span>{{ formatSegmentOffset(segment.startOffsetMs) }} - {{ formatSegmentOffset(segment.endOffsetMs) }}</span>
+                      </div>
+                      <p class="mt-2 text-sm leading-6 text-primary">{{ segment.transcriptText }}</p>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="shell-section-card workspace-shell interview-history-shell">
         <div class="workspace-section">
           <div class="flex flex-wrap items-center justify-between gap-3">
@@ -786,6 +937,7 @@ import { useRoute } from 'vue-router'
 import { fetchApplicationBoardApi } from '@/api/applications'
 import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
 import {
+  createRecordingReviewApi,
   createJobPrepSessionApi,
   currentQuestionApi,
   fetchInterviewHistoryApi,
@@ -807,6 +959,7 @@ import type {
   InterviewHistoryItem,
   JobApplicationItem,
   JobPrepSession,
+  RecordingReviewSession,
   RecommendInterview,
   ResumeProjectItem,
   ResumeSummaryItem,
@@ -856,6 +1009,10 @@ const jobPrepJobTitle = ref('Java 后端开发')
 const jobPrepJdText = ref('')
 const jobPrepLoading = ref(false)
 const jobPrepSession = ref<JobPrepSession | null>(null)
+const recordingReviewNotes = ref('')
+const recordingReviewFile = ref<File | null>(null)
+const recordingReviewLoading = ref(false)
+const recordingReviewSession = ref<RecordingReviewSession | null>(null)
 const interviewMode = ref<'text' | 'voice'>('text')
 const voiceAvailable = ref(false)
 const starting = ref(false)
@@ -1331,6 +1488,51 @@ const applyJobPrepToInterview = () => {
   ElMessage.success('已把 JD 备面结果带入当前模拟面试配置。')
 }
 
+const handleRecordingFileChange = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  recordingReviewFile.value = target.files?.[0] || null
+}
+
+const handleCreateRecordingReview = async () => {
+  if (!voiceAvailable.value) {
+    ElMessage.warning('请先配置 ASR provider，再使用录音复盘。')
+    return
+  }
+  if (!recordingReviewFile.value) {
+    ElMessage.warning('请先选择一段录音文件。')
+    return
+  }
+  recordingReviewLoading.value = true
+  try {
+    const response = await createRecordingReviewApi({
+      direction: direction.value.trim() || undefined,
+      jobRole: jobRole.value.trim() || undefined,
+      notes: recordingReviewNotes.value.trim() || undefined,
+      audioFile: recordingReviewFile.value
+    })
+    recordingReviewSession.value = response.data
+    ElMessage.success('录音复盘结果已生成。')
+  } catch (error: any) {
+    ElMessage.error(error?.message || '录音复盘生成失败，请检查文件后重试。')
+  } finally {
+    recordingReviewLoading.value = false
+  }
+}
+
+const formatSegmentOffset = (ms?: number) => {
+  const safe = Math.max(0, Math.floor((ms || 0) / 1000))
+  const minutes = Math.floor(safe / 60)
+  const seconds = safe % 60
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+}
+
+const signalLabel = (signalType?: string) => {
+  if (signalType === 'example') return '项目例子'
+  if (signalType === 'structure') return '结构表达'
+  if (signalType === 'reasoning') return '原因 / 取舍'
+  return '普通片段'
+}
+
 const applyQuestionSeedFromRoute = () => {
   const title = String(route.query.sourceQuestionTitle || '').trim()
   if (!title) return
@@ -1433,6 +1635,14 @@ watch(selectedJobPrepApplicationId, (applicationId) => {
     linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(var(--bc-cyan-rgb), 0.03));
 }
 
+.interview-recording-review-shell {
+  margin-top: 12px;
+  border: 1px solid var(--bc-border-subtle);
+  background:
+    radial-gradient(circle at top right, rgba(var(--bc-coral-rgb), 0.08), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(var(--bc-amber-rgb), 0.03));
+}
+
 .interview-setup-bar__head {
   display: flex;
   flex-wrap: wrap;
@@ -1490,6 +1700,111 @@ watch(selectedJobPrepApplicationId, (applicationId) => {
 .job-prep-grid {
   display: grid;
   gap: 16px;
+}
+
+.recording-review-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.recording-review-provider-alert {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid rgba(var(--bc-coral-rgb), 0.22);
+  background: rgba(var(--bc-coral-rgb), 0.08);
+  padding: 16px;
+}
+
+.recording-review-upload {
+  display: grid;
+  gap: 6px;
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px dashed rgba(var(--bc-accent-rgb), 0.28);
+  background: var(--panel-bg);
+  padding: 16px;
+  cursor: pointer;
+}
+
+.recording-review-upload__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--bc-ink);
+}
+
+.recording-review-upload__hint {
+  font-size: 0.82rem;
+  color: var(--bc-ink-secondary);
+}
+
+.recording-review-result-shell {
+  min-height: 100%;
+  border-radius: calc(var(--radius-md) - 2px);
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--panel-muted);
+  padding: 18px;
+}
+
+.recording-review-summary-card {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid rgba(var(--bc-coral-rgb), 0.16);
+  background:
+    linear-gradient(180deg, rgba(var(--bc-coral-rgb), 0.08), transparent 58%),
+    var(--panel-bg);
+  padding: 18px;
+}
+
+.recording-review-score {
+  display: inline-flex;
+  min-width: 88px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.recording-review-score__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--bc-ink-tertiary);
+}
+
+.recording-review-score__value {
+  font-family: theme('fontFamily.mono');
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--bc-ink);
+}
+
+.recording-review-panel {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--panel-bg);
+  padding: 16px;
+}
+
+.recording-review-panel__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--bc-ink);
+}
+
+.recording-review-list {
+  display: grid;
+  gap: 10px;
+  padding-left: 18px;
+  color: var(--bc-ink-secondary);
+}
+
+.recording-review-list li {
+  line-height: 1.7;
+}
+
+.recording-review-segment {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--panel-bg);
+  padding: 14px;
 }
 
 .job-prep-result-shell {
@@ -1788,6 +2103,10 @@ watch(selectedJobPrepApplicationId, (applicationId) => {
 
 @media (min-width: 1280px) {
   .job-prep-grid {
+    grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+  }
+
+  .recording-review-grid {
     grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
   }
 }

@@ -9,6 +9,7 @@ import com.offerpilot.common.storage.UploadPolicyService;
 import com.offerpilot.interview.dto.InterviewAnswerRequest;
 import com.offerpilot.interview.dto.InterviewStartRequest;
 import com.offerpilot.interview.dto.JobPrepSessionCreateRequest;
+import com.offerpilot.interview.service.InterviewRecordingReviewService;
 import com.offerpilot.interview.dto.VoiceStartRequest;
 import com.offerpilot.interview.service.InterviewJobPrepService;
 import com.offerpilot.interview.service.InterviewService;
@@ -18,6 +19,7 @@ import com.offerpilot.interview.vo.InterviewCurrentQuestionVO;
 import com.offerpilot.interview.vo.InterviewDetailVO;
 import com.offerpilot.interview.vo.InterviewHistoryVO;
 import com.offerpilot.interview.vo.JobPrepSessionVO;
+import com.offerpilot.interview.vo.RecordingReviewSessionVO;
 import com.offerpilot.interview.vo.VoiceSubmitVO;
 import com.offerpilot.security.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,6 +46,7 @@ public class InterviewController {
 
     private final InterviewService interviewService;
     private final InterviewJobPrepService interviewJobPrepService;
+    private final InterviewRecordingReviewService interviewRecordingReviewService;
     private final InterviewVoiceService interviewVoiceService;
     private final UploadPolicyService uploadPolicyService;
 
@@ -97,6 +100,41 @@ public class InterviewController {
     @GetMapping("/job-prep/sessions/{sessionId}")
     public Result<JobPrepSessionVO> jobPrepSession(@Parameter(description = "会话 ID") @PathVariable Long sessionId) {
         return Result.success(interviewJobPrepService.detail(currentUserId(), sessionId));
+    }
+
+    @Operation(summary = "创建录音复盘", description = "上传真实面试录音并生成转写与结构化复盘结果")
+    @PostMapping("/recording-reviews")
+    public Result<RecordingReviewSessionVO> createRecordingReview(
+            @Parameter(description = "面试方向") @RequestParam(required = false) String direction,
+            @Parameter(description = "目标岗位") @RequestParam(required = false) String jobRole,
+            @Parameter(description = "场景备注") @RequestParam(required = false) String notes,
+            @Parameter(description = "录音文件") @RequestParam("audio") MultipartFile audioFile) {
+        try {
+            uploadPolicyService.validate(
+                    StorageDirectory.INTERVIEW_AUDIO,
+                    audioFile.getOriginalFilename(),
+                    audioFile.getContentType(),
+                    audioFile.getSize());
+            String mimeType = audioFile.getContentType() != null ? audioFile.getContentType() : "audio/webm";
+            return Result.success(interviewRecordingReviewService.createReview(
+                    currentUserId(),
+                    direction,
+                    jobRole,
+                    notes,
+                    audioFile.getBytes(),
+                    mimeType,
+                    audioFile.getOriginalFilename()));
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BusinessException(ResultCode.SERVER_ERROR.getCode(), "录音复盘处理失败: " + e.getMessage());
+        }
+    }
+
+    @Operation(summary = "录音复盘详情", description = "查看录音复盘的转写、片段与建议动作")
+    @GetMapping("/recording-reviews/{sessionId}")
+    public Result<RecordingReviewSessionVO> recordingReview(@Parameter(description = "会话 ID") @PathVariable Long sessionId) {
+        return Result.success(interviewRecordingReviewService.detail(currentUserId(), sessionId));
     }
 
     // ── Voice Interview Endpoints ──────────────────────────
