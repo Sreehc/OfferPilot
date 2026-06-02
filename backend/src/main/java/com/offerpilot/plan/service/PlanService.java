@@ -16,4 +16,8 @@ public interface PlanService {
     StudyPlanCurrentVO saveRecordingReviewAction(Long userId, Long recordingReviewSessionId,
                                                  String focusDirection, String targetRole, String techStack,
                                                  String taskTitle, String taskDescription, String actionPath);
+
+    StudyPlanCurrentVO saveTopicRetrospectiveAction(Long userId, Long categoryId,
+                                                    String focusDirection, String targetRole, String techStack,
+                                                    String taskTitle, String taskDescription, String actionPath);
 }

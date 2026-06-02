@@ -187,6 +187,7 @@ public class AgentRunServiceImpl implements AgentRunService {
 
     private RunBlueprint buildStudyPlannerBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
         StudyPlanPayload payload = resolveStudyPlanPayload(snapshot);
+        TopicRetrospectiveActionPayload retrospectivePayload = resolveTopicRetrospectiveActionPayload(snapshot, payload);
         String focus = firstNonBlank(
                 snapshot.topicDetail() == null ? null : snapshot.topicDetail().getCategoryName(),
                 snapshot.abilityProfile() == null ? null : snapshot.abilityProfile().getSuggestedFocus(),
@@ -198,6 +199,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                 studyPlannerRecommendations(snapshot),
                 prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”纳入下一轮计划排序。") : List.of(),
                 contextRefsText(contextRefs, "优先参考这些上下文："));
+        boolean useRetrospectiveAction = retrospectivePayload != null;
         return blueprint(
                 "学习计划代理",
                 summary,
@@ -205,11 +207,13 @@ public class AgentRunServiceImpl implements AgentRunService {
                 List.of("确认主攻方向", "生成可执行任务", "审批通过后写回正式训练计划"),
                 snapshot.topicDetail() != null ? "/analytics" : "/study-plan",
                 true,
-                "refresh_study_plan",
-                StringUtils.hasText(focus)
-                        ? "审批通过后会围绕 " + focus + " 生成或刷新学习计划，把这轮建议落成正式训练动作。"
-                        : "审批通过后会生成或刷新当前学习计划，把这轮建议落成正式训练动作。",
-                writeObject(payload, "{}"));
+                useRetrospectiveAction ? "save_topic_retrospective_action" : "refresh_study_plan",
+                useRetrospectiveAction
+                        ? "审批通过后会把这份领域回顾结论写成当前计划里的正式训练动作，方便按风险和下一步动作直接执行。"
+                        : StringUtils.hasText(focus)
+                                ? "审批通过后会围绕 " + focus + " 生成或刷新学习计划，把这轮建议落成正式训练动作。"
+                                : "审批通过后会生成或刷新当前学习计划，把这轮建议落成正式训练动作。",
+                useRetrospectiveAction ? writeObject(retrospectivePayload, "{}") : writeObject(payload, "{}"));
     }
 
     private RunBlueprint buildJobPrepBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
@@ -484,6 +488,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         String actionType = normalize(run.getApprovalActionType());
         return switch (actionType) {
             case "refresh_study_plan" -> executeStudyPlanAction(userId, run.getApprovalPayloadJson());
+            case "save_topic_retrospective_action" -> executeTopicRetrospectiveAction(userId, run.getApprovalPayloadJson());
             case "save_job_prep_draft" -> executeJobPrepDraftAction(userId, run.getApprovalPayloadJson());
             case "save_resume_follow_up_draft" -> executeResumeFollowUpDraftAction(userId, run.getApprovalPayloadJson());
             case "save_application_strategy" -> executeApplicationStrategyAction(userId, run.getApprovalPayloadJson());
@@ -511,6 +516,23 @@ public class AgentRunServiceImpl implements AgentRunService {
             result = planService.refresh(userId, currentPlan.getId());
         }
         return new ExecutionResult("已生成正式学习计划《" + result.getTitle() + "》，可以继续在学习计划页执行。");
+    }
+
+    private ExecutionResult executeTopicRetrospectiveAction(Long userId, String payloadJson) {
+        TopicRetrospectiveActionPayload payload = readObject(payloadJson, TopicRetrospectiveActionPayload.class);
+        if (payload == null || payload.categoryId() == null) {
+            return new ExecutionResult("当前缺少领域回顾对象，暂未保存正式训练动作。");
+        }
+        planService.saveTopicRetrospectiveAction(
+                userId,
+                payload.categoryId(),
+                payload.focusDirection(),
+                payload.targetRole(),
+                payload.techStack(),
+                payload.taskTitle(),
+                payload.taskDescription(),
+                payload.actionPath());
+        return new ExecutionResult("已把这份领域回顾结论写成正式训练任务，可继续在学习计划页执行。");
     }
 
     private ExecutionResult executeJobPrepDraftAction(Long userId, String payloadJson) {
@@ -896,6 +918,32 @@ public class AgentRunServiceImpl implements AgentRunService {
                 taskTitle,
                 taskDescription,
                 "/interview?recordingReview=" + recordingReview.getId());
+    }
+
+    private TopicRetrospectiveActionPayload resolveTopicRetrospectiveActionPayload(
+            ContextSnapshot snapshot, StudyPlanPayload studyPlanPayload) {
+        ProfileTopicRetrospectiveVO retrospective = snapshot.topicRetrospective();
+        if (retrospective == null || retrospective.getCategoryId() == null) {
+            return null;
+        }
+        String focusDirection = firstNonBlank(
+                retrospective.getCategoryName(),
+                studyPlanPayload == null ? null : studyPlanPayload.focusDirection(),
+                snapshot.abilityProfile() == null ? null : snapshot.abilityProfile().getSuggestedFocus());
+        String taskTitle = "领域回顾专项 | " + defaultText(retrospective.getCategoryName(), defaultText(focusDirection, "训练收束"));
+        String taskDescription = "基于当前领域回顾，优先处理 "
+                + defaultText(joinLimited(retrospective.getRiskSignals(), 2, "、"), "阶段性风险")
+                + "。下一步先执行 "
+                + defaultText(firstItem(retrospective.getNextActions()), "一轮专项训练")
+                + "。";
+        return new TopicRetrospectiveActionPayload(
+                retrospective.getCategoryId(),
+                focusDirection,
+                studyPlanPayload == null ? null : studyPlanPayload.targetRole(),
+                studyPlanPayload == null ? null : studyPlanPayload.techStack(),
+                taskTitle,
+                taskDescription,
+                "/analytics?topic=" + retrospective.getCategoryId());
     }
 
     private String resolveCoordinatorNextActionPath(ContextSnapshot snapshot) {
@@ -1382,6 +1430,11 @@ public class AgentRunServiceImpl implements AgentRunService {
     private record RecordingReviewActionPayload(Long recordingReviewSessionId, String focusDirection, String targetRole,
                                                 String techStack, String taskTitle, String taskDescription,
                                                 String actionPath) {
+    }
+
+    private record TopicRetrospectiveActionPayload(Long categoryId, String focusDirection, String targetRole,
+                                                   String techStack, String taskTitle, String taskDescription,
+                                                   String actionPath) {
     }
 
     private record ProviderRequirement(String scope, String label, boolean required, String missingMessage) {

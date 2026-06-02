@@ -181,4 +181,23 @@ class PlanServiceImplTest {
                         && "录音复盘专项 | 项目案例支撑".equals(task.getTitle())
                         && "high".equals(task.getPriority())));
     }
+
+    @Test
+    void saveTopicRetrospectiveAction_appendsFormalTaskIntoCurrentPlan() {
+        StudyPlanCurrentVO result = planService.saveTopicRetrospectiveAction(
+                1L,
+                12L,
+                "JVM",
+                "后端开发",
+                "专项题库训练, 定向模拟",
+                "领域回顾专项 | JVM",
+                "先处理画像分偏低和待复盘点，再补一轮专项题库训练。",
+                "/analytics?topic=12");
+
+        assertEquals(2, result.getTodayTaskCount());
+        assertTrue(result.getTasks().stream().anyMatch(task ->
+                "topic_retrospective".equals(task.getModule())
+                        && "领域回顾专项 | JVM".equals(task.getTitle())
+                        && "/analytics?topic=12".equals(task.getActionPath())));
+    }
 }

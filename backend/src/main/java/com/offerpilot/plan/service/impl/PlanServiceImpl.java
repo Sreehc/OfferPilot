@@ -186,6 +186,50 @@ public class PlanServiceImpl implements PlanService {
         return toCurrentVO(latestPlan, loadPlanTasks(latestPlan.getId()), dashboardService.overview());
     }
 
+    @Override
+    @Transactional
+    public StudyPlanCurrentVO saveTopicRetrospectiveAction(Long userId, Long categoryId,
+                                                           String focusDirection, String targetRole, String techStack,
+                                                           String taskTitle, String taskDescription, String actionPath) {
+        StudyPlan plan = ensurePlanForTopicRetrospective(userId, focusDirection, targetRole, techStack);
+        StudyPlan synced = syncPlanState(plan);
+        String normalizedActionPath = firstNonBlank(
+                actionPath,
+                categoryId == null ? null : "/analytics?topic=" + categoryId,
+                "/analytics");
+
+        StudyPlanTask existingTask = studyPlanTaskMapper.selectOne(new LambdaQueryWrapper<StudyPlanTask>()
+                .eq(StudyPlanTask::getPlanId, synced.getId())
+                .eq(StudyPlanTask::getUserId, userId)
+                .eq(StudyPlanTask::getModule, "topic_retrospective")
+                .eq(StudyPlanTask::getActionPath, normalizedActionPath)
+                .orderByDesc(StudyPlanTask::getId)
+                .last("LIMIT 1"));
+        if (existingTask == null) {
+            StudyPlanTask task = buildTask(
+                    synced,
+                    synced.getCurrentDay(),
+                    LocalDate.now(),
+                    "topic_retrospective",
+                    firstNonBlank(taskTitle, "领域回顾转训练动作"),
+                    firstNonBlank(taskDescription, "把当前领域回顾结论写成下一轮正式训练动作。"),
+                    normalizedActionPath,
+                    30,
+                    "high");
+            studyPlanTaskMapper.insert(task);
+        } else {
+            existingTask.setTitle(firstNonBlank(taskTitle, existingTask.getTitle(), "领域回顾转训练动作"));
+            existingTask.setDescription(firstNonBlank(taskDescription, existingTask.getDescription(),
+                    "把当前领域回顾结论写成下一轮正式训练动作。"));
+            existingTask.setPriority("high");
+            existingTask.setTaskDate(LocalDate.now());
+            studyPlanTaskMapper.updateById(existingTask);
+        }
+
+        StudyPlan latestPlan = syncPlanState(getOwnedPlan(userId, synced.getId()));
+        return toCurrentVO(latestPlan, loadPlanTasks(latestPlan.getId()), dashboardService.overview());
+    }
+
     private StudyPlan getOwnedPlan(Long userId, Long planId) {
         StudyPlan plan = studyPlanMapper.selectById(planId);
         if (plan == null || !plan.getUserId().equals(userId)) {
@@ -205,11 +249,7 @@ public class PlanServiceImpl implements PlanService {
     }
 
     private StudyPlan ensurePlanForRecordingReview(Long userId, String focusDirection, String targetRole, String techStack) {
-        StudyPlan plan = studyPlanMapper.selectOne(new LambdaQueryWrapper<StudyPlan>()
-                .eq(StudyPlan::getUserId, userId)
-                .eq(StudyPlan::getStatus, "active")
-                .orderByDesc(StudyPlan::getId)
-                .last("LIMIT 1"));
+        StudyPlan plan = findActivePlan(userId);
         if (plan != null) {
             return plan;
         }
@@ -221,6 +261,30 @@ public class PlanServiceImpl implements PlanService {
         request.setTechStack(firstNonBlank(techStack, focusDirection, "表达复盘"));
         StudyPlanCurrentVO generated = generate(userId, request);
         return getOwnedPlan(userId, generated.getId());
+    }
+
+    private StudyPlan ensurePlanForTopicRetrospective(Long userId, String focusDirection, String targetRole, String techStack) {
+        StudyPlan plan = findActivePlan(userId);
+        if (plan != null) {
+            return plan;
+        }
+
+        StudyPlanGenerateRequest request = new StudyPlanGenerateRequest();
+        request.setDurationDays(7);
+        request.setFocusDirection(firstNonBlank(focusDirection, "领域回顾专项"));
+        request.setTargetRole(firstNonBlank(targetRole, "Java 后端开发"));
+        request.setTechStack(firstNonBlank(techStack, focusDirection, "专项回顾"));
+        StudyPlanCurrentVO generated = generate(userId, request);
+        return getOwnedPlan(userId, generated.getId());
+    }
+
+    private StudyPlan findActivePlan(Long userId) {
+        StudyPlan plan = studyPlanMapper.selectOne(new LambdaQueryWrapper<StudyPlan>()
+                .eq(StudyPlan::getUserId, userId)
+                .eq(StudyPlan::getStatus, "active")
+                .orderByDesc(StudyPlan::getId)
+                .last("LIMIT 1"));
+        return plan;
     }
 
     private void validateDuration(Integer durationDays) {

@@ -179,6 +179,50 @@ class AgentRunServiceImplTest {
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("专项题库训练")));
         assertEquals("/analytics", result.getNextActionPath());
         assertTrue(Boolean.TRUE.equals(result.getRequiresApproval()));
+        assertEquals("save_topic_retrospective_action", result.getApprovalActionType());
+    }
+
+    @Test
+    void approveRun_persistsTopicRetrospectiveAsFormalTrainingAction() {
+        when(analyticsService.getAbilityProfile(1L)).thenReturn(AbilityProfileVO.builder()
+                .suggestedFocus("JVM")
+                .recommendedDifficulty("medium")
+                .build());
+        when(analyticsService.getProfileTopicDetail(1L, 12L)).thenReturn(ProfileTopicDetailVO.builder()
+                .categoryId(12L)
+                .categoryName("JVM")
+                .abilityScore(58D)
+                .dueCount(4)
+                .focusRecommendations(List.of("先补 JVM 内存模型。"))
+                .build());
+        when(analyticsService.buildProfileTopicRetrospective(1L, 12L)).thenReturn(ProfileTopicRetrospectiveVO.builder()
+                .categoryId(12L)
+                .categoryName("JVM")
+                .stage("needs_attention")
+                .summary("当前仍是需要优先处理的薄弱领域。")
+                .riskSignals(List.of("画像分仍处在较低区间。", "还有 4 个待复盘点没有清完。"))
+                .nextActions(List.of("先围绕 JVM 安排 1 轮专项题库训练。", "清理待复盘点后再补一场定向模拟。"))
+                .build());
+
+        AgentRunVO created = agentRunService.createRun(1L, request(
+                "study_planner",
+                "analytics",
+                List.of("analytics:profile", "analytics:topic:12", "analytics:retrospective:topic:12", "study-plan:active"),
+                "把领域回顾转成下周训练重点"));
+
+        AgentRunVO approved = agentRunService.approveRun(1L, Long.valueOf(String.valueOf(created.getId())), null);
+
+        verify(planService).saveTopicRetrospectiveAction(
+                org.mockito.ArgumentMatchers.eq(1L),
+                org.mockito.ArgumentMatchers.eq(12L),
+                org.mockito.ArgumentMatchers.eq("JVM"),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.contains("专项题库训练"),
+                org.mockito.ArgumentMatchers.contains("领域回顾专项"),
+                org.mockito.ArgumentMatchers.contains("画像分仍处在较低区间"),
+                org.mockito.ArgumentMatchers.eq("/analytics?topic=12"));
+        assertEquals("approved", approved.getStatus());
+        assertTrue(approved.getExecutionSummary().contains("正式训练任务"));
     }
 
     @Test
