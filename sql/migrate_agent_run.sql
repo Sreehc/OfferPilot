@@ -1,0 +1,19 @@
+CREATE TABLE IF NOT EXISTS agent_run (
+    id BIGINT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    agent_type VARCHAR(64) NOT NULL,
+    trigger_source VARCHAR(64) NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'completed',
+    title VARCHAR(128) NOT NULL,
+    summary VARCHAR(1000) DEFAULT NULL,
+    user_prompt VARCHAR(1000) DEFAULT NULL,
+    context_refs_json TEXT DEFAULT NULL,
+    stream_mode VARCHAR(32) DEFAULT NULL,
+    result_payload_json TEXT DEFAULT NULL,
+    next_action_path VARCHAR(255) DEFAULT NULL,
+    requires_approval TINYINT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_agent_run_user_update (user_id, update_time),
+    KEY idx_agent_run_user_type (user_id, agent_type)
+);

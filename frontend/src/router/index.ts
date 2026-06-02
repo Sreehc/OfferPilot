@@ -39,6 +39,9 @@ const pageMeta = {
   analytics: {
     title: PRODUCT_PAGE_NAMES.analytics
   },
+  agent: {
+    title: 'Agent 工作台'
+  },
   admin: {
     title: '管理后台'
   },
@@ -174,6 +177,12 @@ const router = createRouter({
           name: 'analytics',
           component: () => import('@/pages/analytics/AnalyticsPage.vue'),
           meta: pageMeta.analytics
+        },
+        {
+          path: 'agent',
+          name: 'agent',
+          component: () => import('@/pages/agent/AgentWorkbenchPage.vue'),
+          meta: pageMeta.agent
         },
         {
           path: 'admin',

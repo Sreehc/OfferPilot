@@ -432,6 +432,23 @@ export interface RecordingReviewSession {
   updateTime?: string
 }
 
+export interface AgentRun {
+  id: string
+  agentType: string
+  triggerSource: string
+  status: string
+  title: string
+  summary: string
+  userPrompt?: string
+  contextRefs: string[]
+  streamMode?: string
+  recommendations: string[]
+  checkpoints: string[]
+  nextActionPath?: string
+  requiresApproval: boolean
+  updateTime?: string
+}
+
 export interface StudyPlanTaskItem {
   id: string
   dayIndex: number
