@@ -765,11 +765,28 @@
 
           <div class="recording-review-grid mt-5">
             <div class="space-y-4">
-              <div v-if="!voiceAvailable" class="recording-review-provider-alert">
+              <div v-if="blockingRecordingReviewProviders.length" class="recording-review-provider-alert">
                 <p class="text-sm font-semibold text-ink">ASR 未配置</p>
                 <p class="mt-2 text-sm leading-6 text-secondary">
                   录音复盘依赖语音识别服务。请先到设置页完成 `ASR provider` 配置，再回来上传录音。
                 </p>
+                <div class="mt-3 flex flex-wrap gap-2">
+                  <span v-for="item in blockingRecordingReviewProviders" :key="item.scope" class="detail-pill">
+                    {{ item.label }} · {{ item.statusMessage }}
+                  </span>
+                </div>
+              </div>
+
+              <div v-else-if="degradedRecordingReviewProviders.length" class="copilot-prep-provider-alert">
+                <p class="text-sm font-semibold text-ink">录音复盘依赖未完全就绪</p>
+                <p class="mt-2 text-sm leading-6 text-secondary">
+                  当前语音识别可用，但仍有部分 provider 未配置。录音复盘可以继续生成，不过长音频上传或存储能力可能降级。
+                </p>
+                <div class="mt-3 flex flex-wrap gap-2">
+                  <span v-for="item in degradedRecordingReviewProviders" :key="item.scope" class="detail-pill">
+                    {{ item.label }} · {{ item.statusMessage }}
+                  </span>
+                </div>
               </div>
 
               <div>
@@ -866,6 +883,28 @@
                     </div>
                   </div>
                 </div>
+
+                <article
+                  v-if="recordingReviewSession.providerReadiness.some((item) => item.status !== 'ready' && item.status !== 'saved')"
+                  class="recording-review-panel"
+                >
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <p class="recording-review-panel__title">Provider Readiness</p>
+                    <span class="detail-pill detail-pill-risk">存在降级</span>
+                  </div>
+                  <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                    <div
+                      v-for="item in recordingReviewSession.providerReadiness"
+                      :key="item.scope"
+                      class="copilot-provider-card"
+                      :class="`copilot-provider-card--${item.status}`"
+                    >
+                      <p class="copilot-provider-card__label">{{ item.label }}</p>
+                      <p class="copilot-provider-card__status">{{ item.status }}</p>
+                      <p class="mt-2 text-xs leading-5 text-secondary">{{ item.statusMessage }}</p>
+                    </div>
+                  </div>
+                </article>
 
                 <div class="grid gap-3 xl:grid-cols-2">
                   <article class="recording-review-panel">
@@ -1559,6 +1598,15 @@ const copilotProviderItems = computed(() =>
 )
 const missingCopilotProviders = computed(() =>
   copilotProviderItems.value.filter((item) => isProviderStatusMissing(item.status))
+)
+const recordingReviewProviderItems = computed(() =>
+  providerConfigs.value.filter((item) => ['asr', 'oss'].includes(item.scope))
+)
+const blockingRecordingReviewProviders = computed(() =>
+  recordingReviewProviderItems.value.filter((item) => item.scope === 'asr' && isProviderStatusMissing(item.status))
+)
+const degradedRecordingReviewProviders = computed(() =>
+  recordingReviewProviderItems.value.filter((item) => item.scope !== 'asr' && isProviderStatusMissing(item.status))
 )
 
 const toggleQuestion = (questionId: string) => {

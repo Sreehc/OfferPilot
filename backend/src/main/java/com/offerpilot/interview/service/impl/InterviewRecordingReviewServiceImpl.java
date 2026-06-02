@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.offerpilot.agent.service.UserProviderConfigService;
+import com.offerpilot.agent.vo.UserProviderConfigItemVO;
 import com.offerpilot.common.api.ResultCode;
 import com.offerpilot.common.exception.BusinessException;
 import com.offerpilot.common.storage.FileStorageService;
@@ -16,7 +18,11 @@ import com.offerpilot.interview.mapper.RecordingTranscriptSegmentMapper;
 import com.offerpilot.interview.service.InterviewRecordingReviewService;
 import com.offerpilot.interview.voice.SttGateway;
 import com.offerpilot.interview.vo.RecordingReviewSessionVO;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,12 +38,14 @@ public class InterviewRecordingReviewServiceImpl implements InterviewRecordingRe
 
     private static final TypeReference<List<String>> STRING_LIST_TYPE = new TypeReference<>() {
     };
+    private static final List<String> RECORDING_REVIEW_PROVIDER_SCOPES = List.of("asr", "oss");
 
     private final RecordingReviewSessionMapper recordingReviewSessionMapper;
     private final RecordingTranscriptSegmentMapper recordingTranscriptSegmentMapper;
     private final FileStorageService fileStorageService;
     private final SttGateway sttGateway;
     private final InterviewRecordingReviewAsyncProcessor recordingReviewAsyncProcessor;
+    private final UserProviderConfigService userProviderConfigService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -115,6 +123,7 @@ public class InterviewRecordingReviewServiceImpl implements InterviewRecordingRe
                 .strengths(readList(session.getStrengthsJson()))
                 .weakPoints(readList(session.getWeakPointsJson()))
                 .suggestedActions(readList(session.getSuggestedActionsJson()))
+                .providerReadiness(resolveProviderReadiness())
                 .segments(segments.stream()
                         .map(item -> RecordingReviewSessionVO.SegmentVO.builder()
                                 .id(item.getId())
@@ -127,6 +136,32 @@ public class InterviewRecordingReviewServiceImpl implements InterviewRecordingRe
                         .toList())
                 .updateTime(session.getUpdateTime())
                 .build();
+    }
+
+    private List<RecordingReviewSessionVO.ProviderReadinessVO> resolveProviderReadiness() {
+        Map<String, UserProviderConfigItemVO> configMap = new LinkedHashMap<>();
+        for (UserProviderConfigItemVO item : userProviderConfigService.listCurrentUserConfigs()) {
+            if (item != null && StringUtils.hasText(item.getScope())) {
+                configMap.put(item.getScope(), item);
+            }
+        }
+        List<RecordingReviewSessionVO.ProviderReadinessVO> readiness = new ArrayList<>();
+        for (String scope : RECORDING_REVIEW_PROVIDER_SCOPES) {
+            UserProviderConfigItemVO item = configMap.get(scope);
+            String label = item == null ? scope.toUpperCase(Locale.ROOT) : item.getLabel();
+            String status = item == null ? "missing" : item.getStatus();
+            String statusMessage = item == null ? "还没有保存这类配置。" : item.getStatusMessage();
+            if ("oss".equals(scope) && item == null) {
+                statusMessage = "还没有保存对象存储配置，长音频上传能力可能受限。";
+            }
+            readiness.add(RecordingReviewSessionVO.ProviderReadinessVO.builder()
+                    .scope(scope)
+                    .label(label)
+                    .status(status)
+                    .statusMessage(statusMessage)
+                    .build());
+        }
+        return readiness;
     }
 
     private List<String> readList(String raw) {

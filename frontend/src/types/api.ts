@@ -502,6 +502,7 @@ export interface RecordingReviewSession {
   strengths: string[]
   weakPoints: string[]
   suggestedActions: string[]
+  providerReadiness: CopilotPrepProviderReadiness[]
   segments: RecordingReviewSegment[]
   updateTime?: string
 }
