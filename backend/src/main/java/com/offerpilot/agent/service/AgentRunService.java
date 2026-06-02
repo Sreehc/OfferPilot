@@ -11,4 +11,10 @@ public interface AgentRunService {
     List<AgentRunVO> listRuns(Long userId);
 
     AgentRunVO detail(Long userId, Long runId);
+
+    AgentRunVO approveRun(Long userId, Long runId, String note);
+
+    AgentRunVO rejectRun(Long userId, Long runId, String note);
+
+    AgentRunVO cancelRun(Long userId, Long runId, String note);
 }

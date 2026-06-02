@@ -1,6 +1,7 @@
 package com.offerpilot.agent.controller;
 
 import com.offerpilot.agent.dto.AgentRunCreateRequest;
+import com.offerpilot.agent.dto.AgentRunDecisionRequest;
 import com.offerpilot.agent.service.AgentRunService;
 import com.offerpilot.agent.vo.AgentRunVO;
 import com.offerpilot.common.api.Result;
@@ -44,6 +45,27 @@ public class AgentRunController {
     @GetMapping("/{runId}")
     public Result<AgentRunVO> detail(@Parameter(description = "run ID") @PathVariable Long runId) {
         return Result.success(agentRunService.detail(currentUserId(), runId));
+    }
+
+    @Operation(summary = "审批通过 agent run", description = "执行待审批写操作并回写结果")
+    @PostMapping("/{runId}/approve")
+    public Result<AgentRunVO> approve(@Parameter(description = "run ID") @PathVariable Long runId,
+                                      @RequestBody(required = false) AgentRunDecisionRequest request) {
+        return Result.success(agentRunService.approveRun(currentUserId(), runId, request == null ? null : request.getNote()));
+    }
+
+    @Operation(summary = "拒绝 agent run", description = "拒绝当前待审批写操作")
+    @PostMapping("/{runId}/reject")
+    public Result<AgentRunVO> reject(@Parameter(description = "run ID") @PathVariable Long runId,
+                                     @RequestBody(required = false) AgentRunDecisionRequest request) {
+        return Result.success(agentRunService.rejectRun(currentUserId(), runId, request == null ? null : request.getNote()));
+    }
+
+    @Operation(summary = "取消 agent run", description = "取消当前 run")
+    @PostMapping("/{runId}/cancel")
+    public Result<AgentRunVO> cancel(@Parameter(description = "run ID") @PathVariable Long runId,
+                                     @RequestBody(required = false) AgentRunDecisionRequest request) {
+        return Result.success(agentRunService.cancelRun(currentUserId(), runId, request == null ? null : request.getNote()));
     }
 
     private Long currentUserId() {

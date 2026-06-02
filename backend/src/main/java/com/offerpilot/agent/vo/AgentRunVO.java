@@ -24,5 +24,9 @@ public class AgentRunVO {
     private List<String> checkpoints;
     private String nextActionPath;
     private Boolean requiresApproval;
+    private String approvalActionType;
+    private String approvalSummary;
+    private String decisionNote;
+    private String executionSummary;
     private LocalDateTime updateTime;
 }

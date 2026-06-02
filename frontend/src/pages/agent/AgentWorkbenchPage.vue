@@ -12,7 +12,7 @@
         <div class="agent-workbench__legend">
           <span class="detail-pill">统一入口</span>
           <span class="detail-pill">run 管理</span>
-          <span class="detail-pill">审批占位</span>
+          <span class="detail-pill">审批闭环</span>
         </div>
       </div>
     </section>
@@ -156,8 +156,8 @@
                   {{ run.agentType }} · {{ run.triggerSource }}
                 </p>
               </div>
-              <span class="agent-run-status" :class="run.requiresApproval ? 'agent-run-status--warning' : 'agent-run-status--ready'">
-                {{ run.requiresApproval ? '待审批' : '已完成' }}
+              <span class="agent-run-status" :class="resolveRunStatusClass(run.status)">
+                {{ resolveRunStatusLabel(run.status) }}
               </span>
             </div>
             <p class="mt-3 text-sm leading-6 text-secondary">{{ run.summary }}</p>
@@ -192,6 +192,11 @@
             </div>
           </div>
 
+          <div v-if="selectedRun.approvalSummary" class="agent-detail-block">
+            <p class="agent-detail-block__title">审批动作</p>
+            <p class="mt-2 text-sm leading-6 text-primary">{{ selectedRun.approvalSummary }}</p>
+          </div>
+
           <div class="grid gap-4 xl:grid-cols-2">
             <div class="agent-detail-block">
               <p class="agent-detail-block__title">建议动作</p>
@@ -207,16 +212,53 @@
             </div>
           </div>
 
+          <div v-if="selectedRun.executionSummary" class="agent-detail-block">
+            <p class="agent-detail-block__title">执行结果</p>
+            <p class="mt-2 text-sm leading-6 text-primary">{{ selectedRun.executionSummary }}</p>
+          </div>
+
+          <div v-if="selectedRun.decisionNote" class="agent-detail-block">
+            <p class="agent-detail-block__title">处理备注</p>
+            <p class="mt-2 text-sm leading-6 text-primary">{{ selectedRun.decisionNote }}</p>
+          </div>
+
           <div class="agent-detail-footer">
-            <div class="agent-approval-callout" :class="selectedRun.requiresApproval ? 'agent-approval-callout--warning' : 'agent-approval-callout--ready'">
-              <p class="text-sm font-semibold text-ink">{{ selectedRun.requiresApproval ? '后续需要审批' : '当前无需审批' }}</p>
+            <div class="agent-approval-callout" :class="resolveApprovalCalloutClass(selectedRun.status)">
+              <p class="text-sm font-semibold text-ink">{{ resolveApprovalTitle(selectedRun) }}</p>
               <p class="mt-1 text-sm leading-6 text-secondary">
-                {{ selectedRun.requiresApproval ? '下一步可以把这个 run 的结果接到审批写操作。' : '下一步可以直接跳转到结果消费页继续执行。' }}
+                {{ resolveApprovalDescription(selectedRun) }}
               </p>
             </div>
-            <RouterLink v-if="selectedRun.nextActionPath" :to="selectedRun.nextActionPath" class="hard-button-primary">
-              前往下一步
-            </RouterLink>
+            <div class="agent-detail-actions">
+              <el-button
+                v-if="selectedRun.status === 'pending_approval'"
+                :loading="actionLoading === 'approve'"
+                type="primary"
+                class="action-button"
+                @click="handleDecision('approve')"
+              >
+                审批通过
+              </el-button>
+              <el-button
+                v-if="selectedRun.status === 'pending_approval'"
+                :loading="actionLoading === 'reject'"
+                class="action-button"
+                @click="handleDecision('reject')"
+              >
+                拒绝
+              </el-button>
+              <el-button
+                v-if="selectedRun.status !== 'approved' && selectedRun.status !== 'rejected' && selectedRun.status !== 'canceled'"
+                :loading="actionLoading === 'cancel'"
+                class="action-button"
+                @click="handleDecision('cancel')"
+              >
+                取消 Run
+              </el-button>
+              <RouterLink v-if="selectedRun.nextActionPath" :to="selectedRun.nextActionPath" class="hard-button-primary">
+                前往下一步
+              </RouterLink>
+            </div>
           </div>
         </div>
         <div v-else class="flex min-h-[360px] items-center justify-center">
@@ -235,7 +277,14 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
-import { createAgentRunApi, fetchAgentRunDetailApi, fetchAgentRunsApi } from '@/api/agent'
+import {
+  approveAgentRunApi,
+  cancelAgentRunApi,
+  createAgentRunApi,
+  fetchAgentRunDetailApi,
+  fetchAgentRunsApi,
+  rejectAgentRunApi
+} from '@/api/agent'
 import EmptyState from '@/components/EmptyState.vue'
 import { PRODUCT_PAGE_NAMES } from '@/constants/productCopy'
 import type { AgentRun } from '@/types/api'
@@ -320,6 +369,7 @@ const runs = ref<AgentRun[]>([])
 const selectedRun = ref<AgentRun | null>(null)
 const loading = ref(false)
 const creating = ref(false)
+const actionLoading = ref('')
 
 const applyQuickStart = (item: QuickStart) => {
   form.agentType = item.agentType
@@ -358,6 +408,104 @@ const selectRun = async (run: AgentRun) => {
     selectedRun.value = response.data
   } catch {
     ElMessage.error('无法加载这个 Agent Run 的详情。')
+  }
+}
+
+const resolveRunStatusLabel = (status: string) => {
+  switch (status) {
+    case 'pending_approval':
+      return '待审批'
+    case 'approved':
+      return '已审批'
+    case 'rejected':
+      return '已拒绝'
+    case 'canceled':
+      return '已取消'
+    case 'failed':
+      return '执行失败'
+    default:
+      return '已完成'
+  }
+}
+
+const resolveRunStatusClass = (status: string) => {
+  switch (status) {
+    case 'pending_approval':
+      return 'agent-run-status--warning'
+    case 'rejected':
+    case 'failed':
+      return 'agent-run-status--danger'
+    case 'canceled':
+      return 'agent-run-status--neutral'
+    default:
+      return 'agent-run-status--ready'
+  }
+}
+
+const resolveApprovalTitle = (run: AgentRun) => {
+  switch (run.status) {
+    case 'pending_approval':
+      return '当前等待审批'
+    case 'approved':
+      return '审批已经通过'
+    case 'rejected':
+      return '审批已被拒绝'
+    case 'canceled':
+      return '当前 run 已取消'
+    default:
+      return run.requiresApproval ? '当前无需再审批' : '当前无需审批'
+  }
+}
+
+const resolveApprovalDescription = (run: AgentRun) => {
+  switch (run.status) {
+    case 'pending_approval':
+      return '你可以在这里决定是否把这次 run 的结果转成正式写操作。'
+    case 'approved':
+      return run.executionSummary || '审批动作已经执行完成，可以继续去目标页面消费结果。'
+    case 'rejected':
+      return '这次写操作没有执行，run 结果仍可继续参考。'
+    case 'canceled':
+      return '当前 run 已停止推进，不会继续执行后续动作。'
+    default:
+      return run.requiresApproval ? '这次写操作已经结束，可以直接继续下一步。' : '下一步可以直接跳转到结果消费页继续执行。'
+  }
+}
+
+const resolveApprovalCalloutClass = (status: string) => {
+  switch (status) {
+    case 'pending_approval':
+      return 'agent-approval-callout--warning'
+    case 'rejected':
+    case 'failed':
+      return 'agent-approval-callout--danger'
+    case 'canceled':
+      return 'agent-approval-callout--neutral'
+    default:
+      return 'agent-approval-callout--ready'
+  }
+}
+
+const handleDecision = async (decision: 'approve' | 'reject' | 'cancel') => {
+  if (!selectedRun.value) return
+  actionLoading.value = decision
+  try {
+    const api =
+      decision === 'approve'
+        ? approveAgentRunApi
+        : decision === 'reject'
+          ? rejectAgentRunApi
+          : cancelAgentRunApi
+    const response = await api(selectedRun.value.id)
+    selectedRun.value = response.data
+    ElMessage.success(
+      decision === 'approve' ? '审批已通过。' : decision === 'reject' ? '已拒绝这次写操作。' : '当前 run 已取消。'
+    )
+    await loadRuns(response.data.id)
+  } catch (error: any) {
+    ElMessage.error(error?.message || '处理当前 run 失败，请稍后重试。')
+  } finally {
+    actionLoading.value = ''
   }
 }
 
@@ -482,6 +630,16 @@ onMounted(() => {
   color: var(--bc-ink);
 }
 
+.agent-run-status--danger {
+  background: rgba(224, 73, 73, 0.12);
+  color: #842029;
+}
+
+.agent-run-status--neutral {
+  background: rgba(148, 163, 184, 0.16);
+  color: #475569;
+}
+
 .agent-detail-meta {
   display: flex;
   flex-wrap: wrap;
@@ -547,5 +705,21 @@ onMounted(() => {
 
 .agent-approval-callout--warning {
   background: rgba(var(--bc-amber-rgb), 0.1);
+}
+
+.agent-approval-callout--danger {
+  background: rgba(224, 73, 73, 0.08);
+}
+
+.agent-approval-callout--neutral {
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.agent-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
 }
 </style>

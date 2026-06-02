@@ -446,6 +446,10 @@ export interface AgentRun {
   checkpoints: string[]
   nextActionPath?: string
   requiresApproval: boolean
+  approvalActionType?: string
+  approvalSummary?: string
+  decisionNote?: string
+  executionSummary?: string
   updateTime?: string
 }
 

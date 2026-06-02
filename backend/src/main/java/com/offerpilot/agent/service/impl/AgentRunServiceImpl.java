@@ -12,6 +12,9 @@ import com.offerpilot.agent.service.AgentRunService;
 import com.offerpilot.agent.vo.AgentRunVO;
 import com.offerpilot.common.api.ResultCode;
 import com.offerpilot.common.exception.BusinessException;
+import com.offerpilot.plan.dto.StudyPlanGenerateRequest;
+import com.offerpilot.plan.service.PlanService;
+import com.offerpilot.plan.vo.StudyPlanCurrentVO;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -32,6 +35,7 @@ public class AgentRunServiceImpl implements AgentRunService {
 
     private final AgentRunMapper agentRunMapper;
     private final ObjectMapper objectMapper;
+    private final PlanService planService;
 
     @Override
     @Transactional
@@ -41,7 +45,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         run.setUserId(userId);
         run.setAgentType(normalize(request.getAgentType()));
         run.setTriggerSource(normalize(request.getTriggerSource()));
-        run.setStatus("completed");
+        run.setStatus(blueprint.requiresApproval() ? "pending_approval" : "completed");
         run.setTitle(blueprint.title());
         run.setSummary(blueprint.summary());
         run.setUserPrompt(trimToNull(request.getUserPrompt()));
@@ -50,6 +54,9 @@ public class AgentRunServiceImpl implements AgentRunService {
         run.setResultPayloadJson(writePayload(blueprint.recommendations(), blueprint.checkpoints()));
         run.setNextActionPath(blueprint.nextActionPath());
         run.setRequiresApproval(blueprint.requiresApproval() ? 1 : 0);
+        run.setApprovalActionType(blueprint.approvalActionType());
+        run.setApprovalSummary(blueprint.approvalSummary());
+        run.setApprovalPayloadJson(blueprint.approvalPayloadJson());
         agentRunMapper.insert(run);
         return buildVo(run);
     }
@@ -69,16 +76,64 @@ public class AgentRunServiceImpl implements AgentRunService {
     @Override
     @Transactional(readOnly = true)
     public AgentRunVO detail(Long userId, Long runId) {
+        return buildVo(getOwnedRun(userId, runId));
+    }
+
+    @Override
+    @Transactional
+    public AgentRunVO approveRun(Long userId, Long runId, String note) {
+        AgentRun run = getOwnedRun(userId, runId);
+        if (!Integer.valueOf(1).equals(run.getRequiresApproval())) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "当前 run 不需要审批");
+        }
+        if (!"pending_approval".equals(run.getStatus())) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "当前 run 不处于待审批状态");
+        }
+
+        ExecutionResult result = executeApprovalAction(userId, run);
+        run.setStatus("approved");
+        run.setDecisionNote(trimToNull(note));
+        run.setExecutionResultJson(writeObject(result, "{}"));
+        agentRunMapper.updateById(run);
+        return buildVo(run);
+    }
+
+    @Override
+    @Transactional
+    public AgentRunVO rejectRun(Long userId, Long runId, String note) {
+        AgentRun run = getOwnedRun(userId, runId);
+        if (!"pending_approval".equals(run.getStatus())) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "当前 run 不处于待审批状态");
+        }
+        run.setStatus("rejected");
+        run.setDecisionNote(trimToNull(note));
+        agentRunMapper.updateById(run);
+        return buildVo(run);
+    }
+
+    @Override
+    @Transactional
+    public AgentRunVO cancelRun(Long userId, Long runId, String note) {
+        AgentRun run = getOwnedRun(userId, runId);
+        if (List.of("approved", "rejected", "canceled").contains(run.getStatus())) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "当前 run 已结束，不能再取消");
+        }
+        run.setStatus("canceled");
+        run.setDecisionNote(trimToNull(note));
+        agentRunMapper.updateById(run);
+        return buildVo(run);
+    }
+
+    private AgentRun getOwnedRun(Long userId, Long runId) {
         AgentRun run = agentRunMapper.selectById(runId);
         if (run == null || !run.getUserId().equals(userId)) {
             throw new BusinessException(ResultCode.NOT_FOUND.getCode(), "agent run not found");
         }
-        return buildVo(run);
+        return run;
     }
 
     private RunBlueprint buildBlueprint(AgentRunCreateRequest request) {
         String agentType = normalize(request.getAgentType());
-        String triggerSource = normalize(request.getTriggerSource());
         List<String> contextRefs = request.getContextRefs() == null ? List.of() : request.getContextRefs().stream()
                 .filter(StringUtils::hasText)
                 .map(String::trim)
@@ -95,7 +150,10 @@ public class AgentRunServiceImpl implements AgentRunService {
                             contextRefsText(contextRefs, "优先参考这些上下文：")),
                     List.of("确认今日训练目标", "生成可执行任务", "如有写操作则进入待审批"),
                     "/study-plan",
-                    true);
+                    true,
+                    "refresh_study_plan",
+                    "审批通过后会生成或刷新当前学习计划，把这轮建议落成正式训练动作。",
+                    writeObject(new StudyPlanPayload(7, null, null, null), "{}"));
             case "job_prep" -> blueprint(
                     "JD 备面代理",
                     "已整理这次岗位准备的重点缺口、项目表达和模拟前动作。",
@@ -104,7 +162,10 @@ public class AgentRunServiceImpl implements AgentRunService {
                             contextRefsText(contextRefs, "当前引用的上下文：")),
                     List.of("整理 JD 缺口", "准备项目表达", "启动模拟或投递动作"),
                     "/interview",
-                    true);
+                    true,
+                    "save_job_prep_draft",
+                    "审批通过后会把这份 JD 备面建议确认为正式草案，方便继续在面试页补充。",
+                    null);
             case "recording_review" -> blueprint(
                     "录音复盘代理",
                     "已把录音复盘的结论整理成后续训练动作和复听重点。",
@@ -112,8 +173,11 @@ public class AgentRunServiceImpl implements AgentRunService {
                             List.of("先回听薄弱片段，再改写成结构化口语答案。", "把复盘结果沉淀到下一轮模拟和错题复习里。"),
                             contextRefsText(contextRefs, "本次重点参考：")),
                     List.of("查看转写片段", "提取薄弱点", "确认是否转成正式训练动作"),
-                    "/interview",
-                    true);
+                    "/study-plan",
+                    true,
+                    "refresh_study_plan",
+                    "审批通过后会刷新学习计划，把这次录音复盘结论转成正式训练动作。",
+                    writeObject(new StudyPlanPayload(7, null, null, null), "{}"));
             case "resume_coach" -> blueprint(
                     "简历教练代理",
                     "已按当前岗位目标整理简历修改与项目表达建议。",
@@ -122,7 +186,10 @@ public class AgentRunServiceImpl implements AgentRunService {
                             contextRefsText(contextRefs, "当前基于以下材料：")),
                     List.of("确认目标岗位", "生成简历修改点", "决定是否写回简历版本"),
                     "/resume",
-                    true);
+                    true,
+                    "save_resume_follow_up_draft",
+                    "审批通过后会把这次简历追问和修改建议确认为正式草稿。",
+                    null);
             case "application_strategist" -> blueprint(
                     "投递策略代理",
                     "已根据当前投递状态和反馈节奏整理下一步推进建议。",
@@ -131,7 +198,10 @@ public class AgentRunServiceImpl implements AgentRunService {
                             contextRefsText(contextRefs, "本次参考的岗位或反馈：")),
                     List.of("查看推进优先级", "确认下一步动作", "必要时进入待审批"),
                     "/applications",
-                    true);
+                    true,
+                    "save_application_strategy",
+                    "审批通过后会把这次投递推进建议确认为正式策略草案。",
+                    null);
             case "interview_review" -> blueprint(
                     "面试复盘代理",
                     "已根据本轮面试结果整理追问重点、低分点和下一轮训练建议。",
@@ -139,8 +209,11 @@ public class AgentRunServiceImpl implements AgentRunService {
                             List.of("先处理低分题，再安排一轮同主题模拟。", "把薄弱点转成错题或复习任务，避免只停留在摘要层。"),
                             contextRefsText(contextRefs, "复盘引用了这些上下文：")),
                     List.of("汇总面试结果", "提取低分点", "决定是否刷新训练计划"),
-                    "/interview",
-                    true);
+                    "/study-plan",
+                    true,
+                    "refresh_study_plan",
+                    "审批通过后会刷新学习计划，把这次面试复盘结论转成正式训练动作。",
+                    writeObject(new StudyPlanPayload(7, null, null, null), "{}"));
             case "realtime_copilot" -> blueprint(
                     "实时 Copilot 代理",
                     "已生成会前准备清单，后续可以继续接实时建议流。",
@@ -149,7 +222,10 @@ public class AgentRunServiceImpl implements AgentRunService {
                             contextRefsText(contextRefs, "Prep 阶段引用：")),
                     List.of("会前准备", "连接实时会话", "面后复盘回写"),
                     "/interview",
-                    false);
+                    false,
+                    null,
+                    null,
+                    null);
             default -> blueprint(
                     "协调代理",
                     "已生成一份统一的下一步动作清单，可继续下钻到具体模块。",
@@ -158,12 +234,48 @@ public class AgentRunServiceImpl implements AgentRunService {
                             contextRefsText(contextRefs, "当前上下文：")),
                     List.of("识别任务类型", "路由到具体能力", "如涉及写操作则等待审批"),
                     "/dashboard",
-                    false);
+                    false,
+                    null,
+                    null,
+                    null);
         };
+    }
+
+    private ExecutionResult executeApprovalAction(Long userId, AgentRun run) {
+        String actionType = normalize(run.getApprovalActionType());
+        return switch (actionType) {
+            case "refresh_study_plan" -> executeStudyPlanAction(userId, run.getApprovalPayloadJson());
+            case "save_job_prep_draft" -> new ExecutionResult("已确认这份 JD 备面草案，可继续在面试页补充和消费。");
+            case "save_resume_follow_up_draft" -> new ExecutionResult("已确认这份简历追问和修改建议草稿，可继续在简历页整理。");
+            case "save_application_strategy" -> new ExecutionResult("已确认这份投递推进策略草案，可继续在投递页执行。");
+            default -> new ExecutionResult("已完成审批。");
+        };
+    }
+
+    private ExecutionResult executeStudyPlanAction(Long userId, String payloadJson) {
+        StudyPlanPayload payload = readObject(payloadJson, StudyPlanPayload.class);
+        StudyPlanCurrentVO currentPlan = planService.current(userId);
+        StudyPlanCurrentVO result;
+        if (currentPlan == null) {
+            StudyPlanGenerateRequest generateRequest = new StudyPlanGenerateRequest();
+            if (payload != null && payload.durationDays() != null) {
+                generateRequest.setDurationDays(payload.durationDays());
+            }
+            if (payload != null) {
+                generateRequest.setFocusDirection(payload.focusDirection());
+                generateRequest.setTargetRole(payload.targetRole());
+                generateRequest.setTechStack(payload.techStack());
+            }
+            result = planService.generate(userId, generateRequest);
+        } else {
+            result = planService.refresh(userId, currentPlan.getId());
+        }
+        return new ExecutionResult("已生成正式学习计划《" + result.getTitle() + "》，可以继续在学习计划页执行。");
     }
 
     private AgentRunVO buildVo(AgentRun run) {
         JsonNode payload = readPayload(run.getResultPayloadJson());
+        ExecutionResult executionResult = readObject(run.getExecutionResultJson(), ExecutionResult.class);
         return AgentRunVO.builder()
                 .id(run.getId())
                 .agentType(run.getAgentType())
@@ -178,13 +290,19 @@ public class AgentRunServiceImpl implements AgentRunService {
                 .checkpoints(readPayloadArray(payload, "checkpoints"))
                 .nextActionPath(run.getNextActionPath())
                 .requiresApproval(Integer.valueOf(1).equals(run.getRequiresApproval()))
+                .approvalActionType(run.getApprovalActionType())
+                .approvalSummary(run.getApprovalSummary())
+                .decisionNote(run.getDecisionNote())
+                .executionSummary(executionResult == null ? null : executionResult.summary())
                 .updateTime(run.getUpdateTime())
                 .build();
     }
 
     private RunBlueprint blueprint(String title, String summary, List<String> recommendations, List<String> checkpoints,
-                                   String nextActionPath, boolean requiresApproval) {
-        return new RunBlueprint(title, summary, recommendations, checkpoints, nextActionPath, requiresApproval);
+                                   String nextActionPath, boolean requiresApproval, String approvalActionType,
+                                   String approvalSummary, String approvalPayloadJson) {
+        return new RunBlueprint(title, summary, recommendations, checkpoints, nextActionPath, requiresApproval,
+                approvalActionType, approvalSummary, approvalPayloadJson);
     }
 
     private List<String> mergeRecommendations(List<String>... groups) {
@@ -203,11 +321,18 @@ public class AgentRunServiceImpl implements AgentRunService {
     }
 
     private String writePayload(List<String> recommendations, List<String> checkpoints) {
+        return writeObject(new ResultPayload(recommendations, checkpoints), "{\"recommendations\":[],\"checkpoints\":[]}");
+    }
+
+    private String writeObject(Object value, String fallback) {
+        if (value == null) {
+            return null;
+        }
         try {
-            return objectMapper.writeValueAsString(new ResultPayload(recommendations, checkpoints));
+            return objectMapper.writeValueAsString(value);
         } catch (JsonProcessingException e) {
-            log.warn("Failed to write agent payload", e);
-            return "{\"recommendations\":[],\"checkpoints\":[]}";
+            log.warn("Failed to serialize object for agent run", e);
+            return fallback;
         }
     }
 
@@ -258,6 +383,18 @@ public class AgentRunServiceImpl implements AgentRunService {
         }
     }
 
+    private <T> T readObject(String raw, Class<T> type) {
+        if (!StringUtils.hasText(raw)) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(raw, type);
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to parse agent run object", e);
+            return null;
+        }
+    }
+
     private String normalize(String value) {
         return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
     }
@@ -271,9 +408,16 @@ public class AgentRunServiceImpl implements AgentRunService {
     }
 
     private record RunBlueprint(String title, String summary, List<String> recommendations, List<String> checkpoints,
-                                String nextActionPath, boolean requiresApproval) {
+                                String nextActionPath, boolean requiresApproval, String approvalActionType,
+                                String approvalSummary, String approvalPayloadJson) {
     }
 
     private record ResultPayload(List<String> recommendations, List<String> checkpoints) {
+    }
+
+    private record StudyPlanPayload(Integer durationDays, String focusDirection, String targetRole, String techStack) {
+    }
+
+    private record ExecutionResult(String summary) {
     }
 }
