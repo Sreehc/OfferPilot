@@ -25,4 +25,6 @@ public interface ResumeService {
     ResumeFileVO retryParse(Long userId, Long resumeId);
 
     ResumeFileVO update(Long userId, Long resumeId, ResumeUpdateRequest request);
+
+    ResumeFileVO saveFollowUpDraft(Long userId, Long resumeId, String summary, List<String> recommendations);
 }

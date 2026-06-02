@@ -321,13 +321,14 @@ public class AgentRunServiceImpl implements AgentRunService {
         if (application != null && !nullSafeList(application.getMissingKeywords()).isEmpty()) {
             baseRecommendations.add("结合目标岗位，补齐这些关键词：" + joinLimited(application.getMissingKeywords(), 3, "、") + "。");
         }
+        List<String> recommendations = mergeRecommendations(
+                baseRecommendations,
+                prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”同步到简历修改排序。") : List.of(),
+                contextRefsText(contextRefs, "当前基于以下材料："));
         return blueprint(
                 "简历教练代理",
                 summary,
-                mergeRecommendations(
-                        baseRecommendations,
-                        prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”同步到简历修改排序。") : List.of(),
-                        contextRefsText(contextRefs, "当前基于以下材料：")),
+                recommendations,
                 List.of("确认目标岗位", "生成简历修改点", "决定是否写回简历版本"),
                 "/resume",
                 true,
@@ -335,7 +336,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                 resume != null
                         ? "审批通过后会把简历《" + defaultText(resume.getTitle(), "当前简历") + "》的修改建议确认为正式草稿。"
                         : "审批通过后会把这次简历追问和修改建议确认为正式草稿。",
-                null);
+                writeObject(resolveResumeFollowUpDraftPayload(snapshot, summary, recommendations), "{}"));
     }
 
     private RunBlueprint buildApplicationStrategistBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
@@ -467,7 +468,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         return switch (actionType) {
             case "refresh_study_plan" -> executeStudyPlanAction(userId, run.getApprovalPayloadJson());
             case "save_job_prep_draft" -> executeJobPrepDraftAction(userId, run.getApprovalPayloadJson());
-            case "save_resume_follow_up_draft" -> new ExecutionResult("已确认这份简历追问和修改建议草稿，可继续在简历页整理。");
+            case "save_resume_follow_up_draft" -> executeResumeFollowUpDraftAction(userId, run.getApprovalPayloadJson());
             case "save_application_strategy" -> executeApplicationStrategyAction(userId, run.getApprovalPayloadJson());
             default -> new ExecutionResult("已完成审批。");
         };
@@ -522,6 +523,18 @@ public class AgentRunServiceImpl implements AgentRunService {
                 + " / "
                 + defaultText(application.getJobTitle(), "目标岗位")
                 + "」，可继续在投递页执行。");
+    }
+
+    private ExecutionResult executeResumeFollowUpDraftAction(Long userId, String payloadJson) {
+        ResumeFollowUpDraftPayload payload = readObject(payloadJson, ResumeFollowUpDraftPayload.class);
+        if (payload == null || payload.resumeId() == null) {
+            return new ExecutionResult("当前缺少可写入的简历对象，暂未保存正式追问草稿。");
+        }
+        ResumeFileVO resume = resumeService.saveFollowUpDraft(
+                userId, payload.resumeId(), payload.summary(), payload.recommendations());
+        return new ExecutionResult("已把简历追问草稿写回「"
+                + defaultText(resume.getTitle(), "当前简历")
+                + "」，可继续在简历页整理和消费。");
     }
 
     private ContextSnapshot resolveContextSnapshot(Long userId, List<String> contextRefs) {
@@ -723,6 +736,22 @@ public class AgentRunServiceImpl implements AgentRunService {
                     null);
         }
         return null;
+    }
+
+    private ResumeFollowUpDraftPayload resolveResumeFollowUpDraftPayload(
+            ContextSnapshot snapshot, String summary, List<String> recommendations) {
+        Long resumeId = null;
+        if (snapshot.resume() != null) {
+            resumeId = snapshot.resume().getId();
+        } else if (snapshot.application() != null) {
+            resumeId = snapshot.application().getResumeFileId();
+        } else if (snapshot.jobPrepSession() != null) {
+            resumeId = snapshot.jobPrepSession().getResumeFileId();
+        }
+        if (resumeId == null) {
+            return null;
+        }
+        return new ResumeFollowUpDraftPayload(resumeId, summary, recommendations);
     }
 
     private String resolveCoordinatorNextActionPath(ContextSnapshot snapshot) {
@@ -1022,6 +1051,9 @@ public class AgentRunServiceImpl implements AgentRunService {
     }
 
     private record ApplicationStrategyPayload(Long applicationId, String summary, List<String> recommendations) {
+    }
+
+    private record ResumeFollowUpDraftPayload(Long resumeId, String summary, List<String> recommendations) {
     }
 
     private record ContextSnapshot(AbilityProfileVO abilityProfile, ProfileTopicDetailVO topicDetail,

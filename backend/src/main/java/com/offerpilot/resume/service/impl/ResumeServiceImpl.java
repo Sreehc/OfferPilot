@@ -210,6 +210,27 @@ public class ResumeServiceImpl implements ResumeService {
         return buildDetail(file, loadProjects(file.getId()));
     }
 
+    @Override
+    @Transactional
+    public ResumeFileVO saveFollowUpDraft(Long userId, Long resumeId, String summary, List<String> recommendations) {
+        ResumeFile file = getOwnedResume(userId, resumeId);
+        List<String> normalizedRecommendations = nullSafeRecommendations(recommendations);
+        List<ResumeProject> projects = resumeProjectMapper.selectList(new LambdaQueryWrapper<ResumeProject>()
+                .eq(ResumeProject::getResumeFileId, file.getId())
+                .orderByAsc(ResumeProject::getSortOrder)
+                .orderByAsc(ResumeProject::getId));
+
+        if (!StringUtils.hasText(file.getSelfIntro())) {
+            file.setSelfIntro(buildAgentDraftIntro(file, normalizedRecommendations));
+        }
+        file.setInterviewResumeText(buildAgentDraftInterviewResume(file, projects, summary, normalizedRecommendations));
+        file.setUserFixStatus("agent_draft");
+        resumeFileMapper.updateById(file);
+
+        mergeProjectFollowUpDrafts(projects, normalizedRecommendations);
+        return buildDetail(file, loadProjects(file.getId()));
+    }
+
     private ResumeFile getOwnedResume(Long userId, Long resumeId) {
         ResumeFile file = resumeFileMapper.selectById(resumeId);
         if (file == null || !file.getUserId().equals(userId)) {
@@ -317,6 +338,34 @@ public class ResumeServiceImpl implements ResumeService {
             project.setManualEdited(manualEdited ? 1 : 0);
             project.setSortOrder(i + 1);
             resumeProjectMapper.insert(project);
+        }
+    }
+
+    private void mergeProjectFollowUpDrafts(List<ResumeProject> projects, List<String> recommendations) {
+        if (projects == null || projects.isEmpty() || recommendations.isEmpty()) {
+            return;
+        }
+        int recommendationIndex = 0;
+        for (ResumeProject project : projects) {
+            List<ResumeProjectQuestionVO> questions = new ArrayList<>(parseQuestions(project.getFollowUpQuestionsJson()));
+            String recommendation = recommendations.get(recommendationIndex % recommendations.size());
+            String questionText = "结合项目「" + abbreviate(project.getProjectName(), 18) + "」，你会如何补齐“"
+                    + abbreviate(recommendation, 24) + "”对应的证据、取舍和结果？";
+            boolean exists = questions.stream().anyMatch(item -> questionText.equals(item.getQuestion()));
+            if (!exists) {
+                questions.add(ResumeProjectQuestionVO.builder()
+                        .question(questionText)
+                        .intent("Agent 草稿：把简历修改建议转成项目追问")
+                        .build());
+            }
+            project.setFollowUpQuestionsJson(writeJson(questions.stream().limit(5).toList()));
+
+            LinkedHashSet<String> riskHints = new LinkedHashSet<>(splitComma(project.getRiskHints()));
+            riskHints.add("Agent 草稿重点：" + abbreviate(recommendation, 32));
+            project.setRiskHints(String.join(",", riskHints.stream().limit(5).toList()));
+            project.setManualEdited(1);
+            resumeProjectMapper.updateById(project);
+            recommendationIndex++;
         }
     }
 
@@ -527,6 +576,42 @@ public class ResumeServiceImpl implements ResumeService {
         return builder.toString();
     }
 
+    private String buildAgentDraftIntro(ResumeFile file, List<String> recommendations) {
+        String title = firstNonBlank(file.getTitle(), "当前岗位候选人");
+        if (recommendations.isEmpty()) {
+            return "您好，我会围绕 " + title + " 相关经历，重点补齐项目证据、职责边界和结果表达。";
+        }
+        return "您好，我会围绕 " + title + " 相关经历，重点补齐 "
+                + recommendations.stream().limit(2).map(item -> abbreviate(item, 20)).collect(Collectors.joining("；"))
+                + "，让项目表达更适合面试深挖。";
+    }
+
+    private String buildAgentDraftInterviewResume(
+            ResumeFile file, List<ResumeProject> projects, String summary, List<String> recommendations) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("【Agent 追问草稿】\n");
+        builder.append("简历：").append(firstNonBlank(file.getTitle(), "当前简历")).append("\n");
+        builder.append("本轮结论：").append(firstNonBlank(summary, file.getSummary(), "已整理简历追问和修改建议。")).append("\n");
+        builder.append("优先修改项：").append(
+                recommendations.isEmpty()
+                        ? "先补摘要、项目职责和量化结果。"
+                        : recommendations.stream().limit(4).collect(Collectors.joining("；"))).append("\n\n");
+        builder.append("【项目追问准备】\n");
+        if (projects == null || projects.isEmpty()) {
+            builder.append("- 当前还缺可展开项目，先补 1 个能讲背景、职责、取舍和结果的项目。\n");
+        } else {
+            for (ResumeProject project : projects.stream().limit(3).toList()) {
+                builder.append("- ").append(firstNonBlank(project.getProjectName(), "当前项目"))
+                        .append("：先讲 ").append(abbreviate(firstNonBlank(project.getResponsibility(), "你的职责和关键决策"), 28))
+                        .append("；再补 ").append(abbreviate(firstNonBlank(project.getAchievement(), "可量化结果和业务影响"), 28))
+                        .append("。\n");
+            }
+        }
+        builder.append("\n【下一步】\n");
+        builder.append("先在简历页确认这些草稿，再决定是否改正式摘要、自我介绍和项目表述。");
+        return builder.toString();
+    }
+
     private List<String> buildRiskHints(String techStack, String responsibility, String achievement) {
         LinkedHashSet<String> hints = new LinkedHashSet<>();
         if (!StringUtils.hasText(techStack) || techStack.length() < 8) {
@@ -615,6 +700,18 @@ public class ResumeServiceImpl implements ResumeService {
             }
         }
         return "";
+    }
+
+    private List<String> nullSafeRecommendations(List<String> recommendations) {
+        if (recommendations == null) {
+            return List.of();
+        }
+        return recommendations.stream()
+                .filter(StringUtils::hasText)
+                .map(String::trim)
+                .distinct()
+                .limit(6)
+                .toList();
     }
 
     private List<ResumeProjectQuestionVO> parseQuestions(String raw) {

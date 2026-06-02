@@ -29,6 +29,7 @@ import com.offerpilot.interview.vo.InterviewDetailVO;
 import com.offerpilot.interview.vo.InterviewHistoryVO;
 import com.offerpilot.plan.service.PlanService;
 import com.offerpilot.resume.service.ResumeService;
+import com.offerpilot.resume.vo.ResumeFileVO;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -271,6 +272,34 @@ class AgentRunServiceImplTest {
         assertEquals("approved", approved.getStatus());
         assertTrue(approved.getExecutionSummary().contains("投递策略草案"));
         assertTrue(approved.getExecutionSummary().contains("字节跳动"));
+    }
+
+    @Test
+    void approveRun_persistsResumeFollowUpDraftViaDomainService() {
+        when(jobApplicationService.detail(1L, 6L)).thenReturn(JobApplicationVO.builder()
+                .id(6L)
+                .resumeFileId(9L)
+                .company("字节跳动")
+                .jobTitle("Java 后端开发")
+                .missingKeywords(List.of("Redis", "Kafka"))
+                .build());
+        when(resumeService.saveFollowUpDraft(any(), any(), any(), any())).thenReturn(ResumeFileVO.builder()
+                .id(9L)
+                .title("Java 后端简历")
+                .build());
+
+        AgentRunVO created = agentRunService.createRun(1L, request(
+                "resume_coach",
+                "applications",
+                List.of("application:6"),
+                "把项目亮点改得更适合一面深挖"));
+
+        AgentRunVO approved = agentRunService.approveRun(1L, Long.valueOf(String.valueOf(created.getId())), null);
+
+        verify(resumeService).saveFollowUpDraft(any(), any(), any(), any());
+        assertEquals("approved", approved.getStatus());
+        assertTrue(approved.getExecutionSummary().contains("简历追问草稿"));
+        assertTrue(approved.getExecutionSummary().contains("Java 后端简历"));
     }
 
     private AgentRunCreateRequest request(String agentType, String triggerSource, List<String> contextRefs, String prompt) {
