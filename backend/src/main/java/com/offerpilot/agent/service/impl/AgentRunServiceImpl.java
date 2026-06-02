@@ -5,20 +5,35 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.offerpilot.adaptive.vo.AbilityProfileVO;
 import com.offerpilot.agent.dto.AgentRunCreateRequest;
 import com.offerpilot.agent.entity.AgentRun;
 import com.offerpilot.agent.mapper.AgentRunMapper;
 import com.offerpilot.agent.service.AgentRunService;
 import com.offerpilot.agent.vo.AgentRunVO;
+import com.offerpilot.analytics.service.AnalyticsService;
+import com.offerpilot.analytics.vo.ProfileTopicDetailVO;
+import com.offerpilot.application.service.JobApplicationService;
+import com.offerpilot.application.vo.JobApplicationVO;
 import com.offerpilot.common.api.ResultCode;
 import com.offerpilot.common.exception.BusinessException;
+import com.offerpilot.interview.service.InterviewJobPrepService;
+import com.offerpilot.interview.service.InterviewRecordingReviewService;
+import com.offerpilot.interview.service.InterviewService;
+import com.offerpilot.interview.vo.InterviewDetailVO;
+import com.offerpilot.interview.vo.InterviewHistoryVO;
+import com.offerpilot.interview.vo.JobPrepSessionVO;
+import com.offerpilot.interview.vo.RecordingReviewSessionVO;
 import com.offerpilot.plan.dto.StudyPlanGenerateRequest;
 import com.offerpilot.plan.service.PlanService;
 import com.offerpilot.plan.vo.StudyPlanCurrentVO;
+import com.offerpilot.resume.service.ResumeService;
+import com.offerpilot.resume.vo.ResumeFileVO;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,11 +51,17 @@ public class AgentRunServiceImpl implements AgentRunService {
     private final AgentRunMapper agentRunMapper;
     private final ObjectMapper objectMapper;
     private final PlanService planService;
+    private final AnalyticsService analyticsService;
+    private final InterviewService interviewService;
+    private final InterviewRecordingReviewService interviewRecordingReviewService;
+    private final InterviewJobPrepService interviewJobPrepService;
+    private final ResumeService resumeService;
+    private final JobApplicationService jobApplicationService;
 
     @Override
     @Transactional
     public AgentRunVO createRun(Long userId, AgentRunCreateRequest request) {
-        RunBlueprint blueprint = buildBlueprint(request);
+        RunBlueprint blueprint = buildBlueprint(userId, request);
         AgentRun run = new AgentRun();
         run.setUserId(userId);
         run.setAgentType(normalize(request.getAgentType()));
@@ -132,113 +153,309 @@ public class AgentRunServiceImpl implements AgentRunService {
         return run;
     }
 
-    private RunBlueprint buildBlueprint(AgentRunCreateRequest request) {
+    private RunBlueprint buildBlueprint(Long userId, AgentRunCreateRequest request) {
         String agentType = normalize(request.getAgentType());
         List<String> contextRefs = request.getContextRefs() == null ? List.of() : request.getContextRefs().stream()
                 .filter(StringUtils::hasText)
                 .map(String::trim)
                 .toList();
         String prompt = trimToNull(request.getUserPrompt());
+        ContextSnapshot snapshot = resolveContextSnapshot(userId, contextRefs);
 
         return switch (agentType) {
-            case "study_planner" -> blueprint(
-                    "学习计划代理",
-                    "已根据当前画像、复盘节奏和上下文生成下一轮训练建议。",
-                    mergeRecommendations(
-                            List.of("先处理到期待复盘，再安排新的专项训练。", "把低分点拆成 2-3 个可执行任务，避免计划过长。"),
-                            prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”纳入下一轮计划排序。") : List.of(),
-                            contextRefsText(contextRefs, "优先参考这些上下文：")),
-                    List.of("确认今日训练目标", "生成可执行任务", "如有写操作则进入待审批"),
-                    "/study-plan",
-                    true,
-                    "refresh_study_plan",
-                    "审批通过后会生成或刷新当前学习计划，把这轮建议落成正式训练动作。",
-                    writeObject(new StudyPlanPayload(7, null, null, null), "{}"));
-            case "job_prep" -> blueprint(
-                    "JD 备面代理",
-                    "已整理这次岗位准备的重点缺口、项目表达和模拟前动作。",
-                    mergeRecommendations(
-                            List.of("先完成 JD 备面，再把结果带入一轮模拟面试。", "围绕缺口关键词准备 1 个项目例子和 1 个原理解释。"),
-                            contextRefsText(contextRefs, "当前引用的上下文：")),
-                    List.of("整理 JD 缺口", "准备项目表达", "启动模拟或投递动作"),
-                    "/interview",
-                    true,
-                    "save_job_prep_draft",
-                    "审批通过后会把这份 JD 备面建议确认为正式草案，方便继续在面试页补充。",
-                    null);
-            case "recording_review" -> blueprint(
-                    "录音复盘代理",
-                    "已把录音复盘的结论整理成后续训练动作和复听重点。",
-                    mergeRecommendations(
-                            List.of("先回听薄弱片段，再改写成结构化口语答案。", "把复盘结果沉淀到下一轮模拟和错题复习里。"),
-                            contextRefsText(contextRefs, "本次重点参考：")),
-                    List.of("查看转写片段", "提取薄弱点", "确认是否转成正式训练动作"),
-                    "/study-plan",
-                    true,
-                    "refresh_study_plan",
-                    "审批通过后会刷新学习计划，把这次录音复盘结论转成正式训练动作。",
-                    writeObject(new StudyPlanPayload(7, null, null, null), "{}"));
-            case "resume_coach" -> blueprint(
-                    "简历教练代理",
-                    "已按当前岗位目标整理简历修改与项目表达建议。",
-                    mergeRecommendations(
-                            List.of("先收紧标题和摘要，再调整项目顺序。", "优先补充最贴近岗位的量化结果与关键词。"),
-                            contextRefsText(contextRefs, "当前基于以下材料：")),
-                    List.of("确认目标岗位", "生成简历修改点", "决定是否写回简历版本"),
-                    "/resume",
-                    true,
-                    "save_resume_follow_up_draft",
-                    "审批通过后会把这次简历追问和修改建议确认为正式草稿。",
-                    null);
-            case "application_strategist" -> blueprint(
-                    "投递策略代理",
-                    "已根据当前投递状态和反馈节奏整理下一步推进建议。",
-                    mergeRecommendations(
-                            List.of("优先推进最接近面试的岗位，避免分散精力。", "把面试反馈标签同步到下一批岗位筛选标准。"),
-                            contextRefsText(contextRefs, "本次参考的岗位或反馈：")),
-                    List.of("查看推进优先级", "确认下一步动作", "必要时进入待审批"),
-                    "/applications",
-                    true,
-                    "save_application_strategy",
-                    "审批通过后会把这次投递推进建议确认为正式策略草案。",
-                    null);
-            case "interview_review" -> blueprint(
-                    "面试复盘代理",
-                    "已根据本轮面试结果整理追问重点、低分点和下一轮训练建议。",
-                    mergeRecommendations(
-                            List.of("先处理低分题，再安排一轮同主题模拟。", "把薄弱点转成错题或复习任务，避免只停留在摘要层。"),
-                            contextRefsText(contextRefs, "复盘引用了这些上下文：")),
-                    List.of("汇总面试结果", "提取低分点", "决定是否刷新训练计划"),
-                    "/study-plan",
-                    true,
-                    "refresh_study_plan",
-                    "审批通过后会刷新学习计划，把这次面试复盘结论转成正式训练动作。",
-                    writeObject(new StudyPlanPayload(7, null, null, null), "{}"));
-            case "realtime_copilot" -> blueprint(
-                    "实时 Copilot 代理",
-                    "已生成会前准备清单，后续可以继续接实时建议流。",
-                    mergeRecommendations(
-                            List.of("先完成 Copilot Prep，再进入实时阶段。", "把当前岗位、简历和 JD 统一成可速读的会前提纲。"),
-                            contextRefsText(contextRefs, "Prep 阶段引用：")),
-                    List.of("会前准备", "连接实时会话", "面后复盘回写"),
-                    "/interview",
-                    false,
-                    null,
-                    null,
-                    null);
-            default -> blueprint(
-                    "协调代理",
-                    "已生成一份统一的下一步动作清单，可继续下钻到具体模块。",
-                    mergeRecommendations(
-                            List.of("先确认你现在要推进的是训练、备面、简历还是投递。", "把结果写入对应模块，而不是停留在对话摘要。"),
-                            contextRefsText(contextRefs, "当前上下文：")),
-                    List.of("识别任务类型", "路由到具体能力", "如涉及写操作则等待审批"),
-                    "/dashboard",
-                    false,
-                    null,
-                    null,
-                    null);
+            case "study_planner" -> buildStudyPlannerBlueprint(contextRefs, prompt, snapshot);
+            case "job_prep" -> buildJobPrepBlueprint(contextRefs, prompt, snapshot);
+            case "recording_review" -> buildRecordingReviewBlueprint(contextRefs, prompt, snapshot);
+            case "resume_coach" -> buildResumeCoachBlueprint(contextRefs, prompt, snapshot);
+            case "application_strategist" -> buildApplicationStrategistBlueprint(contextRefs, prompt, snapshot);
+            case "interview_review" -> buildInterviewReviewBlueprint(contextRefs, prompt, snapshot);
+            case "realtime_copilot" -> buildRealtimeCopilotBlueprint(contextRefs, prompt, snapshot);
+            default -> buildCoordinatorBlueprint(contextRefs, prompt, snapshot);
         };
+    }
+
+    private RunBlueprint buildStudyPlannerBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
+        StudyPlanPayload payload = resolveStudyPlanPayload(snapshot);
+        String focus = firstNonBlank(
+                snapshot.topicDetail() == null ? null : snapshot.topicDetail().getCategoryName(),
+                snapshot.abilityProfile() == null ? null : snapshot.abilityProfile().getSuggestedFocus(),
+                payload.focusDirection());
+        String summary = StringUtils.hasText(focus)
+                ? "已围绕 " + focus + " 的长期画像、复盘结果和当前上下文生成下一轮训练建议。"
+                : "已根据当前画像、复盘节奏和上下文生成下一轮训练建议。";
+        List<String> recommendations = mergeRecommendations(
+                studyPlannerRecommendations(snapshot),
+                prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”纳入下一轮计划排序。") : List.of(),
+                contextRefsText(contextRefs, "优先参考这些上下文："));
+        return blueprint(
+                "学习计划代理",
+                summary,
+                recommendations,
+                List.of("确认主攻方向", "生成可执行任务", "审批通过后写回正式训练计划"),
+                snapshot.topicDetail() != null ? "/analytics" : "/study-plan",
+                true,
+                "refresh_study_plan",
+                StringUtils.hasText(focus)
+                        ? "审批通过后会围绕 " + focus + " 生成或刷新学习计划，把这轮建议落成正式训练动作。"
+                        : "审批通过后会生成或刷新当前学习计划，把这轮建议落成正式训练动作。",
+                writeObject(payload, "{}"));
+    }
+
+    private RunBlueprint buildJobPrepBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
+        JobPrepSessionVO jobPrepSession = snapshot.jobPrepSession();
+        JobApplicationVO application = snapshot.application();
+        String company = firstNonBlank(
+                jobPrepSession == null ? null : jobPrepSession.getCompany(),
+                application == null ? null : application.getCompany());
+        String jobTitle = firstNonBlank(
+                jobPrepSession == null ? null : jobPrepSession.getJobTitle(),
+                application == null ? null : application.getJobTitle());
+        String summary;
+        List<String> recommendations;
+        if (jobPrepSession != null) {
+            summary = "已根据 " + defaultText(company, "目标公司") + " " + defaultText(jobTitle, "目标岗位") + " 的备面结果整理缺口和模拟前动作。";
+            recommendations = mergeRecommendations(
+                    jobPrepSession.getNextActions(),
+                    jobPrepSession.getFocusAreas(),
+                    jobPrepSession.getResumeTalkingPoints(),
+                    prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”同步到 JD 备面草案。") : List.of(),
+                    contextRefsText(contextRefs, "当前引用的上下文："));
+        } else if (application != null) {
+            summary = "已根据 " + defaultText(application.getCompany(), "目标公司") + " " + defaultText(application.getJobTitle(), "目标岗位") + " 的 JD 分析整理备面重点。";
+            recommendations = mergeRecommendations(
+                    nullSafeList(application.getMissingKeywords()).isEmpty()
+                            ? List.of("当前 JD 缺口不明显，可以把重点放到项目表达和追问准备。")
+                            : List.of("优先补齐 JD 缺口：" + joinLimited(application.getMissingKeywords(), 3, "、") + "。"),
+                    StringUtils.hasText(application.getReviewSuggestion()) ? List.of(application.getReviewSuggestion()) : List.of(),
+                    StringUtils.hasText(application.getNextStepSuggestion()) ? List.of(application.getNextStepSuggestion()) : List.of(),
+                    prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”纳入这轮备面优先级。") : List.of(),
+                    contextRefsText(contextRefs, "当前引用的上下文："));
+        } else {
+            summary = "已整理这次岗位准备的重点缺口、项目表达和模拟前动作。";
+            recommendations = mergeRecommendations(
+                    List.of("先完成 JD 备面，再把结果带入一轮模拟面试。", "围绕缺口关键词准备 1 个项目例子和 1 个原理解释。"),
+                    prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”同步到备面清单。") : List.of(),
+                    contextRefsText(contextRefs, "当前引用的上下文："));
+        }
+        return blueprint(
+                "JD 备面代理",
+                summary,
+                recommendations,
+                List.of("整理 JD 缺口", "准备项目表达", "启动模拟或投递动作"),
+                "/interview",
+                true,
+                "save_job_prep_draft",
+                StringUtils.hasText(jobTitle)
+                        ? "审批通过后会把这份 " + jobTitle + " 的 JD 备面建议确认为正式草案，方便继续在面试页补充。"
+                        : "审批通过后会把这份 JD 备面建议确认为正式草案，方便继续在面试页补充。",
+                null);
+    }
+
+    private RunBlueprint buildRecordingReviewBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
+        RecordingReviewSessionVO recordingReview = snapshot.recordingReview();
+        StudyPlanPayload payload = resolveStudyPlanPayload(snapshot);
+        String summary;
+        List<String> recommendations;
+        if (recordingReview != null) {
+            String scoreText = formatNumber(recordingReview.getOverallScore());
+            String weakPoint = firstItem(recordingReview.getWeakPoints());
+            summary = "已把这次录音复盘的结论整理成训练动作。"
+                    + (StringUtils.hasText(scoreText) ? " 当前复盘分 " + scoreText + "。" : "")
+                    + (StringUtils.hasText(weakPoint) ? " 首要薄弱点是 " + weakPoint + "。" : "");
+            recommendations = mergeRecommendations(
+                    recordingReview.getSuggestedActions(),
+                    nullSafeList(recordingReview.getWeakPoints()).isEmpty()
+                            ? List.of()
+                            : List.of("先回听薄弱片段，重点复盘 " + joinLimited(recordingReview.getWeakPoints(), 2, "、") + "。"),
+                    prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”纳入录音复盘后的训练排序。") : List.of(),
+                    contextRefsText(contextRefs, "本次重点参考："));
+        } else {
+            summary = "已把录音复盘的结论整理成后续训练动作和复听重点。";
+            recommendations = mergeRecommendations(
+                    List.of("先回听薄弱片段，再改写成结构化口语答案。", "把复盘结果沉淀到下一轮模拟和错题复习里。"),
+                    prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”纳入录音复盘后的训练排序。") : List.of(),
+                    contextRefsText(contextRefs, "本次重点参考："));
+        }
+        return blueprint(
+                "录音复盘代理",
+                summary,
+                recommendations,
+                List.of("查看转写片段", "提取薄弱点", "确认是否转成正式训练动作"),
+                "/interview",
+                true,
+                "refresh_study_plan",
+                "审批通过后会刷新学习计划，把这次录音复盘结论转成正式训练动作。",
+                writeObject(payload, "{}"));
+    }
+
+    private RunBlueprint buildResumeCoachBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
+        ResumeFileVO resume = snapshot.resume();
+        JobApplicationVO application = snapshot.application();
+        String summary;
+        List<String> baseRecommendations = new ArrayList<>();
+        if (resume != null) {
+            summary = "已围绕简历《" + defaultText(resume.getTitle(), "当前简历") + "》整理修改优先级和项目表达建议。";
+            if ("failed".equalsIgnoreCase(resume.getParseStatus()) && StringUtils.hasText(resume.getParseError())) {
+                baseRecommendations.add(resume.getParseError());
+            }
+            if (!StringUtils.hasText(resume.getSummary())) {
+                baseRecommendations.add("先补 2-3 句简历摘要，明确方向、技术栈和项目亮点。");
+            }
+            if (!StringUtils.hasText(resume.getSelfIntro())) {
+                baseRecommendations.add("补一版面试开场，让简历内容能自然过渡到项目表达。");
+            }
+            if (resume.getProjects() == null || resume.getProjects().isEmpty()) {
+                baseRecommendations.add("至少补 1 个可展开讲职责、取舍和结果的项目经历。");
+            } else {
+                baseRecommendations.add("优先收紧最贴近目标岗位的项目顺序和量化结果表述。");
+            }
+            if (!nullSafeList(resume.getSkills()).isEmpty()) {
+                baseRecommendations.add("保留最重要的技能关键词：" + joinLimited(resume.getSkills(), 4, "、") + "。");
+            }
+        } else {
+            summary = "已按当前岗位目标整理简历修改与项目表达建议。";
+            baseRecommendations.add("先收紧标题和摘要，再调整项目顺序。");
+            baseRecommendations.add("优先补充最贴近岗位的量化结果与关键词。");
+        }
+        if (application != null && !nullSafeList(application.getMissingKeywords()).isEmpty()) {
+            baseRecommendations.add("结合目标岗位，补齐这些关键词：" + joinLimited(application.getMissingKeywords(), 3, "、") + "。");
+        }
+        return blueprint(
+                "简历教练代理",
+                summary,
+                mergeRecommendations(
+                        baseRecommendations,
+                        prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”同步到简历修改排序。") : List.of(),
+                        contextRefsText(contextRefs, "当前基于以下材料：")),
+                List.of("确认目标岗位", "生成简历修改点", "决定是否写回简历版本"),
+                "/resume",
+                true,
+                "save_resume_follow_up_draft",
+                resume != null
+                        ? "审批通过后会把简历《" + defaultText(resume.getTitle(), "当前简历") + "》的修改建议确认为正式草稿。"
+                        : "审批通过后会把这次简历追问和修改建议确认为正式草稿。",
+                null);
+    }
+
+    private RunBlueprint buildApplicationStrategistBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
+        JobApplicationVO application = snapshot.application();
+        String summary;
+        List<String> recommendations;
+        String nextActionPath = "/applications";
+        if (application != null) {
+            summary = "已根据 " + defaultText(application.getCompany(), "目标公司") + " " + defaultText(application.getJobTitle(), "目标岗位")
+                    + " 的当前投递状态整理下一步推进建议。";
+            recommendations = mergeRecommendations(
+                    List.of("当前岗位状态：" + applicationStatusLabel(application.getStatus()) + "。"),
+                    StringUtils.hasText(application.getNextStepSuggestion()) ? List.of(application.getNextStepSuggestion()) : List.of(),
+                    StringUtils.hasText(application.getReviewSuggestion()) ? List.of(application.getReviewSuggestion()) : List.of(),
+                    nullSafeList(application.getMissingKeywords()).isEmpty()
+                            ? List.of("当前 JD 缺口不明显，可以把重点放到下一轮反馈和节奏推进。")
+                            : List.of("优先补齐这些 JD 缺口：" + joinLimited(application.getMissingKeywords(), 3, "、") + "。"),
+                    prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”同步到投递推进排序。") : List.of(),
+                    contextRefsText(contextRefs, "本次参考的岗位或反馈："));
+            nextActionPath = "/applications/" + application.getId();
+        } else {
+            summary = "已根据当前投递状态和反馈节奏整理下一步推进建议。";
+            recommendations = mergeRecommendations(
+                    List.of("优先推进最接近面试的岗位，避免分散精力。", "把面试反馈标签同步到下一批岗位筛选标准。"),
+                    prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”同步到投递推进排序。") : List.of(),
+                    contextRefsText(contextRefs, "本次参考的岗位或反馈："));
+        }
+        return blueprint(
+                "投递策略代理",
+                summary,
+                recommendations,
+                List.of("查看推进优先级", "确认下一步动作", "必要时进入待审批"),
+                nextActionPath,
+                true,
+                "save_application_strategy",
+                application != null
+                        ? "审批通过后会把 " + defaultText(application.getJobTitle(), "当前岗位") + " 的投递推进建议确认为正式策略草案。"
+                        : "审批通过后会把这次投递推进建议确认为正式策略草案。",
+                null);
+    }
+
+    private RunBlueprint buildInterviewReviewBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
+        InterviewDetailVO interviewDetail = snapshot.interviewDetail();
+        StudyPlanPayload payload = resolveStudyPlanPayload(snapshot);
+        String summary;
+        List<String> baseRecommendations = new ArrayList<>();
+        String nextActionPath = "/study-plan";
+        if (interviewDetail != null) {
+            int lowScoreCount = countLowScoreRecords(interviewDetail);
+            summary = "已根据本轮 " + defaultText(interviewDetail.getDirection(), "模拟面试") + " 结果整理追问重点、低分点和下一轮训练建议。"
+                    + (lowScoreCount > 0 ? " 当前共有 " + lowScoreCount + " 道低分题。" : "");
+            baseRecommendations.addAll(interviewReviewRecommendations(interviewDetail));
+            nextActionPath = "/interview/detail/" + interviewDetail.getSessionId();
+        } else {
+            summary = "已根据本轮面试结果整理追问重点、低分点和下一轮训练建议。";
+            baseRecommendations.add("先处理低分题，再安排一轮同主题模拟。");
+            baseRecommendations.add("把薄弱点转成错题或复习任务，避免只停留在摘要层。");
+        }
+        return blueprint(
+                "面试复盘代理",
+                summary,
+                mergeRecommendations(
+                        baseRecommendations,
+                        prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”纳入下一轮面试复盘动作。") : List.of(),
+                        contextRefsText(contextRefs, "复盘引用了这些上下文：")),
+                List.of("汇总面试结果", "提取低分点", "决定是否刷新训练计划"),
+                nextActionPath,
+                true,
+                "refresh_study_plan",
+                "审批通过后会刷新学习计划，把这次面试复盘结论转成正式训练动作。",
+                writeObject(payload, "{}"));
+    }
+
+    private RunBlueprint buildRealtimeCopilotBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
+        String summary;
+        List<String> recommendations;
+        if (snapshot.jobPrepSession() != null) {
+            JobPrepSessionVO jobPrepSession = snapshot.jobPrepSession();
+            summary = "已根据 " + defaultText(jobPrepSession.getCompany(), "当前岗位") + " " + defaultText(jobPrepSession.getJobTitle(), "会前准备")
+                    + " 生成会前清单，后续可以继续接实时建议流。";
+            recommendations = mergeRecommendations(
+                    List.of("先把 JD 备面结果转成开场和追问清单。"),
+                    jobPrepSession.getNextActions(),
+                    prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”纳入 Copilot Prep。") : List.of(),
+                    contextRefsText(contextRefs, "Prep 阶段引用："));
+        } else {
+            summary = "已生成会前准备清单，后续可以继续接实时建议流。";
+            recommendations = mergeRecommendations(
+                    List.of("先完成 Copilot Prep，再进入实时阶段。", "把当前岗位、简历和 JD 统一成可速读的会前提纲。"),
+                    prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”纳入 Copilot Prep。") : List.of(),
+                    contextRefsText(contextRefs, "Prep 阶段引用："));
+        }
+        return blueprint(
+                "实时 Copilot 代理",
+                summary,
+                recommendations,
+                List.of("会前准备", "连接实时会话", "面后复盘回写"),
+                "/interview",
+                false,
+                null,
+                null,
+                null);
+    }
+
+    private RunBlueprint buildCoordinatorBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
+        String nextActionPath = resolveCoordinatorNextActionPath(snapshot);
+        String summary = "已把当前上下文收敛成统一的下一步动作清单。";
+        List<String> recommendations = mergeRecommendations(
+                coordinatorRecommendations(snapshot),
+                prompt != null ? List.of("先围绕用户补充目标“" + abbreviate(prompt, 20) + "”安排优先级。") : List.of(),
+                contextRefsText(contextRefs, "当前上下文："));
+        return blueprint(
+                "协调代理",
+                summary,
+                recommendations,
+                List.of("识别任务类型", "路由到具体能力", "如涉及写操作则等待审批"),
+                nextActionPath,
+                false,
+                null,
+                null,
+                null);
     }
 
     private ExecutionResult executeApprovalAction(Long userId, AgentRun run) {
@@ -271,6 +488,195 @@ public class AgentRunServiceImpl implements AgentRunService {
             result = planService.refresh(userId, currentPlan.getId());
         }
         return new ExecutionResult("已生成正式学习计划《" + result.getTitle() + "》，可以继续在学习计划页执行。");
+    }
+
+    private ContextSnapshot resolveContextSnapshot(Long userId, List<String> contextRefs) {
+        AbilityProfileVO abilityProfile = null;
+        ProfileTopicDetailVO topicDetail = null;
+        InterviewDetailVO interviewDetail = null;
+        RecordingReviewSessionVO recordingReview = null;
+        ResumeFileVO resume = null;
+        JobApplicationVO application = null;
+        JobPrepSessionVO jobPrepSession = null;
+
+        if (hasContext(contextRefs, "analytics:profile") || hasContext(contextRefs, "analytics:weak-topics")) {
+            abilityProfile = loadOptional("analytics profile", () -> analyticsService.getAbilityProfile(userId));
+        }
+
+        Long topicId = findContextRefId(contextRefs, "analytics:topic:");
+        if (topicId != null) {
+            topicDetail = loadOptional("analytics topic " + topicId, () -> analyticsService.getProfileTopicDetail(userId, topicId));
+        }
+
+        Long interviewSessionId = findContextRefId(contextRefs, "interview:session:");
+        if (interviewSessionId != null) {
+            interviewDetail = loadOptional("interview session " + interviewSessionId, () -> interviewService.detail(userId, interviewSessionId));
+        } else if (hasContext(contextRefs, "interview:latest")) {
+            InterviewHistoryVO latest = loadOptional("latest interview", () -> {
+                List<InterviewHistoryVO> history = interviewService.trendData(userId, 1);
+                return history == null || history.isEmpty() ? null : history.get(0);
+            });
+            if (latest != null && latest.getSessionId() != null) {
+                Long latestSessionId = latest.getSessionId();
+                interviewDetail = loadOptional("interview session " + latestSessionId, () -> interviewService.detail(userId, latestSessionId));
+            }
+        }
+
+        Long recordingReviewId = findContextRefId(contextRefs, "interview:recording-review:");
+        if (recordingReviewId != null) {
+            recordingReview = loadOptional(
+                    "recording review " + recordingReviewId,
+                    () -> interviewRecordingReviewService.detail(userId, recordingReviewId));
+        }
+
+        Long jobPrepSessionId = findContextRefId(contextRefs, "interview:job-prep:");
+        if (jobPrepSessionId != null) {
+            jobPrepSession = loadOptional("job prep " + jobPrepSessionId, () -> interviewJobPrepService.detail(userId, jobPrepSessionId));
+        }
+
+        Long resumeId = findContextRefId(contextRefs, "resume:");
+        if (resumeId != null) {
+            resume = loadOptional("resume " + resumeId, () -> resumeService.detail(userId, resumeId));
+        } else if (hasContext(contextRefs, "resume:latest")) {
+            resume = loadOptional("latest resume", () -> resumeService.latest(userId));
+        }
+
+        Long applicationId = findContextRefId(contextRefs, "application:");
+        if (applicationId != null) {
+            application = loadOptional("application " + applicationId, () -> jobApplicationService.detail(userId, applicationId));
+        } else if (hasContext(contextRefs, "application:board")) {
+            application = loadOptional("application board", () -> {
+                List<JobApplicationVO> board = jobApplicationService.board(userId);
+                return board == null || board.isEmpty() ? null : board.get(0);
+            });
+        }
+
+        return new ContextSnapshot(abilityProfile, topicDetail, interviewDetail, recordingReview, resume, application, jobPrepSession);
+    }
+
+    private List<String> studyPlannerRecommendations(ContextSnapshot snapshot) {
+        List<String> recommendations = new ArrayList<>();
+        if (snapshot.topicDetail() != null) {
+            ProfileTopicDetailVO topicDetail = snapshot.topicDetail();
+            recommendations.add("当前重点领域是 " + topicDetail.getCategoryName()
+                    + "，画像分 " + formatNumber(topicDetail.getAbilityScore())
+                    + "，待复盘 " + defaultInt(topicDetail.getDueCount()) + " 项。");
+            recommendations.addAll(limit(topicDetail.getFocusRecommendations(), 2));
+        } else if (snapshot.abilityProfile() != null) {
+            AbilityProfileVO profile = snapshot.abilityProfile();
+            recommendations.add("长期画像建议优先处理 "
+                    + defaultText(profile.getSuggestedFocus(), "当前薄弱点")
+                    + "，推荐强度 " + difficultyLabel(profile.getRecommendedDifficulty()) + "。");
+        }
+        if (snapshot.interviewDetail() != null) {
+            int lowScoreCount = countLowScoreRecords(snapshot.interviewDetail());
+            if (lowScoreCount > 0) {
+                recommendations.add("最近模拟面试有 " + lowScoreCount + " 道低分题，先把低分题改写成结构化答案。");
+            }
+        }
+        if (snapshot.recordingReview() != null && !nullSafeList(snapshot.recordingReview().getWeakPoints()).isEmpty()) {
+            recommendations.add("录音复盘暴露的首要薄弱点是 "
+                    + firstItem(snapshot.recordingReview().getWeakPoints())
+                    + "，先安排专项口语复盘。");
+        }
+        if (snapshot.application() != null && !nullSafeList(snapshot.application().getMissingKeywords()).isEmpty()) {
+            recommendations.add("目标岗位仍缺 "
+                    + joinLimited(snapshot.application().getMissingKeywords(), 2, "、")
+                    + " 关键词，计划里要补这组内容。");
+        }
+        if (recommendations.isEmpty()) {
+            recommendations.add("先处理到期待复盘，再安排新的专项训练。");
+            recommendations.add("把低分点拆成 2-3 个可执行任务，避免计划过长。");
+        }
+        return recommendations;
+    }
+
+    private List<String> interviewReviewRecommendations(InterviewDetailVO interviewDetail) {
+        List<String> recommendations = new ArrayList<>();
+        List<String> weakTags = collectWeakPointTags(interviewDetail);
+        if (!weakTags.isEmpty()) {
+            recommendations.add("优先补这些薄弱点：" + joinLimited(weakTags, 3, "、") + "。");
+        }
+        nullSafeList(interviewDetail.getRecords()).stream()
+                .filter(record -> Boolean.TRUE.equals(record.getIsLowScore()))
+                .limit(2)
+                .forEach(record -> {
+                    if (StringUtils.hasText(record.getReviewSummary())) {
+                        recommendations.add(record.getQuestionTitle() + "："
+                                + abbreviate(record.getReviewSummary(), 40));
+                    } else if (StringUtils.hasText(record.getComment())) {
+                        recommendations.add(record.getQuestionTitle() + "："
+                                + abbreviate(record.getComment(), 40));
+                    }
+                });
+        if (recommendations.isEmpty()) {
+            recommendations.add("先处理低分题，再安排一轮同主题模拟。");
+            recommendations.add("把薄弱点转成错题或复习任务，避免只停留在摘要层。");
+        }
+        return recommendations;
+    }
+
+    private List<String> coordinatorRecommendations(ContextSnapshot snapshot) {
+        List<String> recommendations = new ArrayList<>();
+        if (snapshot.application() != null) {
+            recommendations.add("先推进 " + defaultText(snapshot.application().getCompany(), "当前岗位")
+                    + " 的投递动作，再决定是否扩展到下一批岗位。");
+        }
+        if (snapshot.interviewDetail() != null) {
+            recommendations.add("最近模拟面试已经沉淀结果，先完成复盘再决定下一轮训练。");
+        }
+        if (snapshot.recordingReview() != null) {
+            recommendations.add("真实录音已经形成复盘证据，优先把薄弱点转成正式训练动作。");
+        }
+        if (snapshot.resume() != null) {
+            recommendations.add("简历材料已就绪，接下来优先处理项目表达和岗位关键词对齐。");
+        }
+        if (snapshot.abilityProfile() != null) {
+            recommendations.add("长期画像建议先补 " + defaultText(snapshot.abilityProfile().getSuggestedFocus(), "当前薄弱点") + "。");
+        }
+        if (recommendations.isEmpty()) {
+            recommendations.add("先确认你现在要推进的是训练、备面、简历还是投递。");
+            recommendations.add("把结果写入对应模块，而不是停留在对话摘要。");
+        }
+        return recommendations;
+    }
+
+    private StudyPlanPayload resolveStudyPlanPayload(ContextSnapshot snapshot) {
+        String focusDirection = firstNonBlank(
+                snapshot.topicDetail() == null ? null : snapshot.topicDetail().getCategoryName(),
+                snapshot.abilityProfile() == null ? null : snapshot.abilityProfile().getSuggestedFocus(),
+                snapshot.interviewDetail() == null ? null : snapshot.interviewDetail().getDirection(),
+                snapshot.recordingReview() == null ? null : snapshot.recordingReview().getDirection());
+        String targetRole = firstNonBlank(
+                snapshot.application() == null ? null : snapshot.application().getJobTitle(),
+                snapshot.jobPrepSession() == null ? null : snapshot.jobPrepSession().getJobTitle(),
+                snapshot.interviewDetail() == null ? null : snapshot.interviewDetail().getJobRole(),
+                snapshot.recordingReview() == null ? null : snapshot.recordingReview().getJobRole());
+        String techStack = firstNonBlank(
+                snapshot.interviewDetail() == null ? null : snapshot.interviewDetail().getTechStack(),
+                snapshot.resume() == null ? null : joinLimited(snapshot.resume().getSkills(), 4, ", "),
+                snapshot.application() == null ? null : joinLimited(snapshot.application().getJdKeywords(), 4, ", "),
+                snapshot.jobPrepSession() == null ? null : joinLimited(snapshot.jobPrepSession().getMatchedKeywords(), 4, ", "));
+        return new StudyPlanPayload(7, focusDirection, targetRole, techStack);
+    }
+
+    private String resolveCoordinatorNextActionPath(ContextSnapshot snapshot) {
+        if (snapshot.recordingReview() != null) {
+            return "/interview";
+        }
+        if (snapshot.application() != null && snapshot.application().getId() != null) {
+            return "/applications/" + snapshot.application().getId();
+        }
+        if (snapshot.interviewDetail() != null && snapshot.interviewDetail().getSessionId() != null) {
+            return "/interview/detail/" + snapshot.interviewDetail().getSessionId();
+        }
+        if (snapshot.resume() != null) {
+            return "/resume";
+        }
+        if (snapshot.topicDetail() != null || snapshot.abilityProfile() != null) {
+            return "/analytics";
+        }
+        return "/dashboard";
     }
 
     private AgentRunVO buildVo(AgentRun run) {
@@ -308,7 +714,9 @@ public class AgentRunServiceImpl implements AgentRunService {
     private List<String> mergeRecommendations(List<String>... groups) {
         LinkedHashSet<String> merged = new LinkedHashSet<>();
         for (List<String> group : groups) {
-            merged.addAll(group);
+            if (group != null) {
+                merged.addAll(group);
+            }
         }
         return merged.stream().limit(5).toList();
     }
@@ -407,6 +815,130 @@ public class AgentRunServiceImpl implements AgentRunService {
         return text.length() <= limit ? text : text.substring(0, limit) + "...";
     }
 
+    private boolean hasContext(List<String> contextRefs, String target) {
+        return contextRefs.stream().anyMatch(target::equalsIgnoreCase);
+    }
+
+    private Long findContextRefId(List<String> contextRefs, String prefix) {
+        return contextRefs.stream()
+                .filter(ref -> ref.regionMatches(true, 0, prefix, 0, prefix.length()))
+                .map(ref -> ref.substring(prefix.length()))
+                .map(this::parseLong)
+                .filter(id -> id != null)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private Long parseLong(String raw) {
+        if (!StringUtils.hasText(raw)) {
+            return null;
+        }
+        try {
+            return Long.parseLong(raw.trim());
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private <T> T loadOptional(String label, Supplier<T> supplier) {
+        try {
+            return supplier.get();
+        } catch (BusinessException ex) {
+            log.warn("Skip stale agent context {}: {}", label, ex.getMessage());
+            return null;
+        } catch (Exception ex) {
+            log.warn("Failed to resolve agent context {}", label, ex);
+            return null;
+        }
+    }
+
+    private int countLowScoreRecords(InterviewDetailVO interviewDetail) {
+        if (interviewDetail.getRecords() == null) {
+            return 0;
+        }
+        return (int) interviewDetail.getRecords().stream()
+                .filter(record -> Boolean.TRUE.equals(record.getIsLowScore()))
+                .count();
+    }
+
+    private List<String> collectWeakPointTags(InterviewDetailVO interviewDetail) {
+        LinkedHashSet<String> tags = new LinkedHashSet<>();
+        if (interviewDetail.getRecords() != null) {
+            interviewDetail.getRecords().forEach(record -> tags.addAll(nullSafeList(record.getWeakPointTags())));
+        }
+        return new ArrayList<>(tags);
+    }
+
+    private <T> List<T> nullSafeList(List<T> values) {
+        return values == null ? List.of() : values;
+    }
+
+    private <T> List<T> limit(List<T> values, int maxSize) {
+        List<T> safeValues = nullSafeList(values);
+        return safeValues.size() <= maxSize ? safeValues : safeValues.subList(0, maxSize);
+    }
+
+    private String firstItem(List<String> values) {
+        return limit(values, 1).stream().findFirst().orElse(null);
+    }
+
+    private String joinLimited(List<String> values, int limit, String delimiter) {
+        List<String> safeValues = nullSafeList(values).stream()
+                .filter(StringUtils::hasText)
+                .limit(limit)
+                .map(String::trim)
+                .toList();
+        return safeValues.isEmpty() ? null : String.join(delimiter, safeValues);
+    }
+
+    private String difficultyLabel(String value) {
+        return switch (normalize(value)) {
+            case "hard" -> "高强度";
+            case "medium" -> "中强度";
+            default -> "基础巩固";
+        };
+    }
+
+    private String applicationStatusLabel(String value) {
+        return switch (normalize(value)) {
+            case "saved" -> "待投递";
+            case "applied" -> "已投递";
+            case "written" -> "笔试 / 作业";
+            case "interview" -> "面试中";
+            case "offer" -> "Offer";
+            case "rejected" -> "已淘汰";
+            default -> "待推进";
+        };
+    }
+
+    private String formatNumber(Number value) {
+        if (value == null) {
+            return null;
+        }
+        double number = value.doubleValue();
+        if (Math.rint(number) == number) {
+            return String.valueOf((long) number);
+        }
+        return String.format(Locale.ROOT, "%.1f", number);
+    }
+
+    private int defaultInt(Integer value) {
+        return value == null ? 0 : value;
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value.trim();
+            }
+        }
+        return null;
+    }
+
+    private String defaultText(String value, String fallback) {
+        return StringUtils.hasText(value) ? value.trim() : fallback;
+    }
+
     private record RunBlueprint(String title, String summary, List<String> recommendations, List<String> checkpoints,
                                 String nextActionPath, boolean requiresApproval, String approvalActionType,
                                 String approvalSummary, String approvalPayloadJson) {
@@ -419,5 +951,11 @@ public class AgentRunServiceImpl implements AgentRunService {
     }
 
     private record ExecutionResult(String summary) {
+    }
+
+    private record ContextSnapshot(AbilityProfileVO abilityProfile, ProfileTopicDetailVO topicDetail,
+                                   InterviewDetailVO interviewDetail, RecordingReviewSessionVO recordingReview,
+                                   ResumeFileVO resume, JobApplicationVO application,
+                                   JobPrepSessionVO jobPrepSession) {
     }
 }
