@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.offerpilot.agent.service.UserProviderConfigService;
+import com.offerpilot.agent.vo.UserProviderConfigItemVO;
 import com.offerpilot.application.entity.JobApplication;
 import com.offerpilot.application.mapper.JobApplicationMapper;
 import com.offerpilot.common.api.ResultCode;
@@ -21,9 +23,11 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,11 +47,13 @@ public class InterviewJobPrepServiceImpl implements InterviewJobPrepService {
 
     private static final TypeReference<List<String>> STRING_LIST_TYPE = new TypeReference<>() {
     };
+    private static final Set<String> JOB_PREP_PROVIDER_SCOPES = Set.of("search");
 
     private final JobPrepSessionMapper jobPrepSessionMapper;
     private final JobApplicationMapper jobApplicationMapper;
     private final ResumeFileMapper resumeFileMapper;
     private final ResumeProjectMapper resumeProjectMapper;
+    private final UserProviderConfigService userProviderConfigService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -149,10 +155,20 @@ public class InterviewJobPrepServiceImpl implements InterviewJobPrepService {
         List<String> focusAreas = buildFocusAreas(jobTitle, matchedKeywords, missingKeywords, resumeSnapshot);
         List<String> resumeTalkingPoints = buildResumeTalkingPoints(jobTitle, matchedKeywords, missingKeywords, resumeSnapshot);
         List<String> mockQuestions = buildMockQuestions(jobTitle, matchedKeywords, missingKeywords, resumeSnapshot);
-        List<String> nextActions = buildNextActions(missingKeywords, resumeTalkingPoints, resumeSnapshot.resumeTitle());
-        String summary = buildSummary(jobTitle, resumeSnapshot.resumeTitle(), matchedKeywords, missingKeywords, matchScore);
+        List<JobPrepSessionVO.ProviderReadinessVO> providerReadiness = resolveProviderReadiness();
+        List<String> nextActions = buildNextActions(missingKeywords, resumeTalkingPoints, resumeSnapshot.resumeTitle(), providerReadiness);
+        String summary = buildSummary(jobTitle, resumeSnapshot.resumeTitle(), matchedKeywords, missingKeywords, matchScore, providerReadiness);
 
-        return new PrepBlueprint(matchScore, matchedKeywords, missingKeywords, focusAreas, resumeTalkingPoints, mockQuestions, nextActions, summary);
+        return new PrepBlueprint(
+                matchScore,
+                matchedKeywords,
+                missingKeywords,
+                focusAreas,
+                resumeTalkingPoints,
+                mockQuestions,
+                nextActions,
+                providerReadiness,
+                summary);
     }
 
     private BigDecimal resolveMatchScore(List<String> jdKeywords, List<String> matchedKeywords, List<String> missingKeywords) {
@@ -232,7 +248,8 @@ public class InterviewJobPrepServiceImpl implements InterviewJobPrepService {
         return questions.stream().distinct().limit(6).toList();
     }
 
-    private List<String> buildNextActions(List<String> missingKeywords, List<String> resumeTalkingPoints, String resumeTitle) {
+    private List<String> buildNextActions(List<String> missingKeywords, List<String> resumeTalkingPoints, String resumeTitle,
+                                          List<JobPrepSessionVO.ProviderReadinessVO> providerReadiness) {
         List<String> actions = new ArrayList<>();
         if (!missingKeywords.isEmpty()) {
             actions.add("先围绕 " + String.join("、", missingKeywords.stream().limit(3).toList()) + " 安排一轮专项训练。");
@@ -244,11 +261,15 @@ public class InterviewJobPrepServiceImpl implements InterviewJobPrepService {
         if (StringUtils.hasText(resumeTitle)) {
             actions.add("回看简历《" + resumeTitle + "》，确认关键词命中和项目排序是否还需要调整。");
         }
+        if (providerReadiness.stream().anyMatch(item -> !"ready".equals(item.getStatus()) && !"saved".equals(item.getStatus()))) {
+            actions.add("联网搜索未完全就绪时，先按当前 JD 和简历草案继续推进，再补公司与岗位背景研究。");
+        }
         return actions.stream().distinct().limit(4).toList();
     }
 
     private String buildSummary(String jobTitle, String resumeTitle, List<String> matchedKeywords,
-                                List<String> missingKeywords, BigDecimal matchScore) {
+                                List<String> missingKeywords, BigDecimal matchScore,
+                                List<JobPrepSessionVO.ProviderReadinessVO> providerReadiness) {
         String roleText = StringUtils.hasText(jobTitle) ? "目标岗位「" + jobTitle + "」" : "当前岗位";
         String resumeText = StringUtils.hasText(resumeTitle)
                 ? "当前使用简历《" + resumeTitle + "》。"
@@ -259,7 +280,32 @@ public class InterviewJobPrepServiceImpl implements InterviewJobPrepService {
         String gapText = missingKeywords.isEmpty()
                 ? "当前没有明显关键词缺口，重点改成准备项目追问和量化结果。"
                 : "需要优先补 " + String.join("、", missingKeywords.stream().limit(4).toList()) + "。";
-        return roleText + " 的当前备面匹配度约 " + matchScore.stripTrailingZeros().toPlainString() + " 分。" + resumeText + matchText + gapText;
+        long degradedCount = providerReadiness.stream().filter(item -> !"ready".equals(item.getStatus()) && !"saved".equals(item.getStatus())).count();
+        String providerText = degradedCount == 0
+                ? "岗位研究依赖已基本就绪。"
+                : "当前有 " + degradedCount + " 项岗位研究依赖未完全就绪，结果会优先基于 JD 和简历本身降级生成。";
+        return roleText + " 的当前备面匹配度约 " + matchScore.stripTrailingZeros().toPlainString() + " 分。"
+                + resumeText + matchText + gapText + providerText;
+    }
+
+    private List<JobPrepSessionVO.ProviderReadinessVO> resolveProviderReadiness() {
+        Map<String, UserProviderConfigItemVO> configMap = new LinkedHashMap<>();
+        for (UserProviderConfigItemVO item : userProviderConfigService.listCurrentUserConfigs()) {
+            if (item != null && StringUtils.hasText(item.getScope())) {
+                configMap.put(item.getScope(), item);
+            }
+        }
+        List<JobPrepSessionVO.ProviderReadinessVO> readiness = new ArrayList<>();
+        for (String scope : JOB_PREP_PROVIDER_SCOPES) {
+            UserProviderConfigItemVO item = configMap.get(scope);
+            readiness.add(JobPrepSessionVO.ProviderReadinessVO.builder()
+                    .scope(scope)
+                    .label(item == null ? scope.toUpperCase(Locale.ROOT) : item.getLabel())
+                    .status(item == null ? "missing" : item.getStatus())
+                    .statusMessage(item == null ? "还没有保存这类配置。" : item.getStatusMessage())
+                    .build());
+        }
+        return readiness;
     }
 
     private List<String> extractKeywords(String jdText) {
@@ -337,6 +383,7 @@ public class InterviewJobPrepServiceImpl implements InterviewJobPrepService {
                 .resumeTalkingPoints(readList(session.getResumeTalkingPointsJson()))
                 .mockQuestions(readList(session.getMockQuestionsJson()))
                 .nextActions(readList(session.getNextActionsJson()))
+                .providerReadiness(resolveProviderReadiness())
                 .summary(session.getSummary())
                 .updateTime(session.getUpdateTime())
                 .build();
@@ -373,6 +420,7 @@ public class InterviewJobPrepServiceImpl implements InterviewJobPrepService {
 
     private record PrepBlueprint(BigDecimal matchScore, List<String> matchedKeywords, List<String> missingKeywords,
                                  List<String> focusAreas, List<String> resumeTalkingPoints, List<String> mockQuestions,
-                                 List<String> nextActions, String summary) {
+                                 List<String> nextActions, List<JobPrepSessionVO.ProviderReadinessVO> providerReadiness,
+                                 String summary) {
     }
 }

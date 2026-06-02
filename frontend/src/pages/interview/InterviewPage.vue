@@ -165,6 +165,18 @@
 
           <div class="job-prep-grid mt-5">
             <div class="space-y-4">
+              <div v-if="missingJobPrepProviders.length" class="copilot-prep-provider-alert">
+                <p class="text-sm font-semibold text-ink">岗位研究依赖未完全就绪</p>
+                <p class="mt-2 text-sm leading-6 text-secondary">
+                  当前仍有部分 provider 未配置或未启用。JD 备面可以继续生成，但公司与岗位背景研究会降级为仅基于 JD 和简历草案。
+                </p>
+                <div class="mt-3 flex flex-wrap gap-2">
+                  <span v-for="item in missingJobPrepProviders" :key="item.scope" class="detail-pill">
+                    {{ item.label }} · {{ item.statusMessage }}
+                  </span>
+                </div>
+              </div>
+
               <div>
                 <label class="flat-field-label">关联投递</label>
                 <el-select
@@ -266,6 +278,28 @@
                     <p class="job-prep-stat-card__value">{{ jobPrepSession.nextActions.length }}</p>
                   </article>
                 </div>
+
+                <article
+                  v-if="jobPrepSession.providerReadiness.some((item) => item.status !== 'ready' && item.status !== 'saved')"
+                  class="job-prep-panel"
+                >
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <p class="job-prep-panel__title">Provider Readiness</p>
+                    <span class="detail-pill detail-pill-risk">已降级生成</span>
+                  </div>
+                  <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                    <div
+                      v-for="item in jobPrepSession.providerReadiness"
+                      :key="item.scope"
+                      class="copilot-provider-card"
+                      :class="`copilot-provider-card--${item.status}`"
+                    >
+                      <p class="copilot-provider-card__label">{{ item.label }}</p>
+                      <p class="copilot-provider-card__status">{{ item.status }}</p>
+                      <p class="mt-2 text-xs leading-5 text-secondary">{{ item.statusMessage }}</p>
+                    </div>
+                  </div>
+                </article>
 
                 <div class="grid gap-3 xl:grid-cols-2">
                   <article class="job-prep-panel">
@@ -1514,6 +1548,12 @@ const activeContextSource = computed(
   () => currentQuestion.value?.contextSource || detail.value?.contextSource || draftContextSource.value
 )
 const activeContextSummary = computed(() => activeContextSource.value?.summary || '')
+const jobPrepProviderItems = computed(() =>
+  providerConfigs.value.filter((item) => ['search'].includes(item.scope))
+)
+const missingJobPrepProviders = computed(() =>
+  jobPrepProviderItems.value.filter((item) => isProviderStatusMissing(item.status))
+)
 const copilotProviderItems = computed(() =>
   providerConfigs.value.filter((item) => ['asr', 'search', 'voiceprint'].includes(item.scope))
 )

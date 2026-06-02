@@ -5,8 +5,10 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
@@ -29,6 +31,18 @@ public class JobPrepSessionVO {
     private List<String> resumeTalkingPoints;
     private List<String> mockQuestions;
     private List<String> nextActions;
+    private List<ProviderReadinessVO> providerReadiness;
     private String summary;
     private LocalDateTime updateTime;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ProviderReadinessVO {
+        private String scope;
+        private String label;
+        private String status;
+        private String statusMessage;
+    }
 }

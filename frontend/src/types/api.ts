@@ -401,6 +401,7 @@ export interface JobPrepSession {
   resumeTalkingPoints: string[]
   mockQuestions: string[]
   nextActions: string[]
+  providerReadiness: CopilotPrepProviderReadiness[]
   summary: string
   updateTime?: string
 }
