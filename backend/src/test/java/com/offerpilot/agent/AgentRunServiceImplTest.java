@@ -34,6 +34,7 @@ import com.offerpilot.interview.service.InterviewService;
 import com.offerpilot.interview.vo.InterviewDetailVO;
 import com.offerpilot.interview.vo.InterviewHistoryVO;
 import com.offerpilot.plan.service.PlanService;
+import com.offerpilot.plan.vo.StudyPlanCurrentVO;
 import com.offerpilot.resume.service.ResumeService;
 import com.offerpilot.resume.vo.ResumeFileVO;
 import java.math.BigDecimal;
@@ -180,6 +181,49 @@ class AgentRunServiceImplTest {
         assertEquals("/analytics", result.getNextActionPath());
         assertTrue(Boolean.TRUE.equals(result.getRequiresApproval()));
         assertEquals("save_topic_retrospective_action", result.getApprovalActionType());
+    }
+
+    @Test
+    void createRun_studyPlannerUsesActivePlanContext() throws Exception {
+        when(planService.current(1L)).thenReturn(StudyPlanCurrentVO.builder()
+                .id(91L)
+                .title("JVM 一周强化")
+                .durationDays(7)
+                .currentDay(3)
+                .todayTaskCount(2)
+                .focusDirection("JVM")
+                .targetRole("Java后端开发")
+                .techStack("Spring Boot, Redis")
+                .todayFocusSummary(StudyPlanCurrentVO.TodayFocusSummaryVO.builder()
+                        .reason("先清 JVM 内存模型和 GC 的待复盘点。")
+                        .build())
+                .tasks(List.of(
+                        StudyPlanCurrentVO.StudyPlanTaskVO.builder()
+                                .id(501L)
+                                .dayIndex(3)
+                                .module("review")
+                                .title("JVM 待复盘清理")
+                                .status("pending")
+                                .build()))
+                .build());
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "study_planner",
+                "analytics",
+                List.of("study-plan:active"),
+                "把今天的任务和下轮刷新顺起来"));
+
+        assertTrue(result.getSummary().contains("画像"));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("当前正式计划是《JVM 一周强化》")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("今天先推进")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("JVM 待复盘清理")));
+
+        ArgumentCaptor<AgentRun> captor = ArgumentCaptor.forClass(AgentRun.class);
+        verify(agentRunMapper).insert(captor.capture());
+        JsonNode payload = objectMapper.readTree(captor.getValue().getApprovalPayloadJson());
+        assertEquals("JVM", payload.get("focusDirection").asText());
+        assertEquals("Java后端开发", payload.get("targetRole").asText());
+        assertEquals("Spring Boot, Redis", payload.get("techStack").asText());
     }
 
     @Test

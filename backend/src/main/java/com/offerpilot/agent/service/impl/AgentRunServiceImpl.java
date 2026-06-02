@@ -598,6 +598,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         AbilityProfileVO abilityProfile = null;
         ProfileTopicDetailVO topicDetail = null;
         ProfileTopicRetrospectiveVO topicRetrospective = null;
+        StudyPlanCurrentVO currentPlan = null;
         InterviewDetailVO interviewDetail = null;
         RecordingReviewSessionVO recordingReview = null;
         ResumeFileVO resume = null;
@@ -607,6 +608,10 @@ public class AgentRunServiceImpl implements AgentRunService {
 
         if (hasContext(contextRefs, "analytics:profile") || hasContext(contextRefs, "analytics:weak-topics")) {
             abilityProfile = loadOptional("analytics profile", () -> analyticsService.getAbilityProfile(userId));
+        }
+
+        if (hasContext(contextRefs, "study-plan:active")) {
+            currentPlan = loadOptional("active study plan", () -> planService.current(userId));
         }
 
         Long topicId = findContextRefId(contextRefs, "analytics:topic:");
@@ -681,6 +686,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                 abilityProfile,
                 topicDetail,
                 topicRetrospective,
+                currentPlan,
                 interviewDetail,
                 recordingReview,
                 resume,
@@ -705,6 +711,19 @@ public class AgentRunServiceImpl implements AgentRunService {
             recommendations.add("长期画像建议优先处理 "
                     + defaultText(profile.getSuggestedFocus(), "当前薄弱点")
                     + "，推荐强度 " + difficultyLabel(profile.getRecommendedDifficulty()) + "。");
+        }
+        if (snapshot.currentPlan() != null) {
+            StudyPlanCurrentVO currentPlan = snapshot.currentPlan();
+            recommendations.add("当前正式计划是《" + defaultText(currentPlan.getTitle(), "本轮学习计划")
+                    + "》，当前 Day " + defaultInt(currentPlan.getCurrentDay())
+                    + " / " + defaultInt(currentPlan.getDurationDays())
+                    + "，今日还有 " + defaultInt(currentPlan.getTodayTaskCount()) + " 项任务。");
+            if (currentPlan.getTodayFocusSummary() != null && StringUtils.hasText(currentPlan.getTodayFocusSummary().getReason())) {
+                recommendations.add("今天先推进：" + abbreviate(currentPlan.getTodayFocusSummary().getReason(), 40));
+            }
+            firstPendingPlanTask(currentPlan).ifPresent(task -> recommendations.add(
+                    "如果要刷新计划，先确认任务「" + defaultText(task.getTitle(), defaultText(task.getModule(), "当前任务"))
+                            + "」是否仍应保留在今天。"));
         }
         if (snapshot.interviewDetail() != null) {
             int lowScoreCount = countLowScoreRecords(snapshot.interviewDetail());
@@ -816,6 +835,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         String focusDirection = firstNonBlank(
                 snapshot.topicDetail() == null ? null : snapshot.topicDetail().getCategoryName(),
                 snapshot.topicRetrospective() == null ? null : snapshot.topicRetrospective().getCategoryName(),
+                snapshot.currentPlan() == null ? null : snapshot.currentPlan().getFocusDirection(),
                 snapshot.abilityProfile() == null ? null : snapshot.abilityProfile().getSuggestedFocus(),
                 snapshot.interviewDetail() == null ? null : snapshot.interviewDetail().getDirection(),
                 snapshot.recordingReview() == null ? null : snapshot.recordingReview().getDirection(),
@@ -823,10 +843,12 @@ public class AgentRunServiceImpl implements AgentRunService {
         String targetRole = firstNonBlank(
                 snapshot.application() == null ? null : snapshot.application().getJobTitle(),
                 snapshot.jobPrepSession() == null ? null : snapshot.jobPrepSession().getJobTitle(),
+                snapshot.currentPlan() == null ? null : snapshot.currentPlan().getTargetRole(),
                 snapshot.interviewDetail() == null ? null : snapshot.interviewDetail().getJobRole(),
                 snapshot.recordingReview() == null ? null : snapshot.recordingReview().getJobRole(),
                 snapshot.copilotRealtimeSession() == null ? null : snapshot.copilotRealtimeSession().getJobTitle());
         String techStack = firstNonBlank(
+                snapshot.currentPlan() == null ? null : snapshot.currentPlan().getTechStack(),
                 snapshot.interviewDetail() == null ? null : snapshot.interviewDetail().getTechStack(),
                 snapshot.resume() == null ? null : joinLimited(snapshot.resume().getSkills(), 4, ", "),
                 snapshot.application() == null ? null : joinLimited(snapshot.application().getJdKeywords(), 4, ", "),
@@ -965,10 +987,28 @@ public class AgentRunServiceImpl implements AgentRunService {
         if (snapshot.resume() != null) {
             return "/resume";
         }
+        if (snapshot.currentPlan() != null) {
+            return "/study-plan";
+        }
         if (snapshot.topicDetail() != null || snapshot.abilityProfile() != null) {
             return "/analytics";
         }
         return "/dashboard";
+    }
+
+    private java.util.Optional<StudyPlanCurrentVO.StudyPlanTaskVO> firstPendingPlanTask(StudyPlanCurrentVO currentPlan) {
+        return nullSafeList(currentPlan.getTasks()).stream()
+                .filter(task -> !"completed".equals(normalize(task.getStatus())))
+                .sorted((left, right) -> {
+                    int dayCompare = Integer.compare(defaultInt(left.getDayIndex()), defaultInt(right.getDayIndex()));
+                    if (dayCompare != 0) {
+                        return dayCompare;
+                    }
+                    return Long.compare(
+                            left.getId() == null ? Long.MAX_VALUE : left.getId(),
+                            right.getId() == null ? Long.MAX_VALUE : right.getId());
+                })
+                .findFirst();
     }
 
     private AgentRunVO buildVo(AgentRun run) {
@@ -1442,6 +1482,7 @@ public class AgentRunServiceImpl implements AgentRunService {
 
     private record ContextSnapshot(AbilityProfileVO abilityProfile, ProfileTopicDetailVO topicDetail,
                                    ProfileTopicRetrospectiveVO topicRetrospective,
+                                   StudyPlanCurrentVO currentPlan,
                                    InterviewDetailVO interviewDetail, RecordingReviewSessionVO recordingReview,
                                    ResumeFileVO resume, JobApplicationVO application,
                                    JobPrepSessionVO jobPrepSession,
