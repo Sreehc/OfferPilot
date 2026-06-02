@@ -405,6 +405,34 @@ export interface JobPrepSession {
   updateTime?: string
 }
 
+export interface CopilotPrepProviderReadiness {
+  scope: string
+  label: string
+  status: string
+  statusMessage: string
+}
+
+export interface CopilotPrepSession {
+  id: string
+  applicationId?: string
+  resumeFileId?: string
+  jobPrepSessionId?: string
+  resumeTitle?: string
+  company?: string
+  jobTitle?: string
+  jdText?: string
+  notes?: string
+  status: string
+  summary: string
+  openingBrief: string[]
+  keyRisks: string[]
+  liveCues: string[]
+  followUpQuestions: string[]
+  nextActions: string[]
+  providerReadiness: CopilotPrepProviderReadiness[]
+  updateTime?: string
+}
+
 export interface RecordingReviewSegment {
   id: string
   segmentIndex: number

@@ -311,10 +311,201 @@
                 <article class="job-prep-panel">
                   <div class="flex flex-wrap items-center justify-between gap-3">
                     <p class="job-prep-panel__title">下一步动作</p>
-                    <el-button type="default" size="small" @click="applyJobPrepToInterview">把结果带入模拟面试</el-button>
+                    <div class="flex flex-wrap items-center gap-2">
+                      <el-button type="default" size="small" @click="handleGenerateCopilotPrep(true)">生成 Copilot Prep</el-button>
+                      <el-button type="default" size="small" @click="applyJobPrepToInterview">把结果带入模拟面试</el-button>
+                    </div>
                   </div>
                   <ul class="job-prep-list mt-3">
                     <li v-for="item in jobPrepSession.nextActions" :key="item">{{ item }}</li>
+                  </ul>
+                </article>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="shell-section-card workspace-shell interview-copilot-prep-shell">
+        <div class="workspace-section">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <h3 class="workspace-section-title">实时 Copilot</h3>
+                <span class="detail-pill">Prep Phase</span>
+              </div>
+              <p class="workspace-section-summary">先把 JD、简历、备面结果和 provider readiness 整理成一份会前 Prep，再进入后续实时阶段。</p>
+            </div>
+            <el-button
+              :loading="copilotPrepLoading"
+              type="primary"
+              size="large"
+              class="action-button !min-h-11"
+              @click="handleGenerateCopilotPrep()"
+            >
+              生成 Copilot Prep
+            </el-button>
+          </div>
+
+          <div class="copilot-prep-grid mt-5">
+            <div class="space-y-4">
+              <div v-if="missingCopilotProviders.length" class="copilot-prep-provider-alert">
+                <p class="text-sm font-semibold text-ink">实时依赖未完全就绪</p>
+                <p class="mt-2 text-sm leading-6 text-secondary">
+                  当前仍有部分 provider 未配置或未启用。Prep 可以继续生成，但实时阶段可能会降级。
+                </p>
+                <div class="mt-3 flex flex-wrap gap-2">
+                  <span v-for="item in missingCopilotProviders" :key="item.scope" class="detail-pill">
+                    {{ item.label }} · {{ item.statusMessage }}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label class="flat-field-label">关联投递</label>
+                <el-select
+                  v-model="selectedJobPrepApplicationId"
+                  clearable
+                  filterable
+                  placeholder="选择已有投递，统一会前上下文"
+                  :loading="loadingApplications"
+                  class="w-full"
+                >
+                  <el-option
+                    v-for="item in applications"
+                    :key="item.id"
+                    :label="`${item.company} · ${item.jobTitle}`"
+                    :value="item.id"
+                  />
+                </el-select>
+              </div>
+
+              <div class="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label class="flat-field-label">公司</label>
+                  <el-input v-model="jobPrepCompany" placeholder="字节 / 阿里 / 自定义" />
+                </div>
+                <div>
+                  <label class="flat-field-label">岗位</label>
+                  <el-input v-model="jobPrepJobTitle" placeholder="Java 后端开发" />
+                </div>
+              </div>
+
+              <div>
+                <label class="flat-field-label">绑定简历</label>
+                <el-select
+                  v-model="jobPrepResumeId"
+                  clearable
+                  filterable
+                  placeholder="选择这轮 Prep 要绑定的简历"
+                  class="w-full"
+                >
+                  <el-option v-for="resume in resumes" :key="resume.id" :label="resume.title" :value="resume.id" />
+                </el-select>
+              </div>
+
+              <div>
+                <label class="flat-field-label">会前备注</label>
+                <el-input
+                  v-model="copilotPrepNotes"
+                  type="textarea"
+                  :rows="4"
+                  placeholder="例如：下周一面偏项目和缓存；需要更关注开场表达和追问收口。"
+                />
+              </div>
+
+              <div>
+                <label class="flat-field-label">岗位 JD</label>
+                <el-input
+                  v-model="jobPrepJdText"
+                  type="textarea"
+                  :rows="6"
+                  placeholder="可以复用上面的 JD，也可以单独补充这轮实时会话最关注的岗位要求。"
+                />
+              </div>
+            </div>
+
+            <div class="copilot-prep-result-shell">
+              <div v-if="copilotPrepLoading" class="flex h-full min-h-[280px] items-center justify-center">
+                <div class="text-center">
+                  <div class="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+                  <p class="mt-3 text-sm text-secondary">正在整理会前 Prep...</p>
+                </div>
+              </div>
+              <div v-else-if="!copilotPrepSession" class="flex h-full min-h-[280px] items-center justify-center">
+                <EmptyState
+                  icon="chat"
+                  title="先生成一份 Copilot Prep"
+                  description="这里会整理开场提纲、实时提示、追问风险和 provider readiness，供后续实时阶段直接使用。"
+                  compact
+                />
+              </div>
+              <div v-else class="space-y-4">
+                <div class="copilot-prep-summary-card">
+                  <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="detail-pill">{{ copilotPrepSession.company || '未设公司' }}</span>
+                        <span class="detail-pill">{{ copilotPrepSession.jobTitle || '未设岗位' }}</span>
+                        <span v-if="copilotPrepSession.resumeTitle" class="detail-pill">{{ copilotPrepSession.resumeTitle }}</span>
+                        <span v-if="copilotPrepSession.jobPrepSessionId" class="detail-pill">已关联 JD 备面</span>
+                      </div>
+                      <p class="mt-3 text-sm leading-6 text-primary">{{ copilotPrepSession.summary }}</p>
+                    </div>
+                    <el-button type="default" size="small" @click="applyCopilotPrepToInterview">带入模拟面试</el-button>
+                  </div>
+                </div>
+
+                <article class="copilot-prep-panel">
+                  <p class="copilot-prep-panel__title">Provider Readiness</p>
+                  <div class="mt-3 grid gap-3 sm:grid-cols-3">
+                    <div
+                      v-for="item in copilotPrepSession.providerReadiness"
+                      :key="item.scope"
+                      class="copilot-provider-card"
+                      :class="`copilot-provider-card--${item.status}`"
+                    >
+                      <p class="copilot-provider-card__label">{{ item.label }}</p>
+                      <p class="copilot-provider-card__status">{{ item.status }}</p>
+                      <p class="mt-2 text-xs leading-5 text-secondary">{{ item.statusMessage }}</p>
+                    </div>
+                  </div>
+                </article>
+
+                <div class="grid gap-3 xl:grid-cols-2">
+                  <article class="copilot-prep-panel">
+                    <p class="copilot-prep-panel__title">开场提纲</p>
+                    <ul class="copilot-prep-list mt-3">
+                      <li v-for="item in copilotPrepSession.openingBrief" :key="item">{{ item }}</li>
+                    </ul>
+                  </article>
+                  <article class="copilot-prep-panel">
+                    <p class="copilot-prep-panel__title">实时提示</p>
+                    <ul class="copilot-prep-list mt-3">
+                      <li v-for="item in copilotPrepSession.liveCues" :key="item">{{ item }}</li>
+                    </ul>
+                  </article>
+                </div>
+
+                <div class="grid gap-3 xl:grid-cols-2">
+                  <article class="copilot-prep-panel">
+                    <p class="copilot-prep-panel__title">当前风险</p>
+                    <ul class="copilot-prep-list mt-3">
+                      <li v-for="item in copilotPrepSession.keyRisks" :key="item">{{ item }}</li>
+                    </ul>
+                  </article>
+                  <article class="copilot-prep-panel">
+                    <p class="copilot-prep-panel__title">建议追问</p>
+                    <ul class="copilot-prep-list mt-3">
+                      <li v-for="item in copilotPrepSession.followUpQuestions" :key="item">{{ item }}</li>
+                    </ul>
+                  </article>
+                </div>
+
+                <article class="copilot-prep-panel">
+                  <p class="copilot-prep-panel__title">下一步动作</p>
+                  <ul class="copilot-prep-list mt-3">
+                    <li v-for="item in copilotPrepSession.nextActions" :key="item">{{ item }}</li>
                   </ul>
                 </article>
               </div>
@@ -937,6 +1128,7 @@ import { useRoute } from 'vue-router'
 import { fetchApplicationBoardApi } from '@/api/applications'
 import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
 import {
+  createCopilotPrepSessionApi,
   createRecordingReviewApi,
   createJobPrepSessionApi,
   currentQuestionApi,
@@ -950,8 +1142,10 @@ import {
 } from '@/api/interview'
 import { fetchRecommendInterviewApi } from '@/api/adaptive'
 import { fetchResumeDetailApi, fetchResumeListApi } from '@/api/resume'
+import { fetchProviderConfigsApi } from '@/api/settings'
 import EmptyState from '@/components/EmptyState.vue'
 import type {
+  CopilotPrepSession,
   ContextSource,
   InterviewAnswerResult,
   InterviewCurrentQuestion,
@@ -963,6 +1157,7 @@ import type {
   RecommendInterview,
   ResumeProjectItem,
   ResumeSummaryItem,
+  UserProviderConfigItem,
   VoiceSubmitResult
 } from '@/types/api'
 import VoiceRecorder from '@/components/VoiceRecorder.vue'
@@ -1009,10 +1204,15 @@ const jobPrepJobTitle = ref('Java 后端开发')
 const jobPrepJdText = ref('')
 const jobPrepLoading = ref(false)
 const jobPrepSession = ref<JobPrepSession | null>(null)
+const copilotPrepNotes = ref('')
+const copilotPrepLoading = ref(false)
+const copilotPrepSession = ref<CopilotPrepSession | null>(null)
+const linkedCopilotJobPrepId = ref('')
 const recordingReviewNotes = ref('')
 const recordingReviewFile = ref<File | null>(null)
 const recordingReviewLoading = ref(false)
 const recordingReviewSession = ref<RecordingReviewSession | null>(null)
+const providerConfigs = ref<UserProviderConfigItem[]>([])
 const interviewMode = ref<'text' | 'voice'>('text')
 const voiceAvailable = ref(false)
 const starting = ref(false)
@@ -1081,6 +1281,12 @@ const activeContextSource = computed(
   () => currentQuestion.value?.contextSource || detail.value?.contextSource || draftContextSource.value
 )
 const activeContextSummary = computed(() => activeContextSource.value?.summary || '')
+const copilotProviderItems = computed(() =>
+  providerConfigs.value.filter((item) => ['asr', 'search', 'voiceprint'].includes(item.scope))
+)
+const missingCopilotProviders = computed(() =>
+  copilotProviderItems.value.filter((item) => item.status !== 'ready')
+)
 
 const toggleQuestion = (questionId: string) => {
   if (expandedQuestions.value.has(questionId)) {
@@ -1390,6 +1596,15 @@ const loadApplications = async () => {
   }
 }
 
+const loadProviderConfigs = async () => {
+  try {
+    const response = await fetchProviderConfigsApi()
+    providerConfigs.value = response.data
+  } catch {
+    providerConfigs.value = []
+  }
+}
+
 const loadResumeProjects = async (resumeId: string) => {
   try {
     const response = await fetchResumeDetailApi(resumeId)
@@ -1475,6 +1690,16 @@ const handleGenerateJobPrep = async () => {
   }
 }
 
+const syncJobPrepToCopilot = () => {
+  if (!jobPrepSession.value) return
+  linkedCopilotJobPrepId.value = jobPrepSession.value.id
+  selectedJobPrepApplicationId.value = jobPrepSession.value.applicationId || selectedJobPrepApplicationId.value
+  jobPrepResumeId.value = jobPrepSession.value.resumeFileId || jobPrepResumeId.value
+  jobPrepCompany.value = jobPrepSession.value.company || jobPrepCompany.value
+  jobPrepJobTitle.value = jobPrepSession.value.jobTitle || jobPrepJobTitle.value
+  jobPrepJdText.value = jobPrepSession.value.jdText || jobPrepJdText.value
+}
+
 const applyJobPrepToInterview = () => {
   if (!jobPrepSession.value) return
   const matched = jobPrepSession.value.matchedKeywords.slice(0, 3).join(', ')
@@ -1486,6 +1711,53 @@ const applyJobPrepToInterview = () => {
     interviewContextPath.value = 'resume'
   }
   ElMessage.success('已把 JD 备面结果带入当前模拟面试配置。')
+}
+
+const handleGenerateCopilotPrep = async (useJobPrep = false) => {
+  if (!useJobPrep && !jobPrepJdText.value.trim() && !selectedJobPrepApplicationId.value && !jobPrepResumeId.value) {
+    ElMessage.warning('请先提供 JD、已有投递或简历上下文，再生成 Copilot Prep。')
+    return
+  }
+  if (useJobPrep && !jobPrepSession.value) {
+    ElMessage.warning('请先生成一份 JD 备面结果。')
+    return
+  }
+  if (useJobPrep) {
+    syncJobPrepToCopilot()
+  }
+  copilotPrepLoading.value = true
+  try {
+    const response = await createCopilotPrepSessionApi({
+      applicationId: selectedJobPrepApplicationId.value || undefined,
+      resumeId: jobPrepResumeId.value || undefined,
+      jobPrepSessionId: useJobPrep ? jobPrepSession.value?.id : linkedCopilotJobPrepId.value || undefined,
+      company: jobPrepCompany.value.trim() || undefined,
+      jobTitle: jobPrepJobTitle.value.trim() || undefined,
+      jdText: jobPrepJdText.value.trim() || undefined,
+      notes: copilotPrepNotes.value.trim() || undefined
+    })
+    copilotPrepSession.value = response.data
+    ElMessage.success('Copilot Prep 已生成。')
+  } catch (error: any) {
+    ElMessage.error(error?.message || 'Copilot Prep 生成失败，请检查当前上下文后重试。')
+  } finally {
+    copilotPrepLoading.value = false
+  }
+}
+
+const applyCopilotPrepToInterview = () => {
+  if (!copilotPrepSession.value) return
+  jobRole.value = copilotPrepSession.value.jobTitle || jobRole.value
+  if (copilotPrepSession.value.resumeFileId) {
+    selectedResumeId.value = copilotPrepSession.value.resumeFileId
+    interviewContextPath.value = 'resume'
+  }
+  const cue = copilotPrepSession.value.liveCues?.[0]
+  if (cue) {
+    ElMessage.success(`已带入会前准备。提示：${cue}`)
+    return
+  }
+  ElMessage.success('已把 Copilot Prep 带入当前模拟面试配置。')
 }
 
 const handleRecordingFileChange = (event: Event) => {
@@ -1551,6 +1823,7 @@ onMounted(() => {
   void loadAllHistory()
   void loadResumes()
   void loadApplications()
+  void loadProviderConfigs()
   applyQuestionSeedFromRoute()
 
   // Check voice availability
@@ -1635,6 +1908,14 @@ watch(selectedJobPrepApplicationId, (applicationId) => {
     linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(var(--bc-cyan-rgb), 0.03));
 }
 
+.interview-copilot-prep-shell {
+  margin-top: 12px;
+  border: 1px solid var(--bc-border-subtle);
+  background:
+    radial-gradient(circle at top center, rgba(var(--bc-cyan-rgb), 0.08), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(var(--bc-accent-rgb), 0.03));
+}
+
 .interview-recording-review-shell {
   margin-top: 12px;
   border: 1px solid var(--bc-border-subtle);
@@ -1702,9 +1983,21 @@ watch(selectedJobPrepApplicationId, (applicationId) => {
   gap: 16px;
 }
 
+.copilot-prep-grid {
+  display: grid;
+  gap: 16px;
+}
+
 .recording-review-grid {
   display: grid;
   gap: 16px;
+}
+
+.copilot-prep-provider-alert {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid rgba(var(--bc-amber-rgb), 0.22);
+  background: rgba(var(--bc-amber-rgb), 0.08);
+  padding: 16px;
 }
 
 .recording-review-provider-alert {
@@ -1815,11 +2108,28 @@ watch(selectedJobPrepApplicationId, (applicationId) => {
   padding: 18px;
 }
 
+.copilot-prep-result-shell {
+  min-height: 100%;
+  border-radius: calc(var(--radius-md) - 2px);
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--panel-muted);
+  padding: 18px;
+}
+
 .job-prep-summary-card {
   border-radius: calc(var(--radius-md) - 4px);
   border: 1px solid rgba(var(--bc-accent-rgb), 0.18);
   background:
     linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.08), transparent 58%),
+    var(--panel-bg);
+  padding: 18px;
+}
+
+.copilot-prep-summary-card {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid rgba(var(--bc-cyan-rgb), 0.18);
+  background:
+    linear-gradient(180deg, rgba(var(--bc-cyan-rgb), 0.08), transparent 58%),
     var(--panel-bg);
   padding: 18px;
 }
@@ -1880,7 +2190,20 @@ watch(selectedJobPrepApplicationId, (applicationId) => {
   padding: 16px;
 }
 
+.copilot-prep-panel {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--panel-bg);
+  padding: 16px;
+}
+
 .job-prep-panel__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--bc-ink);
+}
+
+.copilot-prep-panel__title {
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--bc-ink);
@@ -1911,8 +2234,53 @@ watch(selectedJobPrepApplicationId, (applicationId) => {
   color: var(--bc-ink-secondary);
 }
 
+.copilot-prep-list {
+  display: grid;
+  gap: 10px;
+  padding-left: 18px;
+  color: var(--bc-ink-secondary);
+}
+
 .job-prep-list li {
   line-height: 1.7;
+}
+
+.copilot-prep-list li {
+  line-height: 1.7;
+}
+
+.copilot-provider-card {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--panel-bg);
+  padding: 14px 16px;
+}
+
+.copilot-provider-card--ready {
+  border-color: rgba(var(--bc-lime-rgb), 0.24);
+}
+
+.copilot-provider-card--saved {
+  border-color: rgba(var(--bc-accent-rgb), 0.24);
+}
+
+.copilot-provider-card--incomplete,
+.copilot-provider-card--missing {
+  border-color: rgba(var(--bc-coral-rgb), 0.24);
+}
+
+.copilot-provider-card__label {
+  font-size: 0.74rem;
+  color: var(--bc-ink-secondary);
+}
+
+.copilot-provider-card__status {
+  margin-top: 10px;
+  font-family: theme('fontFamily.mono');
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--bc-ink);
 }
 
 .interview-setup-grid__meta {
@@ -2103,6 +2471,10 @@ watch(selectedJobPrepApplicationId, (applicationId) => {
 
 @media (min-width: 1280px) {
   .job-prep-grid {
+    grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+  }
+
+  .copilot-prep-grid {
     grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
   }
 

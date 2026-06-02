@@ -8,7 +8,9 @@ import com.offerpilot.common.storage.StorageDirectory;
 import com.offerpilot.common.storage.UploadPolicyService;
 import com.offerpilot.interview.dto.InterviewAnswerRequest;
 import com.offerpilot.interview.dto.InterviewStartRequest;
+import com.offerpilot.interview.dto.CopilotPrepSessionCreateRequest;
 import com.offerpilot.interview.dto.JobPrepSessionCreateRequest;
+import com.offerpilot.interview.service.InterviewCopilotPrepService;
 import com.offerpilot.interview.service.InterviewRecordingReviewService;
 import com.offerpilot.interview.dto.VoiceStartRequest;
 import com.offerpilot.interview.service.InterviewJobPrepService;
@@ -18,6 +20,7 @@ import com.offerpilot.interview.vo.InterviewAnswerVO;
 import com.offerpilot.interview.vo.InterviewCurrentQuestionVO;
 import com.offerpilot.interview.vo.InterviewDetailVO;
 import com.offerpilot.interview.vo.InterviewHistoryVO;
+import com.offerpilot.interview.vo.CopilotPrepSessionVO;
 import com.offerpilot.interview.vo.JobPrepSessionVO;
 import com.offerpilot.interview.vo.RecordingReviewSessionVO;
 import com.offerpilot.interview.vo.VoiceSubmitVO;
@@ -45,6 +48,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class InterviewController {
 
     private final InterviewService interviewService;
+    private final InterviewCopilotPrepService interviewCopilotPrepService;
     private final InterviewJobPrepService interviewJobPrepService;
     private final InterviewRecordingReviewService interviewRecordingReviewService;
     private final InterviewVoiceService interviewVoiceService;
@@ -100,6 +104,18 @@ public class InterviewController {
     @GetMapping("/job-prep/sessions/{sessionId}")
     public Result<JobPrepSessionVO> jobPrepSession(@Parameter(description = "会话 ID") @PathVariable Long sessionId) {
         return Result.success(interviewJobPrepService.detail(currentUserId(), sessionId));
+    }
+
+    @Operation(summary = "创建 Copilot Prep 会话", description = "根据 JD、简历、JD 备面和 provider readiness 生成会前 Prep 结果")
+    @PostMapping("/copilot/prep-sessions")
+    public Result<CopilotPrepSessionVO> createCopilotPrepSession(@Valid @RequestBody CopilotPrepSessionCreateRequest request) {
+        return Result.success(interviewCopilotPrepService.createSession(currentUserId(), request));
+    }
+
+    @Operation(summary = "Copilot Prep 详情", description = "查看实时 Copilot 会前准备结果")
+    @GetMapping("/copilot/prep-sessions/{sessionId}")
+    public Result<CopilotPrepSessionVO> copilotPrepSession(@Parameter(description = "会话 ID") @PathVariable Long sessionId) {
+        return Result.success(interviewCopilotPrepService.detail(currentUserId(), sessionId));
     }
 
     @Operation(summary = "创建录音复盘", description = "上传真实面试录音并生成转写与结构化复盘结果")

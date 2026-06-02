@@ -1,5 +1,6 @@
 import { request } from '@/utils/http'
 import type {
+  CopilotPrepSession,
   InterviewAnswerResult,
   InterviewCurrentQuestion,
   InterviewDetail,
@@ -50,6 +51,16 @@ export interface JobPrepSessionCreatePayload {
   jdText?: string
 }
 
+export interface CopilotPrepSessionCreatePayload {
+  applicationId?: string
+  resumeId?: string
+  jobPrepSessionId?: string
+  company?: string
+  jobTitle?: string
+  jdText?: string
+  notes?: string
+}
+
 export interface RecordingReviewCreatePayload {
   direction?: string
   jobRole?: string
@@ -89,6 +100,14 @@ export const createJobPrepSessionApi = (payload: JobPrepSessionCreatePayload) =>
 
 export const fetchJobPrepSessionApi = (sessionId: string) => {
   return request<JobPrepSession>({ url: `/interview/job-prep/sessions/${sessionId}`, method: 'get' })
+}
+
+export const createCopilotPrepSessionApi = (payload: CopilotPrepSessionCreatePayload) => {
+  return request<CopilotPrepSession>({ url: '/interview/copilot/prep-sessions', method: 'post', data: payload })
+}
+
+export const fetchCopilotPrepSessionApi = (sessionId: string) => {
+  return request<CopilotPrepSession>({ url: `/interview/copilot/prep-sessions/${sessionId}`, method: 'get' })
 }
 
 export const createRecordingReviewApi = (payload: RecordingReviewCreatePayload) => {
