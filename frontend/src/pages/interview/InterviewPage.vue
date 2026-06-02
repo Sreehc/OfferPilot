@@ -639,6 +639,42 @@
                       </div>
 
                       <div>
+                        <div
+                          v-if="copilotRealtimeSession.postInterviewReview"
+                          class="copilot-post-review-shell mb-3"
+                        >
+                          <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <p class="copilot-prep-panel__title !mb-0">面后复盘建议</p>
+                              <p class="mt-2 text-sm leading-6 text-secondary">
+                                {{ copilotRealtimeSession.postInterviewReview.summary }}
+                              </p>
+                            </div>
+                            <RouterLink :to="copilotRealtimeAgentLink" class="hard-button-primary">
+                              {{ copilotRealtimeSession.postInterviewReview.nextActionLabel || '前往面后复盘' }}
+                            </RouterLink>
+                          </div>
+                          <div class="mt-4 grid gap-3 md:grid-cols-3">
+                            <article class="copilot-post-review-card">
+                              <p class="copilot-post-review-card__title">保留项</p>
+                              <ul class="copilot-prep-list mt-3">
+                                <li v-for="item in copilotRealtimeSession.postInterviewReview.strengths" :key="`strength-${item}`">{{ item }}</li>
+                              </ul>
+                            </article>
+                            <article class="copilot-post-review-card">
+                              <p class="copilot-post-review-card__title">待处理</p>
+                              <ul class="copilot-prep-list mt-3">
+                                <li v-for="item in copilotRealtimeSession.postInterviewReview.weakPoints" :key="`weak-${item}`">{{ item }}</li>
+                              </ul>
+                            </article>
+                            <article class="copilot-post-review-card">
+                              <p class="copilot-post-review-card__title">下一步</p>
+                              <ul class="copilot-prep-list mt-3">
+                                <li v-for="item in copilotRealtimeSession.postInterviewReview.recommendedActions" :key="`action-${item}`">{{ item }}</li>
+                              </ul>
+                            </article>
+                          </div>
+                        </div>
                         <p class="copilot-prep-panel__title">事件时间线</p>
                         <div class="copilot-realtime-events mt-3">
                           <article
@@ -1634,6 +1670,15 @@ const recordingReviewAgentLink = computed(() => {
     triggerSource: 'recording_review',
     contextRefs: [`interview:recording-review:${recordingReviewSession.value.id}`, 'analytics:profile', 'study-plan:active'],
     userPrompt: '把这次录音复盘的薄弱点转成下一轮训练动作。'
+  })
+})
+const copilotRealtimeAgentLink = computed(() => {
+  if (!copilotRealtimeSession.value) return '/agent'
+  return buildAgentWorkbenchLocation({
+    agentType: 'interview_review',
+    triggerSource: 'interview_live',
+    contextRefs: [`interview:copilot-realtime:${copilotRealtimeSession.value.id}`, 'analytics:profile', 'study-plan:active'],
+    userPrompt: '把这次实时面试的现场追问和卡壳点转成面后复盘与下一轮训练动作。'
   })
 })
 
@@ -2960,9 +3005,35 @@ watch(selectedJobPrepApplicationId, (applicationId) => {
     grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
   }
 
-  .recording-review-grid {
+.recording-review-grid {
     grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
   }
+}
+
+.copilot-post-review-shell {
+  border-radius: 20px;
+  border: 1px solid rgba(var(--bc-accent-rgb), 0.16);
+  background:
+    radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.14), transparent 36%),
+    var(--panel-bg);
+  padding: 16px;
+}
+
+.copilot-post-review-card {
+  min-width: 0;
+  border-radius: 16px;
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--panel-muted);
+  padding: 14px;
+}
+
+.copilot-post-review-card__title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bc-ink-secondary);
 }
 
 .scoring-scan {

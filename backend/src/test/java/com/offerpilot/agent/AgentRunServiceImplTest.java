@@ -23,8 +23,10 @@ import com.offerpilot.analytics.service.AnalyticsService;
 import com.offerpilot.analytics.vo.ProfileTopicDetailVO;
 import com.offerpilot.application.service.JobApplicationService;
 import com.offerpilot.application.vo.JobApplicationVO;
+import com.offerpilot.interview.service.InterviewCopilotRealtimeService;
 import com.offerpilot.interview.vo.JobPrepSessionVO;
 import com.offerpilot.interview.vo.RecordingReviewSessionVO;
+import com.offerpilot.interview.vo.CopilotRealtimeSessionVO;
 import com.offerpilot.interview.service.InterviewJobPrepService;
 import com.offerpilot.interview.service.InterviewRecordingReviewService;
 import com.offerpilot.interview.service.InterviewService;
@@ -64,6 +66,8 @@ class AgentRunServiceImplTest {
     private InterviewRecordingReviewService interviewRecordingReviewService;
     @Mock
     private InterviewJobPrepService interviewJobPrepService;
+    @Mock
+    private InterviewCopilotRealtimeService interviewCopilotRealtimeService;
     @Mock
     private ResumeService resumeService;
     @Mock
@@ -185,6 +189,39 @@ class AgentRunServiceImplTest {
         assertEquals("Java 后端", payload.get("focusDirection").asText());
         assertEquals("后端开发", payload.get("targetRole").asText());
         assertEquals("Spring, MySQL", payload.get("techStack").asText());
+    }
+
+    @Test
+    void createRun_interviewReviewUsesCopilotRealtimePostReviewContext() {
+        when(interviewCopilotRealtimeService.detail(1L, 45L)).thenReturn(CopilotRealtimeSessionVO.builder()
+                .id(45L)
+                .company("字节跳动")
+                .jobTitle("Java 后端开发")
+                .status("completed")
+                .endedAt(LocalDateTime.of(2026, 6, 2, 11, 30))
+                .postInterviewReview(CopilotRealtimeSessionVO.PostInterviewReviewVO.builder()
+                        .summary("字节跳动 / Java 后端开发 的实时阶段已结束，下一步适合直接转入面后复盘。")
+                        .weakPoints(List.of("现场备注已记录，但还没有沉淀成正式训练动作。"))
+                        .recommendedActions(List.of(
+                                "先把本轮实时阶段转成面后复盘 run，整理追问、卡壳点和表达缺口。",
+                                "结合 Java 后端开发 岗位目标，决定是否刷新下一轮训练计划。"))
+                        .build())
+                .build());
+        when(analyticsService.getAbilityProfile(1L)).thenReturn(AbilityProfileVO.builder()
+                .suggestedFocus("项目表达")
+                .build());
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "interview_review",
+                "interview_live",
+                List.of("interview:copilot-realtime:45", "analytics:profile", "study-plan:active"),
+                "把现场追问整理成下一轮训练动作"));
+
+        assertTrue(result.getSummary().contains("实时阶段已结束"));
+        assertEquals("/interview", result.getNextActionPath());
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("面后复盘 run")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("实时阶段已经结束")));
+        assertTrue(Boolean.TRUE.equals(result.getRequiresApproval()));
     }
 
     @Test

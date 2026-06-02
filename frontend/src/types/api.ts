@@ -443,6 +443,17 @@ export interface CopilotRealtimeEvent {
   createTime?: string
 }
 
+export interface CopilotRealtimePostInterviewReview {
+  summary: string
+  strengths: string[]
+  weakPoints: string[]
+  recommendedActions: string[]
+  suggestedAgentType?: string
+  suggestedTriggerSource?: string
+  nextActionLabel?: string
+  nextActionPath?: string
+}
+
 export interface CopilotRealtimeSession {
   id: string
   copilotPrepSessionId: string
@@ -461,6 +472,7 @@ export interface CopilotRealtimeSession {
   connectedAt?: string
   disconnectedAt?: string
   endedAt?: string
+  postInterviewReview?: CopilotRealtimePostInterviewReview
   events: CopilotRealtimeEvent[]
   updateTime?: string
 }

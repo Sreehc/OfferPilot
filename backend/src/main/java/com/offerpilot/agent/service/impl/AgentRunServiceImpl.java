@@ -20,9 +20,11 @@ import com.offerpilot.application.vo.JobApplicationVO;
 import com.offerpilot.common.api.ResultCode;
 import com.offerpilot.common.exception.BusinessException;
 import com.offerpilot.interview.dto.JobPrepSessionCreateRequest;
+import com.offerpilot.interview.service.InterviewCopilotRealtimeService;
 import com.offerpilot.interview.service.InterviewJobPrepService;
 import com.offerpilot.interview.service.InterviewRecordingReviewService;
 import com.offerpilot.interview.service.InterviewService;
+import com.offerpilot.interview.vo.CopilotRealtimeSessionVO;
 import com.offerpilot.interview.vo.InterviewDetailVO;
 import com.offerpilot.interview.vo.InterviewHistoryVO;
 import com.offerpilot.interview.vo.JobPrepSessionVO;
@@ -61,6 +63,7 @@ public class AgentRunServiceImpl implements AgentRunService {
     private final InterviewService interviewService;
     private final InterviewRecordingReviewService interviewRecordingReviewService;
     private final InterviewJobPrepService interviewJobPrepService;
+    private final InterviewCopilotRealtimeService interviewCopilotRealtimeService;
     private final ResumeService resumeService;
     private final JobApplicationService jobApplicationService;
     private final UserProviderConfigService userProviderConfigService;
@@ -389,6 +392,7 @@ public class AgentRunServiceImpl implements AgentRunService {
 
     private RunBlueprint buildInterviewReviewBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
         InterviewDetailVO interviewDetail = snapshot.interviewDetail();
+        CopilotRealtimeSessionVO copilotRealtimeSession = snapshot.copilotRealtimeSession();
         StudyPlanPayload payload = resolveStudyPlanPayload(snapshot);
         String summary;
         List<String> baseRecommendations = new ArrayList<>();
@@ -399,6 +403,12 @@ public class AgentRunServiceImpl implements AgentRunService {
                     + (lowScoreCount > 0 ? " 当前共有 " + lowScoreCount + " 道低分题。" : "");
             baseRecommendations.addAll(interviewReviewRecommendations(interviewDetail));
             nextActionPath = "/interview/detail/" + interviewDetail.getSessionId();
+        } else if (copilotRealtimeSession != null) {
+            summary = defaultText(
+                    copilotRealtimeSession.getPostInterviewReview() == null ? null : copilotRealtimeSession.getPostInterviewReview().getSummary(),
+                    "已根据实时 Copilot 阶段整理面后复盘重点和下一轮训练建议。");
+            baseRecommendations.addAll(copilotRealtimeRecommendations(copilotRealtimeSession));
+            nextActionPath = "/interview";
         } else {
             summary = "已根据本轮面试结果整理追问重点、低分点和下一轮训练建议。";
             baseRecommendations.add("先处理低分题，再安排一轮同主题模拟。");
@@ -569,6 +579,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         ResumeFileVO resume = null;
         JobApplicationVO application = null;
         JobPrepSessionVO jobPrepSession = null;
+        CopilotRealtimeSessionVO copilotRealtimeSession = null;
 
         if (hasContext(contextRefs, "analytics:profile") || hasContext(contextRefs, "analytics:weak-topics")) {
             abilityProfile = loadOptional("analytics profile", () -> analyticsService.getAbilityProfile(userId));
@@ -605,6 +616,13 @@ public class AgentRunServiceImpl implements AgentRunService {
             jobPrepSession = loadOptional("job prep " + jobPrepSessionId, () -> interviewJobPrepService.detail(userId, jobPrepSessionId));
         }
 
+        Long copilotRealtimeSessionId = findContextRefId(contextRefs, "interview:copilot-realtime:");
+        if (copilotRealtimeSessionId != null) {
+            copilotRealtimeSession = loadOptional(
+                    "copilot realtime " + copilotRealtimeSessionId,
+                    () -> interviewCopilotRealtimeService.detail(userId, copilotRealtimeSessionId));
+        }
+
         Long resumeId = findContextRefId(contextRefs, "resume:");
         if (resumeId != null) {
             resume = loadOptional("resume " + resumeId, () -> resumeService.detail(userId, resumeId));
@@ -622,7 +640,15 @@ public class AgentRunServiceImpl implements AgentRunService {
             });
         }
 
-        return new ContextSnapshot(abilityProfile, topicDetail, interviewDetail, recordingReview, resume, application, jobPrepSession);
+        return new ContextSnapshot(
+                abilityProfile,
+                topicDetail,
+                interviewDetail,
+                recordingReview,
+                resume,
+                application,
+                jobPrepSession,
+                copilotRealtimeSession);
     }
 
     private List<String> studyPlannerRecommendations(ContextSnapshot snapshot) {
@@ -687,6 +713,24 @@ public class AgentRunServiceImpl implements AgentRunService {
         return recommendations;
     }
 
+    private List<String> copilotRealtimeRecommendations(CopilotRealtimeSessionVO session) {
+        List<String> recommendations = new ArrayList<>();
+        CopilotRealtimeSessionVO.PostInterviewReviewVO review = session.getPostInterviewReview();
+        if (review != null) {
+            recommendations.addAll(limit(review.getRecommendedActions(), 3));
+            if (!nullSafeList(review.getWeakPoints()).isEmpty()) {
+                recommendations.add("优先处理这些实时阶段暴露的问题：" + joinLimited(review.getWeakPoints(), 2, "；") + "。");
+            }
+        }
+        if (recommendations.isEmpty()) {
+            recommendations.add("先补一轮面后复盘，把现场追问、卡壳点和表达缺口写清楚。");
+        }
+        if (session.getEndedAt() != null) {
+            recommendations.add("实时阶段已经结束，适合立即把结论写回下一轮训练计划。");
+        }
+        return recommendations;
+    }
+
     private List<String> coordinatorRecommendations(ContextSnapshot snapshot) {
         List<String> recommendations = new ArrayList<>();
         if (snapshot.application() != null) {
@@ -698,6 +742,9 @@ public class AgentRunServiceImpl implements AgentRunService {
         }
         if (snapshot.recordingReview() != null) {
             recommendations.add("真实录音已经形成复盘证据，优先把薄弱点转成正式训练动作。");
+        }
+        if (snapshot.copilotRealtimeSession() != null) {
+            recommendations.add("实时 Copilot 已结束，先把现场备注和追问链路整理成正式复盘。");
         }
         if (snapshot.resume() != null) {
             recommendations.add("简历材料已就绪，接下来优先处理项目表达和岗位关键词对齐。");
@@ -717,18 +764,29 @@ public class AgentRunServiceImpl implements AgentRunService {
                 snapshot.topicDetail() == null ? null : snapshot.topicDetail().getCategoryName(),
                 snapshot.abilityProfile() == null ? null : snapshot.abilityProfile().getSuggestedFocus(),
                 snapshot.interviewDetail() == null ? null : snapshot.interviewDetail().getDirection(),
-                snapshot.recordingReview() == null ? null : snapshot.recordingReview().getDirection());
+                snapshot.recordingReview() == null ? null : snapshot.recordingReview().getDirection(),
+                snapshot.copilotRealtimeSession() == null ? null : snapshot.copilotRealtimeSession().getJobTitle());
         String targetRole = firstNonBlank(
                 snapshot.application() == null ? null : snapshot.application().getJobTitle(),
                 snapshot.jobPrepSession() == null ? null : snapshot.jobPrepSession().getJobTitle(),
                 snapshot.interviewDetail() == null ? null : snapshot.interviewDetail().getJobRole(),
-                snapshot.recordingReview() == null ? null : snapshot.recordingReview().getJobRole());
+                snapshot.recordingReview() == null ? null : snapshot.recordingReview().getJobRole(),
+                snapshot.copilotRealtimeSession() == null ? null : snapshot.copilotRealtimeSession().getJobTitle());
         String techStack = firstNonBlank(
                 snapshot.interviewDetail() == null ? null : snapshot.interviewDetail().getTechStack(),
                 snapshot.resume() == null ? null : joinLimited(snapshot.resume().getSkills(), 4, ", "),
                 snapshot.application() == null ? null : joinLimited(snapshot.application().getJdKeywords(), 4, ", "),
-                snapshot.jobPrepSession() == null ? null : joinLimited(snapshot.jobPrepSession().getMatchedKeywords(), 4, ", "));
+                snapshot.jobPrepSession() == null ? null : joinLimited(snapshot.jobPrepSession().getMatchedKeywords(), 4, ", "),
+                snapshot.copilotRealtimeSession() == null ? null : joinLimited(
+                        nullSafeList(sessionReviewActions(snapshot.copilotRealtimeSession())), 2, ", "));
         return new StudyPlanPayload(7, focusDirection, targetRole, techStack);
+    }
+
+    private List<String> sessionReviewActions(CopilotRealtimeSessionVO session) {
+        if (session == null || session.getPostInterviewReview() == null) {
+            return List.of();
+        }
+        return nullSafeList(session.getPostInterviewReview().getRecommendedActions());
     }
 
     private JobPrepDraftPayload resolveJobPrepDraftPayload(ContextSnapshot snapshot) {
@@ -809,6 +867,9 @@ public class AgentRunServiceImpl implements AgentRunService {
 
     private String resolveCoordinatorNextActionPath(ContextSnapshot snapshot) {
         if (snapshot.recordingReview() != null) {
+            return "/interview";
+        }
+        if (snapshot.copilotRealtimeSession() != null) {
             return "/interview";
         }
         if (snapshot.application() != null && snapshot.application().getId() != null) {
@@ -1293,6 +1354,7 @@ public class AgentRunServiceImpl implements AgentRunService {
     private record ContextSnapshot(AbilityProfileVO abilityProfile, ProfileTopicDetailVO topicDetail,
                                    InterviewDetailVO interviewDetail, RecordingReviewSessionVO recordingReview,
                                    ResumeFileVO resume, JobApplicationVO application,
-                                   JobPrepSessionVO jobPrepSession) {
+                                   JobPrepSessionVO jobPrepSession,
+                                   CopilotRealtimeSessionVO copilotRealtimeSession) {
     }
 }
