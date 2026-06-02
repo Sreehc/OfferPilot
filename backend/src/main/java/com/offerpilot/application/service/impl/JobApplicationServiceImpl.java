@@ -146,6 +146,35 @@ public class JobApplicationServiceImpl implements JobApplicationService {
         return detail(userId, applicationId);
     }
 
+    @Override
+    @Transactional
+    public JobApplicationVO saveStrategyDraft(Long userId, Long applicationId, String summary, List<String> recommendations) {
+        JobApplication application = getOwnedApplication(userId, applicationId);
+        String content = buildStrategyContent(summary, recommendations);
+        application.setReviewSuggestion(StringUtils.hasText(summary)
+                ? summary
+                : buildReviewSuggestion(application.getStatus(), toAnalysisSnapshot(application), loadEvents(applicationId)));
+        if (!nullOrEmpty(recommendations)) {
+            application.setNextStepSuggestion(String.join("；", recommendations.stream().limit(3).toList()));
+        } else {
+            application.setNextStepSuggestion(buildNextStepSuggestion(
+                    application.getStatus(), toAnalysisSnapshot(application), application.getNextStepDate(), loadEvents(applicationId)));
+        }
+        jobApplicationMapper.updateById(application);
+        createEvent(
+                applicationId,
+                userId,
+                "strategy",
+                "已保存 Agent 投递策略草案",
+                content,
+                LocalDateTime.now(),
+                null,
+                null,
+                null,
+                List.of("agent", "strategy-draft"));
+        return detail(userId, applicationId);
+    }
+
     private JobApplication getOwnedApplication(Long userId, Long applicationId) {
         JobApplication application = jobApplicationMapper.selectById(applicationId);
         if (application == null || !application.getUserId().equals(userId)) {
@@ -416,6 +445,21 @@ public class JobApplicationServiceImpl implements JobApplicationService {
             return "";
         }
         return text.length() <= limit ? text : text.substring(0, limit) + "...";
+    }
+
+    private boolean nullOrEmpty(List<String> values) {
+        return values == null || values.isEmpty();
+    }
+
+    private String buildStrategyContent(String summary, List<String> recommendations) {
+        List<String> parts = new ArrayList<>();
+        if (StringUtils.hasText(summary)) {
+            parts.add(summary.trim());
+        }
+        if (!nullOrEmpty(recommendations)) {
+            parts.add("建议动作：" + String.join("；", recommendations.stream().limit(4).toList()));
+        }
+        return parts.isEmpty() ? "已保存一份投递推进策略草案。" : String.join("\n", parts);
     }
 
     private record ResumeSnapshot(Long resumeId, String resumeTitle, List<String> resumeSkills, List<String> projectSkills) {

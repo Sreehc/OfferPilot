@@ -17,6 +17,7 @@ import com.offerpilot.application.service.JobApplicationService;
 import com.offerpilot.application.vo.JobApplicationVO;
 import com.offerpilot.common.api.ResultCode;
 import com.offerpilot.common.exception.BusinessException;
+import com.offerpilot.interview.dto.JobPrepSessionCreateRequest;
 import com.offerpilot.interview.service.InterviewJobPrepService;
 import com.offerpilot.interview.service.InterviewRecordingReviewService;
 import com.offerpilot.interview.service.InterviewService;
@@ -248,7 +249,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                 StringUtils.hasText(jobTitle)
                         ? "审批通过后会把这份 " + jobTitle + " 的 JD 备面建议确认为正式草案，方便继续在面试页补充。"
                         : "审批通过后会把这份 JD 备面建议确认为正式草案，方便继续在面试页补充。",
-                null);
+                writeObject(resolveJobPrepDraftPayload(snapshot), "{}"));
     }
 
     private RunBlueprint buildRecordingReviewBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
@@ -373,7 +374,10 @@ public class AgentRunServiceImpl implements AgentRunService {
                 application != null
                         ? "审批通过后会把 " + defaultText(application.getJobTitle(), "当前岗位") + " 的投递推进建议确认为正式策略草案。"
                         : "审批通过后会把这次投递推进建议确认为正式策略草案。",
-                null);
+                writeObject(new ApplicationStrategyPayload(
+                        application == null ? null : application.getId(),
+                        summary,
+                        recommendations), "{}"));
     }
 
     private RunBlueprint buildInterviewReviewBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
@@ -462,9 +466,9 @@ public class AgentRunServiceImpl implements AgentRunService {
         String actionType = normalize(run.getApprovalActionType());
         return switch (actionType) {
             case "refresh_study_plan" -> executeStudyPlanAction(userId, run.getApprovalPayloadJson());
-            case "save_job_prep_draft" -> new ExecutionResult("已确认这份 JD 备面草案，可继续在面试页补充和消费。");
+            case "save_job_prep_draft" -> executeJobPrepDraftAction(userId, run.getApprovalPayloadJson());
             case "save_resume_follow_up_draft" -> new ExecutionResult("已确认这份简历追问和修改建议草稿，可继续在简历页整理。");
-            case "save_application_strategy" -> new ExecutionResult("已确认这份投递推进策略草案，可继续在投递页执行。");
+            case "save_application_strategy" -> executeApplicationStrategyAction(userId, run.getApprovalPayloadJson());
             default -> new ExecutionResult("已完成审批。");
         };
     }
@@ -488,6 +492,36 @@ public class AgentRunServiceImpl implements AgentRunService {
             result = planService.refresh(userId, currentPlan.getId());
         }
         return new ExecutionResult("已生成正式学习计划《" + result.getTitle() + "》，可以继续在学习计划页执行。");
+    }
+
+    private ExecutionResult executeJobPrepDraftAction(Long userId, String payloadJson) {
+        JobPrepDraftPayload payload = readObject(payloadJson, JobPrepDraftPayload.class);
+        if (payload == null || (!StringUtils.hasText(payload.jdText()) && payload.applicationId() == null)) {
+            return new ExecutionResult("当前缺少可写入的 JD 备面内容，暂未生成正式草案。");
+        }
+        JobPrepSessionCreateRequest request = new JobPrepSessionCreateRequest();
+        request.setApplicationId(payload.applicationId());
+        request.setResumeId(payload.resumeId());
+        request.setCompany(payload.company());
+        request.setJobTitle(payload.jobTitle());
+        request.setJdText(payload.jdText());
+        JobPrepSessionVO session = interviewJobPrepService.createSession(userId, request);
+        String title = firstNonBlank(session.getJobTitle(), payload.jobTitle(), "当前岗位");
+        return new ExecutionResult("已生成正式 JD 备面草案《" + title + "》，可以继续在面试页查看和消费。");
+    }
+
+    private ExecutionResult executeApplicationStrategyAction(Long userId, String payloadJson) {
+        ApplicationStrategyPayload payload = readObject(payloadJson, ApplicationStrategyPayload.class);
+        if (payload == null || payload.applicationId() == null) {
+            return new ExecutionResult("当前缺少可写入的投递对象，暂未保存正式策略草案。");
+        }
+        JobApplicationVO application = jobApplicationService.saveStrategyDraft(
+                userId, payload.applicationId(), payload.summary(), payload.recommendations());
+        return new ExecutionResult("已把投递策略草案写回「"
+                + defaultText(application.getCompany(), "目标公司")
+                + " / "
+                + defaultText(application.getJobTitle(), "目标岗位")
+                + "」，可继续在投递页执行。");
     }
 
     private ContextSnapshot resolveContextSnapshot(Long userId, List<String> contextRefs) {
@@ -658,6 +692,37 @@ public class AgentRunServiceImpl implements AgentRunService {
                 snapshot.application() == null ? null : joinLimited(snapshot.application().getJdKeywords(), 4, ", "),
                 snapshot.jobPrepSession() == null ? null : joinLimited(snapshot.jobPrepSession().getMatchedKeywords(), 4, ", "));
         return new StudyPlanPayload(7, focusDirection, targetRole, techStack);
+    }
+
+    private JobPrepDraftPayload resolveJobPrepDraftPayload(ContextSnapshot snapshot) {
+        if (snapshot.jobPrepSession() != null) {
+            JobPrepSessionVO session = snapshot.jobPrepSession();
+            return new JobPrepDraftPayload(
+                    session.getApplicationId(),
+                    session.getResumeFileId(),
+                    session.getCompany(),
+                    session.getJobTitle(),
+                    session.getJdText());
+        }
+        if (snapshot.application() != null) {
+            JobApplicationVO application = snapshot.application();
+            return new JobPrepDraftPayload(
+                    application.getId(),
+                    application.getResumeFileId(),
+                    application.getCompany(),
+                    application.getJobTitle(),
+                    application.getJdText());
+        }
+        if (snapshot.resume() != null) {
+            ResumeFileVO resume = snapshot.resume();
+            return new JobPrepDraftPayload(
+                    null,
+                    resume.getId(),
+                    null,
+                    null,
+                    null);
+        }
+        return null;
     }
 
     private String resolveCoordinatorNextActionPath(ContextSnapshot snapshot) {
@@ -951,6 +1016,12 @@ public class AgentRunServiceImpl implements AgentRunService {
     }
 
     private record ExecutionResult(String summary) {
+    }
+
+    private record JobPrepDraftPayload(Long applicationId, Long resumeId, String company, String jobTitle, String jdText) {
+    }
+
+    private record ApplicationStrategyPayload(Long applicationId, String summary, List<String> recommendations) {
     }
 
     private record ContextSnapshot(AbilityProfileVO abilityProfile, ProfileTopicDetailVO topicDetail,

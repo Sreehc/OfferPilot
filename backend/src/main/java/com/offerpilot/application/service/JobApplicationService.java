@@ -18,4 +18,6 @@ public interface JobApplicationService {
     JobApplicationVO addEvent(Long userId, Long applicationId, JobApplicationEventCreateRequest request);
 
     JobApplicationVO analyze(Long userId, Long applicationId);
+
+    JobApplicationVO saveStrategyDraft(Long userId, Long applicationId, String summary, List<String> recommendations);
 }

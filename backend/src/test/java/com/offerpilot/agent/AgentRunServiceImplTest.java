@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -20,6 +21,7 @@ import com.offerpilot.analytics.service.AnalyticsService;
 import com.offerpilot.analytics.vo.ProfileTopicDetailVO;
 import com.offerpilot.application.service.JobApplicationService;
 import com.offerpilot.application.vo.JobApplicationVO;
+import com.offerpilot.interview.vo.JobPrepSessionVO;
 import com.offerpilot.interview.service.InterviewJobPrepService;
 import com.offerpilot.interview.service.InterviewRecordingReviewService;
 import com.offerpilot.interview.service.InterviewService;
@@ -41,6 +43,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AgentRunServiceImplTest {
+
+    private AgentRun lastInsertedRun;
 
     @Mock
     private AgentRunMapper agentRunMapper;
@@ -70,8 +74,15 @@ class AgentRunServiceImplTest {
             AgentRun run = invocation.getArgument(0);
             run.setId(1001L);
             run.setUpdateTime(LocalDateTime.of(2026, 6, 2, 10, 0));
+            lastInsertedRun = run;
             return 1;
         }).when(agentRunMapper).insert(any(AgentRun.class));
+        lenient().when(agentRunMapper.selectById(1001L)).thenAnswer(invocation -> lastInsertedRun);
+        lenient().doAnswer(invocation -> {
+            AgentRun run = invocation.getArgument(0);
+            lastInsertedRun = run;
+            return 1;
+        }).when(agentRunMapper).updateById(any(AgentRun.class));
     }
 
     @Test
@@ -195,6 +206,71 @@ class AgentRunServiceImplTest {
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("优先推进下周的一面")));
         assertTrue(Boolean.TRUE.equals(result.getRequiresApproval()));
         assertNotNull(result.getApprovalSummary());
+    }
+
+    @Test
+    void approveRun_persistsJobPrepDraftViaDomainService() {
+        when(jobApplicationService.detail(1L, 6L)).thenReturn(JobApplicationVO.builder()
+                .id(6L)
+                .resumeFileId(9L)
+                .company("字节跳动")
+                .jobTitle("Java 后端开发")
+                .jdText("负责 Java、Redis 和 Kafka 相关服务建设")
+                .missingKeywords(List.of("Redis", "Kafka"))
+                .nextStepSuggestion("先补 Redis 和 Kafka。")
+                .reviewSuggestion("准备项目案例。")
+                .build());
+        when(interviewJobPrepService.createSession(any(), any())).thenReturn(JobPrepSessionVO.builder()
+                .id(301L)
+                .applicationId(6L)
+                .resumeFileId(9L)
+                .company("字节跳动")
+                .jobTitle("Java 后端开发")
+                .jdText("负责 Java、Redis 和 Kafka 相关服务建设")
+                .build());
+
+        AgentRunVO created = agentRunService.createRun(1L, request(
+                "job_prep",
+                "applications",
+                List.of("application:6"),
+                "准备下周一面"));
+
+        AgentRunVO approved = agentRunService.approveRun(1L, Long.valueOf(String.valueOf(created.getId())), null);
+
+        verify(interviewJobPrepService).createSession(any(), any());
+        assertEquals("approved", approved.getStatus());
+        assertTrue(approved.getExecutionSummary().contains("正式 JD 备面草案"));
+    }
+
+    @Test
+    void approveRun_persistsApplicationStrategyViaDomainService() {
+        when(jobApplicationService.detail(1L, 6L)).thenReturn(JobApplicationVO.builder()
+                .id(6L)
+                .company("字节跳动")
+                .jobTitle("Java 后端开发")
+                .status("interview")
+                .missingKeywords(List.of("Redis", "Kafka"))
+                .nextStepSuggestion("下周三一面前先补缓存一致性和消息队列。")
+                .reviewSuggestion("把最近一轮项目深挖反馈同步到下一轮准备清单。")
+                .build());
+        when(jobApplicationService.saveStrategyDraft(any(), any(), any(), any())).thenReturn(JobApplicationVO.builder()
+                .id(6L)
+                .company("字节跳动")
+                .jobTitle("Java 后端开发")
+                .build());
+
+        AgentRunVO created = agentRunService.createRun(1L, request(
+                "application_strategist",
+                "applications",
+                List.of("application:6"),
+                "优先推进下周的一面"));
+
+        AgentRunVO approved = agentRunService.approveRun(1L, Long.valueOf(String.valueOf(created.getId())), null);
+
+        verify(jobApplicationService).saveStrategyDraft(any(), any(), any(), any());
+        assertEquals("approved", approved.getStatus());
+        assertTrue(approved.getExecutionSummary().contains("投递策略草案"));
+        assertTrue(approved.getExecutionSummary().contains("字节跳动"));
     }
 
     private AgentRunCreateRequest request(String agentType, String triggerSource, List<String> contextRefs, String prompt) {
