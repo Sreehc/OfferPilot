@@ -382,6 +382,52 @@ class AgentRunServiceImplTest {
     }
 
     @Test
+    void createRun_applicationStrategistUsesApplicationBoardContext() {
+        when(jobApplicationService.board(1L)).thenReturn(List.of(
+                JobApplicationVO.builder()
+                        .id(3L)
+                        .company("携程")
+                        .jobTitle("Java 开发")
+                        .status("saved")
+                        .matchScore(new BigDecimal("88"))
+                        .missingKeywords(List.of("Spring Cloud"))
+                        .nextStepSuggestion("先决定投递时间。")
+                        .build(),
+                JobApplicationVO.builder()
+                        .id(8L)
+                        .company("字节跳动")
+                        .jobTitle("后端开发")
+                        .status("interview")
+                        .matchScore(new BigDecimal("76"))
+                        .missingKeywords(List.of("Redis", "Kafka"))
+                        .nextStepSuggestion("下周一面前先补缓存一致性和 MQ 场景。")
+                        .reviewSuggestion("把上一轮面试反馈同步到项目追问清单。")
+                        .build(),
+                JobApplicationVO.builder()
+                        .id(5L)
+                        .company("美团")
+                        .jobTitle("平台开发")
+                        .status("applied")
+                        .matchScore(new BigDecimal("82"))
+                        .nextStepSuggestion("等待笔试通知。")
+                        .build()));
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "application_strategist",
+                "applications",
+                List.of("application:board"),
+                "帮我看今天先推进哪条投递"));
+
+        assertTrue(result.getSummary().contains("共有 3 条岗位记录"));
+        assertTrue(result.getSummary().contains("进行中 2 条"));
+        assertTrue(result.getSummary().contains("字节跳动"));
+        assertEquals("/applications/8", result.getNextActionPath());
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("进行中岗位有 2 条")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("面试中")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("Redis")));
+    }
+
+    @Test
     void createRun_coordinatorUsesDashboardOverviewContext() {
         WeakPointVO weakPoint = new WeakPointVO();
         weakPoint.setCategoryName("系统设计");
@@ -415,6 +461,35 @@ class AgentRunServiceImplTest {
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("4 项待巩固")));
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("2 条进行中投递")));
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("系统设计")));
+    }
+
+    @Test
+    void createRun_coordinatorUsesApplicationBoardFocusWhenDashboardMissing() {
+        when(jobApplicationService.board(1L)).thenReturn(List.of(
+                JobApplicationVO.builder()
+                        .id(11L)
+                        .company("小红书")
+                        .jobTitle("后端工程师")
+                        .status("written")
+                        .matchScore(new BigDecimal("79"))
+                        .nextStepSuggestion("先完成在线作业，再准备项目细节。")
+                        .build(),
+                JobApplicationVO.builder()
+                        .id(4L)
+                        .company("滴滴")
+                        .jobTitle("Java 开发")
+                        .status("saved")
+                        .matchScore(new BigDecimal("91"))
+                        .build()));
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "coordinator",
+                "applications",
+                List.of("application:board"),
+                "今天先处理投递还是训练"));
+
+        assertEquals("/applications/11", result.getNextActionPath());
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("投递看板当前最值得推进的是 小红书 后端工程师")));
     }
 
     @Test

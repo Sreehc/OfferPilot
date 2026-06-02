@@ -38,6 +38,7 @@ import com.offerpilot.plan.service.PlanService;
 import com.offerpilot.plan.vo.StudyPlanCurrentVO;
 import com.offerpilot.resume.service.ResumeService;
 import com.offerpilot.resume.vo.ResumeFileVO;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -364,6 +365,7 @@ public class AgentRunServiceImpl implements AgentRunService {
 
     private RunBlueprint buildApplicationStrategistBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
         JobApplicationVO application = snapshot.application();
+        ApplicationBoardSnapshot applicationBoard = snapshot.applicationBoard();
         String summary;
         List<String> recommendations;
         String nextActionPath = "/applications";
@@ -381,6 +383,23 @@ public class AgentRunServiceImpl implements AgentRunService {
                     prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”同步到投递推进排序。") : List.of(),
                     contextRefsText(contextRefs, "本次参考的岗位或反馈："));
             nextActionPath = "/applications/" + application.getId();
+        } else if (applicationBoard != null && applicationBoard.focusApplication() != null) {
+            JobApplicationVO focusApplication = applicationBoard.focusApplication();
+            summary = "已根据当前投递看板整理下一步推进建议。当前共有 "
+                    + defaultInt(applicationBoard.totalCount())
+                    + " 条岗位记录，进行中 "
+                    + defaultInt(applicationBoard.activeCount())
+                    + " 条，优先推进 "
+                    + defaultText(focusApplication.getCompany(), "当前重点公司")
+                    + " "
+                    + defaultText(focusApplication.getJobTitle(), "当前重点岗位")
+                    + "。";
+            recommendations = mergeRecommendations(
+                    applicationBoardRecommendations(applicationBoard),
+                    providerContextRecommendations("application_strategist", snapshot),
+                    prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”同步到投递推进排序。") : List.of(),
+                    contextRefsText(contextRefs, "本次参考的岗位或反馈："));
+            nextActionPath = "/applications/" + focusApplication.getId();
         } else {
             summary = "已根据当前投递状态和反馈节奏整理下一步推进建议。";
             recommendations = mergeRecommendations(
@@ -619,6 +638,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         RecordingReviewSessionVO recordingReview = null;
         ResumeFileVO resume = null;
         JobApplicationVO application = null;
+        ApplicationBoardSnapshot applicationBoard = null;
         JobPrepSessionVO jobPrepSession = null;
         CopilotRealtimeSessionVO copilotRealtimeSession = null;
         List<UserProviderConfigItemVO> providerConfigs = null;
@@ -697,9 +717,9 @@ public class AgentRunServiceImpl implements AgentRunService {
         if (applicationId != null) {
             application = loadOptional("application " + applicationId, () -> jobApplicationService.detail(userId, applicationId));
         } else if (hasContext(contextRefs, "application:board")) {
-            application = loadOptional("application board", () -> {
+            applicationBoard = loadOptional("application board", () -> {
                 List<JobApplicationVO> board = jobApplicationService.board(userId);
-                return board == null || board.isEmpty() ? null : board.get(0);
+                return buildApplicationBoardSnapshot(board);
             });
         }
 
@@ -717,6 +737,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                 recordingReview,
                 resume,
                 application,
+                applicationBoard,
                 jobPrepSession,
                 copilotRealtimeSession,
                 providerConfigs);
@@ -858,6 +879,13 @@ public class AgentRunServiceImpl implements AgentRunService {
         if (snapshot.application() != null) {
             recommendations.add("先推进 " + defaultText(snapshot.application().getCompany(), "当前岗位")
                     + " 的投递动作，再决定是否扩展到下一批岗位。");
+        } else if (snapshot.applicationBoard() != null && snapshot.applicationBoard().focusApplication() != null) {
+            JobApplicationVO focusApplication = snapshot.applicationBoard().focusApplication();
+            recommendations.add("投递看板当前最值得推进的是 "
+                    + defaultText(focusApplication.getCompany(), "当前重点公司")
+                    + " "
+                    + defaultText(focusApplication.getJobTitle(), "当前重点岗位")
+                    + "，先围绕这条线推进。");
         }
         if (snapshot.interviewDetail() != null) {
             recommendations.add("最近模拟面试已经沉淀结果，先完成复盘再决定下一轮训练。");
@@ -880,6 +908,30 @@ public class AgentRunServiceImpl implements AgentRunService {
         if (recommendations.isEmpty()) {
             recommendations.add("先确认你现在要推进的是训练、备面、简历还是投递。");
             recommendations.add("把结果写入对应模块，而不是停留在对话摘要。");
+        }
+        return recommendations;
+    }
+
+    private List<String> applicationBoardRecommendations(ApplicationBoardSnapshot boardSnapshot) {
+        if (boardSnapshot == null || boardSnapshot.focusApplication() == null) {
+            return List.of();
+        }
+        JobApplicationVO focusApplication = boardSnapshot.focusApplication();
+        List<String> recommendations = new ArrayList<>();
+        recommendations.add("当前看板里进行中岗位有 " + defaultInt(boardSnapshot.activeCount())
+                + " 条，先聚焦最接近推进节点的岗位。");
+        recommendations.add("当前首要推进岗位状态："
+                + applicationStatusLabel(focusApplication.getStatus())
+                + "。");
+        if (StringUtils.hasText(focusApplication.getNextStepSuggestion())) {
+            recommendations.add(focusApplication.getNextStepSuggestion());
+        }
+        if (StringUtils.hasText(focusApplication.getReviewSuggestion())) {
+            recommendations.add(focusApplication.getReviewSuggestion());
+        }
+        if (!nullSafeList(focusApplication.getMissingKeywords()).isEmpty()) {
+            recommendations.add("优先补齐这条重点岗位的 JD 缺口："
+                    + joinLimited(focusApplication.getMissingKeywords(), 3, "、") + "。");
         }
         return recommendations;
     }
@@ -916,6 +968,9 @@ public class AgentRunServiceImpl implements AgentRunService {
                 snapshot.copilotRealtimeSession() == null ? null : snapshot.copilotRealtimeSession().getJobTitle());
         String targetRole = firstNonBlank(
                 snapshot.application() == null ? null : snapshot.application().getJobTitle(),
+                snapshot.applicationBoard() == null || snapshot.applicationBoard().focusApplication() == null
+                        ? null
+                        : snapshot.applicationBoard().focusApplication().getJobTitle(),
                 snapshot.jobPrepSession() == null ? null : snapshot.jobPrepSession().getJobTitle(),
                 snapshot.currentPlan() == null ? null : snapshot.currentPlan().getTargetRole(),
                 snapshot.interviewDetail() == null ? null : snapshot.interviewDetail().getJobRole(),
@@ -926,6 +981,9 @@ public class AgentRunServiceImpl implements AgentRunService {
                 snapshot.interviewDetail() == null ? null : snapshot.interviewDetail().getTechStack(),
                 snapshot.resume() == null ? null : joinLimited(snapshot.resume().getSkills(), 4, ", "),
                 snapshot.application() == null ? null : joinLimited(snapshot.application().getJdKeywords(), 4, ", "),
+                snapshot.applicationBoard() == null || snapshot.applicationBoard().focusApplication() == null
+                        ? null
+                        : joinLimited(snapshot.applicationBoard().focusApplication().getJdKeywords(), 4, ", "),
                 snapshot.jobPrepSession() == null ? null : joinLimited(snapshot.jobPrepSession().getMatchedKeywords(), 4, ", "),
                 snapshot.topicRetrospective() == null ? null : joinLimited(snapshot.topicRetrospective().getNextActions(), 2, ", "),
                 snapshot.copilotRealtimeSession() == null ? null : joinLimited(
@@ -1060,6 +1118,11 @@ public class AgentRunServiceImpl implements AgentRunService {
         if (snapshot.application() != null && snapshot.application().getId() != null) {
             return "/applications/" + snapshot.application().getId();
         }
+        if (snapshot.applicationBoard() != null
+                && snapshot.applicationBoard().focusApplication() != null
+                && snapshot.applicationBoard().focusApplication().getId() != null) {
+            return "/applications/" + snapshot.applicationBoard().focusApplication().getId();
+        }
         if (snapshot.interviewDetail() != null && snapshot.interviewDetail().getSessionId() != null) {
             return "/interview/detail/" + snapshot.interviewDetail().getSessionId();
         }
@@ -1096,6 +1159,57 @@ public class AgentRunServiceImpl implements AgentRunService {
                             right.getId() == null ? Long.MAX_VALUE : right.getId());
                 })
                 .findFirst();
+    }
+
+    private ApplicationBoardSnapshot buildApplicationBoardSnapshot(List<JobApplicationVO> board) {
+        List<JobApplicationVO> safeBoard = nullSafeList(board);
+        if (safeBoard.isEmpty()) {
+            return null;
+        }
+        List<JobApplicationVO> sortedBoard = safeBoard.stream()
+                .sorted((left, right) -> {
+                    int priorityCompare = Integer.compare(
+                            applicationStatusPriority(left == null ? null : left.getStatus()),
+                            applicationStatusPriority(right == null ? null : right.getStatus()));
+                    if (priorityCompare != 0) {
+                        return priorityCompare;
+                    }
+                    BigDecimal leftScore = left == null || left.getMatchScore() == null ? BigDecimal.ZERO : left.getMatchScore();
+                    BigDecimal rightScore = right == null || right.getMatchScore() == null ? BigDecimal.ZERO : right.getMatchScore();
+                    int scoreCompare = rightScore.compareTo(leftScore);
+                    if (scoreCompare != 0) {
+                        return scoreCompare;
+                    }
+                    LocalDateTime leftTime = left == null ? null : left.getUpdateTime();
+                    LocalDateTime rightTime = right == null ? null : right.getUpdateTime();
+                    if (leftTime == null && rightTime == null) {
+                        return 0;
+                    }
+                    if (leftTime == null) {
+                        return 1;
+                    }
+                    if (rightTime == null) {
+                        return -1;
+                    }
+                    return rightTime.compareTo(leftTime);
+                })
+                .toList();
+        int activeCount = (int) sortedBoard.stream()
+                .filter(item -> isActiveApplicationStatus(item == null ? null : item.getStatus()))
+                .count();
+        int offerCount = (int) sortedBoard.stream()
+                .filter(item -> "offer".equals(normalize(item == null ? null : item.getStatus())))
+                .count();
+        int rejectedCount = (int) sortedBoard.stream()
+                .filter(item -> "rejected".equals(normalize(item == null ? null : item.getStatus())))
+                .count();
+        return new ApplicationBoardSnapshot(
+                sortedBoard,
+                sortedBoard.get(0),
+                sortedBoard.size(),
+                activeCount,
+                offerCount,
+                rejectedCount);
     }
 
     private AgentRunVO buildVo(AgentRun run) {
@@ -1514,6 +1628,23 @@ public class AgentRunServiceImpl implements AgentRunService {
         };
     }
 
+    private int applicationStatusPriority(String value) {
+        return switch (normalize(value)) {
+            case "interview" -> 0;
+            case "written" -> 1;
+            case "applied" -> 2;
+            case "saved" -> 3;
+            case "offer" -> 4;
+            case "rejected" -> 5;
+            default -> 99;
+        };
+    }
+
+    private boolean isActiveApplicationStatus(String value) {
+        String normalized = normalize(value);
+        return "applied".equals(normalized) || "written".equals(normalized) || "interview".equals(normalized);
+    }
+
     private String formatNumber(Number value) {
         if (value == null) {
             return null;
@@ -1584,8 +1715,14 @@ public class AgentRunServiceImpl implements AgentRunService {
                                    StudyPlanCurrentVO currentPlan,
                                    InterviewDetailVO interviewDetail, RecordingReviewSessionVO recordingReview,
                                    ResumeFileVO resume, JobApplicationVO application,
+                                   ApplicationBoardSnapshot applicationBoard,
                                    JobPrepSessionVO jobPrepSession,
                                    CopilotRealtimeSessionVO copilotRealtimeSession,
                                    List<UserProviderConfigItemVO> providerConfigs) {
+    }
+
+    private record ApplicationBoardSnapshot(List<JobApplicationVO> applications, JobApplicationVO focusApplication,
+                                            Integer totalCount, Integer activeCount, Integer offerCount,
+                                            Integer rejectedCount) {
     }
 }
