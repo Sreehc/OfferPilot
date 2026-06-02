@@ -760,6 +760,17 @@ export interface ProfileTopicDetail {
   recentScores: ProfileTopicWeeklyScore[]
 }
 
+export interface ProfileTopicRetrospective {
+  categoryId: string
+  categoryName: string
+  title: string
+  stage: string
+  summary: string
+  keySignals: string[]
+  riskSignals: string[]
+  nextActions: string[]
+}
+
 export interface RecommendInterview {
   direction: string
   questionCount: number

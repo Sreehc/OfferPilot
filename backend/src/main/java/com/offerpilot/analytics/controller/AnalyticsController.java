@@ -5,6 +5,7 @@ import com.offerpilot.analytics.service.AnalyticsService;
 import com.offerpilot.analytics.vo.EfficiencyVO;
 import com.offerpilot.analytics.vo.LearningInsightsVO;
 import com.offerpilot.analytics.vo.ProfileTopicDetailVO;
+import com.offerpilot.analytics.vo.ProfileTopicRetrospectiveVO;
 import com.offerpilot.analytics.vo.TrendVO;
 import com.offerpilot.common.api.Result;
 import com.offerpilot.common.api.ResultCode;
@@ -17,6 +18,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -59,6 +61,13 @@ public class AnalyticsController {
     @GetMapping("/profile/topics/{topicId}")
     public Result<ProfileTopicDetailVO> profileTopic(@Parameter(description = "分类 ID") @PathVariable Long topicId) {
         return Result.success(analyticsService.getProfileTopicDetail(currentUserId(), topicId));
+    }
+
+    @Operation(summary = "生成领域回顾", description = "基于画像、错题、面试和复习趋势生成当前主题的阶段性回顾")
+    @PostMapping("/profile/topics/{topicId}/retrospectives")
+    public Result<ProfileTopicRetrospectiveVO> profileTopicRetrospective(
+            @Parameter(description = "分类 ID") @PathVariable Long topicId) {
+        return Result.success(analyticsService.buildProfileTopicRetrospective(currentUserId(), topicId));
     }
 
     private Long currentUserId() {

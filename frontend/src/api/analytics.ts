@@ -1,5 +1,12 @@
 import { request } from '@/utils/http'
-import type { AbilityProfile, AbilityTrend, EfficiencyData, LearningInsights, ProfileTopicDetail } from '@/types/api'
+import type {
+  AbilityProfile,
+  AbilityTrend,
+  EfficiencyData,
+  LearningInsights,
+  ProfileTopicDetail,
+  ProfileTopicRetrospective
+} from '@/types/api'
 
 export const fetchAbilityTrendApi = (weeks = 12, categoryIds?: number[]) => {
   const params: Record<string, unknown> = { weeks }
@@ -38,5 +45,12 @@ export const fetchAnalyticsTopicProfileApi = (topicId: string) => {
   return request<ProfileTopicDetail>({
     url: `/analytics/profile/topics/${topicId}`,
     method: 'get',
+  })
+}
+
+export const createAnalyticsTopicRetrospectiveApi = (topicId: string) => {
+  return request<ProfileTopicRetrospective>({
+    url: `/analytics/profile/topics/${topicId}/retrospectives`,
+    method: 'post',
   })
 }

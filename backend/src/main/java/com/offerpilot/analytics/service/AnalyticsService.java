@@ -4,6 +4,7 @@ import com.offerpilot.adaptive.vo.AbilityProfileVO;
 import com.offerpilot.analytics.vo.EfficiencyVO;
 import com.offerpilot.analytics.vo.LearningInsightsVO;
 import com.offerpilot.analytics.vo.ProfileTopicDetailVO;
+import com.offerpilot.analytics.vo.ProfileTopicRetrospectiveVO;
 import com.offerpilot.analytics.vo.TrendVO;
 import java.util.List;
 
@@ -35,4 +36,9 @@ public interface AnalyticsService {
      * Topic-level profile detail used by analytics domain detail drawers.
      */
     ProfileTopicDetailVO getProfileTopicDetail(Long userId, Long categoryId);
+
+    /**
+     * Topic retrospective used by analytics retrospective workflow.
+     */
+    ProfileTopicRetrospectiveVO buildProfileTopicRetrospective(Long userId, Long categoryId);
 }

@@ -8,6 +8,7 @@ import com.offerpilot.analytics.service.AnalyticsService;
 import com.offerpilot.analytics.vo.EfficiencyVO;
 import com.offerpilot.analytics.vo.LearningInsightsVO;
 import com.offerpilot.analytics.vo.ProfileTopicDetailVO;
+import com.offerpilot.analytics.vo.ProfileTopicRetrospectiveVO;
 import com.offerpilot.analytics.vo.TrendVO;
 import com.offerpilot.application.entity.JobApplication;
 import com.offerpilot.application.mapper.JobApplicationMapper;
@@ -51,6 +52,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Slf4j
 @Service
@@ -317,6 +319,29 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .build();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public ProfileTopicRetrospectiveVO buildProfileTopicRetrospective(Long userId, Long categoryId) {
+        ProfileTopicDetailVO detail = getProfileTopicDetail(userId, categoryId);
+        LearningInsightsVO insights = getLearningInsights(userId);
+        String stage = resolveRetrospectiveStage(detail);
+
+        List<String> keySignals = buildRetrospectiveSignals(detail, insights);
+        List<String> riskSignals = buildRetrospectiveRisks(detail, insights);
+        List<String> nextActions = buildRetrospectiveActions(detail, insights);
+
+        return ProfileTopicRetrospectiveVO.builder()
+                .categoryId(detail.getCategoryId())
+                .categoryName(detail.getCategoryName())
+                .title("近 8 周「" + detail.getCategoryName() + "」领域回顾")
+                .stage(stage)
+                .summary(buildRetrospectiveSummary(detail, stage, riskSignals))
+                .keySignals(keySignals)
+                .riskSignals(riskSignals)
+                .nextActions(nextActions)
+                .build();
+    }
+
     private List<TrendVO.PlanTrendPoint> buildPlanProgressTrend(Long userId, int weeks) {
         LocalDate startDate = LocalDate.now().minusWeeks(weeks).with(DayOfWeek.MONDAY);
         List<StudyPlan> plans = studyPlanMapper.selectList(new LambdaQueryWrapper<StudyPlan>()
@@ -334,6 +359,81 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                         .totalTaskCount(entry.getValue().stream().mapToInt(plan -> plan.getTotalTaskCount() == null ? 0 : plan.getTotalTaskCount()).sum())
                         .build())
                 .toList();
+    }
+
+    private String resolveRetrospectiveStage(ProfileTopicDetailVO detail) {
+        if (Boolean.TRUE.equals(detail.getWeak()) || detail.getDueCount() >= 6 || detail.getAbilityScore() < 60) {
+            return "needs_attention";
+        }
+        if (detail.getMasteryRate().doubleValue() >= 70 && detail.getAbilityScore() >= 75) {
+            return "stable";
+        }
+        return "building";
+    }
+
+    private String buildRetrospectiveSummary(ProfileTopicDetailVO detail, String stage, List<String> riskSignals) {
+        String stageText = switch (stage) {
+            case "stable" -> "已经进入相对稳定区间";
+            case "needs_attention" -> "当前仍是需要优先处理的薄弱领域";
+            default -> "正在从理解阶段向稳定输出阶段过渡";
+        };
+        if (riskSignals.isEmpty()) {
+            return "「" + detail.getCategoryName() + "」" + stageText + "，建议继续把当前口径固化成固定题型的答法。";
+        }
+        return "「" + detail.getCategoryName() + "」" + stageText + "，但还存在 "
+                + abbreviateJoined(riskSignals, 2)
+                + " 等风险，需要继续安排下一轮针对性训练。";
+    }
+
+    private List<String> buildRetrospectiveSignals(ProfileTopicDetailVO detail, LearningInsightsVO insights) {
+        LinkedHashSet<String> signals = new LinkedHashSet<>();
+        signals.add("当前画像分约为 " + Math.round(detail.getAbilityScore()) + "，掌握率约为 "
+                + detail.getMasteryRate().setScale(0, RoundingMode.HALF_UP) + "%。");
+        signals.add("最近共累计 " + detail.getInterviewCount() + " 场相关模拟面试、" + detail.getWrongCount() + " 道相关错题。");
+        if (!detail.getRecentScores().isEmpty()) {
+            double latest = detail.getRecentScores().get(detail.getRecentScores().size() - 1).getScore();
+            double first = detail.getRecentScores().get(0).getScore();
+            String trendText = latest >= first ? "最近趋势整体上行" : "最近趋势仍有回落";
+            signals.add(trendText + "，区间变化约 " + Math.round(first) + " -> " + Math.round(latest) + "。");
+        }
+        if (StringUtils.hasText(insights.getPlanExecutionStatus())) {
+            signals.add("当前主线计划状态：" + insights.getPlanExecutionStatus());
+        }
+        return signals.stream().limit(4).toList();
+    }
+
+    private List<String> buildRetrospectiveRisks(ProfileTopicDetailVO detail, LearningInsightsVO insights) {
+        LinkedHashSet<String> risks = new LinkedHashSet<>();
+        if (detail.getDueCount() > 0) {
+            risks.add("还有 " + detail.getDueCount() + " 个待复盘点没有清完，容易让掌握度回落。");
+        }
+        if (detail.getWrongCount() >= detail.getInterviewCount() && detail.getWrongCount() > 0) {
+            risks.add("错题沉积速度仍高于面试验证速度，说明理解还没完全转成稳定表达。");
+        }
+        if (detail.getAbilityScore() < 65) {
+            risks.add("画像分仍处在较低区间，继续追问时容易暴露原理或案例深度不够。");
+        }
+        if (StringUtils.hasText(insights.getReviewDebtStatus()) && !"已清到期待复盘".equals(insights.getReviewDebtStatus())) {
+            risks.add("整体复盘债务还没清完，会拖慢这个领域的稳定率提升。");
+        }
+        return risks.stream().limit(4).toList();
+    }
+
+    private List<String> buildRetrospectiveActions(ProfileTopicDetailVO detail, LearningInsightsVO insights) {
+        LinkedHashSet<String> actions = new LinkedHashSet<>();
+        actions.add("先围绕「" + detail.getCategoryName() + "」安排 1 轮专项题库或知识库追问，收紧核心口径。");
+        actions.add("从建议动作里挑 1 个点，补成 90 秒口语答案，再用一场模拟面试验证。");
+        if (detail.getDueCount() > 0) {
+            actions.add("优先清理到期待复盘的题和片段，避免旧薄弱点继续堆积。");
+        }
+        if (insights.getApplicationActiveCount() != null && insights.getApplicationActiveCount() > 0) {
+            actions.add("把这块领域的表达同步到下一批投递和 JD 备面里，不要只停留在训练页。");
+        }
+        return actions.stream().limit(4).toList();
+    }
+
+    private String abbreviateJoined(List<String> items, int limit) {
+        return items.stream().limit(limit).map(item -> item.replace("。", "")).collect(Collectors.joining("、"));
     }
 
     private List<String> buildTopicRecommendations(CategoryAbilityVO categoryAbility,

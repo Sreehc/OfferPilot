@@ -139,6 +139,56 @@
                   </div>
                 </article>
               </div>
+
+              <div class="mt-5 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p class="text-sm font-semibold text-ink">领域回顾</p>
+                  <p class="mt-1 text-sm text-secondary">把画像、错题、复盘债务和趋势合成一份阶段性回顾。</p>
+                </div>
+                <el-button :loading="retrospectiveLoading" class="action-button" @click="generateRetrospective">
+                  生成领域回顾
+                </el-button>
+              </div>
+
+              <div v-if="retrospectiveLoading" class="topic-retrospective-shell mt-5 flex h-[220px] items-center justify-center">
+                <div class="text-center">
+                  <div class="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+                  <p class="mt-3 text-sm text-secondary">正在生成领域回顾...</p>
+                </div>
+              </div>
+              <div v-else-if="topicRetrospective" class="topic-retrospective-shell mt-5">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p class="section-kicker">Retrospective</p>
+                    <h5 class="text-xl font-semibold tracking-[-0.03em] text-ink">{{ topicRetrospective.title }}</h5>
+                    <p class="mt-2 text-sm leading-6 text-secondary">{{ topicRetrospective.summary }}</p>
+                  </div>
+                  <span class="topic-retrospective-stage" :class="`topic-retrospective-stage--${topicRetrospective.stage}`">
+                    {{ retrospectiveStageLabel(topicRetrospective.stage) }}
+                  </span>
+                </div>
+
+                <div class="mt-5 grid gap-4 xl:grid-cols-3">
+                  <article class="topic-detail-panel">
+                    <p class="topic-detail-panel__title">关键信号</p>
+                    <ul class="topic-detail-list mt-3">
+                      <li v-for="item in topicRetrospective.keySignals" :key="item">{{ item }}</li>
+                    </ul>
+                  </article>
+                  <article class="topic-detail-panel">
+                    <p class="topic-detail-panel__title">当前风险</p>
+                    <ul class="topic-detail-list mt-3">
+                      <li v-for="item in topicRetrospective.riskSignals" :key="item">{{ item }}</li>
+                    </ul>
+                  </article>
+                  <article class="topic-detail-panel">
+                    <p class="topic-detail-panel__title">下一步动作</p>
+                    <ul class="topic-detail-list mt-3">
+                      <li v-for="item in topicRetrospective.nextActions" :key="item">{{ item }}</li>
+                    </ul>
+                  </article>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -428,6 +478,7 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import EmptyState from '@/components/EmptyState.vue'
@@ -436,13 +487,21 @@ import { useTheme } from '@/composables/useTheme'
 import { readThemePalette } from '@/utils/theme'
 import AnalyticsInsightBar from './AnalyticsInsightBar.vue'
 import {
+  createAnalyticsTopicRetrospectiveApi,
   fetchAbilityTrendApi,
   fetchAnalyticsProfileApi,
   fetchAnalyticsTopicProfileApi,
   fetchEfficiencyApi,
   fetchLearningInsightsApi
 } from '@/api/analytics'
-import type { AbilityProfile, AbilityTrend, EfficiencyData, LearningInsights, ProfileTopicDetail } from '@/types/api'
+import type {
+  AbilityProfile,
+  AbilityTrend,
+  EfficiencyData,
+  LearningInsights,
+  ProfileTopicDetail,
+  ProfileTopicRetrospective
+} from '@/types/api'
 
 const weekOptions = [
   { label: '4 周', value: 4 },
@@ -513,6 +572,8 @@ const abilityProfile = ref<AbilityProfile>({
 })
 const topicDetailLoading = ref(false)
 const topicDetail = ref<ProfileTopicDetail | null>(null)
+const retrospectiveLoading = ref(false)
+const topicRetrospective = ref<ProfileTopicRetrospective | null>(null)
 const { theme } = useTheme()
 
 const trendChartRef = ref<HTMLElement | null>(null)
@@ -655,11 +716,31 @@ const changeWeeks = (w: number) => {
 
 const openTopicDetail = async (topicId: number) => {
   topicDetailLoading.value = true
+  topicRetrospective.value = null
   try {
     const response = await fetchAnalyticsTopicProfileApi(String(topicId))
     topicDetail.value = response.data
   } finally {
     topicDetailLoading.value = false
+  }
+}
+
+const retrospectiveStageLabel = (stage?: string) => {
+  if (stage === 'stable') return '相对稳定'
+  if (stage === 'needs_attention') return '优先处理'
+  return '持续建设'
+}
+
+const generateRetrospective = async () => {
+  if (!topicDetail.value?.categoryId) return
+  retrospectiveLoading.value = true
+  try {
+    const response = await createAnalyticsTopicRetrospectiveApi(String(topicDetail.value.categoryId))
+    topicRetrospective.value = response.data
+  } catch {
+    ElMessage.error('生成领域回顾失败，请稍后重试。')
+  } finally {
+    retrospectiveLoading.value = false
   }
 }
 
@@ -1281,6 +1362,40 @@ watch(theme, () => {
   border: 1px solid var(--bc-border-subtle);
   background: var(--panel-muted);
   padding: 10px 12px;
+}
+
+.topic-retrospective-shell {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid var(--bc-border-subtle);
+  background:
+    radial-gradient(circle at top right, rgba(var(--bc-cyan-rgb), 0.08), transparent 38%),
+    var(--panel-bg);
+  padding: 18px;
+}
+
+.topic-retrospective-stage {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  border-radius: 999px;
+  padding: 0 12px;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.topic-retrospective-stage--stable {
+  background: rgba(var(--bc-lime-rgb), 0.14);
+  color: #335c12;
+}
+
+.topic-retrospective-stage--building {
+  background: rgba(var(--bc-cyan-rgb), 0.14);
+  color: #0f4d68;
+}
+
+.topic-retrospective-stage--needs_attention {
+  background: rgba(var(--bc-coral-rgb), 0.14);
+  color: #7a241f;
 }
 
 .analytics-overview-card {
