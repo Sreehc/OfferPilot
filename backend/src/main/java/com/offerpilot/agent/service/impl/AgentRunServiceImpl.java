@@ -15,6 +15,7 @@ import com.offerpilot.agent.vo.AgentRunVO;
 import com.offerpilot.agent.vo.UserProviderConfigItemVO;
 import com.offerpilot.analytics.service.AnalyticsService;
 import com.offerpilot.analytics.vo.ProfileTopicDetailVO;
+import com.offerpilot.analytics.vo.ProfileTopicRetrospectiveVO;
 import com.offerpilot.application.service.JobApplicationService;
 import com.offerpilot.application.vo.JobApplicationVO;
 import com.offerpilot.common.api.ResultCode;
@@ -574,6 +575,7 @@ public class AgentRunServiceImpl implements AgentRunService {
     private ContextSnapshot resolveContextSnapshot(Long userId, List<String> contextRefs) {
         AbilityProfileVO abilityProfile = null;
         ProfileTopicDetailVO topicDetail = null;
+        ProfileTopicRetrospectiveVO topicRetrospective = null;
         InterviewDetailVO interviewDetail = null;
         RecordingReviewSessionVO recordingReview = null;
         ResumeFileVO resume = null;
@@ -588,6 +590,19 @@ public class AgentRunServiceImpl implements AgentRunService {
         Long topicId = findContextRefId(contextRefs, "analytics:topic:");
         if (topicId != null) {
             topicDetail = loadOptional("analytics topic " + topicId, () -> analyticsService.getProfileTopicDetail(userId, topicId));
+        }
+
+        Long retrospectiveTopicId = findContextRefId(contextRefs, "analytics:retrospective:topic:");
+        if (retrospectiveTopicId != null) {
+            Long targetTopicId = retrospectiveTopicId;
+            topicRetrospective = loadOptional(
+                    "analytics retrospective " + retrospectiveTopicId,
+                    () -> analyticsService.buildProfileTopicRetrospective(userId, targetTopicId));
+            if (topicDetail == null) {
+                topicDetail = loadOptional(
+                        "analytics topic " + retrospectiveTopicId,
+                        () -> analyticsService.getProfileTopicDetail(userId, targetTopicId));
+            }
         }
 
         Long interviewSessionId = findContextRefId(contextRefs, "interview:session:");
@@ -643,6 +658,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         return new ContextSnapshot(
                 abilityProfile,
                 topicDetail,
+                topicRetrospective,
                 interviewDetail,
                 recordingReview,
                 resume,
@@ -659,6 +675,9 @@ public class AgentRunServiceImpl implements AgentRunService {
                     + "，画像分 " + formatNumber(topicDetail.getAbilityScore())
                     + "，待复盘 " + defaultInt(topicDetail.getDueCount()) + " 项。");
             recommendations.addAll(limit(topicDetail.getFocusRecommendations(), 2));
+            if (snapshot.topicRetrospective() != null) {
+                recommendations.addAll(retrospectiveRecommendations(snapshot.topicRetrospective()));
+            }
         } else if (snapshot.abilityProfile() != null) {
             AbilityProfileVO profile = snapshot.abilityProfile();
             recommendations.add("长期画像建议优先处理 "
@@ -685,6 +704,15 @@ public class AgentRunServiceImpl implements AgentRunService {
             recommendations.add("先处理到期待复盘，再安排新的专项训练。");
             recommendations.add("把低分点拆成 2-3 个可执行任务，避免计划过长。");
         }
+        return recommendations;
+    }
+
+    private List<String> retrospectiveRecommendations(ProfileTopicRetrospectiveVO retrospective) {
+        List<String> recommendations = new ArrayList<>();
+        if (!nullSafeList(retrospective.getRiskSignals()).isEmpty()) {
+            recommendations.add("领域回顾提示当前风险：" + joinLimited(retrospective.getRiskSignals(), 2, "；") + "。");
+        }
+        recommendations.addAll(limit(retrospective.getNextActions(), 2));
         return recommendations;
     }
 
@@ -746,6 +774,9 @@ public class AgentRunServiceImpl implements AgentRunService {
         if (snapshot.copilotRealtimeSession() != null) {
             recommendations.add("实时 Copilot 已结束，先把现场备注和追问链路整理成正式复盘。");
         }
+        if (snapshot.topicRetrospective() != null) {
+            recommendations.add("领域回顾已经生成，可以直接把阶段性风险和下一步动作转成正式计划。");
+        }
         if (snapshot.resume() != null) {
             recommendations.add("简历材料已就绪，接下来优先处理项目表达和岗位关键词对齐。");
         }
@@ -762,6 +793,7 @@ public class AgentRunServiceImpl implements AgentRunService {
     private StudyPlanPayload resolveStudyPlanPayload(ContextSnapshot snapshot) {
         String focusDirection = firstNonBlank(
                 snapshot.topicDetail() == null ? null : snapshot.topicDetail().getCategoryName(),
+                snapshot.topicRetrospective() == null ? null : snapshot.topicRetrospective().getCategoryName(),
                 snapshot.abilityProfile() == null ? null : snapshot.abilityProfile().getSuggestedFocus(),
                 snapshot.interviewDetail() == null ? null : snapshot.interviewDetail().getDirection(),
                 snapshot.recordingReview() == null ? null : snapshot.recordingReview().getDirection(),
@@ -777,6 +809,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                 snapshot.resume() == null ? null : joinLimited(snapshot.resume().getSkills(), 4, ", "),
                 snapshot.application() == null ? null : joinLimited(snapshot.application().getJdKeywords(), 4, ", "),
                 snapshot.jobPrepSession() == null ? null : joinLimited(snapshot.jobPrepSession().getMatchedKeywords(), 4, ", "),
+                snapshot.topicRetrospective() == null ? null : joinLimited(snapshot.topicRetrospective().getNextActions(), 2, ", "),
                 snapshot.copilotRealtimeSession() == null ? null : joinLimited(
                         nullSafeList(sessionReviewActions(snapshot.copilotRealtimeSession())), 2, ", "));
         return new StudyPlanPayload(7, focusDirection, targetRole, techStack);
@@ -868,6 +901,9 @@ public class AgentRunServiceImpl implements AgentRunService {
     private String resolveCoordinatorNextActionPath(ContextSnapshot snapshot) {
         if (snapshot.recordingReview() != null) {
             return "/interview";
+        }
+        if (snapshot.topicRetrospective() != null) {
+            return "/analytics";
         }
         if (snapshot.copilotRealtimeSession() != null) {
             return "/interview";
@@ -1352,6 +1388,7 @@ public class AgentRunServiceImpl implements AgentRunService {
     }
 
     private record ContextSnapshot(AbilityProfileVO abilityProfile, ProfileTopicDetailVO topicDetail,
+                                   ProfileTopicRetrospectiveVO topicRetrospective,
                                    InterviewDetailVO interviewDetail, RecordingReviewSessionVO recordingReview,
                                    ResumeFileVO resume, JobApplicationVO application,
                                    JobPrepSessionVO jobPrepSession,

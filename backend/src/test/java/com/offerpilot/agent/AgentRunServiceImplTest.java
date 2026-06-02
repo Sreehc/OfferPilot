@@ -21,6 +21,7 @@ import com.offerpilot.agent.vo.AgentRunVO;
 import com.offerpilot.agent.vo.UserProviderConfigItemVO;
 import com.offerpilot.analytics.service.AnalyticsService;
 import com.offerpilot.analytics.vo.ProfileTopicDetailVO;
+import com.offerpilot.analytics.vo.ProfileTopicRetrospectiveVO;
 import com.offerpilot.application.service.JobApplicationService;
 import com.offerpilot.application.vo.JobApplicationVO;
 import com.offerpilot.interview.service.InterviewCopilotRealtimeService;
@@ -143,6 +144,41 @@ class AgentRunServiceImplTest {
         assertEquals("JVM", payload.get("focusDirection").asText());
         assertEquals("Java后端开发", payload.get("targetRole").asText());
         assertEquals("Spring Boot, Redis", payload.get("techStack").asText());
+    }
+
+    @Test
+    void createRun_studyPlannerUsesTopicRetrospectiveContext() {
+        when(analyticsService.getAbilityProfile(1L)).thenReturn(AbilityProfileVO.builder()
+                .suggestedFocus("JVM")
+                .recommendedDifficulty("medium")
+                .build());
+        when(analyticsService.getProfileTopicDetail(1L, 12L)).thenReturn(ProfileTopicDetailVO.builder()
+                .categoryId(12L)
+                .categoryName("JVM")
+                .abilityScore(58D)
+                .dueCount(4)
+                .focusRecommendations(List.of("先补 JVM 内存模型。"))
+                .build());
+        when(analyticsService.buildProfileTopicRetrospective(1L, 12L)).thenReturn(ProfileTopicRetrospectiveVO.builder()
+                .categoryId(12L)
+                .categoryName("JVM")
+                .stage("needs_attention")
+                .summary("当前仍是需要优先处理的薄弱领域。")
+                .riskSignals(List.of("画像分仍处在较低区间。", "还有 4 个待复盘点没有清完。"))
+                .nextActions(List.of("先围绕 JVM 安排 1 轮专项题库训练。", "清理待复盘点后再补一场定向模拟。"))
+                .build());
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "study_planner",
+                "analytics",
+                List.of("analytics:profile", "analytics:topic:12", "analytics:retrospective:topic:12", "study-plan:active"),
+                "把领域回顾转成下周训练重点"));
+
+        assertTrue(result.getSummary().contains("JVM"));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("领域回顾提示当前风险")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("专项题库训练")));
+        assertEquals("/analytics", result.getNextActionPath());
+        assertTrue(Boolean.TRUE.equals(result.getRequiresApproval()));
     }
 
     @Test

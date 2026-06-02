@@ -177,9 +177,14 @@
                     <h5 class="text-xl font-semibold tracking-[-0.03em] text-ink">{{ topicRetrospective.title }}</h5>
                     <p class="mt-2 text-sm leading-6 text-secondary">{{ topicRetrospective.summary }}</p>
                   </div>
-                  <span class="topic-retrospective-stage" :class="`topic-retrospective-stage--${topicRetrospective.stage}`">
-                    {{ retrospectiveStageLabel(topicRetrospective.stage) }}
-                  </span>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="topic-retrospective-stage" :class="`topic-retrospective-stage--${topicRetrospective.stage}`">
+                      {{ retrospectiveStageLabel(topicRetrospective.stage) }}
+                    </span>
+                    <RouterLink :to="topicRetrospectivePlannerAgentLink" class="hard-button-secondary text-sm">
+                      按回顾刷新计划
+                    </RouterLink>
+                  </div>
                 </div>
 
                 <div class="mt-5 grid gap-4 xl:grid-cols-3">
@@ -714,6 +719,23 @@ const topicPlannerAgentLink = computed(() => {
       `analytics:topic:${topicDetail.value.categoryId}`
     ],
     userPrompt: `结合 ${topicDetail.value.categoryName} 的领域详情和回顾结果，生成下一轮训练动作。`
+  })
+})
+const topicRetrospectivePlannerAgentLink = computed(() => {
+  if (!topicRetrospective.value?.categoryId) {
+    return topicPlannerAgentLink.value
+  }
+  return buildAgentWorkbenchLocation({
+    agentType: 'study_planner',
+    triggerSource: 'analytics',
+    contextRefs: [
+      'analytics:profile',
+      'analytics:weak-topics',
+      `analytics:topic:${topicRetrospective.value.categoryId}`,
+      `analytics:retrospective:topic:${topicRetrospective.value.categoryId}`,
+      'study-plan:active'
+    ],
+    userPrompt: `把 ${topicRetrospective.value.categoryName} 的领域回顾结论转成下一轮正式训练动作。`
   })
 })
 
