@@ -9,8 +9,10 @@ import com.offerpilot.common.storage.UploadPolicyService;
 import com.offerpilot.interview.dto.InterviewAnswerRequest;
 import com.offerpilot.interview.dto.InterviewStartRequest;
 import com.offerpilot.interview.dto.CopilotPrepSessionCreateRequest;
+import com.offerpilot.interview.dto.CopilotRealtimeSessionCreateRequest;
 import com.offerpilot.interview.dto.JobPrepSessionCreateRequest;
 import com.offerpilot.interview.service.InterviewCopilotPrepService;
+import com.offerpilot.interview.service.InterviewCopilotRealtimeService;
 import com.offerpilot.interview.service.InterviewRecordingReviewService;
 import com.offerpilot.interview.dto.VoiceStartRequest;
 import com.offerpilot.interview.service.InterviewJobPrepService;
@@ -21,6 +23,7 @@ import com.offerpilot.interview.vo.InterviewCurrentQuestionVO;
 import com.offerpilot.interview.vo.InterviewDetailVO;
 import com.offerpilot.interview.vo.InterviewHistoryVO;
 import com.offerpilot.interview.vo.CopilotPrepSessionVO;
+import com.offerpilot.interview.vo.CopilotRealtimeSessionVO;
 import com.offerpilot.interview.vo.JobPrepSessionVO;
 import com.offerpilot.interview.vo.RecordingReviewSessionVO;
 import com.offerpilot.interview.vo.VoiceSubmitVO;
@@ -49,6 +52,7 @@ public class InterviewController {
 
     private final InterviewService interviewService;
     private final InterviewCopilotPrepService interviewCopilotPrepService;
+    private final InterviewCopilotRealtimeService interviewCopilotRealtimeService;
     private final InterviewJobPrepService interviewJobPrepService;
     private final InterviewRecordingReviewService interviewRecordingReviewService;
     private final InterviewVoiceService interviewVoiceService;
@@ -116,6 +120,20 @@ public class InterviewController {
     @GetMapping("/copilot/prep-sessions/{sessionId}")
     public Result<CopilotPrepSessionVO> copilotPrepSession(@Parameter(description = "会话 ID") @PathVariable Long sessionId) {
         return Result.success(interviewCopilotPrepService.detail(currentUserId(), sessionId));
+    }
+
+    @Operation(summary = "创建实时 Copilot 会话", description = "根据 Copilot Prep 结果创建实时阶段会话，供后续 WebSocket 连接使用")
+    @PostMapping("/copilot/realtime-sessions")
+    public Result<CopilotRealtimeSessionVO> createCopilotRealtimeSession(
+            @Valid @RequestBody CopilotRealtimeSessionCreateRequest request) {
+        return Result.success(interviewCopilotRealtimeService.createSession(currentUserId(), request));
+    }
+
+    @Operation(summary = "实时 Copilot 会话详情", description = "查看实时 Copilot 会话状态、最近事件和降级信息")
+    @GetMapping("/copilot/realtime-sessions/{sessionId}")
+    public Result<CopilotRealtimeSessionVO> copilotRealtimeSession(
+            @Parameter(description = "会话 ID") @PathVariable Long sessionId) {
+        return Result.success(interviewCopilotRealtimeService.detail(currentUserId(), sessionId));
     }
 
     @Operation(summary = "创建录音复盘", description = "上传真实面试录音并生成转写与结构化复盘结果")

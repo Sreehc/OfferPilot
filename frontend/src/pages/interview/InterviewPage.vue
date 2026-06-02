@@ -508,6 +508,163 @@
                     <li v-for="item in copilotPrepSession.nextActions" :key="item">{{ item }}</li>
                   </ul>
                 </article>
+
+                <article class="copilot-prep-panel copilot-realtime-panel">
+                  <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div class="flex flex-wrap items-center gap-2">
+                        <p class="copilot-prep-panel__title !mb-0">Realtime Phase</p>
+                        <span class="detail-pill">{{ copilotRealtimeConnectionLabel }}</span>
+                        <span
+                          v-if="copilotRealtimeSession"
+                          class="detail-pill"
+                          :class="copilotRealtimeSession.providerStatus === 'degraded' ? 'detail-pill-risk' : ''"
+                        >
+                          {{ copilotRealtimeSession.providerStatus === 'degraded' ? '降级模式' : '依赖就绪' }}
+                        </span>
+                      </div>
+                      <p class="mt-2 text-sm leading-6 text-secondary">
+                        这一阶段先承接会话创建、连接状态和事件时间线，后续再逐步接入实时转写和建议流。
+                      </p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                      <el-button
+                        :loading="copilotRealtimeLoading"
+                        type="default"
+                        size="small"
+                        @click="handleCreateCopilotRealtimeSession"
+                      >
+                        {{ copilotRealtimeSession ? '刷新实时会话' : '创建实时会话' }}
+                      </el-button>
+                      <el-button
+                        :loading="copilotRealtimeConnecting"
+                        :disabled="!copilotRealtimeSession || copilotRealtimeSocketState === 'connected'"
+                        type="primary"
+                        size="small"
+                        @click="handleConnectCopilotRealtime"
+                      >
+                        {{ copilotRealtimeSocketState === 'connected' ? '已连接' : '连接实时阶段' }}
+                      </el-button>
+                      <el-button
+                        :disabled="copilotRealtimeSocketState !== 'connected'"
+                        type="default"
+                        size="small"
+                        @click="handleDisconnectCopilotRealtime"
+                      >
+                        断开连接
+                      </el-button>
+                    </div>
+                  </div>
+
+                  <div v-if="!copilotRealtimeSession" class="copilot-realtime-empty">
+                    <p class="text-sm font-semibold text-ink">还没有实时会话</p>
+                    <p class="mt-2 text-sm leading-6 text-secondary">
+                      先基于当前 Prep 创建一条实时会话，再连接 `WS /ws/interview/copilot/{sessionId}`。
+                    </p>
+                  </div>
+                  <div v-else class="mt-4 space-y-4">
+                    <div class="grid gap-3 md:grid-cols-3">
+                      <article class="copilot-realtime-status-card">
+                        <p class="copilot-realtime-status-card__label">会话状态</p>
+                        <p class="copilot-realtime-status-card__value">{{ realtimeStatusText(copilotRealtimeSession.status) }}</p>
+                        <p class="mt-2 text-xs leading-5 text-secondary">{{ copilotRealtimeSession.latestEventSummary || '等待下一条实时事件。' }}</p>
+                      </article>
+                      <article class="copilot-realtime-status-card">
+                        <p class="copilot-realtime-status-card__label">连接状态</p>
+                        <p class="copilot-realtime-status-card__value">{{ copilotRealtimeConnectionLabel }}</p>
+                        <p class="mt-2 text-xs leading-5 text-secondary">
+                          {{ copilotRealtimeSession.connectedAt ? `最近连接：${formatRelativeTime(copilotRealtimeSession.connectedAt)}` : '还未建立连接。' }}
+                        </p>
+                      </article>
+                      <article class="copilot-realtime-status-card">
+                        <p class="copilot-realtime-status-card__label">Provider Gate</p>
+                        <p class="copilot-realtime-status-card__value">
+                          {{ copilotRealtimeSession.providerStatus === 'degraded' ? '降级' : '正常' }}
+                        </p>
+                        <p class="mt-2 text-xs leading-5 text-secondary">
+                          {{ copilotRealtimeSession.providerStatus === 'degraded' ? '仍有 provider 未完全就绪，实时阶段只开放骨架能力。' : '当前 provider readiness 已满足基础实时阶段。' }}
+                        </p>
+                      </article>
+                    </div>
+
+                    <div v-if="copilotRealtimeSession.providerStatus === 'degraded'" class="copilot-prep-provider-alert">
+                      <p class="text-sm font-semibold text-ink">实时阶段当前是降级模式</p>
+                      <div class="mt-3 flex flex-wrap gap-2">
+                        <span
+                          v-for="item in copilotRealtimeSession.providerReadiness.filter((entry) => entry.status !== 'ready' && entry.status !== 'saved')"
+                          :key="`realtime-provider-${item.scope}`"
+                          class="detail-pill"
+                        >
+                          {{ item.label }} · {{ item.statusMessage }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr),minmax(0,1.2fr)]">
+                      <div class="space-y-3">
+                        <div>
+                          <p class="copilot-prep-panel__title">实时检查清单</p>
+                          <ul class="copilot-prep-list mt-3">
+                            <li v-for="item in copilotRealtimeSession.liveChecklist" :key="`check-${item}`">{{ item }}</li>
+                          </ul>
+                        </div>
+                        <div>
+                          <label class="flat-field-label">运行中备注</label>
+                          <el-input
+                            v-model="copilotRealtimeNote"
+                            type="textarea"
+                            :rows="3"
+                            :disabled="copilotRealtimeSocketState !== 'connected'"
+                            placeholder="连接建立后，可以把面试官风格、突发追问、要补的例子写成运行中备注。"
+                          />
+                          <div class="mt-3 flex flex-wrap gap-2">
+                            <el-button
+                              :disabled="copilotRealtimeSocketState !== 'connected' || !copilotRealtimeNote.trim()"
+                              type="default"
+                              size="small"
+                              @click="handleSendCopilotRealtimeNote"
+                            >
+                              发送备注
+                            </el-button>
+                            <el-button
+                              :disabled="copilotRealtimeSocketState !== 'connected'"
+                              type="default"
+                              size="small"
+                              @click="handleCompleteCopilotRealtime"
+                            >
+                              结束实时阶段
+                            </el-button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p class="copilot-prep-panel__title">事件时间线</p>
+                        <div class="copilot-realtime-events mt-3">
+                          <article
+                            v-for="event in copilotRealtimeSession.events"
+                            :key="event.id"
+                            class="copilot-realtime-event"
+                          >
+                            <div class="flex items-start justify-between gap-3">
+                              <div class="min-w-0">
+                                <p class="copilot-realtime-event__title">{{ realtimeEventLabel(event.eventType) }}</p>
+                                <p class="mt-1 text-sm leading-6 text-primary">{{ event.summary }}</p>
+                              </div>
+                              <div class="text-right">
+                                <p class="text-xs uppercase tracking-[0.18em] text-tertiary">{{ event.source }}</p>
+                                <p class="mt-1 text-xs text-secondary">{{ formatRelativeTime(event.createTime) }}</p>
+                              </div>
+                            </div>
+                          </article>
+                          <div v-if="!copilotRealtimeSession.events.length" class="copilot-realtime-empty !mt-0">
+                            <p class="text-sm text-secondary">连接后会在这里看到会话事件和状态流转。</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </article>
               </div>
             </div>
           </div>
@@ -1128,10 +1285,13 @@ import { useRoute } from 'vue-router'
 import { fetchApplicationBoardApi } from '@/api/applications'
 import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
 import {
+  buildCopilotRealtimeWebSocketUrl,
   createCopilotPrepSessionApi,
+  createCopilotRealtimeSessionApi,
   createRecordingReviewApi,
   createJobPrepSessionApi,
   currentQuestionApi,
+  fetchCopilotRealtimeSessionApi,
   fetchInterviewHistoryApi,
   fetchVoiceStatusApi,
   interviewDetailApi,
@@ -1146,6 +1306,7 @@ import { fetchProviderConfigsApi } from '@/api/settings'
 import EmptyState from '@/components/EmptyState.vue'
 import type {
   CopilotPrepSession,
+  CopilotRealtimeSession,
   ContextSource,
   InterviewAnswerResult,
   InterviewCurrentQuestion,
@@ -1207,6 +1368,11 @@ const jobPrepSession = ref<JobPrepSession | null>(null)
 const copilotPrepNotes = ref('')
 const copilotPrepLoading = ref(false)
 const copilotPrepSession = ref<CopilotPrepSession | null>(null)
+const copilotRealtimeLoading = ref(false)
+const copilotRealtimeConnecting = ref(false)
+const copilotRealtimeSession = ref<CopilotRealtimeSession | null>(null)
+const copilotRealtimeSocketState = ref<'idle' | 'connecting' | 'connected' | 'disconnected' | 'error'>('idle')
+const copilotRealtimeNote = ref('')
 const linkedCopilotJobPrepId = ref('')
 const recordingReviewNotes = ref('')
 const recordingReviewFile = ref<File | null>(null)
@@ -1332,6 +1498,7 @@ const getCountdownSeconds = () => {
 
 const countdown = ref(getCountdownSeconds())
 let countdownTimer: ReturnType<typeof setInterval> | null = null
+let copilotRealtimeSocket: WebSocket | null = null
 
 const formatCountdown = (seconds: number) => {
   const m = Math.floor(seconds / 60)
@@ -1359,7 +1526,17 @@ const stopCountdown = () => {
   }
 }
 
-onBeforeUnmount(stopCountdown)
+const closeCopilotRealtimeSocket = () => {
+  if (copilotRealtimeSocket) {
+    copilotRealtimeSocket.close()
+    copilotRealtimeSocket = null
+  }
+}
+
+onBeforeUnmount(() => {
+  stopCountdown()
+  closeCopilotRealtimeSocket()
+})
 
 // Score animation
 const animatedScore = ref<string>('-')
@@ -1403,6 +1580,13 @@ const countdownPercent = computed(() => {
   return Math.max(0, Math.round((countdown.value / total) * 100))
 })
 const countdownUrgent = computed(() => countdown.value <= 30)
+const copilotRealtimeConnectionLabel = computed(() => {
+  if (copilotRealtimeSocketState.value === 'connecting') return '连接中'
+  if (copilotRealtimeSocketState.value === 'connected') return '已连接'
+  if (copilotRealtimeSocketState.value === 'disconnected') return '已断开'
+  if (copilotRealtimeSocketState.value === 'error') return '连接失败'
+  return '未连接'
+})
 
 const handleStart = async (reanswerQuestionId?: number) => {
   if (interviewContextPath.value !== 'general' && !selectedResumeId.value) {
@@ -1745,6 +1929,103 @@ const handleGenerateCopilotPrep = async (useJobPrep = false) => {
   }
 }
 
+const hydrateRealtimeSession = async (sessionId: string) => {
+  const response = await fetchCopilotRealtimeSessionApi(sessionId)
+  copilotRealtimeSession.value = response.data
+}
+
+const handleCreateCopilotRealtimeSession = async () => {
+  if (!copilotPrepSession.value) {
+    ElMessage.warning('请先生成一份 Copilot Prep。')
+    return
+  }
+  copilotRealtimeLoading.value = true
+  try {
+    const response = await createCopilotRealtimeSessionApi({
+      copilotPrepSessionId: copilotPrepSession.value.id,
+      openingNote: copilotPrepNotes.value.trim() || undefined
+    })
+    copilotRealtimeSession.value = response.data
+    copilotRealtimeSocketState.value = 'idle'
+    ElMessage.success('实时 Copilot 会话已创建。')
+  } catch (error: any) {
+    ElMessage.error(error?.message || '实时会话创建失败，请稍后重试。')
+  } finally {
+    copilotRealtimeLoading.value = false
+  }
+}
+
+const handleConnectCopilotRealtime = async () => {
+  if (!copilotRealtimeSession.value) {
+    ElMessage.warning('请先创建实时会话。')
+    return
+  }
+  closeCopilotRealtimeSocket()
+  copilotRealtimeConnecting.value = true
+  copilotRealtimeSocketState.value = 'connecting'
+  try {
+    const socket = new WebSocket(buildCopilotRealtimeWebSocketUrl(copilotRealtimeSession.value.id))
+    copilotRealtimeSocket = socket
+    socket.onopen = () => {
+      copilotRealtimeConnecting.value = false
+      copilotRealtimeSocketState.value = 'connected'
+    }
+    socket.onmessage = (event) => {
+      try {
+        const parsed = JSON.parse(String(event.data || '{}'))
+        if (parsed.type === 'snapshot' && parsed.session) {
+          copilotRealtimeSession.value = parsed.session as CopilotRealtimeSession
+          return
+        }
+        if (parsed.type === 'error' && parsed.message) {
+          ElMessage.error(parsed.message)
+        }
+      } catch {
+        // Ignore malformed skeleton events for now.
+      }
+    }
+    socket.onerror = () => {
+      copilotRealtimeConnecting.value = false
+      copilotRealtimeSocketState.value = 'error'
+    }
+    socket.onclose = () => {
+      copilotRealtimeConnecting.value = false
+      if (copilotRealtimeSocketState.value !== 'error') {
+        copilotRealtimeSocketState.value = 'disconnected'
+      }
+      copilotRealtimeSocket = null
+      if (copilotRealtimeSession.value) {
+        void hydrateRealtimeSession(copilotRealtimeSession.value.id).catch(() => undefined)
+      }
+    }
+  } catch (error: any) {
+    copilotRealtimeConnecting.value = false
+    copilotRealtimeSocketState.value = 'error'
+    ElMessage.error(error?.message || '实时连接初始化失败。')
+  }
+}
+
+const handleDisconnectCopilotRealtime = () => {
+  if (!copilotRealtimeSocket) return
+  copilotRealtimeSocketState.value = 'disconnected'
+  closeCopilotRealtimeSocket()
+}
+
+const handleSendCopilotRealtimeNote = () => {
+  if (!copilotRealtimeSocket || copilotRealtimeSocket.readyState !== WebSocket.OPEN || !copilotRealtimeNote.value.trim()) {
+    return
+  }
+  copilotRealtimeSocket.send(JSON.stringify({ type: 'note', note: copilotRealtimeNote.value.trim() }))
+  copilotRealtimeNote.value = ''
+}
+
+const handleCompleteCopilotRealtime = () => {
+  if (!copilotRealtimeSocket || copilotRealtimeSocket.readyState !== WebSocket.OPEN) {
+    return
+  }
+  copilotRealtimeSocket.send(JSON.stringify({ type: 'complete', summary: '当前实时阶段已结束，转入面后复盘。' }))
+}
+
 const applyCopilotPrepToInterview = () => {
   if (!copilotPrepSession.value) return
   jobRole.value = copilotPrepSession.value.jobTitle || jobRole.value
@@ -1803,6 +2084,25 @@ const signalLabel = (signalType?: string) => {
   if (signalType === 'structure') return '结构表达'
   if (signalType === 'reasoning') return '原因 / 取舍'
   return '普通片段'
+}
+
+const realtimeStatusText = (status?: string) => {
+  if (status === 'awaiting_connection') return '待连接'
+  if (status === 'live') return '实时中'
+  if (status === 'disconnected') return '已断开'
+  if (status === 'completed') return '已结束'
+  return status || '未知'
+}
+
+const realtimeEventLabel = (eventType?: string) => {
+  if (eventType === 'session_created') return '会话创建'
+  if (eventType === 'opening_note') return '会前备注'
+  if (eventType === 'connection_established') return '连接建立'
+  if (eventType === 'provider_degraded') return '降级提醒'
+  if (eventType === 'runtime_note') return '运行中备注'
+  if (eventType === 'session_completed') return '阶段结束'
+  if (eventType === 'connection_closed') return '连接关闭'
+  return eventType || '事件'
 }
 
 const applyQuestionSeedFromRoute = () => {
@@ -2249,6 +2549,12 @@ watch(selectedJobPrepApplicationId, (applicationId) => {
   line-height: 1.7;
 }
 
+.detail-pill-risk {
+  border-color: rgba(var(--bc-coral-rgb), 0.24);
+  background: rgba(var(--bc-coral-rgb), 0.1);
+  color: var(--bc-ink);
+}
+
 .copilot-provider-card {
   border-radius: calc(var(--radius-md) - 4px);
   border: 1px solid var(--bc-border-subtle);
@@ -2281,6 +2587,60 @@ watch(selectedJobPrepApplicationId, (applicationId) => {
   font-weight: 700;
   line-height: 1;
   color: var(--bc-ink);
+}
+
+.copilot-realtime-panel {
+  border: 1px solid rgba(var(--bc-accent-rgb), 0.16);
+}
+
+.copilot-realtime-empty {
+  margin-top: 1rem;
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px dashed rgba(100, 116, 139, 0.28);
+  background: rgba(248, 250, 252, 0.84);
+  padding: 1rem;
+}
+
+.copilot-realtime-status-card {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid rgba(100, 116, 139, 0.18);
+  background: rgba(255, 255, 255, 0.92);
+  padding: 1rem;
+}
+
+.copilot-realtime-status-card__label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bc-ink-tertiary);
+}
+
+.copilot-realtime-status-card__value {
+  margin-top: 0.5rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--bc-ink);
+}
+
+.copilot-realtime-events {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.copilot-realtime-event {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid rgba(100, 116, 139, 0.18);
+  background: rgba(255, 255, 255, 0.88);
+  padding: 0.95rem 1rem;
+}
+
+.copilot-realtime-event__title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bc-ink-tertiary);
 }
 
 .interview-setup-grid__meta {

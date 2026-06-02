@@ -433,6 +433,38 @@ export interface CopilotPrepSession {
   updateTime?: string
 }
 
+export interface CopilotRealtimeEvent {
+  id: string
+  sessionId: string
+  eventType: string
+  source: string
+  summary: string
+  payload?: Record<string, unknown>
+  createTime?: string
+}
+
+export interface CopilotRealtimeSession {
+  id: string
+  copilotPrepSessionId: string
+  applicationId?: string
+  resumeFileId?: string
+  jobPrepSessionId?: string
+  resumeTitle?: string
+  company?: string
+  jobTitle?: string
+  status: string
+  providerStatus: string
+  prepSummary: string
+  liveChecklist: string[]
+  providerReadiness: CopilotPrepProviderReadiness[]
+  latestEventSummary?: string
+  connectedAt?: string
+  disconnectedAt?: string
+  endedAt?: string
+  events: CopilotRealtimeEvent[]
+  updateTime?: string
+}
+
 export interface RecordingReviewSegment {
   id: string
   segmentIndex: number

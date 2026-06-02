@@ -1,6 +1,7 @@
 import { request } from '@/utils/http'
 import type {
   CopilotPrepSession,
+  CopilotRealtimeSession,
   InterviewAnswerResult,
   InterviewCurrentQuestion,
   InterviewDetail,
@@ -10,6 +11,7 @@ import type {
   VoiceSubmitResult
 } from '@/types/api'
 import type { PageResult } from '@/types/api'
+import { storage } from '@/utils/storage'
 
 export interface InterviewStartPayload {
   direction: string
@@ -68,6 +70,11 @@ export interface RecordingReviewCreatePayload {
   audioFile: File
 }
 
+export interface CopilotRealtimeSessionCreatePayload {
+  copilotPrepSessionId: string
+  openingNote?: string
+}
+
 export const startInterviewApi = (payload: InterviewStartPayload) => {
   return request<InterviewCurrentQuestion>({ url: '/interview/start', method: 'post', data: payload })
 }
@@ -108,6 +115,25 @@ export const createCopilotPrepSessionApi = (payload: CopilotPrepSessionCreatePay
 
 export const fetchCopilotPrepSessionApi = (sessionId: string) => {
   return request<CopilotPrepSession>({ url: `/interview/copilot/prep-sessions/${sessionId}`, method: 'get' })
+}
+
+export const createCopilotRealtimeSessionApi = (payload: CopilotRealtimeSessionCreatePayload) => {
+  return request<CopilotRealtimeSession>({ url: '/interview/copilot/realtime-sessions', method: 'post', data: payload })
+}
+
+export const fetchCopilotRealtimeSessionApi = (sessionId: string) => {
+  return request<CopilotRealtimeSession>({ url: `/interview/copilot/realtime-sessions/${sessionId}`, method: 'get' })
+}
+
+export const buildCopilotRealtimeWebSocketUrl = (sessionId: string) => {
+  const token = storage.getToken()
+  if (!token) {
+    throw new Error('missing auth token')
+  }
+  const apiBase = import.meta.env.VITE_API_BASE_URL || '/api'
+  const resolved = new URL(apiBase, window.location.origin)
+  const protocol = resolved.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${protocol}//${resolved.host}/ws/interview/copilot/${sessionId}?token=${encodeURIComponent(token)}`
 }
 
 export const createRecordingReviewApi = (payload: RecordingReviewCreatePayload) => {
