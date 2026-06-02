@@ -3,6 +3,7 @@ package com.offerpilot.analytics.service;
 import com.offerpilot.adaptive.vo.AbilityProfileVO;
 import com.offerpilot.analytics.vo.EfficiencyVO;
 import com.offerpilot.analytics.vo.LearningInsightsVO;
+import com.offerpilot.analytics.vo.ProfileTopicDetailVO;
 import com.offerpilot.analytics.vo.TrendVO;
 import java.util.List;
 
@@ -29,4 +30,9 @@ public interface AnalyticsService {
      * Long-term ability profile used by analytics/profile views.
      */
     AbilityProfileVO getAbilityProfile(Long userId);
+
+    /**
+     * Topic-level profile detail used by analytics domain detail drawers.
+     */
+    ProfileTopicDetailVO getProfileTopicDetail(Long userId, Long categoryId);
 }

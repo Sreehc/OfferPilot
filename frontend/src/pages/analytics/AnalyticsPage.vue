@@ -61,6 +61,7 @@
               :key="`${item.categoryId}-${item.categoryName}`"
               class="profile-category-card"
               :class="{ 'profile-category-card--weak': item.isWeak }"
+              @click="openTopicDetail(item.categoryId)"
             >
               <div class="flex items-start justify-between gap-3">
                 <div>
@@ -75,6 +76,70 @@
                 模拟面试 {{ item.interviewCount }} 场 · 错题 {{ item.wrongCount }} 题
               </p>
             </article>
+          </div>
+
+          <div v-if="topicDetailLoading || topicDetail" class="mt-5">
+            <div v-if="topicDetailLoading" class="topic-detail-shell flex h-[220px] items-center justify-center">
+              <div class="text-center">
+                <div class="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+                <p class="mt-3 text-sm text-secondary">正在加载领域详情...</p>
+              </div>
+            </div>
+            <div v-else-if="topicDetail" class="topic-detail-shell">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p class="section-kicker">领域详情</p>
+                  <h4 class="text-2xl font-semibold tracking-[-0.03em] text-ink">{{ topicDetail.categoryName }}</h4>
+                  <p class="mt-2 text-sm leading-6 text-secondary">{{ topicDetail.summary }}</p>
+                </div>
+                <div class="topic-detail-score">
+                  <span class="topic-detail-score__label">画像分</span>
+                  <span class="topic-detail-score__value">{{ Math.round(topicDetail.abilityScore || 0) }}</span>
+                </div>
+              </div>
+
+              <div class="mt-5 grid gap-3 sm:grid-cols-4">
+                <article class="topic-detail-stat">
+                  <p class="topic-detail-stat__label">模拟面试</p>
+                  <p class="topic-detail-stat__value">{{ topicDetail.interviewCount }}</p>
+                </article>
+                <article class="topic-detail-stat">
+                  <p class="topic-detail-stat__label">错题数</p>
+                  <p class="topic-detail-stat__value">{{ topicDetail.wrongCount }}</p>
+                </article>
+                <article class="topic-detail-stat">
+                  <p class="topic-detail-stat__label">待复盘</p>
+                  <p class="topic-detail-stat__value">{{ topicDetail.dueCount }}</p>
+                </article>
+                <article class="topic-detail-stat">
+                  <p class="topic-detail-stat__label">稳定率</p>
+                  <p class="topic-detail-stat__value">{{ Math.round(topicDetail.masteryRate || 0) }}%</p>
+                </article>
+              </div>
+
+              <div class="mt-5 grid gap-3 xl:grid-cols-[minmax(0,1fr)_300px]">
+                <article class="topic-detail-panel">
+                  <p class="topic-detail-panel__title">建议动作</p>
+                  <ul class="topic-detail-list mt-3">
+                    <li v-for="item in topicDetail.focusRecommendations" :key="item">{{ item }}</li>
+                  </ul>
+                </article>
+
+                <article class="topic-detail-panel">
+                  <p class="topic-detail-panel__title">最近趋势</p>
+                  <div class="mt-3 space-y-2">
+                    <div
+                      v-for="point in topicDetail.recentScores"
+                      :key="`${point.week}-${point.score}`"
+                      class="topic-detail-point"
+                    >
+                      <span class="text-xs text-secondary">{{ point.week }}</span>
+                      <span class="font-mono text-sm font-semibold text-ink">{{ Math.round(point.score || 0) }}</span>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -245,6 +310,7 @@
             v-for="item in categoryMasteryItems"
             :key="`${item.categoryName}-${item.categoryId ?? 'na'}`"
             class="mastery-card"
+            @click="item.categoryId ? openTopicDetail(item.categoryId) : undefined"
           >
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -369,8 +435,14 @@ import { EMPTY_STATE_COPY } from '@/constants/productCopy'
 import { useTheme } from '@/composables/useTheme'
 import { readThemePalette } from '@/utils/theme'
 import AnalyticsInsightBar from './AnalyticsInsightBar.vue'
-import { fetchAbilityTrendApi, fetchAnalyticsProfileApi, fetchEfficiencyApi, fetchLearningInsightsApi } from '@/api/analytics'
-import type { AbilityProfile, AbilityTrend, EfficiencyData, LearningInsights } from '@/types/api'
+import {
+  fetchAbilityTrendApi,
+  fetchAnalyticsProfileApi,
+  fetchAnalyticsTopicProfileApi,
+  fetchEfficiencyApi,
+  fetchLearningInsightsApi
+} from '@/api/analytics'
+import type { AbilityProfile, AbilityTrend, EfficiencyData, LearningInsights, ProfileTopicDetail } from '@/types/api'
 
 const weekOptions = [
   { label: '4 周', value: 4 },
@@ -439,6 +511,8 @@ const abilityProfile = ref<AbilityProfile>({
   weakCategories: [],
   suggestedFocus: null
 })
+const topicDetailLoading = ref(false)
+const topicDetail = ref<ProfileTopicDetail | null>(null)
 const { theme } = useTheme()
 
 const trendChartRef = ref<HTMLElement | null>(null)
@@ -577,6 +651,16 @@ const summarySignals = computed(() => [
 const changeWeeks = (w: number) => {
   selectedWeeks.value = w
   void loadTrend()
+}
+
+const openTopicDetail = async (topicId: number) => {
+  topicDetailLoading.value = true
+  try {
+    const response = await fetchAnalyticsTopicProfileApi(String(topicId))
+    topicDetail.value = response.data
+  } finally {
+    topicDetailLoading.value = false
+  }
 }
 
 const toggleCategory = (catId: number) => {
@@ -1086,6 +1170,7 @@ watch(theme, () => {
 }
 
 .profile-category-card {
+  cursor: pointer;
   border-radius: calc(var(--radius-md) - 4px);
   border: 1px solid var(--bc-border-subtle);
   background: var(--panel-bg);
@@ -1107,6 +1192,95 @@ watch(theme, () => {
   background:
     linear-gradient(180deg, rgba(var(--bc-coral-rgb), 0.08), transparent 58%),
     var(--panel-bg);
+}
+
+.topic-detail-shell {
+  border-radius: calc(var(--radius-md) - 2px);
+  border: 1px solid var(--bc-border-subtle);
+  background:
+    linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.05), transparent 62%),
+    var(--panel-bg);
+  padding: 18px;
+}
+
+.topic-detail-score {
+  display: inline-flex;
+  min-width: 84px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.topic-detail-score__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--bc-ink-tertiary);
+}
+
+.topic-detail-score__value {
+  font-family: theme('fontFamily.mono');
+  font-size: clamp(2rem, 3vw, 2.6rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--bc-ink);
+}
+
+.topic-detail-stat {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--panel-muted);
+  padding: 14px 16px;
+}
+
+.topic-detail-stat__label {
+  font-size: 0.74rem;
+  color: var(--bc-ink-secondary);
+}
+
+.topic-detail-stat__value {
+  margin-top: 10px;
+  font-family: theme('fontFamily.mono');
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--bc-ink);
+}
+
+.topic-detail-panel {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--panel-muted);
+  padding: 16px;
+}
+
+.topic-detail-panel__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--bc-ink);
+}
+
+.topic-detail-list {
+  display: grid;
+  gap: 10px;
+  padding-left: 18px;
+  color: var(--bc-ink-secondary);
+}
+
+.topic-detail-list li {
+  line-height: 1.7;
+}
+
+.topic-detail-point {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 999px;
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--panel-muted);
+  padding: 10px 12px;
 }
 
 .analytics-overview-card {
@@ -1197,6 +1371,7 @@ watch(theme, () => {
 }
 
 .mastery-card {
+  cursor: pointer;
   border-radius: calc(var(--radius-md) - 2px);
   border: 1px solid var(--bc-border-subtle);
   background: var(--panel-bg);

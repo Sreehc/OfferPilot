@@ -690,6 +690,28 @@ export interface AbilityProfile {
   suggestedFocus: string | null
 }
 
+export interface ProfileTopicWeeklyScore {
+  week: string
+  score: number
+}
+
+export interface ProfileTopicDetail {
+  categoryId: string
+  categoryName: string
+  abilityScore: number
+  interviewCount: number
+  wrongCount: number
+  weak: boolean
+  recommendedDifficulty: string
+  totalCards: number
+  masteredCards: number
+  dueCount: number
+  masteryRate: number
+  summary: string
+  focusRecommendations: string[]
+  recentScores: ProfileTopicWeeklyScore[]
+}
+
 export interface RecommendInterview {
   direction: string
   questionCount: number

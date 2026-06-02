@@ -3,9 +3,11 @@ package com.offerpilot.analytics.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.offerpilot.adaptive.service.AdaptiveService;
 import com.offerpilot.adaptive.vo.AbilityProfileVO;
+import com.offerpilot.adaptive.vo.CategoryAbilityVO;
 import com.offerpilot.analytics.service.AnalyticsService;
 import com.offerpilot.analytics.vo.EfficiencyVO;
 import com.offerpilot.analytics.vo.LearningInsightsVO;
+import com.offerpilot.analytics.vo.ProfileTopicDetailVO;
 import com.offerpilot.analytics.vo.TrendVO;
 import com.offerpilot.application.entity.JobApplication;
 import com.offerpilot.application.mapper.JobApplicationMapper;
@@ -38,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -258,6 +261,62 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         return adaptiveService.getAbilityProfile(userId);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public ProfileTopicDetailVO getProfileTopicDetail(Long userId, Long categoryId) {
+        AbilityProfileVO profile = adaptiveService.getAbilityProfile(userId);
+        CategoryAbilityVO categoryAbility = profile.getCategoryAbilities().stream()
+                .filter(item -> Objects.equals(item.getCategoryId(), categoryId))
+                .findFirst()
+                .orElseThrow(() -> new com.offerpilot.common.exception.BusinessException(
+                        com.offerpilot.common.api.ResultCode.NOT_FOUND.getCode(), "topic not found"));
+
+        EfficiencyVO efficiency = getEfficiencyData(userId);
+        EfficiencyVO.CategoryMastery categoryMastery = efficiency.getCategoryMastery().stream()
+                .filter(item -> Objects.equals(item.getCategoryId(), categoryId))
+                .findFirst()
+                .orElse(EfficiencyVO.CategoryMastery.builder()
+                        .categoryId(categoryId)
+                        .categoryName(categoryAbility.getCategoryName())
+                        .totalCards(0)
+                        .masteredCards(0)
+                        .dueCount(0)
+                        .masteryRate(BigDecimal.ZERO)
+                        .build());
+
+        TrendVO trend = getAbilityTrend(userId, 8, List.of(categoryId));
+        List<ProfileTopicDetailVO.WeeklyTopicScore> recentScores = trend.getCategoryTrends().stream()
+                .filter(item -> Objects.equals(item.getCategoryId(), categoryId))
+                .findFirst()
+                .map(item -> item.getPoints().stream()
+                        .map(point -> ProfileTopicDetailVO.WeeklyTopicScore.builder()
+                                .week(point.getWeek())
+                                .score(point.getScore().doubleValue())
+                                .build())
+                        .toList())
+                .orElse(List.of());
+
+        List<String> focusRecommendations = buildTopicRecommendations(categoryAbility, categoryMastery, recentScores);
+        String summary = buildTopicSummary(categoryAbility, categoryMastery, recentScores);
+
+        return ProfileTopicDetailVO.builder()
+                .categoryId(categoryAbility.getCategoryId())
+                .categoryName(categoryAbility.getCategoryName())
+                .abilityScore(categoryAbility.getAbilityScore())
+                .interviewCount(categoryAbility.getInterviewCount())
+                .wrongCount(categoryAbility.getWrongCount())
+                .weak(Boolean.TRUE.equals(categoryAbility.getIsWeak()))
+                .recommendedDifficulty(categoryAbility.getRecommendedDifficulty())
+                .totalCards(categoryMastery.getTotalCards())
+                .masteredCards(categoryMastery.getMasteredCards())
+                .dueCount(categoryMastery.getDueCount())
+                .masteryRate(categoryMastery.getMasteryRate())
+                .summary(summary)
+                .focusRecommendations(focusRecommendations)
+                .recentScores(recentScores)
+                .build();
+    }
+
     private List<TrendVO.PlanTrendPoint> buildPlanProgressTrend(Long userId, int weeks) {
         LocalDate startDate = LocalDate.now().minusWeeks(weeks).with(DayOfWeek.MONDAY);
         List<StudyPlan> plans = studyPlanMapper.selectList(new LambdaQueryWrapper<StudyPlan>()
@@ -275,6 +334,48 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                         .totalTaskCount(entry.getValue().stream().mapToInt(plan -> plan.getTotalTaskCount() == null ? 0 : plan.getTotalTaskCount()).sum())
                         .build())
                 .toList();
+    }
+
+    private List<String> buildTopicRecommendations(CategoryAbilityVO categoryAbility,
+                                                   EfficiencyVO.CategoryMastery categoryMastery,
+                                                   List<ProfileTopicDetailVO.WeeklyTopicScore> recentScores) {
+        LinkedHashSet<String> suggestions = new LinkedHashSet<>();
+        if (Boolean.TRUE.equals(categoryAbility.getIsWeak())) {
+            suggestions.add("先围绕这个主题做一轮基础巩固，再回到高强度模拟。");
+        }
+        if (categoryMastery.getDueCount() > 0) {
+            suggestions.add("当前有 " + categoryMastery.getDueCount() + " 道题待复盘，先清掉到期负债。");
+        }
+        if (categoryAbility.getWrongCount() != null && categoryAbility.getWrongCount() > 0) {
+            suggestions.add("把错题里重复出现的追问方式整理成标准答题骨架。");
+        }
+        if (recentScores.size() >= 2) {
+            Double last = recentScores.get(recentScores.size() - 1).getScore();
+            Double previous = recentScores.get(recentScores.size() - 2).getScore();
+            if (last != null && previous != null && last < previous) {
+                suggestions.add("最近一周分数回落，建议先做 1 次定向模拟，再安排复盘。");
+            }
+        }
+        suggestions.add("下一轮训练优先围绕「" + categoryAbility.getCategoryName() + "」准备项目案例、原理解释和追问取舍。");
+        return suggestions.stream().limit(4).toList();
+    }
+
+    private String buildTopicSummary(CategoryAbilityVO categoryAbility,
+                                     EfficiencyVO.CategoryMastery categoryMastery,
+                                     List<ProfileTopicDetailVO.WeeklyTopicScore> recentScores) {
+        String abilityText = "当前主题画像分数约 " + Math.round(categoryAbility.getAbilityScore()) + " 分";
+        String reviewText = categoryMastery.getDueCount() > 0
+                ? "，并且还有 " + categoryMastery.getDueCount() + " 道待复盘题"
+                : "，当前没有待复盘负债";
+        String trendText = "";
+        if (recentScores.size() >= 2) {
+            Double first = recentScores.get(0).getScore();
+            Double last = recentScores.get(recentScores.size() - 1).getScore();
+            if (first != null && last != null) {
+                trendText = last >= first ? "，近几周趋势在回升" : "，近几周趋势有回落";
+            }
+        }
+        return "主题「" + categoryAbility.getCategoryName() + "」" + abilityText + reviewText + trendText + "。";
     }
 
     private List<TrendVO.ApplicationTrendPoint> buildApplicationActivityTrend(Long userId, int weeks) {
