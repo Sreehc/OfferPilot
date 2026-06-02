@@ -28,5 +28,30 @@ public class AgentRunVO {
     private String approvalSummary;
     private String decisionNote;
     private String executionSummary;
+    private String approvalStage;
+    private String providerGateStatus;
+    private String providerGateSummary;
+    private List<TimelineItemVO> timeline;
+    private List<ProviderGateVO> providerGates;
     private LocalDateTime updateTime;
+
+    @Data
+    @Builder
+    public static class TimelineItemVO {
+        private String key;
+        private String title;
+        private String description;
+        private String status;
+        private LocalDateTime timestamp;
+    }
+
+    @Data
+    @Builder
+    public static class ProviderGateVO {
+        private String scope;
+        private String label;
+        private String status;
+        private String statusMessage;
+        private Boolean required;
+    }
 }

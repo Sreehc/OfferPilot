@@ -509,9 +509,30 @@ export interface AgentRun {
   requiresApproval: boolean
   approvalActionType?: string
   approvalSummary?: string
+  approvalStage?: 'not_required' | 'waiting' | 'approved' | 'rejected' | 'canceled' | 'completed' | string
   decisionNote?: string
   executionSummary?: string
+  providerGateStatus?: 'not_applicable' | 'ready' | 'degraded' | 'blocked' | string
+  providerGateSummary?: string
+  timeline: AgentRunTimelineItem[]
+  providerGates: AgentRunProviderGate[]
   updateTime?: string
+}
+
+export interface AgentRunTimelineItem {
+  key: string
+  title: string
+  description: string
+  status: 'completed' | 'waiting' | 'ready' | 'rejected' | 'canceled' | string
+  timestamp?: string
+}
+
+export interface AgentRunProviderGate {
+  scope: ProviderScope
+  label: string
+  status: 'missing' | 'incomplete' | 'saved' | 'ready' | string
+  statusMessage: string
+  required: boolean
 }
 
 export interface StudyPlanTaskItem {

@@ -10,7 +10,9 @@ import com.offerpilot.agent.dto.AgentRunCreateRequest;
 import com.offerpilot.agent.entity.AgentRun;
 import com.offerpilot.agent.mapper.AgentRunMapper;
 import com.offerpilot.agent.service.AgentRunService;
+import com.offerpilot.agent.service.UserProviderConfigService;
 import com.offerpilot.agent.vo.AgentRunVO;
+import com.offerpilot.agent.vo.UserProviderConfigItemVO;
 import com.offerpilot.analytics.service.AnalyticsService;
 import com.offerpilot.analytics.vo.ProfileTopicDetailVO;
 import com.offerpilot.application.service.JobApplicationService;
@@ -30,10 +32,13 @@ import com.offerpilot.plan.service.PlanService;
 import com.offerpilot.plan.vo.StudyPlanCurrentVO;
 import com.offerpilot.resume.service.ResumeService;
 import com.offerpilot.resume.vo.ResumeFileVO;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -58,6 +63,7 @@ public class AgentRunServiceImpl implements AgentRunService {
     private final InterviewJobPrepService interviewJobPrepService;
     private final ResumeService resumeService;
     private final JobApplicationService jobApplicationService;
+    private final UserProviderConfigService userProviderConfigService;
 
     @Override
     @Transactional
@@ -776,6 +782,8 @@ public class AgentRunServiceImpl implements AgentRunService {
     private AgentRunVO buildVo(AgentRun run) {
         JsonNode payload = readPayload(run.getResultPayloadJson());
         ExecutionResult executionResult = readObject(run.getExecutionResultJson(), ExecutionResult.class);
+        List<AgentRunVO.ProviderGateVO> providerGates = resolveProviderGates(run);
+        String providerGateStatus = resolveProviderGateStatus(providerGates);
         return AgentRunVO.builder()
                 .id(run.getId())
                 .agentType(run.getAgentType())
@@ -794,8 +802,179 @@ public class AgentRunServiceImpl implements AgentRunService {
                 .approvalSummary(run.getApprovalSummary())
                 .decisionNote(run.getDecisionNote())
                 .executionSummary(executionResult == null ? null : executionResult.summary())
+                .approvalStage(resolveApprovalStage(run))
+                .providerGateStatus(providerGateStatus)
+                .providerGateSummary(buildProviderGateSummary(providerGates, providerGateStatus))
+                .timeline(buildTimeline(run, executionResult))
+                .providerGates(providerGates)
                 .updateTime(run.getUpdateTime())
                 .build();
+    }
+
+    private String resolveApprovalStage(AgentRun run) {
+        if (!Integer.valueOf(1).equals(run.getRequiresApproval())) {
+            return "not_required";
+        }
+        return switch (normalize(run.getStatus())) {
+            case "pending_approval" -> "waiting";
+            case "approved" -> "approved";
+            case "rejected" -> "rejected";
+            case "canceled" -> "canceled";
+            default -> "completed";
+        };
+    }
+
+    private List<AgentRunVO.TimelineItemVO> buildTimeline(AgentRun run, ExecutionResult executionResult) {
+        List<AgentRunVO.TimelineItemVO> timeline = new ArrayList<>();
+        LocalDateTime createTime = run.getCreateTime() == null ? run.getUpdateTime() : run.getCreateTime();
+        timeline.add(AgentRunVO.TimelineItemVO.builder()
+                .key("request_received")
+                .title("任务已创建")
+                .description("已按 " + defaultText(run.getTriggerSource(), "当前来源") + " 发起 "
+                        + defaultText(run.getAgentType(), "agent") + " 任务。")
+                .status("completed")
+                .timestamp(createTime)
+                .build());
+        timeline.add(AgentRunVO.TimelineItemVO.builder()
+                .key("analysis_ready")
+                .title("分析结果已整理")
+                .description(defaultText(run.getSummary(), "当前 run 已生成结构化建议。"))
+                .status("completed")
+                .timestamp(run.getUpdateTime())
+                .build());
+        if (Integer.valueOf(1).equals(run.getRequiresApproval())) {
+            timeline.add(AgentRunVO.TimelineItemVO.builder()
+                    .key("approval_gate")
+                    .title("审批门控")
+                    .description(defaultText(run.getApprovalSummary(), "当前写操作需要审批后才能执行。"))
+                    .status(resolveApprovalTimelineStatus(run.getStatus()))
+                    .timestamp(run.getUpdateTime())
+                    .build());
+        }
+        if (executionResult != null && StringUtils.hasText(executionResult.summary())) {
+            timeline.add(AgentRunVO.TimelineItemVO.builder()
+                    .key("execution_result")
+                    .title("结果已执行")
+                    .description(executionResult.summary())
+                    .status("completed")
+                    .timestamp(run.getUpdateTime())
+                    .build());
+        } else if ("completed".equals(normalize(run.getStatus()))) {
+            timeline.add(AgentRunVO.TimelineItemVO.builder()
+                    .key("result_delivered")
+                    .title("结果已交付")
+                    .description("当前 run 已完成，可继续进入下一步消费结果。")
+                    .status("completed")
+                    .timestamp(run.getUpdateTime())
+                    .build());
+        }
+        if (StringUtils.hasText(run.getNextActionPath())) {
+            timeline.add(AgentRunVO.TimelineItemVO.builder()
+                    .key("next_action")
+                    .title("下一步动作")
+                    .description("建议继续前往 " + run.getNextActionPath() + " 消费结果。")
+                    .status("ready")
+                    .timestamp(run.getUpdateTime())
+                    .build());
+        }
+        return timeline;
+    }
+
+    private String resolveApprovalTimelineStatus(String runStatus) {
+        return switch (normalize(runStatus)) {
+            case "pending_approval" -> "waiting";
+            case "rejected" -> "rejected";
+            case "canceled" -> "canceled";
+            default -> "completed";
+        };
+    }
+
+    private List<AgentRunVO.ProviderGateVO> resolveProviderGates(AgentRun run) {
+        List<ProviderRequirement> requirements = providerRequirements(run.getAgentType());
+        if (requirements.isEmpty()) {
+            return List.of();
+        }
+        Map<String, UserProviderConfigItemVO> configMap = new LinkedHashMap<>();
+        List<UserProviderConfigItemVO> configs = loadProviderConfigs();
+        for (UserProviderConfigItemVO item : configs) {
+            if (item != null && StringUtils.hasText(item.getScope())) {
+                configMap.put(normalize(item.getScope()), item);
+            }
+        }
+        List<AgentRunVO.ProviderGateVO> gates = new ArrayList<>();
+        for (ProviderRequirement requirement : requirements) {
+            UserProviderConfigItemVO item = configMap.get(requirement.scope());
+            gates.add(AgentRunVO.ProviderGateVO.builder()
+                    .scope(requirement.scope())
+                    .label(item == null ? requirement.label() : item.getLabel())
+                    .status(item == null ? "missing" : item.getStatus())
+                    .statusMessage(item == null ? requirement.missingMessage() : item.getStatusMessage())
+                    .required(requirement.required())
+                    .build());
+        }
+        return gates;
+    }
+
+    private List<UserProviderConfigItemVO> loadProviderConfigs() {
+        try {
+            List<UserProviderConfigItemVO> configs = userProviderConfigService.listCurrentUserConfigs();
+            return configs == null ? List.of() : configs;
+        } catch (Exception ex) {
+            log.warn("Failed to resolve user provider configs for agent gating", ex);
+            return List.of();
+        }
+    }
+
+    private String resolveProviderGateStatus(List<AgentRunVO.ProviderGateVO> providerGates) {
+        if (providerGates.isEmpty()) {
+            return "not_applicable";
+        }
+        boolean hasRequiredGap = providerGates.stream()
+                .filter(item -> Boolean.TRUE.equals(item.getRequired()))
+                .anyMatch(item -> !isProviderAvailable(item.getStatus()));
+        if (hasRequiredGap) {
+            return "blocked";
+        }
+        boolean hasOptionalGap = providerGates.stream().anyMatch(item -> !isProviderAvailable(item.getStatus()));
+        return hasOptionalGap ? "degraded" : "ready";
+    }
+
+    private boolean isProviderAvailable(String status) {
+        String normalized = normalize(status);
+        return "ready".equals(normalized) || "saved".equals(normalized);
+    }
+
+    private String buildProviderGateSummary(List<AgentRunVO.ProviderGateVO> providerGates, String overallStatus) {
+        if (providerGates.isEmpty()) {
+            return "当前 run 不依赖额外 provider gating。";
+        }
+        long missingCount = providerGates.stream().filter(item -> !isProviderAvailable(item.getStatus())).count();
+        return switch (overallStatus) {
+            case "blocked" -> "当前有 " + missingCount + " 项关键 provider 还没就绪，相关动作会被阻断或降级。";
+            case "degraded" -> "当前关键 provider 已基本就绪，但仍有 " + missingCount + " 项依赖未完全可用。";
+            default -> "当前相关 provider 依赖已基本就绪。";
+        };
+    }
+
+    private List<ProviderRequirement> providerRequirements(String agentType) {
+        String normalized = normalize(agentType);
+        List<ProviderRequirement> requirements = new ArrayList<>();
+        requirements.add(new ProviderRequirement("llm", "主模型", true, "还没有保存主模型配置。"));
+        switch (normalized) {
+            case "recording_review" -> {
+                requirements.add(new ProviderRequirement("asr", "语音识别", true, "录音复盘至少需要语音识别配置。"));
+                requirements.add(new ProviderRequirement("oss", "对象存储", false, "长音频存储能力未配置，上传能力可能受限。"));
+            }
+            case "job_prep" -> requirements.add(new ProviderRequirement("search", "联网搜索", false, "联网搜索未配置，公司与岗位背景研究会降级。"));
+            case "realtime_copilot" -> {
+                requirements.add(new ProviderRequirement("asr", "语音识别", true, "实时 Copilot 至少需要语音识别配置。"));
+                requirements.add(new ProviderRequirement("search", "联网搜索", true, "实时 Copilot 需要联网搜索支持背景检索。"));
+                requirements.add(new ProviderRequirement("voiceprint", "声纹识别", false, "声纹识别未配置，说话人区分会降级。"));
+            }
+            default -> {
+            }
+        }
+        return requirements;
     }
 
     private RunBlueprint blueprint(String title, String summary, List<String> recommendations, List<String> checkpoints,
@@ -1054,6 +1233,9 @@ public class AgentRunServiceImpl implements AgentRunService {
     }
 
     private record ResumeFollowUpDraftPayload(Long resumeId, String summary, List<String> recommendations) {
+    }
+
+    private record ProviderRequirement(String scope, String label, boolean required, String missingMessage) {
     }
 
     private record ContextSnapshot(AbilityProfileVO abilityProfile, ProfileTopicDetailVO topicDetail,

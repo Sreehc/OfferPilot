@@ -16,7 +16,9 @@ import com.offerpilot.agent.dto.AgentRunCreateRequest;
 import com.offerpilot.agent.entity.AgentRun;
 import com.offerpilot.agent.mapper.AgentRunMapper;
 import com.offerpilot.agent.service.impl.AgentRunServiceImpl;
+import com.offerpilot.agent.service.UserProviderConfigService;
 import com.offerpilot.agent.vo.AgentRunVO;
+import com.offerpilot.agent.vo.UserProviderConfigItemVO;
 import com.offerpilot.analytics.service.AnalyticsService;
 import com.offerpilot.analytics.vo.ProfileTopicDetailVO;
 import com.offerpilot.application.service.JobApplicationService;
@@ -65,6 +67,8 @@ class AgentRunServiceImplTest {
     private ResumeService resumeService;
     @Mock
     private JobApplicationService jobApplicationService;
+    @Mock
+    private UserProviderConfigService userProviderConfigService;
 
     @InjectMocks
     private AgentRunServiceImpl agentRunService;
@@ -207,6 +211,48 @@ class AgentRunServiceImplTest {
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("优先推进下周的一面")));
         assertTrue(Boolean.TRUE.equals(result.getRequiresApproval()));
         assertNotNull(result.getApprovalSummary());
+    }
+
+    @Test
+    void createRun_realtimeCopilotExposesTimelineAndProviderGating() {
+        when(userProviderConfigService.listCurrentUserConfigs()).thenReturn(List.of(
+                UserProviderConfigItemVO.builder()
+                        .scope("llm")
+                        .label("主模型")
+                        .status("ready")
+                        .statusMessage("配置完整，可供对应能力使用。")
+                        .build(),
+                UserProviderConfigItemVO.builder()
+                        .scope("asr")
+                        .label("语音识别")
+                        .status("ready")
+                        .statusMessage("配置完整，可供对应能力使用。")
+                        .build(),
+                UserProviderConfigItemVO.builder()
+                        .scope("search")
+                        .label("联网搜索")
+                        .status("missing")
+                        .statusMessage("还没有保存这类配置。")
+                        .build(),
+                UserProviderConfigItemVO.builder()
+                        .scope("voiceprint")
+                        .label("声纹识别")
+                        .status("saved")
+                        .statusMessage("配置已保存，启用后可供对应能力使用。")
+                        .build()));
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "realtime_copilot",
+                "interview_live",
+                List.of("resume:latest", "settings:providers"),
+                "先做一轮会前准备"));
+
+        assertEquals("blocked", result.getProviderGateStatus());
+        assertTrue(result.getProviderGateSummary().contains("关键 provider"));
+        assertTrue(result.getProviderGates().stream().anyMatch(item -> "search".equals(item.getScope()) && "missing".equals(item.getStatus())));
+        assertTrue(result.getTimeline().stream().anyMatch(item -> "request_received".equals(item.getKey())));
+        assertTrue(result.getTimeline().stream().anyMatch(item -> "next_action".equals(item.getKey())));
+        assertEquals("not_required", result.getApprovalStage());
     }
 
     @Test

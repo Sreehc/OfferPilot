@@ -197,6 +197,34 @@
             <p class="mt-2 text-sm leading-6 text-primary">{{ selectedRun.approvalSummary }}</p>
           </div>
 
+          <div v-if="selectedRun.providerGateSummary || selectedRun.providerGates.length" class="agent-detail-block">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p class="agent-detail-block__title">Provider Gating</p>
+                <p v-if="selectedRun.providerGateSummary" class="mt-2 text-sm leading-6 text-primary">
+                  {{ selectedRun.providerGateSummary }}
+                </p>
+              </div>
+              <span class="agent-run-status" :class="resolveProviderGateClass(selectedRun.providerGateStatus)">
+                {{ resolveProviderGateLabel(selectedRun.providerGateStatus) }}
+              </span>
+            </div>
+            <div v-if="selectedRun.providerGates.length" class="mt-4 grid gap-3 md:grid-cols-2">
+              <div v-for="item in selectedRun.providerGates" :key="item.scope" class="agent-provider-card">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-semibold text-ink">{{ item.label }}</p>
+                    <p class="mt-1 text-xs uppercase tracking-[0.18em] text-tertiary">{{ item.scope }}</p>
+                  </div>
+                  <span class="agent-run-status" :class="resolveProviderItemClass(item.status)">
+                    {{ item.required ? '关键依赖' : '可选依赖' }}
+                  </span>
+                </div>
+                <p class="mt-3 text-sm leading-6 text-secondary">{{ item.statusMessage }}</p>
+              </div>
+            </div>
+          </div>
+
           <div class="grid gap-4 xl:grid-cols-2">
             <div class="agent-detail-block">
               <p class="agent-detail-block__title">建议动作</p>
@@ -209,6 +237,27 @@
               <ul class="agent-detail-list mt-3">
                 <li v-for="item in selectedRun.checkpoints" :key="item">{{ item }}</li>
               </ul>
+            </div>
+          </div>
+
+          <div v-if="selectedRun.timeline.length" class="agent-detail-block">
+            <p class="agent-detail-block__title">Run Timeline</p>
+            <div class="mt-4 space-y-3">
+              <div v-for="item in selectedRun.timeline" :key="item.key" class="agent-timeline-item">
+                <div class="agent-timeline-item__rail">
+                  <span class="agent-timeline-dot" :class="resolveTimelineDotClass(item.status)"></span>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <p class="text-sm font-semibold text-ink">{{ item.title }}</p>
+                    <span class="agent-run-status" :class="resolveTimelineStatusClass(item.status)">
+                      {{ resolveTimelineStatusLabel(item.status) }}
+                    </span>
+                  </div>
+                  <p class="mt-2 text-sm leading-6 text-secondary">{{ item.description }}</p>
+                  <p v-if="item.timestamp" class="mt-2 text-xs text-tertiary">{{ formatDateTime(item.timestamp) }}</p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -542,6 +591,91 @@ const resolveApprovalCalloutClass = (status: string) => {
   }
 }
 
+const resolveProviderGateLabel = (status?: string) => {
+  switch (status) {
+    case 'blocked':
+      return '关键依赖缺失'
+    case 'degraded':
+      return '可降级运行'
+    case 'ready':
+      return '依赖已就绪'
+    default:
+      return '无额外依赖'
+  }
+}
+
+const resolveProviderGateClass = (status?: string) => {
+  switch (status) {
+    case 'blocked':
+      return 'agent-run-status--danger'
+    case 'degraded':
+      return 'agent-run-status--warning'
+    case 'ready':
+      return 'agent-run-status--ready'
+    default:
+      return 'agent-run-status--neutral'
+  }
+}
+
+const resolveProviderItemClass = (status: string) => {
+  switch (status) {
+    case 'missing':
+    case 'incomplete':
+      return 'agent-run-status--danger'
+    case 'saved':
+      return 'agent-run-status--warning'
+    default:
+      return 'agent-run-status--ready'
+  }
+}
+
+const resolveTimelineStatusLabel = (status: string) => {
+  switch (status) {
+    case 'waiting':
+      return '等待中'
+    case 'ready':
+      return '可执行'
+    case 'rejected':
+      return '已拒绝'
+    case 'canceled':
+      return '已取消'
+    default:
+      return '已完成'
+  }
+}
+
+const resolveTimelineStatusClass = (status: string) => {
+  switch (status) {
+    case 'waiting':
+      return 'agent-run-status--warning'
+    case 'rejected':
+      return 'agent-run-status--danger'
+    case 'canceled':
+      return 'agent-run-status--neutral'
+    case 'ready':
+      return 'agent-run-status--ready'
+    default:
+      return 'agent-run-status--ready'
+  }
+}
+
+const resolveTimelineDotClass = (status: string) => {
+  switch (status) {
+    case 'waiting':
+      return 'agent-timeline-dot--warning'
+    case 'rejected':
+      return 'agent-timeline-dot--danger'
+    case 'canceled':
+      return 'agent-timeline-dot--neutral'
+    case 'ready':
+      return 'agent-timeline-dot--ready'
+    default:
+      return 'agent-timeline-dot--done'
+  }
+}
+
+const formatDateTime = (value?: string) => (value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '刚刚')
+
 const handleDecision = async (decision: 'approve' | 'reject' | 'cancel') => {
   if (!selectedRun.value) return
   actionLoading.value = decision
@@ -720,6 +854,13 @@ watch(() => route.fullPath, () => {
   color: var(--bc-ink);
 }
 
+.agent-provider-card {
+  border-radius: calc(var(--radius-md) - 6px);
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--panel-muted);
+  padding: 14px;
+}
+
 .agent-context-pill {
   display: inline-flex;
   align-items: center;
@@ -742,6 +883,45 @@ watch(() => route.fullPath, () => {
 
 .agent-detail-list li {
   line-height: 1.7;
+}
+
+.agent-timeline-item {
+  display: flex;
+  gap: 12px;
+}
+
+.agent-timeline-item__rail {
+  display: flex;
+  justify-content: center;
+  padding-top: 4px;
+}
+
+.agent-timeline-dot {
+  display: inline-flex;
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.35);
+}
+
+.agent-timeline-dot--done {
+  background: rgba(var(--bc-cyan-rgb), 0.72);
+}
+
+.agent-timeline-dot--ready {
+  background: rgba(var(--bc-cyan-rgb), 0.9);
+}
+
+.agent-timeline-dot--warning {
+  background: rgba(var(--bc-amber-rgb), 0.88);
+}
+
+.agent-timeline-dot--danger {
+  background: rgba(224, 73, 73, 0.88);
+}
+
+.agent-timeline-dot--neutral {
+  background: rgba(148, 163, 184, 0.72);
 }
 
 .agent-detail-footer {
