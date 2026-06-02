@@ -238,6 +238,8 @@ public class AdaptiveServiceImpl implements AdaptiveService {
                     .categoryAbilities(List.of())
                     .weakCategories(List.of())
                     .suggestedFocus(null)
+                    .evidenceStatus("insufficient")
+                    .evidenceSummary("还没有足够训练证据形成长期画像。先完成几轮题库、模拟面试或录音复盘。")
                     .build();
         }
 
@@ -360,6 +362,8 @@ public class AdaptiveServiceImpl implements AdaptiveService {
         // Suggested focus: the weakest category
         String suggestedFocus = categoryAbilities.isEmpty() ? null
                 : categoryAbilities.get(0).getCategoryName();
+        int totalEvidenceCount = allRecords.size() + recordingReviews.size();
+        String evidenceStatus = resolveEvidenceStatus(categoryAbilities, totalEvidenceCount);
 
         return AbilityProfileVO.builder()
                 .overallAbility(Math.round(overallAbility * 100.0) / 100.0)
@@ -368,7 +372,32 @@ public class AdaptiveServiceImpl implements AdaptiveService {
                 .categoryAbilities(categoryAbilities)
                 .weakCategories(weakCategories)
                 .suggestedFocus(suggestedFocus)
+                .evidenceStatus(evidenceStatus)
+                .evidenceSummary(buildEvidenceSummary(evidenceStatus, totalEvidenceCount, categoryAbilities.size(), weakCategories, suggestedFocus))
                 .build();
+    }
+
+    private String resolveEvidenceStatus(List<CategoryAbilityVO> categoryAbilities, int totalEvidenceCount) {
+        if (categoryAbilities.isEmpty() || totalEvidenceCount == 0) {
+            return "insufficient";
+        }
+        if (totalEvidenceCount < 3) {
+            return "forming";
+        }
+        return "ready";
+    }
+
+    private String buildEvidenceSummary(String evidenceStatus, int totalEvidenceCount, int categoryCount,
+                                        List<String> weakCategories, String suggestedFocus) {
+        return switch (evidenceStatus) {
+            case "insufficient" -> "还没有足够训练证据形成长期画像。先完成几轮题库、模拟面试或录音复盘。";
+            case "forming" -> "当前画像还在形成中，已沉淀 " + totalEvidenceCount + " 条训练证据，覆盖 "
+                    + categoryCount + " 个主题。建议继续补 1-2 轮训练，再看长期趋势。";
+            default -> weakCategories.isEmpty()
+                    ? "长期画像已形成，当前没有明显单一薄弱主题，可以继续按主线任务推进。"
+                    : "长期画像已形成，当前建议优先收紧「" + (suggestedFocus == null ? weakCategories.get(0) : suggestedFocus)
+                    + "」等薄弱主题。";
+        };
     }
 
     private List<Long> resolveRecordingReviewCategories(RecordingReviewSession review, List<Category> categories) {

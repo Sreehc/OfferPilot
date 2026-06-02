@@ -99,6 +99,8 @@ class AdaptiveServiceImplTest {
         assertTrue(profile.getCategoryAbilities().isEmpty());
         assertTrue(profile.getWeakCategories().isEmpty());
         assertNull(profile.getSuggestedFocus());
+        assertEquals("insufficient", profile.getEvidenceStatus());
+        assertTrue(profile.getEvidenceSummary().contains("足够训练证据"));
     }
 
     @Test
@@ -124,6 +126,8 @@ class AdaptiveServiceImplTest {
         assertEquals(2, profile.getCategoryAbilities().size());
         assertTrue(profile.getOverallAbility() > 0);
         assertTrue(profile.getWeakCategories().isEmpty());
+        assertEquals("forming", profile.getEvidenceStatus());
+        assertTrue(profile.getEvidenceSummary().contains("画像还在形成中"));
     }
 
     @Test
@@ -316,6 +320,27 @@ class AdaptiveServiceImplTest {
         assertEquals(0, springAbility.getInterviewCount());
         assertEquals(1, springAbility.getRecordingReviewCount());
         assertEquals(42.0, springAbility.getAbilityScore());
+        assertEquals("forming", profile.getEvidenceStatus());
+        assertTrue(profile.getEvidenceSummary().contains("画像还在形成中"));
+    }
+
+    @Test
+    void getAbilityProfile_withEnoughEvidence_marksProfileReady() {
+        mockCacheMiss();
+        mockCategories(makeCategory(100L, "Redis"));
+        when(sessionMapper.selectList(any())).thenReturn(List.of(makeSession(1L, LocalDateTime.now().minusDays(1))));
+        when(recordMapper.selectList(any())).thenReturn(List.of(
+                makeRecord(1L, 10L, new BigDecimal("70")),
+                makeRecord(1L, 10L, new BigDecimal("75"))));
+        when(questionMapper.selectBatchIds(any())).thenReturn(List.of(makeQuestion(10L, 100L)));
+        when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of(
+                makeRecordingReview(10L, "Redis", "后端开发", "Redis 缓存一致性表达较稳", new BigDecimal("78"))));
+        when(wrongQuestionMapper.selectCount(any())).thenReturn(0L);
+
+        AbilityProfileVO profile = service.getAbilityProfile(1L);
+
+        assertEquals("ready", profile.getEvidenceStatus());
+        assertTrue(profile.getEvidenceSummary().contains("长期画像已形成"));
     }
 
     private void mockCacheMiss() {

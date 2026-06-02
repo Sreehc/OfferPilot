@@ -20,11 +20,19 @@
           <p class="mt-3 text-sm text-secondary">正在加载训练画像...</p>
         </div>
       </div>
+      <div v-else-if="abilityProfile.evidenceStatus !== 'ready'" class="mt-5">
+        <EmptyState
+          icon="chart"
+          :title="profileEvidenceTitle"
+          :description="abilityProfile.evidenceSummary || '先完成几轮题库、复盘或模拟面试，这里会开始沉淀长期趋势。'"
+          compact
+        />
+      </div>
       <div v-else-if="!abilityProfile.categoryAbilities.length" class="mt-5">
         <EmptyState
           icon="chart"
-          title="训练画像还没形成"
-          description="先完成几轮题库、复盘或模拟面试，这里会开始沉淀长期趋势。"
+          title="训练画像暂时为空"
+          description="当前画像已生成，但还没有可展示的主题详情。继续补几轮训练后再回来查看。"
           compact
         />
       </div>
@@ -34,7 +42,7 @@
             <p class="profile-summary-card__label">综合能力</p>
             <p class="profile-summary-card__value">{{ Math.round(abilityProfile.overallAbility || 0) }}</p>
             <p class="profile-summary-card__hint">
-              当前能力画像会结合面试记录、错题表现和 {{ abilityProfile.recordingReviewCount || 0 }} 次录音复盘持续刷新。
+              {{ abilityProfile.evidenceSummary || `当前能力画像会结合面试记录、错题表现和 ${abilityProfile.recordingReviewCount || 0} 次录音复盘持续刷新。` }}
             </p>
           </article>
           <article class="profile-summary-card profile-summary-card--accent">
@@ -589,7 +597,9 @@ const abilityProfile = ref<AbilityProfile>({
   recordingReviewCount: 0,
   categoryAbilities: [],
   weakCategories: [],
-  suggestedFocus: null
+  suggestedFocus: null,
+  evidenceStatus: 'insufficient',
+  evidenceSummary: ''
 })
 const topicDetailLoading = ref(false)
 const topicDetail = ref<ProfileTopicDetail | null>(null)
@@ -696,6 +706,10 @@ const profileCategoryCards = computed(() => [...(abilityProfile.value.categoryAb
   .sort((left, right) => left.abilityScore - right.abilityScore)
   .slice(0, 4))
 const difficultyLabel = computed(() => difficultyText(abilityProfile.value.recommendedDifficulty))
+const profileEvidenceTitle = computed(() => {
+  if (abilityProfile.value.evidenceStatus === 'forming') return '训练画像正在形成中'
+  return '训练画像还没形成'
+})
 const analyticsAgentLink = computed(() =>
   buildAgentWorkbenchLocation({
     agentType: 'study_planner',

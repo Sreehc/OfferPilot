@@ -13,4 +13,6 @@ public class AbilityProfileVO {
     private List<CategoryAbilityVO> categoryAbilities;
     private List<String> weakCategories;
     private String suggestedFocus;
+    private String evidenceStatus;
+    private String evidenceSummary;
 }

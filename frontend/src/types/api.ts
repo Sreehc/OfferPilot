@@ -834,6 +834,8 @@ export interface AbilityProfile {
   categoryAbilities: CategoryAbility[]
   weakCategories: string[]
   suggestedFocus: string | null
+  evidenceStatus?: 'insufficient' | 'forming' | 'ready' | string
+  evidenceSummary?: string
 }
 
 export interface ProfileTopicWeeklyScore {
