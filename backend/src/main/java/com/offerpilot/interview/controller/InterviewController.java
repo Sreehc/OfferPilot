@@ -6,16 +6,18 @@ import com.offerpilot.common.dto.PageResult;
 import com.offerpilot.common.exception.BusinessException;
 import com.offerpilot.common.storage.StorageDirectory;
 import com.offerpilot.common.storage.UploadPolicyService;
-import com.offerpilot.cards.vo.TodayCardsTaskVO;
 import com.offerpilot.interview.dto.InterviewAnswerRequest;
 import com.offerpilot.interview.dto.InterviewStartRequest;
+import com.offerpilot.interview.dto.JobPrepSessionCreateRequest;
 import com.offerpilot.interview.dto.VoiceStartRequest;
+import com.offerpilot.interview.service.InterviewJobPrepService;
 import com.offerpilot.interview.service.InterviewService;
 import com.offerpilot.interview.service.InterviewVoiceService;
 import com.offerpilot.interview.vo.InterviewAnswerVO;
 import com.offerpilot.interview.vo.InterviewCurrentQuestionVO;
 import com.offerpilot.interview.vo.InterviewDetailVO;
 import com.offerpilot.interview.vo.InterviewHistoryVO;
+import com.offerpilot.interview.vo.JobPrepSessionVO;
 import com.offerpilot.interview.vo.VoiceSubmitVO;
 import com.offerpilot.security.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -41,6 +43,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class InterviewController {
 
     private final InterviewService interviewService;
+    private final InterviewJobPrepService interviewJobPrepService;
     private final InterviewVoiceService interviewVoiceService;
     private final UploadPolicyService uploadPolicyService;
 
@@ -84,18 +87,16 @@ public class InterviewController {
         return Result.success(interviewService.trendData(currentUserId(), limit));
     }
 
-    @Operation(summary = "补生成面试复习卡片", description = "为指定已完成面试会话补生成面试诊断卡片")
-    @PostMapping("/{sessionId}/cards/generate")
-    public Result<InterviewDetailVO> generateCards(
-            @Parameter(description = "会话 ID") @PathVariable Long sessionId) {
-        return Result.success(interviewService.generateCards(currentUserId(), sessionId));
+    @Operation(summary = "创建 JD 备面会话", description = "根据 JD、简历和投递信息生成一份定向备面结果")
+    @PostMapping("/job-prep/sessions")
+    public Result<JobPrepSessionVO> createJobPrepSession(@Valid @RequestBody JobPrepSessionCreateRequest request) {
+        return Result.success(interviewJobPrepService.createSession(currentUserId(), request));
     }
 
-    @Operation(summary = "加入今日卡片", description = "将面试诊断卡片 deck 设为当前 deck")
-    @PostMapping("/{sessionId}/cards/activate")
-    public Result<TodayCardsTaskVO> activateCards(
-            @Parameter(description = "会话 ID") @PathVariable Long sessionId) {
-        return Result.success(interviewService.activateCards(currentUserId(), sessionId));
+    @Operation(summary = "JD 备面详情", description = "查看已生成的 JD 备面会话内容")
+    @GetMapping("/job-prep/sessions/{sessionId}")
+    public Result<JobPrepSessionVO> jobPrepSession(@Parameter(description = "会话 ID") @PathVariable Long sessionId) {
+        return Result.success(interviewJobPrepService.detail(currentUserId(), sessionId));
     }
 
     // ── Voice Interview Endpoints ──────────────────────────

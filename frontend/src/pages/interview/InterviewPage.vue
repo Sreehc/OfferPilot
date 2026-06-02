@@ -7,9 +7,9 @@
             <div class="workspace-head__main">
               <div class="flex flex-wrap items-center gap-2">
                 <h1 class="workspace-title sm:text-[1.75rem]">模拟面试</h1>
-                <span v-if="recommendedInterview" class="detail-pill">建议起点</span>
+                <span v-if="recommendedInterview" class="detail-pill">推荐设置</span>
               </div>
-              <p class="workspace-summary">先定这轮怎么练，再直接开始，岗位、题量和上下文都在这里一次配好。</p>
+              <p class="workspace-summary">选择岗位方向、题量和上下文，开始一轮模拟面试。</p>
             </div>
             <div class="interview-setup-bar__head-actions">
               <div v-if="voiceAvailable" class="interview-mode-switch">
@@ -40,7 +40,7 @@
             <span class="detail-pill">{{ difficultyText(recommendedInterview.difficulty) || '默认' }}</span>
             <span class="font-semibold text-ink">{{ recommendedInterview.direction }}</span>
             <span class="text-secondary">{{ recommendedInterview.questionCount }} 题</span>
-            <span class="text-secondary">{{ recommendedInterview.reason || '按你当前进度给出的建议起点' }}</span>
+            <span class="text-secondary">{{ recommendedInterview.reason || '根据最近训练情况推荐' }}</span>
           </div>
 
           <div class="interview-setup-grid">
@@ -142,19 +142,200 @@
         </div>
       </section>
 
+      <section class="shell-section-card workspace-shell interview-job-prep-shell">
+        <div class="workspace-section">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <h3 class="workspace-section-title">JD 备面</h3>
+                <span class="detail-pill">TechSpar 迁移能力</span>
+              </div>
+              <p class="workspace-section-summary">把岗位 JD、简历和投递信息压成一份定向备面草案，再决定下一轮模拟怎么打。</p>
+            </div>
+            <el-button
+              :loading="jobPrepLoading"
+              type="primary"
+              size="large"
+              class="action-button !min-h-11"
+              @click="handleGenerateJobPrep"
+            >
+              生成备面结果
+            </el-button>
+          </div>
+
+          <div class="job-prep-grid mt-5">
+            <div class="space-y-4">
+              <div>
+                <label class="flat-field-label">关联投递</label>
+                <el-select
+                  v-model="selectedJobPrepApplicationId"
+                  clearable
+                  filterable
+                  placeholder="选择已有投递，自动带入 JD"
+                  :loading="loadingApplications"
+                  class="w-full"
+                >
+                  <el-option
+                    v-for="item in applications"
+                    :key="item.id"
+                    :label="`${item.company} · ${item.jobTitle}`"
+                    :value="item.id"
+                  />
+                </el-select>
+              </div>
+
+              <div class="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label class="flat-field-label">公司</label>
+                  <el-input v-model="jobPrepCompany" placeholder="字节 / 阿里 / 自定义" />
+                </div>
+                <div>
+                  <label class="flat-field-label">岗位</label>
+                  <el-input v-model="jobPrepJobTitle" placeholder="Java 后端开发" />
+                </div>
+              </div>
+
+              <div>
+                <label class="flat-field-label">绑定简历</label>
+                <el-select
+                  v-model="jobPrepResumeId"
+                  clearable
+                  filterable
+                  placeholder="选择要用于备面的简历"
+                  class="w-full"
+                >
+                  <el-option v-for="resume in resumes" :key="resume.id" :label="resume.title" :value="resume.id" />
+                </el-select>
+              </div>
+
+              <div>
+                <label class="flat-field-label">岗位 JD</label>
+                <el-input
+                  v-model="jobPrepJdText"
+                  type="textarea"
+                  :rows="7"
+                  placeholder="粘贴岗位描述，或先从关联投递带入。"
+                />
+              </div>
+            </div>
+
+            <div class="job-prep-result-shell">
+              <div v-if="jobPrepLoading" class="flex h-full min-h-[280px] items-center justify-center">
+                <div class="text-center">
+                  <div class="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+                  <p class="mt-3 text-sm text-secondary">正在生成定向备面结果...</p>
+                </div>
+              </div>
+              <div v-else-if="!jobPrepSession" class="flex h-full min-h-[280px] items-center justify-center">
+                <EmptyState
+                  icon="clipboard"
+                  title="先生成一份 JD 备面结果"
+                  description="这里会给出匹配度、缺口、项目表达重点和建议追问，供下一轮模拟和真实面试直接使用。"
+                  compact
+                />
+              </div>
+              <div v-else class="space-y-4">
+                <div class="job-prep-summary-card">
+                  <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="detail-pill">{{ jobPrepSession.company || '未设公司' }}</span>
+                        <span class="detail-pill">{{ jobPrepSession.jobTitle || '未设岗位' }}</span>
+                        <span v-if="jobPrepSession.resumeTitle" class="detail-pill">{{ jobPrepSession.resumeTitle }}</span>
+                      </div>
+                      <p class="mt-3 text-sm leading-6 text-primary">{{ jobPrepSession.summary }}</p>
+                    </div>
+                    <div class="job-prep-score">
+                      <span class="job-prep-score__label">匹配度</span>
+                      <span class="job-prep-score__value">{{ Math.round(jobPrepSession.matchScore || 0) }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="grid gap-3 sm:grid-cols-3">
+                  <article class="job-prep-stat-card">
+                    <p class="job-prep-stat-card__label">已命中关键词</p>
+                    <p class="job-prep-stat-card__value">{{ jobPrepSession.matchedKeywords.length }}</p>
+                  </article>
+                  <article class="job-prep-stat-card job-prep-stat-card--risk">
+                    <p class="job-prep-stat-card__label">待补缺口</p>
+                    <p class="job-prep-stat-card__value">{{ jobPrepSession.missingKeywords.length }}</p>
+                  </article>
+                  <article class="job-prep-stat-card">
+                    <p class="job-prep-stat-card__label">建议动作</p>
+                    <p class="job-prep-stat-card__value">{{ jobPrepSession.nextActions.length }}</p>
+                  </article>
+                </div>
+
+                <div class="grid gap-3 xl:grid-cols-2">
+                  <article class="job-prep-panel">
+                    <p class="job-prep-panel__title">关键词命中</p>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                      <span v-for="tag in jobPrepSession.matchedKeywords" :key="`matched-${tag}`" class="job-prep-chip">
+                        {{ tag }}
+                      </span>
+                      <span
+                        v-for="tag in jobPrepSession.missingKeywords"
+                        :key="`missing-${tag}`"
+                        class="job-prep-chip job-prep-chip--risk"
+                      >
+                        {{ tag }}
+                      </span>
+                    </div>
+                  </article>
+
+                  <article class="job-prep-panel">
+                    <p class="job-prep-panel__title">优先补位</p>
+                    <ul class="job-prep-list mt-3">
+                      <li v-for="item in jobPrepSession.focusAreas" :key="item">{{ item }}</li>
+                    </ul>
+                  </article>
+                </div>
+
+                <div class="grid gap-3 xl:grid-cols-2">
+                  <article class="job-prep-panel">
+                    <p class="job-prep-panel__title">项目表达重点</p>
+                    <ul class="job-prep-list mt-3">
+                      <li v-for="item in jobPrepSession.resumeTalkingPoints" :key="item">{{ item }}</li>
+                    </ul>
+                  </article>
+
+                  <article class="job-prep-panel">
+                    <p class="job-prep-panel__title">建议追问</p>
+                    <ul class="job-prep-list mt-3">
+                      <li v-for="item in jobPrepSession.mockQuestions" :key="item">{{ item }}</li>
+                    </ul>
+                  </article>
+                </div>
+
+                <article class="job-prep-panel">
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <p class="job-prep-panel__title">下一步动作</p>
+                    <el-button type="default" size="small" @click="applyJobPrepToInterview">把结果带入模拟面试</el-button>
+                  </div>
+                  <ul class="job-prep-list mt-3">
+                    <li v-for="item in jobPrepSession.nextActions" :key="item">{{ item }}</li>
+                  </ul>
+                </article>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="shell-section-card workspace-shell interview-history-shell">
         <div class="workspace-section">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 class="workspace-section-title">面试记录</h3>
-              <p class="workspace-section-summary">开始新一轮之前，再决定要不要回看最近几轮表现。</p>
+              <p class="workspace-section-summary">查看最近几轮面试记录和得分。</p>
             </div>
-            <el-select v-model="historyFilterDirection" clearable placeholder="全部方向" size="small" class="w-32">
+            <el-select v-model="historyFilterDirection" clearable placeholder="全部方向" size="default" class="w-36">
               <el-option v-for="d in directions" :key="d.name" :label="d.name" :value="d.name" />
             </el-select>
           </div>
 
-          <div v-if="allHistoryLoading" class="mt-4 py-6 text-center text-xs text-tertiary">正在读取最近几轮模拟面试记录...</div>
+          <div v-if="allHistoryLoading" class="mt-4 py-6 text-center text-xs text-tertiary">正在加载最近几轮模拟面试记录...</div>
           <div v-else-if="!allHistoryItems.length" class="mt-4 py-6 text-center">
             <p class="text-xs leading-5 text-secondary">{{ EMPTY_STATE_COPY.interviewHistory.description }}</p>
           </div>
@@ -215,7 +396,7 @@
     <section v-if="phase !== 'idle'" class="grid gap-3 lg:grid-cols-[260px_minmax(0,1fr)]">
       <aside class="shell-section-card p-3 sm:p-4">
         <h3 class="text-sm font-bold text-ink">
-          {{ phase === 'finished' ? '面试已完成' : phase === 'result' ? '本题已评分' : '继续当前流程' }}
+          {{ phase === 'finished' ? '面试已完成' : phase === 'result' ? '本题已评分' : '当前面试' }}
         </h3>
 
         <div class="mt-3 space-y-2">
@@ -226,7 +407,7 @@
           </div>
           <div class="h-1.5 overflow-hidden rounded-full bg-[var(--panel-muted)]">
             <div
-              class="h-full rounded-full bg-accent transition-all duration-500"
+              class="h-full rounded-full bg-accent transition-[width] duration-500"
               :style="{ width: `${progressPercent}%` }"
             ></div>
           </div>
@@ -316,7 +497,7 @@
               v-model="answerText"
               type="textarea"
               :rows="8"
-              placeholder="先写结论，再补充关键原因和权衡"
+              placeholder="写结论，并补充关键原因和取舍。"
               class="interview-answer-input mt-2 flex-1"
               @keydown.ctrl.enter.prevent="handleSubmitAnswer"
             />
@@ -379,7 +560,7 @@
 
           <div class="score-card p-4" :class="(lastResult?.score ?? 0) >= 60 ? 'score-card-pass' : 'score-card-risk'">
             <div class="flex items-center gap-4">
-              <div class="font-mono text-5xl font-semibold tracking-[-0.04em] text-white">{{ animatedScore }}</div>
+              <div class="font-mono text-5xl font-semibold text-white" style="font-variant-numeric: tabular-nums">{{ animatedScore }}</div>
               <div class="min-w-0 flex-1">
                 <div class="text-xs uppercase tracking-[0.24em] text-white/65">智能评分</div>
                 <p class="mt-1 text-sm leading-6 text-white/82 line-clamp-2">{{ lastResult?.comment }}</p>
@@ -391,7 +572,7 @@
             <div v-for="item in lastResult.scoreBreakdown" :key="`${item.dimension}-${item.score}`" class="flex-1">
               <div class="flex items-center justify-between">
                 <span class="text-xs uppercase tracking-[0.22em] text-tertiary">{{ item.dimension }}</span>
-                <span class="font-mono text-xl font-semibold tracking-[-0.03em] text-ink">{{ item.score }}</span>
+                <span class="font-mono text-xl font-semibold text-ink" style="font-variant-numeric: tabular-nums">{{ item.score }}</span>
               </div>
               <p class="mt-0.5 text-xs leading-4 text-secondary line-clamp-1">{{ item.summary }}</p>
             </div>
@@ -430,7 +611,7 @@
                 </button>
               </div>
               <p class="mt-1 text-xs leading-5 text-secondary line-clamp-3">
-                {{ lastResult?.standardAnswer || '这题的参考答案还没整理出来，先回看你的回答和复盘建议。' }}
+                {{ lastResult?.standardAnswer || '这题暂时没有参考答案。可以回看你的回答和复盘建议。' }}
               </p>
             </div>
             <div>
@@ -509,12 +690,13 @@
                   <div class="text-xs uppercase tracking-[0.22em] text-tertiary">Q{{ index + 1 }}</div>
                   <div class="mt-0.5 text-sm font-semibold text-ink">{{ record.questionTitle }}</div>
                   <p class="mt-1 text-xs leading-5 text-secondary line-clamp-1">
-                    {{ record.comment || '这题还没生成点评，先结合得分和标准答案补一轮复盘。' }}
+                    {{ record.comment || '这题暂时没有点评。可以结合得分和标准答案复盘。' }}
                   </p>
                 </div>
                 <div class="flex shrink-0 items-center gap-2">
                   <div
-                    class="font-mono text-2xl font-semibold tracking-[-0.03em]"
+                    class="font-mono text-2xl font-semibold"
+                    style="font-variant-numeric: tabular-nums"
                     :class="record.score >= 60 ? 'text-accent' : 'text-coral'"
                   >
                     {{ record.score ?? '-' }}
@@ -588,7 +770,7 @@
             <RouterLink to="/wrong" class="hard-button-secondary flex-1 text-center text-sm">错题本</RouterLink>
             <RouterLink to="/review" class="hard-button-secondary flex-1 text-center text-sm">去复习</RouterLink>
             <el-button type="primary" size="default" class="action-button flex-1" @click="handleNewInterview">
-              再来一场
+              开始新一场
             </el-button>
           </div>
         </div>
@@ -601,8 +783,10 @@
 import { ElMessage } from 'element-plus'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { fetchApplicationBoardApi } from '@/api/applications'
 import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
 import {
+  createJobPrepSessionApi,
   currentQuestionApi,
   fetchInterviewHistoryApi,
   fetchVoiceStatusApi,
@@ -614,12 +798,15 @@ import {
 } from '@/api/interview'
 import { fetchRecommendInterviewApi } from '@/api/adaptive'
 import { fetchResumeDetailApi, fetchResumeListApi } from '@/api/resume'
+import EmptyState from '@/components/EmptyState.vue'
 import type {
   ContextSource,
   InterviewAnswerResult,
   InterviewCurrentQuestion,
   InterviewDetail,
   InterviewHistoryItem,
+  JobApplicationItem,
+  JobPrepSession,
   RecommendInterview,
   ResumeProjectItem,
   ResumeSummaryItem,
@@ -660,6 +847,15 @@ const loadingResumes = ref(false)
 const selectedResumeId = ref('')
 const selectedProjectId = ref('')
 const resumeProjects = ref<ResumeProjectItem[]>([])
+const applications = ref<JobApplicationItem[]>([])
+const loadingApplications = ref(false)
+const selectedJobPrepApplicationId = ref('')
+const jobPrepResumeId = ref('')
+const jobPrepCompany = ref('')
+const jobPrepJobTitle = ref('Java 后端开发')
+const jobPrepJdText = ref('')
+const jobPrepLoading = ref(false)
+const jobPrepSession = ref<JobPrepSession | null>(null)
 const interviewMode = ref<'text' | 'voice'>('text')
 const voiceAvailable = ref(false)
 const starting = ref(false)
@@ -699,10 +895,10 @@ const draftContextSource = computed<ContextSource | null>(() => {
       projectId: project?.id,
       projectName: project?.projectName,
       summary: project
-        ? `本轮会优先围绕项目「${project.projectName}」出题和追问。`
+        ? `本轮面试会结合项目「${project.projectName}」出题和追问。`
         : resume
-          ? `本轮会优先结合简历《${resume.title}》里的经历和项目出题。`
-          : '选择一份简历，可选锁定某个项目。'
+          ? `本轮面试会结合简历《${resume.title}》里的经历和项目内容。`
+          : '选择一份简历，也可以进一步指定项目。'
     }
   }
   if (interviewContextPath.value === 'resume') {
@@ -712,14 +908,14 @@ const draftContextSource = computed<ContextSource | null>(() => {
       label: '简历上下文',
       resumeId: selectedResumeId.value || undefined,
       resumeTitle: resume?.title,
-      summary: resume ? `本轮会优先结合简历《${resume.title}》里的经历和项目出题。` : '请选择一份简历后再开始面试。'
+      summary: resume ? `本轮面试会结合简历《${resume.title}》里的经历和项目内容。` : '请选择一份简历后开始面试。'
     }
   }
   return {
     type: 'general',
     label: '不带简历',
     summary: seededQuestionTitle.value
-      ? `本轮会优先围绕题目「${seededQuestionTitle.value}」练表达${seededQuestionMeta.value ? `，重点参考${seededQuestionMeta.value}` : ''}。`
+      ? `本轮面试会围绕题目「${seededQuestionTitle.value}」展开${seededQuestionMeta.value ? `，重点参考${seededQuestionMeta.value}` : ''}。`
       : '本轮以当前方向题为主，不绑定简历或项目经历。'
   }
 })
@@ -752,9 +948,9 @@ const experienceLabel = (value?: string) => {
 }
 
 const difficultyText = (value?: string) => {
-  if (value === 'easy') return '建议先做简单题'
-  if (value === 'hard') return '建议直接做困难题'
-  if (value === 'medium') return '建议做中等题'
+  if (value === 'easy') return '建议难度：简单'
+  if (value === 'hard') return '建议难度：困难'
+  if (value === 'medium') return '建议难度：中等'
   return ''
 }
 
@@ -847,11 +1043,11 @@ const countdownUrgent = computed(() => countdown.value <= 30)
 
 const handleStart = async (reanswerQuestionId?: number) => {
   if (interviewContextPath.value !== 'general' && !selectedResumeId.value) {
-    ElMessage.warning('请选择一份简历后再开始面试')
+    ElMessage.warning('请选择一份简历后开始面试')
     return
   }
   if (interviewContextPath.value === 'project' && !selectedProjectId.value) {
-    ElMessage.warning('请选择一个项目后再开始面试。')
+    ElMessage.warning('请选择一个项目后开始面试。')
     return
   }
   starting.value = true
@@ -883,7 +1079,7 @@ const handleStart = async (reanswerQuestionId?: number) => {
     startCountdown()
     ElMessage.success(isVoice ? '语音模拟面试已开始，请点击录音按钮作答' : '模拟面试已开始，请回答第一题')
   } catch {
-    ElMessage.error('这轮面试还没启动成功，请确认当前方向下有可用题目后再试。')
+    ElMessage.error('无法开始这轮面试，请确认当前方向下有可用题目。')
   } finally {
     starting.value = false
   }
@@ -908,7 +1104,7 @@ const handleSubmitAnswer = async () => {
     lastResult.value = response.data
     phase.value = 'result'
   } catch (error: any) {
-    ElMessage.error(error?.message || '这道题还没提交成功，请检查答案后再试。')
+    ElMessage.error(error?.message || '这道题提交失败，请检查答案后重试。')
     phase.value = 'answering'
   } finally {
     submitting.value = false
@@ -943,7 +1139,7 @@ const handleVoiceSubmit = async () => {
     }
     phase.value = 'result'
   } catch {
-    ElMessage.error('这段语音答案还没提交成功，请重新录一段后再试。')
+    ElMessage.error('语音答案提交失败，请重新录制后重试。')
     phase.value = 'answering'
   } finally {
     voiceSubmitting.value = false
@@ -1015,10 +1211,25 @@ const loadResumes = async () => {
   try {
     const response = await fetchResumeListApi()
     resumes.value = response.data
+    if (!jobPrepResumeId.value && response.data[0]) {
+      jobPrepResumeId.value = response.data[0].id
+    }
   } catch {
     resumes.value = []
   } finally {
     loadingResumes.value = false
+  }
+}
+
+const loadApplications = async () => {
+  loadingApplications.value = true
+  try {
+    const response = await fetchApplicationBoardApi()
+    applications.value = response.data
+  } catch {
+    applications.value = []
+  } finally {
+    loadingApplications.value = false
   }
 }
 
@@ -1084,6 +1295,42 @@ const handleNewInterview = () => {
   voiceTranscript.value = ''
 }
 
+const handleGenerateJobPrep = async () => {
+  if (!jobPrepJdText.value.trim() && !selectedJobPrepApplicationId.value) {
+    ElMessage.warning('请先粘贴岗位 JD，或者选择一条已有投递。')
+    return
+  }
+  jobPrepLoading.value = true
+  try {
+    const response = await createJobPrepSessionApi({
+      applicationId: selectedJobPrepApplicationId.value || undefined,
+      resumeId: jobPrepResumeId.value || undefined,
+      company: jobPrepCompany.value.trim() || undefined,
+      jobTitle: jobPrepJobTitle.value.trim() || undefined,
+      jdText: jobPrepJdText.value.trim() || undefined
+    })
+    jobPrepSession.value = response.data
+    ElMessage.success('JD 备面结果已生成。')
+  } catch (error: any) {
+    ElMessage.error(error?.message || 'JD 备面生成失败，请检查 JD 或简历后重试。')
+  } finally {
+    jobPrepLoading.value = false
+  }
+}
+
+const applyJobPrepToInterview = () => {
+  if (!jobPrepSession.value) return
+  const matched = jobPrepSession.value.matchedKeywords.slice(0, 3).join(', ')
+  const missing = jobPrepSession.value.missingKeywords.slice(0, 2).join(', ')
+  techStack.value = [matched, missing].filter(Boolean).join(', ') || techStack.value
+  jobRole.value = jobPrepSession.value.jobTitle || jobRole.value
+  if (jobPrepSession.value.resumeFileId) {
+    selectedResumeId.value = jobPrepSession.value.resumeFileId
+    interviewContextPath.value = 'resume'
+  }
+  ElMessage.success('已把 JD 备面结果带入当前模拟面试配置。')
+}
+
 const applyQuestionSeedFromRoute = () => {
   const title = String(route.query.sourceQuestionTitle || '').trim()
   if (!title) return
@@ -1101,6 +1348,7 @@ const applyQuestionSeedFromRoute = () => {
 onMounted(() => {
   void loadAllHistory()
   void loadResumes()
+  void loadApplications()
   applyQuestionSeedFromRoute()
 
   // Check voice availability
@@ -1145,6 +1393,17 @@ watch(selectedResumeId, async (resumeId) => {
   }
   await loadResumeProjects(resumeId)
 })
+
+watch(selectedJobPrepApplicationId, (applicationId) => {
+  const item = applications.value.find((application) => application.id === applicationId)
+  if (!item) return
+  jobPrepCompany.value = item.company || ''
+  jobPrepJobTitle.value = item.jobTitle || 'Java 后端开发'
+  jobPrepJdText.value = item.jdText || ''
+  if (item.resumeFileId) {
+    jobPrepResumeId.value = item.resumeFileId
+  }
+})
 </script>
 
 <style scoped>
@@ -1164,6 +1423,14 @@ watch(selectedResumeId, async (resumeId) => {
   margin-top: 12px;
   border: 1px solid var(--bc-border-subtle);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(var(--bc-accent-rgb), 0.03));
+}
+
+.interview-job-prep-shell {
+  margin-top: 12px;
+  border: 1px solid var(--bc-border-subtle);
+  background:
+    radial-gradient(circle at top left, rgba(var(--bc-accent-rgb), 0.08), transparent 36%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(var(--bc-cyan-rgb), 0.03));
 }
 
 .interview-setup-bar__head {
@@ -1220,6 +1487,119 @@ watch(selectedResumeId, async (resumeId) => {
   margin-top: 18px;
 }
 
+.job-prep-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.job-prep-result-shell {
+  min-height: 100%;
+  border-radius: calc(var(--radius-md) - 2px);
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--panel-muted);
+  padding: 18px;
+}
+
+.job-prep-summary-card {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid rgba(var(--bc-accent-rgb), 0.18);
+  background:
+    linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.08), transparent 58%),
+    var(--panel-bg);
+  padding: 18px;
+}
+
+.job-prep-score {
+  display: inline-flex;
+  min-width: 88px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.job-prep-score__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--bc-ink-tertiary);
+}
+
+.job-prep-score__value {
+  font-family: theme('fontFamily.mono');
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--bc-ink);
+}
+
+.job-prep-stat-card {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--panel-bg);
+  padding: 14px 16px;
+}
+
+.job-prep-stat-card--risk {
+  border-color: rgba(var(--bc-coral-rgb), 0.28);
+}
+
+.job-prep-stat-card__label {
+  font-size: 0.74rem;
+  color: var(--bc-ink-secondary);
+}
+
+.job-prep-stat-card__value {
+  margin-top: 10px;
+  font-family: theme('fontFamily.mono');
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--bc-ink);
+}
+
+.job-prep-panel {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--panel-bg);
+  padding: 16px;
+}
+
+.job-prep-panel__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--bc-ink);
+}
+
+.job-prep-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--bc-cyan-rgb), 0.24);
+  background: rgba(var(--bc-cyan-rgb), 0.1);
+  padding: 0 11px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--bc-ink);
+}
+
+.job-prep-chip--risk {
+  border-color: rgba(var(--bc-coral-rgb), 0.24);
+  background: rgba(var(--bc-coral-rgb), 0.1);
+}
+
+.job-prep-list {
+  display: grid;
+  gap: 10px;
+  padding-left: 18px;
+  color: var(--bc-ink-secondary);
+}
+
+.job-prep-list li {
+  line-height: 1.7;
+}
+
 .interview-setup-grid__meta {
   display: flex;
   flex-wrap: wrap;
@@ -1260,14 +1640,14 @@ watch(selectedResumeId, async (resumeId) => {
 }
 
 .interview-context-chip {
-  min-height: 2.2rem;
+  min-height: 2.5rem;
   border-radius: 999px;
   border: 1px solid var(--bc-line);
   background: var(--panel-muted);
   color: var(--bc-ink-secondary);
   font-size: 0.88rem;
   font-weight: 600;
-  padding: 0 0.95rem;
+  padding: 0 1rem;
   transition:
     border-color var(--motion-fast) var(--ease-hard),
     background var(--motion-fast) var(--ease-hard),
@@ -1339,7 +1719,7 @@ watch(selectedResumeId, async (resumeId) => {
   font-size: clamp(1.2rem, 2.5vw, 1.8rem);
   font-weight: 600;
   line-height: 1.15;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
   color: var(--bc-ink);
   text-wrap: balance;
 }
@@ -1382,7 +1762,8 @@ watch(selectedResumeId, async (resumeId) => {
   font-size: clamp(1.5rem, 2.5vw, 2rem);
   font-weight: 700;
   line-height: 1;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 .question-spotlight__progress {
@@ -1402,6 +1783,12 @@ watch(selectedResumeId, async (resumeId) => {
 @media (min-width: 900px) {
   .interview-setup-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .job-prep-grid {
+    grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
   }
 }
 

@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS job_prep_session (
+    id BIGINT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    application_id BIGINT DEFAULT NULL,
+    resume_file_id BIGINT DEFAULT NULL,
+    company VARCHAR(128) DEFAULT NULL,
+    job_title VARCHAR(128) DEFAULT NULL,
+    jd_text TEXT NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'ready',
+    match_score DECIMAL(5,2) DEFAULT NULL,
+    matched_keywords_json TEXT DEFAULT NULL,
+    missing_keywords_json TEXT DEFAULT NULL,
+    focus_areas_json TEXT DEFAULT NULL,
+    resume_talking_points_json TEXT DEFAULT NULL,
+    mock_questions_json TEXT DEFAULT NULL,
+    next_actions_json TEXT DEFAULT NULL,
+    summary VARCHAR(1000) DEFAULT NULL,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_job_prep_user_update (user_id, update_time),
+    KEY idx_job_prep_application (application_id),
+    KEY idx_job_prep_resume (resume_file_id)
+);

@@ -4,7 +4,7 @@ import type {
   InterviewCurrentQuestion,
   InterviewDetail,
   InterviewHistoryItem,
-  TodayCardsTask,
+  JobPrepSession,
   VoiceSubmitResult
 } from '@/types/api'
 import type { PageResult } from '@/types/api'
@@ -41,6 +41,14 @@ export interface VoiceStartPayload {
   reanswerQuestionId?: number
 }
 
+export interface JobPrepSessionCreatePayload {
+  applicationId?: string
+  resumeId?: string
+  company?: string
+  jobTitle?: string
+  jdText?: string
+}
+
 export const startInterviewApi = (payload: InterviewStartPayload) => {
   return request<InterviewCurrentQuestion>({ url: '/interview/start', method: 'post', data: payload })
 }
@@ -67,12 +75,12 @@ export const fetchInterviewTrendApi = (limit = 20) => {
   return request<InterviewHistoryItem[]>({ url: '/interview/trend', method: 'get', params: { limit } })
 }
 
-export const generateInterviewCardsApi = (sessionId: string) => {
-  return request<InterviewDetail>({ url: `/interview/${sessionId}/cards/generate`, method: 'post' })
+export const createJobPrepSessionApi = (payload: JobPrepSessionCreatePayload) => {
+  return request<JobPrepSession>({ url: '/interview/job-prep/sessions', method: 'post', data: payload })
 }
 
-export const activateInterviewCardsApi = (sessionId: string) => {
-  return request<TodayCardsTask>({ url: `/interview/${sessionId}/cards/activate`, method: 'post' })
+export const fetchJobPrepSessionApi = (sessionId: string) => {
+  return request<JobPrepSession>({ url: `/interview/job-prep/sessions/${sessionId}`, method: 'get' })
 }
 
 // ── Voice Interview APIs ──────────────────────────

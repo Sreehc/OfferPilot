@@ -385,6 +385,26 @@ export interface InterviewHistoryItem {
   endTime?: string
 }
 
+export interface JobPrepSession {
+  id: string
+  applicationId?: string
+  resumeFileId?: string
+  resumeTitle?: string
+  company?: string
+  jobTitle?: string
+  jdText: string
+  status: string
+  matchScore?: number
+  matchedKeywords: string[]
+  missingKeywords: string[]
+  focusAreas: string[]
+  resumeTalkingPoints: string[]
+  mockQuestions: string[]
+  nextActions: string[]
+  summary: string
+  updateTime?: string
+}
+
 export interface StudyPlanTaskItem {
   id: string
   dayIndex: number
