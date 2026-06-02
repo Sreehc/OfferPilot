@@ -10,6 +10,7 @@ public class CategoryAbilityVO {
     private String categoryName;
     private Double abilityScore;
     private Integer interviewCount;
+    private Integer recordingReviewCount;
     private Integer wrongCount;
     private Boolean isWeak;
     private String recommendedDifficulty;

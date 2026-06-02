@@ -3,6 +3,7 @@ package com.offerpilot.analytics;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -10,9 +11,14 @@ import static org.mockito.Mockito.when;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.MybatisMapperBuilderAssistant;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.offerpilot.adaptive.service.AdaptiveService;
+import com.offerpilot.adaptive.vo.AbilityProfileVO;
+import com.offerpilot.adaptive.vo.CategoryAbilityVO;
 import com.offerpilot.analytics.service.impl.AnalyticsServiceImpl;
 import com.offerpilot.analytics.vo.EfficiencyVO;
 import com.offerpilot.analytics.vo.LearningInsightsVO;
+import com.offerpilot.analytics.vo.ProfileTopicDetailVO;
+import com.offerpilot.analytics.vo.ProfileTopicRetrospectiveVO;
 import com.offerpilot.application.entity.JobApplication;
 import com.offerpilot.application.mapper.JobApplicationMapper;
 import com.offerpilot.category.entity.Category;
@@ -88,6 +94,8 @@ class AnalyticsServiceImplTest {
     private JobApplicationMapper jobApplicationMapper;
     @Mock
     private DashboardService dashboardService;
+    @Mock
+    private AdaptiveService adaptiveService;
 
     @InjectMocks
     private AnalyticsServiceImpl analyticsService;
@@ -273,5 +281,147 @@ class AnalyticsServiceImplTest {
         assertFalse(result.getCategoryChanges().isEmpty());
         assertFalse(result.getBestStudyHours().isEmpty());
         verify(dashboardService).overview();
+    }
+
+    @Test
+    void getProfileTopicDetail_includesRecordingReviewEvidenceInSummaryAndRecommendations() {
+        when(adaptiveService.getAbilityProfile(1L)).thenReturn(AbilityProfileVO.builder()
+                .overallAbility(68.0)
+                .recommendedDifficulty("medium")
+                .recordingReviewCount(1)
+                .categoryAbilities(List.of(CategoryAbilityVO.builder()
+                        .categoryId(7L)
+                        .categoryName("Redis")
+                        .abilityScore(63.0)
+                        .interviewCount(2)
+                        .recordingReviewCount(1)
+                        .wrongCount(1)
+                        .isWeak(false)
+                        .recommendedDifficulty("medium")
+                        .build()))
+                .weakCategories(List.of())
+                .suggestedFocus("Redis")
+                .build());
+
+        WrongQuestion dueWrong = new WrongQuestion();
+        dueWrong.setId(11L);
+        dueWrong.setUserId(1L);
+        dueWrong.setQuestionId(101L);
+        dueWrong.setMasteryLevel("reviewing");
+        dueWrong.setNextReviewDate(LocalDate.now());
+
+        InterviewRecord recentRecord = new InterviewRecord();
+        recentRecord.setSessionId(1L);
+        recentRecord.setQuestionId(101L);
+        recentRecord.setScore(new BigDecimal("72"));
+        recentRecord.setUserId(1L);
+        recentRecord.setCreateTime(LocalDateTime.now());
+
+        InterviewRecord olderRecord = new InterviewRecord();
+        olderRecord.setSessionId(2L);
+        olderRecord.setQuestionId(101L);
+        olderRecord.setScore(new BigDecimal("60"));
+        olderRecord.setUserId(1L);
+        olderRecord.setCreateTime(LocalDateTime.now().minusWeeks(1));
+
+        InterviewSession recentSession = new InterviewSession();
+        recentSession.setId(1L);
+        recentSession.setStartTime(LocalDate.now().atTime(10, 0));
+
+        InterviewSession olderSession = new InterviewSession();
+        olderSession.setId(2L);
+        olderSession.setStartTime(LocalDate.now().minusWeeks(1).atTime(10, 0));
+
+        Question redis = new Question();
+        redis.setId(101L);
+        redis.setCategoryId(7L);
+
+        Category redisCategory = new Category();
+        redisCategory.setId(7L);
+        redisCategory.setName("Redis");
+
+        when(wrongQuestionMapper.selectList(any())).thenReturn(List.of(dueWrong));
+        when(reviewLogMapper.selectList(any())).thenReturn(List.of());
+        when(recordMapper.selectList(any())).thenReturn(List.of(recentRecord, olderRecord));
+        when(sessionMapper.selectBatchIds(any())).thenReturn(List.of(recentSession, olderSession));
+        when(questionMapper.selectBatchIds(any())).thenReturn(List.of(redis));
+        when(categoryService.listByIds(any())).thenReturn(List.of(redisCategory));
+
+        ProfileTopicDetailVO detail = analyticsService.getProfileTopicDetail(1L, 7L);
+
+        assertEquals(1, detail.getRecordingReviewCount());
+        assertTrue(detail.getSummary().contains("真实录音复盘证据"));
+        assertTrue(detail.getFocusRecommendations().stream()
+                .anyMatch(item -> item.contains("真实录音复盘里暴露的表达问题")));
+    }
+
+    @Test
+    void buildProfileTopicRetrospective_withoutRecordingReviewEvidence_surfacesRiskAndAction() {
+        when(adaptiveService.getAbilityProfile(1L)).thenReturn(AbilityProfileVO.builder()
+                .overallAbility(52.0)
+                .recommendedDifficulty("easy")
+                .recordingReviewCount(0)
+                .categoryAbilities(List.of(CategoryAbilityVO.builder()
+                        .categoryId(8L)
+                        .categoryName("JVM")
+                        .abilityScore(58.0)
+                        .interviewCount(1)
+                        .recordingReviewCount(0)
+                        .wrongCount(2)
+                        .isWeak(true)
+                        .recommendedDifficulty("easy")
+                        .build()))
+                .weakCategories(List.of("JVM"))
+                .suggestedFocus("JVM")
+                .build());
+
+        WrongQuestion dueWrong = new WrongQuestion();
+        dueWrong.setId(12L);
+        dueWrong.setUserId(1L);
+        dueWrong.setQuestionId(102L);
+        dueWrong.setMasteryLevel("reviewing");
+        dueWrong.setNextReviewDate(LocalDate.now().minusDays(1));
+
+        InterviewRecord record = new InterviewRecord();
+        record.setSessionId(3L);
+        record.setQuestionId(102L);
+        record.setScore(new BigDecimal("58"));
+        record.setUserId(1L);
+        record.setCreateTime(LocalDateTime.now());
+
+        InterviewSession session = new InterviewSession();
+        session.setId(3L);
+        session.setUserId(1L);
+        session.setStatus("finished");
+        session.setTotalScore(new BigDecimal("58"));
+        session.setStartTime(LocalDate.now().atTime(20, 0));
+        session.setCreateTime(LocalDateTime.now());
+
+        Question jvm = new Question();
+        jvm.setId(102L);
+        jvm.setCategoryId(8L);
+
+        Category jvmCategory = new Category();
+        jvmCategory.setId(8L);
+        jvmCategory.setName("JVM");
+
+        when(wrongQuestionMapper.selectList(any())).thenReturn(List.of(dueWrong), List.of(dueWrong));
+        when(reviewLogMapper.selectList(any())).thenReturn(List.of());
+        when(recordMapper.selectList(any())).thenReturn(List.of(record), List.of(record));
+        when(sessionMapper.selectBatchIds(any())).thenReturn(List.of(session));
+        when(sessionMapper.selectList(any())).thenReturn(List.of(session), List.of(session));
+        when(questionMapper.selectBatchIds(any())).thenReturn(List.of(jvm));
+        when(categoryService.listByIds(any())).thenReturn(List.of(jvmCategory));
+        when(studyPlanMapper.selectOne(any())).thenReturn(null);
+        when(jobApplicationMapper.selectList(any())).thenReturn(List.of());
+        when(resumeFileMapper.selectList(any())).thenReturn(List.of());
+        when(dashboardService.overview()).thenReturn(DashboardOverviewVO.builder().build());
+
+        ProfileTopicRetrospectiveVO retrospective = analyticsService.buildProfileTopicRetrospective(1L, 8L);
+
+        assertTrue(retrospective.getRiskSignals().stream()
+                .anyMatch(item -> item.contains("缺真实录音复盘证据")));
+        assertTrue(retrospective.getNextActions().stream()
+                .anyMatch(item -> item.contains("补 1 次真实录音复盘")));
     }
 }

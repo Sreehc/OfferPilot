@@ -807,6 +807,7 @@ export interface CategoryAbility {
   categoryName: string
   abilityScore: number
   interviewCount: number
+  recordingReviewCount: number
   wrongCount: number
   isWeak: boolean
   recommendedDifficulty: string
@@ -815,6 +816,7 @@ export interface CategoryAbility {
 export interface AbilityProfile {
   overallAbility: number
   recommendedDifficulty: string
+  recordingReviewCount: number
   categoryAbilities: CategoryAbility[]
   weakCategories: string[]
   suggestedFocus: string | null
@@ -830,6 +832,7 @@ export interface ProfileTopicDetail {
   categoryName: string
   abilityScore: number
   interviewCount: number
+  recordingReviewCount: number
   wrongCount: number
   weak: boolean
   recommendedDifficulty: string

@@ -16,6 +16,7 @@ public class ProfileTopicDetailVO {
     private String categoryName;
     private Double abilityScore;
     private Integer interviewCount;
+    private Integer recordingReviewCount;
     private Integer wrongCount;
     private Boolean weak;
     private String recommendedDifficulty;

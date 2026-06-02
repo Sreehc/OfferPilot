@@ -9,8 +9,10 @@ import com.offerpilot.adaptive.vo.RecommendQuestionsVO;
 import com.offerpilot.category.entity.Category;
 import com.offerpilot.category.service.CategoryService;
 import com.offerpilot.interview.entity.InterviewRecord;
+import com.offerpilot.interview.entity.RecordingReviewSession;
 import com.offerpilot.interview.entity.InterviewSession;
 import com.offerpilot.interview.mapper.InterviewRecordMapper;
+import com.offerpilot.interview.mapper.RecordingReviewSessionMapper;
 import com.offerpilot.interview.mapper.InterviewSessionMapper;
 import com.offerpilot.question.entity.Question;
 import com.offerpilot.question.mapper.QuestionMapper;
@@ -42,6 +44,7 @@ public class AdaptiveServiceImpl implements AdaptiveService {
 
     private final InterviewSessionMapper sessionMapper;
     private final InterviewRecordMapper recordMapper;
+    private final RecordingReviewSessionMapper recordingReviewSessionMapper;
     private final QuestionMapper questionMapper;
     private final WrongQuestionMapper wrongQuestionMapper;
     private final CategoryService categoryService;
@@ -214,6 +217,12 @@ public class AdaptiveServiceImpl implements AdaptiveService {
     // ──────────────────────────────────────────────
 
     private AbilityProfileVO computeAbilityProfile(Long userId) {
+        List<RecordingReviewSession> recordingReviews = recordingReviewSessionMapper.selectList(
+                new LambdaQueryWrapper<RecordingReviewSession>()
+                        .eq(RecordingReviewSession::getUserId, userId)
+                        .eq(RecordingReviewSession::getStatus, "ready")
+                        .orderByDesc(RecordingReviewSession::getUpdateTime));
+
         // Load all finished sessions with records
         List<InterviewSession> sessions = sessionMapper.selectList(
                 new LambdaQueryWrapper<InterviewSession>()
@@ -221,10 +230,11 @@ public class AdaptiveServiceImpl implements AdaptiveService {
                         .eq(InterviewSession::getStatus, "finished")
                         .orderByDesc(InterviewSession::getCreateTime));
 
-        if (sessions.isEmpty()) {
+        if (sessions.isEmpty() && recordingReviews.isEmpty()) {
             return AbilityProfileVO.builder()
                     .overallAbility(0.0)
                     .recommendedDifficulty("easy")
+                    .recordingReviewCount(0)
                     .categoryAbilities(List.of())
                     .weakCategories(List.of())
                     .suggestedFocus(null)
@@ -233,10 +243,12 @@ public class AdaptiveServiceImpl implements AdaptiveService {
 
         // Load all records for these sessions
         List<Long> sessionIds = sessions.stream().map(InterviewSession::getId).toList();
-        List<InterviewRecord> allRecords = recordMapper.selectList(
-                new LambdaQueryWrapper<InterviewRecord>()
-                        .in(InterviewRecord::getSessionId, sessionIds)
-                        .isNotNull(InterviewRecord::getScore));
+        List<InterviewRecord> allRecords = sessionIds.isEmpty()
+                ? List.of()
+                : recordMapper.selectList(
+                        new LambdaQueryWrapper<InterviewRecord>()
+                                .in(InterviewRecord::getSessionId, sessionIds)
+                                .isNotNull(InterviewRecord::getScore));
 
         // Build session creation time map for recency weighting
         Map<Long, LocalDateTime> sessionTimeMap = sessions.stream()
@@ -256,6 +268,8 @@ public class AdaptiveServiceImpl implements AdaptiveService {
 
         // Group records by category and compute weighted scores
         Map<Long, List<ScoreEntry>> categoryScores = new HashMap<>();
+        Map<Long, Integer> interviewCountByCategory = new HashMap<>();
+        Map<Long, Integer> recordingReviewCountByCategory = new HashMap<>();
         LocalDateTime now = LocalDateTime.now();
 
         for (InterviewRecord record : allRecords) {
@@ -267,6 +281,7 @@ public class AdaptiveServiceImpl implements AdaptiveService {
 
             categoryScores.computeIfAbsent(q.getCategoryId(), k -> new ArrayList<>())
                     .add(new ScoreEntry(record.getScore().doubleValue(), recencyWeight));
+            interviewCountByCategory.merge(q.getCategoryId(), 1, Integer::sum);
         }
 
         // Compute ability per category
@@ -282,6 +297,18 @@ public class AdaptiveServiceImpl implements AdaptiveService {
 
         Map<Long, String> categoryNameMap = allCategories.stream()
                 .collect(Collectors.toMap(Category::getId, Category::getName, (a, b) -> a));
+
+        for (RecordingReviewSession review : recordingReviews) {
+            for (Long categoryId : resolveRecordingReviewCategories(review, allCategories)) {
+                double reviewScore = review.getOverallScore() == null ? 55.0 : review.getOverallScore().doubleValue();
+                double recencyWeight = computeRecencyWeight(
+                        review.getUpdateTime() == null ? review.getCreateTime() : review.getUpdateTime(),
+                        now) * 0.85;
+                categoryScores.computeIfAbsent(categoryId, k -> new ArrayList<>())
+                        .add(new ScoreEntry(reviewScore, recencyWeight));
+                recordingReviewCountByCategory.merge(categoryId, 1, Integer::sum);
+            }
+        }
 
         for (Map.Entry<Long, List<ScoreEntry>> entry : categoryScores.entrySet()) {
             Long categoryId = entry.getKey();
@@ -313,7 +340,8 @@ public class AdaptiveServiceImpl implements AdaptiveService {
                     .categoryId(categoryId)
                     .categoryName(categoryNameMap.getOrDefault(categoryId, "未知"))
                     .abilityScore(Math.round(ability * 100.0) / 100.0)
-                    .interviewCount(scores.size())
+                    .interviewCount(interviewCountByCategory.getOrDefault(categoryId, 0))
+                    .recordingReviewCount(recordingReviewCountByCategory.getOrDefault(categoryId, 0))
                     .wrongCount((int) wrongCount)
                     .isWeak(isWeak)
                     .recommendedDifficulty(recDifficulty)
@@ -336,10 +364,40 @@ public class AdaptiveServiceImpl implements AdaptiveService {
         return AbilityProfileVO.builder()
                 .overallAbility(Math.round(overallAbility * 100.0) / 100.0)
                 .recommendedDifficulty(recommendedDifficulty)
+                .recordingReviewCount(recordingReviews.size())
                 .categoryAbilities(categoryAbilities)
                 .weakCategories(weakCategories)
                 .suggestedFocus(suggestedFocus)
                 .build();
+    }
+
+    private List<Long> resolveRecordingReviewCategories(RecordingReviewSession review, List<Category> categories) {
+        String evidence = String.join(" ",
+                nullSafe(review.getDirection()),
+                nullSafe(review.getJobRole()),
+                nullSafe(review.getSummary()),
+                nullSafe(review.getTranscript()),
+                nullSafe(review.getWeakPointsJson()),
+                nullSafe(review.getSuggestedActionsJson()));
+        if (evidence.isBlank()) {
+            return List.of();
+        }
+        String normalizedEvidence = evidence.toLowerCase();
+        List<Long> matched = new ArrayList<>();
+        for (Category category : categories) {
+            if (category.getId() == null || !org.springframework.util.StringUtils.hasText(category.getName())) {
+                continue;
+            }
+            String categoryName = category.getName().trim().toLowerCase();
+            if (normalizedEvidence.contains(categoryName)) {
+                matched.add(category.getId());
+            }
+        }
+        return matched.stream().distinct().toList();
+    }
+
+    private String nullSafe(String value) {
+        return value == null ? "" : value;
     }
 
     /**

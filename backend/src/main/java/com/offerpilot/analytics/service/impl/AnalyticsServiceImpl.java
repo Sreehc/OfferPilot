@@ -306,6 +306,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .categoryName(categoryAbility.getCategoryName())
                 .abilityScore(categoryAbility.getAbilityScore())
                 .interviewCount(categoryAbility.getInterviewCount())
+                .recordingReviewCount(categoryAbility.getRecordingReviewCount())
                 .wrongCount(categoryAbility.getWrongCount())
                 .weak(Boolean.TRUE.equals(categoryAbility.getIsWeak()))
                 .recommendedDifficulty(categoryAbility.getRecommendedDifficulty())
@@ -390,6 +391,9 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         signals.add("当前画像分约为 " + Math.round(detail.getAbilityScore()) + "，掌握率约为 "
                 + detail.getMasteryRate().setScale(0, RoundingMode.HALF_UP) + "%。");
         signals.add("最近共累计 " + detail.getInterviewCount() + " 场相关模拟面试、" + detail.getWrongCount() + " 道相关错题。");
+        if (detail.getRecordingReviewCount() != null && detail.getRecordingReviewCount() > 0) {
+            signals.add("另外已经沉淀 " + detail.getRecordingReviewCount() + " 次相关真实录音复盘证据。");
+        }
         if (!detail.getRecentScores().isEmpty()) {
             double latest = detail.getRecentScores().get(detail.getRecentScores().size() - 1).getScore();
             double first = detail.getRecentScores().get(0).getScore();
@@ -410,6 +414,10 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         if (detail.getWrongCount() >= detail.getInterviewCount() && detail.getWrongCount() > 0) {
             risks.add("错题沉积速度仍高于面试验证速度，说明理解还没完全转成稳定表达。");
         }
+        if ((detail.getRecordingReviewCount() == null || detail.getRecordingReviewCount() == 0)
+                && detail.getAbilityScore() < 70) {
+            risks.add("当前还缺真实录音复盘证据，表达层问题可能还没被完整暴露。");
+        }
         if (detail.getAbilityScore() < 65) {
             risks.add("画像分仍处在较低区间，继续追问时容易暴露原理或案例深度不够。");
         }
@@ -425,6 +433,9 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         actions.add("从建议动作里挑 1 个点，补成 90 秒口语答案，再用一场模拟面试验证。");
         if (detail.getDueCount() > 0) {
             actions.add("优先清理到期待复盘的题和片段，避免旧薄弱点继续堆积。");
+        }
+        if (detail.getRecordingReviewCount() == null || detail.getRecordingReviewCount() == 0) {
+            actions.add("补 1 次真实录音复盘，把表达层薄弱点正式写回画像。");
         }
         if (insights.getApplicationActiveCount() != null && insights.getApplicationActiveCount() > 0) {
             actions.add("把这块领域的表达同步到下一批投递和 JD 备面里，不要只停留在训练页。");
@@ -449,6 +460,11 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         if (categoryAbility.getWrongCount() != null && categoryAbility.getWrongCount() > 0) {
             suggestions.add("把错题里重复出现的追问方式整理成标准答题骨架。");
         }
+        if (categoryAbility.getRecordingReviewCount() != null && categoryAbility.getRecordingReviewCount() > 0) {
+            suggestions.add("把真实录音复盘里暴露的表达问题同步进下一轮模拟，避免只修知识点不修表达。");
+        } else {
+            suggestions.add("当前还缺真实录音复盘证据，建议补 1 次录音回听验证表达层问题。");
+        }
         if (recentScores.size() >= 2) {
             Double last = recentScores.get(recentScores.size() - 1).getScore();
             Double previous = recentScores.get(recentScores.size() - 2).getScore();
@@ -467,6 +483,9 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         String reviewText = categoryMastery.getDueCount() > 0
                 ? "，并且还有 " + categoryMastery.getDueCount() + " 道待复盘题"
                 : "，当前没有待复盘负债";
+        String recordingText = categoryAbility.getRecordingReviewCount() != null && categoryAbility.getRecordingReviewCount() > 0
+                ? "，已经累积 " + categoryAbility.getRecordingReviewCount() + " 次真实录音复盘证据"
+                : "，但还缺真实录音复盘证据";
         String trendText = "";
         if (recentScores.size() >= 2) {
             Double first = recentScores.get(0).getScore();
@@ -475,7 +494,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 trendText = last >= first ? "，近几周趋势在回升" : "，近几周趋势有回落";
             }
         }
-        return "主题「" + categoryAbility.getCategoryName() + "」" + abilityText + reviewText + trendText + "。";
+        return "主题「" + categoryAbility.getCategoryName() + "」" + abilityText + reviewText + recordingText + trendText + "。";
     }
 
     private List<TrendVO.ApplicationTrendPoint> buildApplicationActivityTrend(Long userId, int weeks) {

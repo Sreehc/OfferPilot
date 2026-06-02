@@ -33,7 +33,9 @@
           <article class="profile-summary-card">
             <p class="profile-summary-card__label">综合能力</p>
             <p class="profile-summary-card__value">{{ Math.round(abilityProfile.overallAbility || 0) }}</p>
-            <p class="profile-summary-card__hint">当前能力画像会结合面试记录和错题表现持续刷新。</p>
+            <p class="profile-summary-card__hint">
+              当前能力画像会结合面试记录、错题表现和 {{ abilityProfile.recordingReviewCount || 0 }} 次录音复盘持续刷新。
+            </p>
           </article>
           <article class="profile-summary-card profile-summary-card--accent">
             <p class="profile-summary-card__label">建议难度</p>
@@ -76,7 +78,7 @@
                 <span class="font-mono text-2xl font-semibold text-ink">{{ Math.round(item.abilityScore) }}</span>
               </div>
               <p class="mt-3 text-sm leading-6 text-secondary">
-                模拟面试 {{ item.interviewCount }} 场 · 错题 {{ item.wrongCount }} 题
+                模拟面试 {{ item.interviewCount }} 场 · 录音复盘 {{ item.recordingReviewCount || 0 }} 次 · 错题 {{ item.wrongCount }} 题
               </p>
             </article>
           </div>
@@ -101,10 +103,14 @@
                 </div>
               </div>
 
-              <div class="mt-5 grid gap-3 sm:grid-cols-4">
+              <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
                 <article class="topic-detail-stat">
                   <p class="topic-detail-stat__label">模拟面试</p>
                   <p class="topic-detail-stat__value">{{ topicDetail.interviewCount }}</p>
+                </article>
+                <article class="topic-detail-stat">
+                  <p class="topic-detail-stat__label">录音复盘</p>
+                  <p class="topic-detail-stat__value">{{ topicDetail.recordingReviewCount || 0 }}</p>
                 </article>
                 <article class="topic-detail-stat">
                   <p class="topic-detail-stat__label">错题数</p>
@@ -575,6 +581,7 @@ const learningInsights = ref<LearningInsights>({
 const abilityProfile = ref<AbilityProfile>({
   overallAbility: 0,
   recommendedDifficulty: 'easy',
+  recordingReviewCount: 0,
   categoryAbilities: [],
   weakCategories: [],
   suggestedFocus: null

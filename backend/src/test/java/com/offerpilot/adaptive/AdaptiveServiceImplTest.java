@@ -23,7 +23,9 @@ import com.offerpilot.category.service.CategoryService;
 import com.offerpilot.common.config.OfferPilotProperties;
 import com.offerpilot.interview.entity.InterviewRecord;
 import com.offerpilot.interview.entity.InterviewSession;
+import com.offerpilot.interview.entity.RecordingReviewSession;
 import com.offerpilot.interview.mapper.InterviewRecordMapper;
+import com.offerpilot.interview.mapper.RecordingReviewSessionMapper;
 import com.offerpilot.interview.mapper.InterviewSessionMapper;
 import com.offerpilot.question.entity.Question;
 import com.offerpilot.question.mapper.QuestionMapper;
@@ -48,6 +50,8 @@ class AdaptiveServiceImplTest {
     private InterviewSessionMapper sessionMapper;
     @Mock
     private InterviewRecordMapper recordMapper;
+    @Mock
+    private RecordingReviewSessionMapper recordingReviewSessionMapper;
     @Mock
     private QuestionMapper questionMapper;
     @Mock
@@ -85,11 +89,13 @@ class AdaptiveServiceImplTest {
     void getAbilityProfile_noSessions_returnsDefaults() {
         mockCacheMiss();
         when(sessionMapper.selectList(any())).thenReturn(List.of());
+        when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
 
         AbilityProfileVO profile = service.getAbilityProfile(1L);
 
         assertEquals(0.0, profile.getOverallAbility());
         assertEquals("easy", profile.getRecommendedDifficulty());
+        assertEquals(0, profile.getRecordingReviewCount());
         assertTrue(profile.getCategoryAbilities().isEmpty());
         assertTrue(profile.getWeakCategories().isEmpty());
         assertNull(profile.getSuggestedFocus());
@@ -99,6 +105,7 @@ class AdaptiveServiceImplTest {
     void getAbilityProfile_withSessions_computesWeightedAbility() {
         mockCacheMiss();
         mockCategories(makeCategory(100L, "Spring"), makeCategory(200L, "MySQL"));
+        when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
 
         InterviewSession session = makeSession(1L, LocalDateTime.now().minusDays(1));
         when(sessionMapper.selectList(any())).thenReturn(List.of(session));
@@ -123,6 +130,7 @@ class AdaptiveServiceImplTest {
     void getAbilityProfile_lowScores_identifiesWeakCategories() {
         mockCacheMiss();
         mockCategories(makeCategory(100L, "JVM"));
+        when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
 
         when(sessionMapper.selectList(any())).thenReturn(List.of(makeSession(1L, LocalDateTime.now().minusDays(1))));
         when(recordMapper.selectList(any())).thenReturn(List.of(makeRecord(1L, 10L, new BigDecimal("30"))));
@@ -139,6 +147,7 @@ class AdaptiveServiceImplTest {
     void getAbilityProfile_recentSessions_haveHigherWeight() {
         mockCacheMiss();
         mockCategories(makeCategory(100L, "Spring"));
+        when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
 
         when(sessionMapper.selectList(any())).thenReturn(List.of(
                 makeSession(2L, LocalDateTime.now()),
@@ -159,6 +168,7 @@ class AdaptiveServiceImplTest {
     void getAbilityProfile_recommendsDifficultyByAbility() {
         mockCacheMiss();
         mockCategories(makeCategory(100L, "Redis"));
+        when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
         when(sessionMapper.selectList(any())).thenReturn(List.of(makeSession(1L, LocalDateTime.now().minusDays(1))));
         when(recordMapper.selectList(any())).thenReturn(List.of(makeRecord(1L, 10L, new BigDecimal("20"))));
         when(questionMapper.selectBatchIds(any())).thenReturn(List.of(makeQuestion(10L, 100L)));
@@ -177,6 +187,7 @@ class AdaptiveServiceImplTest {
     void getRecommendInterview_withWeakCategories_suggestsWeakest() {
         mockCacheMiss();
         mockCategories(makeCategory(100L, "JVM"), makeCategory(200L, "Spring"));
+        when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
         when(sessionMapper.selectList(any())).thenReturn(List.of(makeSession(1L, LocalDateTime.now().minusDays(1))));
         when(recordMapper.selectList(any())).thenReturn(List.of(
                 makeRecord(1L, 10L, new BigDecimal("30")),
@@ -197,6 +208,7 @@ class AdaptiveServiceImplTest {
     void getRecommendInterview_noSessions_usesAvailableCategory() {
         mockCacheMiss();
         when(sessionMapper.selectList(any())).thenReturn(List.of());
+        when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
         mockCategories(makeCategory(100L, "Java基础"));
 
         RecommendInterviewVO result = service.getRecommendInterview(1L);
@@ -229,6 +241,7 @@ class AdaptiveServiceImplTest {
         mockCacheMiss();
         when(redisTemplate.delete("adaptive:profile:1")).thenReturn(true);
         when(sessionMapper.selectList(any())).thenReturn(List.of());
+        when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
 
         service.refreshAbilityProfile(1L);
 
@@ -240,6 +253,7 @@ class AdaptiveServiceImplTest {
     void getAbilityProfile_scoresRoundedAndSorted() {
         mockCacheMiss();
         mockCategories(makeCategory(100L, "Spring"), makeCategory(200L, "JVM"), makeCategory(300L, "MySQL"));
+        when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
         when(sessionMapper.selectList(any())).thenReturn(List.of(makeSession(1L, LocalDateTime.now().minusDays(1))));
         when(recordMapper.selectList(any())).thenReturn(List.of(
                 makeRecord(1L, 10L, new BigDecimal("90")),
@@ -266,6 +280,7 @@ class AdaptiveServiceImplTest {
     void getAbilityProfile_scoreThresholdBoundary() {
         mockCacheMiss();
         mockCategories(makeCategory(100L, "MySQL"));
+        when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
         when(sessionMapper.selectList(any())).thenReturn(List.of(makeSession(1L, LocalDateTime.now().minusDays(1))));
         when(questionMapper.selectBatchIds(any())).thenReturn(List.of(makeQuestion(10L, 100L)));
         when(wrongQuestionMapper.selectCount(any())).thenReturn(0L);
@@ -275,6 +290,32 @@ class AdaptiveServiceImplTest {
 
         when(recordMapper.selectList(any())).thenReturn(List.of(makeRecord(1L, 10L, new BigDecimal("49"))));
         assertEquals(List.of("MySQL"), service.getAbilityProfile(2L).getWeakCategories());
+    }
+
+    @Test
+    void getAbilityProfile_withRecordingReviewEvidence_updatesCountsAndFocus() {
+        mockCacheMiss();
+        mockCategories(makeCategory(100L, "Spring"), makeCategory(200L, "Redis"));
+        when(sessionMapper.selectList(any())).thenReturn(List.of());
+        when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of(
+                makeRecordingReview(10L, "Java后端", "Spring工程师", "Spring 事务和 Bean 生命周期表达一般", new BigDecimal("42"))));
+
+        when(wrongQuestionMapper.selectCount(any())).thenReturn(1L);
+
+        AbilityProfileVO profile = service.getAbilityProfile(1L);
+
+        assertEquals(1, profile.getRecordingReviewCount());
+        assertEquals(1, profile.getCategoryAbilities().size());
+        assertEquals("Spring", profile.getSuggestedFocus());
+        assertEquals(List.of("Spring"), profile.getWeakCategories());
+
+        CategoryAbilityVO springAbility = profile.getCategoryAbilities().stream()
+                .filter(item -> "Spring".equals(item.getCategoryName()))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(0, springAbility.getInterviewCount());
+        assertEquals(1, springAbility.getRecordingReviewCount());
+        assertEquals(42.0, springAbility.getAbilityScore());
     }
 
     private void mockCacheMiss() {
@@ -322,5 +363,20 @@ class AdaptiveServiceImplTest {
         category.setName(name);
         category.setStatus(1);
         return category;
+    }
+
+    private RecordingReviewSession makeRecordingReview(Long id, String direction, String jobRole, String transcript, BigDecimal score) {
+        RecordingReviewSession review = new RecordingReviewSession();
+        review.setId(id);
+        review.setUserId(1L);
+        review.setStatus("ready");
+        review.setDirection(direction);
+        review.setJobRole(jobRole);
+        review.setTranscript(transcript);
+        review.setSummary(transcript);
+        review.setOverallScore(score);
+        review.setCreateTime(LocalDateTime.now().minusDays(1));
+        review.setUpdateTime(LocalDateTime.now());
+        return review;
     }
 }

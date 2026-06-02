@@ -9,6 +9,7 @@ import lombok.Data;
 public class AbilityProfileVO {
     private Double overallAbility;
     private String recommendedDifficulty;
+    private Integer recordingReviewCount;
     private List<CategoryAbilityVO> categoryAbilities;
     private List<String> weakCategories;
     private String suggestedFocus;
