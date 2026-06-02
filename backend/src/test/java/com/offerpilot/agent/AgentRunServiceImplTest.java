@@ -412,9 +412,45 @@ class AgentRunServiceImplTest {
         assertEquals("blocked", result.getProviderGateStatus());
         assertTrue(result.getProviderGateSummary().contains("关键 provider"));
         assertTrue(result.getProviderGates().stream().anyMatch(item -> "search".equals(item.getScope()) && "missing".equals(item.getStatus())));
+        assertEquals("/settings", result.getNextActionPath());
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("补齐") && item.contains("联网搜索")));
         assertTrue(result.getTimeline().stream().anyMatch(item -> "request_received".equals(item.getKey())));
         assertTrue(result.getTimeline().stream().anyMatch(item -> "next_action".equals(item.getKey())));
         assertEquals("not_required", result.getApprovalStage());
+    }
+
+    @Test
+    void createRun_jobPrepUsesProviderSettingsContextForDegradedRecommendations() {
+        when(userProviderConfigService.listCurrentUserConfigs()).thenReturn(List.of(
+                UserProviderConfigItemVO.builder()
+                        .scope("llm")
+                        .label("主模型")
+                        .status("ready")
+                        .statusMessage("配置完整，可供对应能力使用。")
+                        .build(),
+                UserProviderConfigItemVO.builder()
+                        .scope("search")
+                        .label("联网搜索")
+                        .status("missing")
+                        .statusMessage("还没有保存这类配置。")
+                        .build()));
+        when(jobApplicationService.detail(1L, 6L)).thenReturn(JobApplicationVO.builder()
+                .id(6L)
+                .company("字节跳动")
+                .jobTitle("Java 后端开发")
+                .missingKeywords(List.of("Redis", "Kafka"))
+                .nextStepSuggestion("先准备缓存和消息队列相关案例。")
+                .build());
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "job_prep",
+                "applications",
+                List.of("application:6", "settings:providers"),
+                "准备一面"));
+
+        assertEquals("degraded", result.getProviderGateStatus());
+        assertEquals("/interview", result.getNextActionPath());
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("联网搜索") && item.contains("降级")));
     }
 
     @Test

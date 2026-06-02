@@ -205,7 +205,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                 summary,
                 recommendations,
                 List.of("确认主攻方向", "生成可执行任务", "审批通过后写回正式训练计划"),
-                snapshot.topicDetail() != null ? "/analytics" : "/study-plan",
+                resolveRunNextActionPath(snapshot.topicDetail() != null ? "/analytics" : "/study-plan", "study_planner", snapshot),
                 true,
                 useRetrospectiveAction ? "save_topic_retrospective_action" : "refresh_study_plan",
                 useRetrospectiveAction
@@ -255,9 +255,11 @@ public class AgentRunServiceImpl implements AgentRunService {
         return blueprint(
                 "JD 备面代理",
                 summary,
-                recommendations,
+                mergeRecommendations(
+                        recommendations,
+                        providerContextRecommendations("job_prep", snapshot)),
                 List.of("整理 JD 缺口", "准备项目表达", "启动模拟或投递动作"),
-                "/interview",
+                resolveRunNextActionPath("/interview", "job_prep", snapshot),
                 true,
                 "save_job_prep_draft",
                 StringUtils.hasText(jobTitle)
@@ -294,9 +296,11 @@ public class AgentRunServiceImpl implements AgentRunService {
         return blueprint(
                 "录音复盘代理",
                 summary,
-                recommendations,
+                mergeRecommendations(
+                        recommendations,
+                        providerContextRecommendations("recording_review", snapshot)),
                 List.of("查看转写片段", "提取薄弱点", "确认是否转成正式训练动作"),
-                "/interview",
+                resolveRunNextActionPath("/interview", "recording_review", snapshot),
                 true,
                 "save_recording_review_action",
                 "审批通过后会把这次录音复盘结论保存为正式训练动作，并写入当前学习计划。",
@@ -337,6 +341,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         }
         List<String> recommendations = mergeRecommendations(
                 baseRecommendations,
+                providerContextRecommendations("resume_coach", snapshot),
                 prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”同步到简历修改排序。") : List.of(),
                 contextRefsText(contextRefs, "当前基于以下材料："));
         return blueprint(
@@ -344,7 +349,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                 summary,
                 recommendations,
                 List.of("确认目标岗位", "生成简历修改点", "决定是否写回简历版本"),
-                "/resume",
+                resolveRunNextActionPath("/resume", "resume_coach", snapshot),
                 true,
                 "save_resume_follow_up_draft",
                 resume != null
@@ -368,6 +373,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                     nullSafeList(application.getMissingKeywords()).isEmpty()
                             ? List.of("当前 JD 缺口不明显，可以把重点放到下一轮反馈和节奏推进。")
                             : List.of("优先补齐这些 JD 缺口：" + joinLimited(application.getMissingKeywords(), 3, "、") + "。"),
+                    providerContextRecommendations("application_strategist", snapshot),
                     prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”同步到投递推进排序。") : List.of(),
                     contextRefsText(contextRefs, "本次参考的岗位或反馈："));
             nextActionPath = "/applications/" + application.getId();
@@ -375,6 +381,7 @@ public class AgentRunServiceImpl implements AgentRunService {
             summary = "已根据当前投递状态和反馈节奏整理下一步推进建议。";
             recommendations = mergeRecommendations(
                     List.of("优先推进最接近面试的岗位，避免分散精力。", "把面试反馈标签同步到下一批岗位筛选标准。"),
+                    providerContextRecommendations("application_strategist", snapshot),
                     prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”同步到投递推进排序。") : List.of(),
                     contextRefsText(contextRefs, "本次参考的岗位或反馈："));
         }
@@ -383,7 +390,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                 summary,
                 recommendations,
                 List.of("查看推进优先级", "确认下一步动作", "必要时进入待审批"),
-                nextActionPath,
+                resolveRunNextActionPath(nextActionPath, "application_strategist", snapshot),
                 true,
                 "save_application_strategy",
                 application != null
@@ -424,10 +431,11 @@ public class AgentRunServiceImpl implements AgentRunService {
                 summary,
                 mergeRecommendations(
                         baseRecommendations,
+                        providerContextRecommendations("interview_review", snapshot),
                         prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”纳入下一轮面试复盘动作。") : List.of(),
                         contextRefsText(contextRefs, "复盘引用了这些上下文：")),
                 List.of("汇总面试结果", "提取低分点", "决定是否刷新训练计划"),
-                nextActionPath,
+                resolveRunNextActionPath(nextActionPath, "interview_review", snapshot),
                 true,
                 "refresh_study_plan",
                 "审批通过后会刷新学习计划，把这次面试复盘结论转成正式训练动作。",
@@ -456,9 +464,11 @@ public class AgentRunServiceImpl implements AgentRunService {
         return blueprint(
                 "实时 Copilot 代理",
                 summary,
-                recommendations,
+                mergeRecommendations(
+                        recommendations,
+                        providerContextRecommendations("realtime_copilot", snapshot)),
                 List.of("会前准备", "连接实时会话", "面后复盘回写"),
-                "/interview",
+                resolveRunNextActionPath("/interview", "realtime_copilot", snapshot),
                 false,
                 null,
                 null,
@@ -470,6 +480,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         String summary = "已把当前上下文收敛成统一的下一步动作清单。";
         List<String> recommendations = mergeRecommendations(
                 coordinatorRecommendations(snapshot),
+                providerContextRecommendations("coordinator", snapshot),
                 prompt != null ? List.of("先围绕用户补充目标“" + abbreviate(prompt, 20) + "”安排优先级。") : List.of(),
                 contextRefsText(contextRefs, "当前上下文："));
         return blueprint(
@@ -477,7 +488,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                 summary,
                 recommendations,
                 List.of("识别任务类型", "路由到具体能力", "如涉及写操作则等待审批"),
-                nextActionPath,
+                resolveRunNextActionPath(nextActionPath, "coordinator", snapshot),
                 false,
                 null,
                 null,
@@ -605,6 +616,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         JobApplicationVO application = null;
         JobPrepSessionVO jobPrepSession = null;
         CopilotRealtimeSessionVO copilotRealtimeSession = null;
+        List<UserProviderConfigItemVO> providerConfigs = null;
 
         if (hasContext(contextRefs, "analytics:profile") || hasContext(contextRefs, "analytics:weak-topics")) {
             abilityProfile = loadOptional("analytics profile", () -> analyticsService.getAbilityProfile(userId));
@@ -682,6 +694,10 @@ public class AgentRunServiceImpl implements AgentRunService {
             });
         }
 
+        if (hasContext(contextRefs, "settings:providers")) {
+            providerConfigs = loadProviderConfigs();
+        }
+
         return new ContextSnapshot(
                 abilityProfile,
                 topicDetail,
@@ -692,7 +708,8 @@ public class AgentRunServiceImpl implements AgentRunService {
                 resume,
                 application,
                 jobPrepSession,
-                copilotRealtimeSession);
+                copilotRealtimeSession,
+                providerConfigs);
     }
 
     private List<String> studyPlannerRecommendations(ContextSnapshot snapshot) {
@@ -829,6 +846,27 @@ public class AgentRunServiceImpl implements AgentRunService {
             recommendations.add("把结果写入对应模块，而不是停留在对话摘要。");
         }
         return recommendations;
+    }
+
+    private List<String> providerContextRecommendations(String agentType, ContextSnapshot snapshot) {
+        if (snapshot.providerConfigs() == null) {
+            return List.of();
+        }
+        List<AgentRunVO.ProviderGateVO> providerGates = resolveProviderGates(agentType, snapshot.providerConfigs());
+        String overallStatus = resolveProviderGateStatus(providerGates);
+        if ("blocked".equals(overallStatus)) {
+            return List.of(
+                    "先去设置页补齐 "
+                            + defaultText(joinLimited(unavailableProviderLabels(providerGates, true), 3, "、"), "关键 provider")
+                            + " 配置，否则当前关键动作会被阻断。",
+                    "补齐配置后再重跑这轮 agent，可以拿到完整的分析和下一步动作。");
+        }
+        if ("degraded".equals(overallStatus)) {
+            return List.of("当前仍有 provider 未完全就绪："
+                    + defaultText(joinLimited(unavailableProviderLabels(providerGates, false), 3, "、"), "部分依赖")
+                    + "，相关结果会降级。");
+        }
+        return List.of();
     }
 
     private StudyPlanPayload resolveStudyPlanPayload(ContextSnapshot snapshot) {
@@ -996,6 +1034,14 @@ public class AgentRunServiceImpl implements AgentRunService {
         return "/dashboard";
     }
 
+    private String resolveRunNextActionPath(String basePath, String agentType, ContextSnapshot snapshot) {
+        if (snapshot.providerConfigs() == null) {
+            return basePath;
+        }
+        String providerGateStatus = resolveProviderGateStatus(resolveProviderGates(agentType, snapshot.providerConfigs()));
+        return "blocked".equals(providerGateStatus) ? "/settings" : basePath;
+    }
+
     private java.util.Optional<StudyPlanCurrentVO.StudyPlanTaskVO> firstPendingPlanTask(StudyPlanCurrentVO currentPlan) {
         return nullSafeList(currentPlan.getTasks()).stream()
                 .filter(task -> !"completed".equals(normalize(task.getStatus())))
@@ -1122,13 +1168,16 @@ public class AgentRunServiceImpl implements AgentRunService {
     }
 
     private List<AgentRunVO.ProviderGateVO> resolveProviderGates(AgentRun run) {
-        List<ProviderRequirement> requirements = providerRequirements(run.getAgentType());
+        return resolveProviderGates(run.getAgentType(), loadProviderConfigs());
+    }
+
+    private List<AgentRunVO.ProviderGateVO> resolveProviderGates(String agentType, List<UserProviderConfigItemVO> configs) {
+        List<ProviderRequirement> requirements = providerRequirements(agentType);
         if (requirements.isEmpty()) {
             return List.of();
         }
         Map<String, UserProviderConfigItemVO> configMap = new LinkedHashMap<>();
-        List<UserProviderConfigItemVO> configs = loadProviderConfigs();
-        for (UserProviderConfigItemVO item : configs) {
+        for (UserProviderConfigItemVO item : configs == null ? List.<UserProviderConfigItemVO>of() : configs) {
             if (item != null && StringUtils.hasText(item.getScope())) {
                 configMap.put(normalize(item.getScope()), item);
             }
@@ -1186,6 +1235,14 @@ public class AgentRunServiceImpl implements AgentRunService {
             case "degraded" -> "当前关键 provider 已基本就绪，但仍有 " + missingCount + " 项依赖未完全可用。";
             default -> "当前相关 provider 依赖已基本就绪。";
         };
+    }
+
+    private List<String> unavailableProviderLabels(List<AgentRunVO.ProviderGateVO> providerGates, boolean requiredOnly) {
+        return providerGates.stream()
+                .filter(item -> !requiredOnly || Boolean.TRUE.equals(item.getRequired()))
+                .filter(item -> !isProviderAvailable(item.getStatus()))
+                .map(item -> defaultText(item.getLabel(), item.getScope()))
+                .toList();
     }
 
     private List<ProviderRequirement> providerRequirements(String agentType) {
@@ -1486,6 +1543,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                                    InterviewDetailVO interviewDetail, RecordingReviewSessionVO recordingReview,
                                    ResumeFileVO resume, JobApplicationVO application,
                                    JobPrepSessionVO jobPrepSession,
-                                   CopilotRealtimeSessionVO copilotRealtimeSession) {
+                                   CopilotRealtimeSessionVO copilotRealtimeSession,
+                                   List<UserProviderConfigItemVO> providerConfigs) {
     }
 }
