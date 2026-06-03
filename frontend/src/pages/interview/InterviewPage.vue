@@ -1636,6 +1636,23 @@ const seededQuestionTitle = ref('')
 const seededQuestionMeta = ref('')
 const recommendedInterview = ref<RecommendInterview | null>(null)
 
+const mergeSeededText = (current: string, seed: string) => {
+  const normalizedCurrent = current.trim()
+  const normalizedSeed = seed.trim()
+  if (!normalizedSeed) return current
+  if (!normalizedCurrent) return normalizedSeed
+  if (normalizedCurrent.includes(normalizedSeed)) return current
+  return `${normalizedSeed}\n${normalizedCurrent}`
+}
+
+const buildInterviewSeedHint = (seedTopic: string, seedNote: string, fallback: string) => {
+  const normalizedTopic = seedTopic.trim()
+  const normalizedNote = seedNote.trim()
+  const topicHint = normalizedTopic ? `当前主题：${normalizedTopic}` : ''
+  const detailHint = normalizedNote || fallback
+  return [topicHint, detailHint].filter(Boolean).join('；')
+}
+
 const draftContextSource = computed<ContextSource | null>(() => {
   if (interviewContextPath.value === 'project') {
     const resume = resumes.value.find((item) => item.id === selectedResumeId.value)
@@ -2395,6 +2412,9 @@ const resolveInterviewWorkspaceRouteState = () => {
 const applyInterviewWorkspaceSeedsFromRoute = (workspace?: string) => {
   const resumeId = String(route.query.resumeId || '').trim()
   const applicationId = String(route.query.applicationId || route.query.jobPrepApplicationId || '').trim()
+  const seedTopic = String(route.query.seedTopic || '').trim()
+  const seedWorkflow = String(route.query.seedWorkflow || '').trim()
+  const seedNote = String(route.query.seedNote || '').trim()
 
   if (resumeId) {
     if (workspace === 'mock-interview' || workspace === 'history' || !workspace) {
@@ -2411,6 +2431,24 @@ const applyInterviewWorkspaceSeedsFromRoute = (workspace?: string) => {
   if (applicationId && (workspace === 'job-prep' || workspace === 'copilot-prep' || workspace === 'copilot-live')) {
     selectedJobPrepApplicationId.value = applicationId
   }
+
+  if (seedTopic && directions.some((item) => item.name === seedTopic)) {
+    direction.value = seedTopic
+  }
+
+  if (workspace === 'recording-review' && (seedTopic || seedNote || seedWorkflow)) {
+    recordingReviewNotes.value = mergeSeededText(
+      recordingReviewNotes.value,
+      buildInterviewSeedHint(seedTopic, seedNote, '优先回听当前主题相关表达片段，并整理真实追问里的卡点。')
+    )
+  }
+
+  if ((workspace === 'copilot-prep' || workspace === 'copilot-live') && (seedTopic || seedNote || seedWorkflow)) {
+    copilotPrepNotes.value = mergeSeededText(
+      copilotPrepNotes.value,
+      buildInterviewSeedHint(seedTopic, seedNote, '优先暴露当前主题在实时追问里的风险，并准备会前补位口径。')
+    )
+  }
 }
 
 const hydrateInterviewWorkspaceFromRoute = async () => {
@@ -2426,14 +2464,25 @@ const hydrateInterviewWorkspaceFromRoute = async () => {
 
   applyInterviewWorkspaceSeedsFromRoute(workspace)
 
+  const hasSeedContext = Boolean(
+    String(route.query.seedTopic || '').trim() ||
+      String(route.query.seedNote || '').trim() ||
+      String(route.query.seedWorkflow || '').trim()
+  )
   const hasRouteSeedContext = Boolean(
     String(route.query.applicationId || route.query.jobPrepApplicationId || '').trim() ||
-      String(route.query.resumeId || '').trim()
+      String(route.query.resumeId || '').trim() ||
+      hasSeedContext
   )
   const hasJobPrepSeedContext = Boolean(jobPrepSessionId || hasRouteSeedContext)
   const hasCopilotPrepSeedContext = Boolean(copilotPrepSessionId || jobPrepSessionId || hasRouteSeedContext)
   const hasCopilotRealtimeSeedContext = Boolean(
-    copilotRealtimeSessionId || copilotPrepSessionId || jobPrepSessionId || hasRouteSeedContext
+    copilotRealtimeSessionId ||
+      copilotPrepSessionId ||
+      jobPrepSessionId ||
+      String(route.query.applicationId || route.query.jobPrepApplicationId || '').trim() ||
+      String(route.query.resumeId || '').trim() ||
+      hasSeedContext
   )
 
   try {

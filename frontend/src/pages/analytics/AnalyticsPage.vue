@@ -847,10 +847,37 @@ const buildInterviewWorkspaceLink = (workspace: string, extraQuery?: Record<stri
   }
 })
 
+const buildInterviewSeedQuery = (topicName?: string | null, workflow?: string, note?: string) => {
+  const normalizedTopic = topicName?.trim() || ''
+  return {
+    seedTopic: normalizedTopic || undefined,
+    seedWorkflow: workflow || undefined,
+    seedNote: note || undefined
+  }
+}
+
 const buildTopicQuestionSeed = (topicName: string) => ({
   sourceQuestionTitle: `${topicName} 定向模拟`,
   sourceQuestionDirection: topicName
 })
+
+const buildTopicMockInterviewLink = (topicName?: string | null, note?: string) =>
+  buildInterviewWorkspaceLink('mock-interview', {
+    ...(topicName ? buildTopicQuestionSeed(topicName) : {}),
+    ...buildInterviewSeedQuery(topicName, 'mock-interview', note)
+  })
+
+const buildTopicRecordingReviewLink = (topicName?: string | null, note?: string) =>
+  buildInterviewWorkspaceLink('recording-review', buildInterviewSeedQuery(topicName, 'recording-review', note))
+
+const buildTopicJobPrepLink = (topicName?: string | null, note?: string) =>
+  buildInterviewWorkspaceLink('job-prep', buildInterviewSeedQuery(topicName, 'job-prep', note))
+
+const buildTopicCopilotPrepLink = (topicName?: string | null, note?: string) =>
+  buildInterviewWorkspaceLink('copilot-prep', buildInterviewSeedQuery(topicName, 'copilot-prep', note))
+
+const buildTopicCopilotLiveLink = (topicName?: string | null, note?: string) =>
+  buildInterviewWorkspaceLink('copilot-live', buildInterviewSeedQuery(topicName, 'copilot-live', note))
 
 const analyticsAgentLink = computed(() =>
   buildAgentWorkbenchLocation({
@@ -877,7 +904,10 @@ const profileEmptyStateActions = computed(() => {
       title: '去模拟面试',
       description: '先做一轮表达检验，把问题暴露出来，画像才有可追踪的长期证据。',
       to: abilityProfile.value.suggestedFocus
-        ? buildInterviewWorkspaceLink('mock-interview', buildTopicQuestionSeed(abilityProfile.value.suggestedFocus))
+        ? buildTopicMockInterviewLink(
+            abilityProfile.value.suggestedFocus,
+            `当前从训练洞察进入，优先验证「${abilityProfile.value.suggestedFocus}」是否已经转成稳定表达。`
+          )
         : buildInterviewWorkspaceLink('mock-interview'),
       toneClass: ''
     },
@@ -885,14 +915,24 @@ const profileEmptyStateActions = computed(() => {
       key: 'recording-review',
       title: '补录音复盘',
       description: '用真实口语表达和转写结果给画像补证，而不是只停留在题目结果。',
-      to: buildInterviewWorkspaceLink('recording-review'),
+      to: buildTopicRecordingReviewLink(
+        abilityProfile.value.suggestedFocus,
+        abilityProfile.value.suggestedFocus
+          ? `当前从训练洞察进入，优先回听「${abilityProfile.value.suggestedFocus}」相关表达片段。`
+          : '当前从训练洞察进入，优先回听最不稳定的表达片段。'
+      ),
       toneClass: 'profile-action-card--warn'
     },
     {
       key: 'job-prep',
       title: '转到 JD 备面',
       description: '把当前岗位目标、简历和表达问题压到真实 JD 语境里验证。',
-      to: buildInterviewWorkspaceLink('job-prep'),
+      to: buildTopicJobPrepLink(
+        abilityProfile.value.suggestedFocus,
+        abilityProfile.value.suggestedFocus
+          ? `当前从训练洞察进入，优先把「${abilityProfile.value.suggestedFocus}」压到岗位语境下验证。`
+          : '当前从训练洞察进入，优先把当前薄弱主题压到岗位语境下验证。'
+      ),
       toneClass: ''
     }
   ]
@@ -921,7 +961,10 @@ const profileWorkflowActions = computed(() => {
       key: 'mock-interview',
       title: '发起专项模拟',
       description: `直接带着 ${abilityProfile.value.suggestedFocus} 回到模拟面试，验证它是否已经转成稳定表达。`,
-      to: buildInterviewWorkspaceLink('mock-interview', buildTopicQuestionSeed(abilityProfile.value.suggestedFocus)),
+      to: buildTopicMockInterviewLink(
+        abilityProfile.value.suggestedFocus,
+        `当前从训练画像进入，优先验证「${abilityProfile.value.suggestedFocus}」是否已经转成稳定表达。`
+      ),
       toneClass: ''
     })
   }
@@ -931,7 +974,12 @@ const profileWorkflowActions = computed(() => {
       key: 'recording-review',
       title: '补一次录音复盘',
       description: '把真实表达问题写回画像，而不是只看题库和模拟面试分数。',
-      to: buildInterviewWorkspaceLink('recording-review'),
+      to: buildTopicRecordingReviewLink(
+        abilityProfile.value.suggestedFocus,
+        abilityProfile.value.suggestedFocus
+          ? `当前从训练画像进入，优先回听「${abilityProfile.value.suggestedFocus}」相关表达片段。`
+          : '当前从训练画像进入，优先回听当前最不稳定的表达片段。'
+      ),
       toneClass: 'profile-action-card--warn'
     })
   }
@@ -940,7 +988,12 @@ const profileWorkflowActions = computed(() => {
     key: 'job-prep',
     title: '转到 JD 备面',
     description: '把当前薄弱主题压到岗位语境下，再决定接下来的模拟和投递动作。',
-    to: buildInterviewWorkspaceLink('job-prep'),
+    to: buildTopicJobPrepLink(
+      abilityProfile.value.suggestedFocus,
+      abilityProfile.value.suggestedFocus
+        ? `当前从训练画像进入，优先把「${abilityProfile.value.suggestedFocus}」压到岗位语境下验证。`
+        : '当前从训练画像进入，优先把当前薄弱主题压到岗位语境下验证。'
+    ),
     toneClass: ''
   })
 
@@ -1002,7 +1055,7 @@ const topicWorkflowActions = computed(() => {
       key: 'topic-mock',
       title: '发起同主题模拟',
       description: '用一轮定向模拟检查这个主题是否已经能稳定讲出来。',
-      to: buildInterviewWorkspaceLink('mock-interview', buildTopicQuestionSeed(topicName)),
+      to: buildTopicMockInterviewLink(topicName, `当前从领域详情进入，优先验证「${topicName}」是否已经能稳定讲出来。`),
       toneClass: ''
     }
   ]
@@ -1012,7 +1065,7 @@ const topicWorkflowActions = computed(() => {
       key: 'topic-recording',
       title: '补录音复盘',
       description: '当前仍缺真实表达证据，先用录音复盘把问题暴露完整。',
-      to: buildInterviewWorkspaceLink('recording-review'),
+      to: buildTopicRecordingReviewLink(topicName, `当前从领域详情进入，优先回听「${topicName}」相关表达片段。`),
       toneClass: 'topic-action-card--warn'
     })
   }
@@ -1022,7 +1075,7 @@ const topicWorkflowActions = computed(() => {
       key: 'topic-job-prep',
       title: '转到 JD 备面',
       description: '把这个主题压到真实岗位 JD 和简历语境里重新校准。',
-      to: buildInterviewWorkspaceLink('job-prep'),
+      to: buildTopicJobPrepLink(topicName, `当前从领域详情进入，优先把「${topicName}」压到岗位语境下重新校准。`),
       toneClass: ''
     })
   } else if ((topicDetail.value.copilotPrepCount || 0) === 0) {
@@ -1030,7 +1083,7 @@ const topicWorkflowActions = computed(() => {
       key: 'topic-copilot-prep',
       title: '补 Copilot Prep',
       description: '在正式面试前先做一次会前 Prep，提前暴露实时追问风险。',
-      to: buildInterviewWorkspaceLink('copilot-prep'),
+      to: buildTopicCopilotPrepLink(topicName, `当前从领域详情进入，重点暴露「${topicName}」在实时追问中的风险。`),
       toneClass: ''
     })
   } else {
@@ -1038,7 +1091,7 @@ const topicWorkflowActions = computed(() => {
       key: 'topic-copilot-live',
       title: '进入实时 Copilot',
       description: '带着当前 Prep 进入实时阶段，检查这个主题在真实追问里是否已经站稳。',
-      to: buildInterviewWorkspaceLink('copilot-live'),
+      to: buildTopicCopilotLiveLink(topicName, `当前从领域详情进入，重点观察「${topicName}」在实时追问里是否已经站稳。`),
       toneClass: ''
     })
   }
@@ -1079,21 +1132,21 @@ const retrospectiveWorkflowActions = computed(() => {
       key: 'retro-mock',
       title: '回到专项模拟',
       description: '先用一轮定向模拟验证这份回顾提到的薄弱点是否被修正。',
-      to: buildInterviewWorkspaceLink('mock-interview', buildTopicQuestionSeed(topicName)),
+      to: buildTopicMockInterviewLink(topicName, `当前从领域回顾进入，优先验证「${topicName}」相关薄弱点是否已经被修正。`),
       toneClass: ''
     },
     {
       key: 'retro-recording',
       title: '写回录音复盘',
       description: '如果这块领域仍不稳定，补一次真实录音复盘，把表达问题写回长期画像。',
-      to: buildInterviewWorkspaceLink('recording-review'),
+      to: buildTopicRecordingReviewLink(topicName, `当前从领域回顾进入，优先回听「${topicName}」相关表达片段。`),
       toneClass: 'topic-action-card--warn'
     },
     {
       key: 'retro-job-prep',
       title: '带到 JD 备面',
       description: '把这块领域直接放进下一轮岗位备面和实战语境里验证。',
-      to: buildInterviewWorkspaceLink('job-prep'),
+      to: buildTopicJobPrepLink(topicName, `当前从领域回顾进入，优先把「${topicName}」带到岗位备面和实战语境里验证。`),
       toneClass: ''
     }
   ]
