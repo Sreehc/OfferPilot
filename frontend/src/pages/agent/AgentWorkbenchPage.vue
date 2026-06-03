@@ -28,7 +28,7 @@
       <div class="mt-5 grid gap-3 lg:grid-cols-3">
         <button
           v-for="item in quickStarts"
-          :key="item.agentType"
+          :key="item.id"
           type="button"
           class="agent-launch-card"
           @click="applyQuickStart(item)"
@@ -349,6 +349,7 @@ import type { AgentRun } from '@/types/api'
 const route = useRoute()
 
 type QuickStart = {
+  id: string
   label: string
   description: string
   agentType: string
@@ -376,27 +377,37 @@ const triggerOptions = [
   { label: '实时面试', value: 'interview_live' },
   { label: PRODUCT_PAGE_NAMES.interview, value: 'interview' },
   { label: PRODUCT_PAGE_NAMES.resume, value: 'resume' },
-  { label: PRODUCT_PAGE_NAMES.applications, value: 'applications' }
+  { label: PRODUCT_PAGE_NAMES.applications, value: 'applications' },
+  { label: 'Provider 设置', value: 'settings' }
 ] as const
 
 const contextRefOptions = [
   'dashboard:overview',
   'analytics:profile',
-  'analytics:topic:{id}',
   'analytics:weak-topics',
+  'analytics:topic:{id}',
+  'analytics:retrospective:topic:{id}',
+  'study-plan:active',
   'interview:latest',
   'interview:session:{id}',
   'interview:recording-review',
+  'interview:recording-review:{id}',
+  'interview:job-prep',
+  'interview:job-prep:{id}',
+  'interview:copilot-prep',
+  'interview:copilot-prep:{id}',
+  'interview:copilot-realtime',
+  'interview:copilot-realtime:{id}',
   'resume:latest',
   'resume:{id}',
   'application:board',
   'application:{id}',
-  'study-plan:active',
   'settings:providers'
 ]
 
 const quickStarts: QuickStart[] = [
   {
+    id: 'profile-refresh',
     label: '从画像刷新训练',
     description: '把长期画像和最近复盘结果转成下一轮训练动作。',
     agentType: 'study_planner',
@@ -405,6 +416,16 @@ const quickStarts: QuickStart[] = [
     userPrompt: '根据当前薄弱领域刷新下一轮训练动作。'
   },
   {
+    id: 'topic-retrospective',
+    label: '把领域回顾落成训练',
+    description: '围绕某个 topic 的回顾结果，把风险信号和下一步动作写进训练闭环。',
+    agentType: 'study_planner',
+    triggerSource: 'analytics',
+    contextRefs: ['analytics:profile', 'analytics:topic:{id}', 'analytics:retrospective:topic:{id}', 'study-plan:active'],
+    userPrompt: '把这个领域回顾的结论转成正式训练动作和下一轮刷新重点。'
+  },
+  {
+    id: 'recording-review',
     label: '把录音复盘转成任务',
     description: '围绕真实录音的薄弱点整理后续模拟和复习动作。',
     agentType: 'recording_review',
@@ -413,12 +434,31 @@ const quickStarts: QuickStart[] = [
     userPrompt: '把这次录音复盘的结果转成下一轮训练重点。'
   },
   {
+    id: 'job-prep',
     label: '准备下一场一面',
     description: '把 JD、简历和当前反馈统一成会前准备清单。',
     agentType: 'job_prep',
-    triggerSource: 'manual',
-    contextRefs: ['resume:latest', 'application:board'],
+    triggerSource: 'interview',
+    contextRefs: ['resume:latest', 'application:board', 'settings:providers'],
     userPrompt: '优先准备下周最可能进入一面的岗位。'
+  },
+  {
+    id: 'copilot-prep',
+    label: '把备面转成 Copilot Prep',
+    description: '承接 JD 备面结果，快速整理成进入实时阶段前的会前清单。',
+    agentType: 'realtime_copilot',
+    triggerSource: 'interview',
+    contextRefs: ['interview:job-prep', 'settings:providers'],
+    userPrompt: '把当前 JD 备面结果转成 Copilot Prep，并明确进入实时阶段前的检查项。'
+  },
+  {
+    id: 'live-post-review',
+    label: '收束实时阶段',
+    description: '把实时 Copilot 阶段的追问、卡壳点和复盘建议转成面后训练动作。',
+    agentType: 'interview_review',
+    triggerSource: 'interview_live',
+    contextRefs: ['interview:copilot-realtime', 'analytics:profile', 'study-plan:active'],
+    userPrompt: '把最近一次实时阶段的现场追问和卡壳点转成面后复盘与训练动作。'
   }
 ]
 
