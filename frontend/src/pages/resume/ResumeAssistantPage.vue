@@ -596,6 +596,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import {
   fetchInterviewResumeApi,
   fetchLatestResumeApi,
@@ -639,6 +640,8 @@ const uploading = ref(false)
 const saving = ref(false)
 const retrying = ref(false)
 const isEditing = ref(false)
+const route = useRoute()
+const router = useRouter()
 const resumeList = ref<ResumeSummaryItem[]>([])
 const currentResume = ref<ResumeFileDetail | null>(null)
 const interviewResume = ref<EditableInterviewResume | null>(null)
@@ -709,6 +712,11 @@ const resumeCopilotPrepLink = computed(() => {
   if (!currentResume.value?.id) return '/interview?workspace=copilot-prep'
   return `/interview?workspace=copilot-prep&resumeId=${encodeURIComponent(String(currentResume.value.id))}`
 })
+
+const readRouteResumeId = () => {
+  if (typeof route.query.resumeId !== 'string') return ''
+  return route.query.resumeId.trim()
+}
 
 const workflowSteps = computed(() => {
   const hasResume = Boolean(currentResume.value)
@@ -862,15 +870,34 @@ const severityLabel = (severity: string) => {
 const handleSelectResume = async (resumeId: string) => {
   loading.value = true
   try {
-    selectedResumeId.value = resumeId
-    const detailResponse = await fetchResumeDetailApi(resumeId)
-    currentResume.value = detailResponse.data
-    hydrateDraft(detailResponse.data)
-    await Promise.all([loadInterviewResume(resumeId), loadScore(resumeId), loadVersions(resumeId)])
-    isEditing.value = detailResponse.data.parseStatus === 'failed'
+    await loadResumeWorkspace(resumeId)
   } finally {
     loading.value = false
   }
+}
+
+const syncResumeRoute = async (resumeId?: string) => {
+  const nextResumeId = resumeId?.trim() || undefined
+  const currentResumeId = typeof route.query.resumeId === 'string' ? route.query.resumeId.trim() : undefined
+  if (currentResumeId === nextResumeId) return
+  const nextQuery = { ...route.query }
+  if (nextResumeId) {
+    nextQuery.resumeId = nextResumeId
+  } else {
+    delete nextQuery.resumeId
+  }
+  await router.replace({ query: nextQuery })
+}
+
+const loadResumeWorkspace = async (resumeId: string) => {
+  selectedResumeId.value = resumeId
+  const detailResponse = await fetchResumeDetailApi(resumeId)
+  currentResume.value = detailResponse.data
+  selectedResumeId.value = detailResponse.data.id
+  hydrateDraft(detailResponse.data)
+  await Promise.all([loadInterviewResume(detailResponse.data.id), loadScore(detailResponse.data.id), loadVersions(detailResponse.data.id)])
+  isEditing.value = detailResponse.data.parseStatus === 'failed'
+  await syncResumeRoute(detailResponse.data.id)
 }
 
 const refreshResumeList = async () => {
@@ -883,16 +910,25 @@ const loadData = async () => {
   try {
     const [listResponse, latestResponse] = await Promise.all([fetchResumeListApi(), fetchLatestResumeApi()])
     resumeList.value = listResponse.data
-    currentResume.value = latestResponse.data
-    if (currentResume.value) {
-      selectedResumeId.value = currentResume.value.id
-      hydrateDraft(currentResume.value)
-      await Promise.all([
-        loadInterviewResume(currentResume.value.id),
-        loadScore(currentResume.value.id),
-        loadVersions(currentResume.value.id)
-      ])
-      isEditing.value = currentResume.value.parseStatus === 'failed'
+    const routeResumeId = readRouteResumeId()
+    if (routeResumeId && listResponse.data.some((item) => item.id === routeResumeId)) {
+      await loadResumeWorkspace(routeResumeId)
+    } else {
+      currentResume.value = latestResponse.data
+      if (currentResume.value) {
+        selectedResumeId.value = currentResume.value.id
+        hydrateDraft(currentResume.value)
+        await Promise.all([
+          loadInterviewResume(currentResume.value.id),
+          loadScore(currentResume.value.id),
+          loadVersions(currentResume.value.id)
+        ])
+        isEditing.value = currentResume.value.parseStatus === 'failed'
+        await syncResumeRoute(currentResume.value.id)
+      } else {
+        selectedResumeId.value = ''
+        await syncResumeRoute()
+      }
     }
   } catch {
     ElMessage.error(ERROR_COPY.resumeWorkspaceLoadFailed)
@@ -937,6 +973,7 @@ const handleSave = async () => {
       loadScore(response.data.id),
       loadVersions(response.data.id)
     ])
+    await syncResumeRoute(response.data.id)
     isEditing.value = false
     ElMessage.success('简历内容已更新')
   } catch {
@@ -959,6 +996,7 @@ const handleRetryParse = async () => {
       loadScore(response.data.id),
       loadVersions(response.data.id)
     ])
+    await syncResumeRoute(response.data.id)
     isEditing.value = response.data.parseStatus === 'failed'
     ElMessage.success(response.data.parseStatus === 'parsed' ? '已重新识别简历' : '已刷新当前简历状态')
   } catch {
@@ -981,6 +1019,7 @@ const handleUpload = async (file: File) => {
       loadScore(response.data.id),
       loadVersions(response.data.id)
     ])
+    await syncResumeRoute(response.data.id)
     isEditing.value = response.data.parseStatus === 'failed'
     markGuideSeenForCriticalAction(currentUser?.id)
     ElMessage.success(response.data.parseStatus === 'failed' ? '简历已上传，请检查并修正简历内容' : '简历识别完成')
@@ -1005,6 +1044,7 @@ const handleRestoreVersion = async (versionId: string) => {
       loadScore(response.data.id),
       loadVersions(response.data.id)
     ])
+    await syncResumeRoute(response.data.id)
     isEditing.value = false
     ElMessage.success('已回滚到该版本')
   } catch {

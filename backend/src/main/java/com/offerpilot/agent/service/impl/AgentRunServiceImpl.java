@@ -414,7 +414,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                 summary,
                 recommendations,
                 List.of("确认目标岗位", "生成简历修改点", "决定是否写回简历版本"),
-                resolveRunNextActionPath("/resume", "resume_coach", snapshot),
+                resolveRunNextActionPath(resolveResumeWorkspacePath(snapshot), "resume_coach", snapshot),
                 true,
                 "save_resume_follow_up_draft",
                 resume != null
@@ -1608,6 +1608,24 @@ public class AgentRunServiceImpl implements AgentRunService {
             return "/interview?workspace=copilot-live&copilotPrepSessionId=" + snapshot.copilotPrepSession().getId();
         }
         return "/interview?workspace=copilot-live";
+    }
+
+    private String resolveResumeWorkspacePath(ContextSnapshot snapshot) {
+        if (snapshot.resume() != null && snapshot.resume().getId() != null) {
+            return "/resume?resumeId=" + snapshot.resume().getId();
+        }
+        if (snapshot.application() != null && snapshot.application().getResumeFileId() != null) {
+            return "/resume?resumeId=" + snapshot.application().getResumeFileId();
+        }
+        if (snapshot.applicationBoard() != null
+                && snapshot.applicationBoard().focusApplication() != null
+                && snapshot.applicationBoard().focusApplication().getResumeFileId() != null) {
+            return "/resume?resumeId=" + snapshot.applicationBoard().focusApplication().getResumeFileId();
+        }
+        if (snapshot.jobPrepSession() != null && snapshot.jobPrepSession().getResumeFileId() != null) {
+            return "/resume?resumeId=" + snapshot.jobPrepSession().getResumeFileId();
+        }
+        return "/resume";
     }
 
     private String resolveRunNextActionPath(String basePath, String agentType, ContextSnapshot snapshot) {

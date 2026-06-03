@@ -925,7 +925,9 @@ const resolveContextRefPath = (contextRef: string) => {
   if (contextRef.startsWith('interview:copilot-realtime:')) {
     return `/interview?workspace=copilot-live&copilotRealtimeSessionId=${encodeURIComponent(contextRef.slice('interview:copilot-realtime:'.length))}`
   }
-  if (contextRef.startsWith('resume:')) return '/resume'
+  if (contextRef.startsWith('resume:')) {
+    return `/resume?resumeId=${encodeURIComponent(contextRef.slice('resume:'.length))}`
+  }
   if (contextRef.startsWith('application:')) {
     return `/applications/${encodeURIComponent(contextRef.slice('application:'.length))}`
   }

@@ -1347,6 +1347,7 @@ class AgentRunServiceImplTest {
         assertTrue(result.getSummary().contains("后端开发"));
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("Redis")));
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("项目追问清单")));
+        assertEquals("/resume?resumeId=15", result.getNextActionPath());
         assertEquals("save_resume_follow_up_draft", result.getApprovalActionType());
     }
 
@@ -1369,6 +1370,7 @@ class AgentRunServiceImplTest {
         assertTrue(result.getSummary().contains("Java 后端简历"));
         assertEquals("resume", result.getTriggerSource());
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("Java")));
+        assertEquals("/resume?resumeId=15", result.getNextActionPath());
         assertEquals("save_resume_follow_up_draft", result.getApprovalActionType());
     }
 
