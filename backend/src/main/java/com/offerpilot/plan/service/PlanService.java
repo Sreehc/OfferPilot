@@ -13,6 +13,10 @@ public interface PlanService {
 
     StudyPlanCurrentVO refresh(Long userId, Long planId);
 
+    StudyPlanCurrentVO saveInterviewReviewAction(Long userId, Long interviewSessionId, Long copilotRealtimeSessionId,
+                                                 String focusDirection, String targetRole, String techStack,
+                                                 String taskTitle, String taskDescription, String actionPath);
+
     StudyPlanCurrentVO saveRecordingReviewAction(Long userId, Long recordingReviewSessionId,
                                                  String focusDirection, String targetRole, String techStack,
                                                  String taskTitle, String taskDescription, String actionPath);

@@ -470,6 +470,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         InterviewDetailVO interviewDetail = snapshot.interviewDetail();
         CopilotRealtimeSessionVO copilotRealtimeSession = snapshot.copilotRealtimeSession();
         StudyPlanPayload payload = resolveStudyPlanPayload(snapshot);
+        InterviewReviewActionPayload reviewActionPayload = resolveInterviewReviewActionPayload(snapshot, payload);
         String summary;
         List<String> baseRecommendations = new ArrayList<>();
         String nextActionPath = "/study-plan";
@@ -501,9 +502,11 @@ public class AgentRunServiceImpl implements AgentRunService {
                 List.of("汇总面试结果", "提取低分点", "决定是否刷新训练计划"),
                 resolveRunNextActionPath(nextActionPath, "interview_review", snapshot),
                 true,
-                "refresh_study_plan",
-                "审批通过后会刷新学习计划，把这次面试复盘结论转成正式训练动作。",
-                writeObject(payload, "{}"));
+                reviewActionPayload == null ? "refresh_study_plan" : "save_interview_review_action",
+                reviewActionPayload == null
+                        ? "审批通过后会刷新学习计划，把这次面试复盘结论转成正式训练动作。"
+                        : "审批通过后会把这次面试复盘结论写成正式训练任务，方便在学习计划里直接执行。",
+                reviewActionPayload == null ? writeObject(payload, "{}") : writeObject(reviewActionPayload, "{}"));
     }
 
     private RunBlueprint buildRealtimeCopilotBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
@@ -602,6 +605,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         String actionType = normalize(run.getApprovalActionType());
         return switch (actionType) {
             case "refresh_study_plan" -> executeStudyPlanAction(userId, run.getApprovalPayloadJson());
+            case "save_interview_review_action" -> executeInterviewReviewAction(userId, run.getApprovalPayloadJson());
             case "save_topic_retrospective_action" -> executeTopicRetrospectiveAction(userId, run.getApprovalPayloadJson());
             case "save_job_prep_draft" -> executeJobPrepDraftAction(userId, run.getApprovalPayloadJson());
             case "save_copilot_prep_draft" -> executeCopilotPrepDraftAction(userId, run.getApprovalPayloadJson());
@@ -726,6 +730,24 @@ public class AgentRunServiceImpl implements AgentRunService {
                 payload.taskDescription(),
                 payload.actionPath());
         return new ExecutionResult("已把这次录音复盘结论写成正式训练任务，可继续在学习计划页执行。");
+    }
+
+    private ExecutionResult executeInterviewReviewAction(Long userId, String payloadJson) {
+        InterviewReviewActionPayload payload = readObject(payloadJson, InterviewReviewActionPayload.class);
+        if (payload == null || (payload.interviewSessionId() == null && payload.copilotRealtimeSessionId() == null)) {
+            return new ExecutionResult("当前缺少面试复盘对象，暂未保存正式训练动作。");
+        }
+        planService.saveInterviewReviewAction(
+                userId,
+                payload.interviewSessionId(),
+                payload.copilotRealtimeSessionId(),
+                payload.focusDirection(),
+                payload.targetRole(),
+                payload.techStack(),
+                payload.taskTitle(),
+                payload.taskDescription(),
+                payload.actionPath());
+        return new ExecutionResult("已把这次面试复盘结论写成正式训练任务，可继续在学习计划页执行。");
     }
 
     private ContextSnapshot resolveContextSnapshot(Long userId, List<String> contextRefs) {
@@ -1364,6 +1386,71 @@ public class AgentRunServiceImpl implements AgentRunService {
                 taskTitle,
                 taskDescription,
                 "/interview?recordingReview=" + recordingReview.getId());
+    }
+
+    private InterviewReviewActionPayload resolveInterviewReviewActionPayload(
+            ContextSnapshot snapshot, StudyPlanPayload studyPlanPayload) {
+        if (snapshot.interviewDetail() != null && snapshot.interviewDetail().getSessionId() != null) {
+            InterviewDetailVO interviewDetail = snapshot.interviewDetail();
+            List<String> weakTags = collectWeakPointTags(interviewDetail);
+            String focusDirection = firstNonBlank(
+                    interviewDetail.getDirection(),
+                    studyPlanPayload == null ? null : studyPlanPayload.focusDirection(),
+                    snapshot.abilityProfile() == null ? null : snapshot.abilityProfile().getSuggestedFocus());
+            String targetRole = firstNonBlank(
+                    interviewDetail.getJobRole(),
+                    studyPlanPayload == null ? null : studyPlanPayload.targetRole(),
+                    snapshot.jobPrepSession() == null ? null : snapshot.jobPrepSession().getJobTitle());
+            String taskTitle = "面试复盘专项 | " + defaultText(firstItem(weakTags), defaultText(focusDirection, "低分点收紧"));
+            int lowScoreCount = countLowScoreRecords(interviewDetail);
+            String taskDescription = "基于本轮模拟面试，优先处理 "
+                    + defaultText(joinLimited(weakTags, 2, "、"), "低分题的表达结构和追问深度")
+                    + "。"
+                    + (lowScoreCount > 0 ? " 当前共有 " + lowScoreCount + " 道低分题。" : "")
+                    + " 下一步先执行 "
+                    + defaultText(firstItem(interviewReviewRecommendations(interviewDetail)), "一轮定向复盘和专项训练")
+                    + "。";
+            return new InterviewReviewActionPayload(
+                    interviewDetail.getSessionId(),
+                    null,
+                    focusDirection,
+                    targetRole,
+                    studyPlanPayload == null ? null : studyPlanPayload.techStack(),
+                    taskTitle,
+                    taskDescription,
+                    "/interview/detail/" + interviewDetail.getSessionId());
+        }
+        if (snapshot.copilotRealtimeSession() != null && snapshot.copilotRealtimeSession().getId() != null) {
+            CopilotRealtimeSessionVO session = snapshot.copilotRealtimeSession();
+            List<String> weakPoints = session.getPostInterviewReview() == null
+                    ? List.of()
+                    : nullSafeList(session.getPostInterviewReview().getWeakPoints());
+            String focusDirection = firstNonBlank(
+                    session.getJobTitle(),
+                    studyPlanPayload == null ? null : studyPlanPayload.focusDirection(),
+                    snapshot.abilityProfile() == null ? null : snapshot.abilityProfile().getSuggestedFocus());
+            String targetRole = firstNonBlank(
+                    session.getJobTitle(),
+                    studyPlanPayload == null ? null : studyPlanPayload.targetRole(),
+                    snapshot.jobPrepSession() == null ? null : snapshot.jobPrepSession().getJobTitle());
+            String taskTitle = "面后复盘专项 | "
+                    + defaultText(firstItem(weakPoints), defaultText(session.getJobTitle(), "实时阶段收束"));
+            String taskDescription = "基于本轮实时阶段复盘，优先处理 "
+                    + defaultText(joinLimited(weakPoints, 2, "、"), "现场追问、卡壳点和表达缺口")
+                    + "。下一步先执行 "
+                    + defaultText(firstItem(copilotRealtimeRecommendations(session)), "一轮面后复盘和专项训练")
+                    + "。";
+            return new InterviewReviewActionPayload(
+                    null,
+                    session.getId(),
+                    focusDirection,
+                    targetRole,
+                    studyPlanPayload == null ? null : studyPlanPayload.techStack(),
+                    taskTitle,
+                    taskDescription,
+                    "/interview?copilotRealtime=" + session.getId());
+        }
+        return null;
     }
 
     private TopicRetrospectiveActionPayload resolveTopicRetrospectiveActionPayload(
@@ -2049,6 +2136,11 @@ public class AgentRunServiceImpl implements AgentRunService {
     }
 
     private record ResumeFollowUpDraftPayload(Long resumeId, String summary, List<String> recommendations) {
+    }
+
+    private record InterviewReviewActionPayload(Long interviewSessionId, Long copilotRealtimeSessionId,
+                                                String focusDirection, String targetRole, String techStack,
+                                                String taskTitle, String taskDescription, String actionPath) {
     }
 
     private record RecordingReviewActionPayload(Long recordingReviewSessionId, String focusDirection, String targetRole,

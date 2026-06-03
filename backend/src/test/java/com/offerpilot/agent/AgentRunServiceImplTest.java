@@ -392,6 +392,7 @@ class AgentRunServiceImplTest {
         assertTrue(result.getSummary().contains("2 道低分题"));
         assertEquals("/interview/detail/77", result.getNextActionPath());
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("Redis")));
+        assertEquals("save_interview_review_action", result.getApprovalActionType());
 
         ArgumentCaptor<AgentRun> captor = ArgumentCaptor.forClass(AgentRun.class);
         verify(agentRunMapper).insert(captor.capture());
@@ -399,6 +400,52 @@ class AgentRunServiceImplTest {
         assertEquals("Java 后端", payload.get("focusDirection").asText());
         assertEquals("后端开发", payload.get("targetRole").asText());
         assertEquals("Spring, MySQL", payload.get("techStack").asText());
+    }
+
+    @Test
+    void approveRun_persistsInterviewReviewAsFormalTrainingAction() {
+        when(interviewService.detail(1L, 77L)).thenReturn(InterviewDetailVO.builder()
+                .sessionId(77L)
+                .direction("Java 后端")
+                .jobRole("后端开发")
+                .techStack("Spring, MySQL")
+                .records(List.of(
+                        InterviewDetailVO.InterviewRecordVO.builder()
+                                .questionId(101L)
+                                .questionTitle("Redis 缓存一致性")
+                                .isLowScore(true)
+                                .reviewSummary("缓存一致性回答不完整，需要补双写与失效策略。")
+                                .weakPointTags(List.of("Redis", "缓存一致性"))
+                                .build(),
+                        InterviewDetailVO.InterviewRecordVO.builder()
+                                .questionId(102L)
+                                .questionTitle("MySQL 索引")
+                                .isLowScore(true)
+                                .comment("索引失效条件回答不完整。")
+                                .weakPointTags(List.of("MySQL", "索引"))
+                                .build()))
+                .build());
+
+        AgentRunVO created = agentRunService.createRun(1L, request(
+                "interview_review",
+                "interview",
+                List.of("interview:session:77"),
+                "把低分题转成正式训练动作"));
+
+        AgentRunVO approved = agentRunService.approveRun(1L, Long.valueOf(String.valueOf(created.getId())), null);
+
+        verify(planService).saveInterviewReviewAction(
+                org.mockito.ArgumentMatchers.eq(1L),
+                org.mockito.ArgumentMatchers.eq(77L),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.eq("Java 后端"),
+                org.mockito.ArgumentMatchers.eq("后端开发"),
+                org.mockito.ArgumentMatchers.eq("Spring, MySQL"),
+                org.mockito.ArgumentMatchers.contains("面试复盘专项"),
+                org.mockito.ArgumentMatchers.contains("Redis"),
+                org.mockito.ArgumentMatchers.eq("/interview/detail/77"));
+        assertEquals("approved", approved.getStatus());
+        assertTrue(approved.getExecutionSummary().contains("正式训练任务"));
     }
 
     @Test

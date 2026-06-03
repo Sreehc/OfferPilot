@@ -144,6 +144,51 @@ public class PlanServiceImpl implements PlanService {
 
     @Override
     @Transactional
+    public StudyPlanCurrentVO saveInterviewReviewAction(Long userId, Long interviewSessionId, Long copilotRealtimeSessionId,
+                                                        String focusDirection, String targetRole, String techStack,
+                                                        String taskTitle, String taskDescription, String actionPath) {
+        StudyPlan plan = ensurePlanForInterviewReview(userId, focusDirection, targetRole, techStack);
+        StudyPlan synced = syncPlanState(plan);
+        String normalizedActionPath = firstNonBlank(
+                actionPath,
+                interviewSessionId == null ? null : "/interview/detail/" + interviewSessionId,
+                copilotRealtimeSessionId == null ? null : "/interview?copilotRealtime=" + copilotRealtimeSessionId,
+                "/interview");
+
+        StudyPlanTask existingTask = studyPlanTaskMapper.selectOne(new LambdaQueryWrapper<StudyPlanTask>()
+                .eq(StudyPlanTask::getPlanId, synced.getId())
+                .eq(StudyPlanTask::getUserId, userId)
+                .eq(StudyPlanTask::getModule, "interview_review")
+                .eq(StudyPlanTask::getActionPath, normalizedActionPath)
+                .orderByDesc(StudyPlanTask::getId)
+                .last("LIMIT 1"));
+        if (existingTask == null) {
+            StudyPlanTask task = buildTask(
+                    synced,
+                    synced.getCurrentDay(),
+                    LocalDate.now(),
+                    "interview_review",
+                    firstNonBlank(taskTitle, "面试复盘转训练动作"),
+                    firstNonBlank(taskDescription, "把这次面试复盘结论整理成下一轮正式训练动作。"),
+                    normalizedActionPath,
+                    30,
+                    "high");
+            studyPlanTaskMapper.insert(task);
+        } else {
+            existingTask.setTitle(firstNonBlank(taskTitle, existingTask.getTitle(), "面试复盘转训练动作"));
+            existingTask.setDescription(firstNonBlank(taskDescription, existingTask.getDescription(),
+                    "把这次面试复盘结论整理成下一轮正式训练动作。"));
+            existingTask.setPriority("high");
+            existingTask.setTaskDate(LocalDate.now());
+            studyPlanTaskMapper.updateById(existingTask);
+        }
+
+        StudyPlan latestPlan = syncPlanState(getOwnedPlan(userId, synced.getId()));
+        return toCurrentVO(latestPlan, loadPlanTasks(latestPlan.getId()), dashboardService.overview());
+    }
+
+    @Override
+    @Transactional
     public StudyPlanCurrentVO saveRecordingReviewAction(Long userId, Long recordingReviewSessionId,
                                                         String focusDirection, String targetRole, String techStack,
                                                         String taskTitle, String taskDescription, String actionPath) {
@@ -259,6 +304,21 @@ public class PlanServiceImpl implements PlanService {
         request.setFocusDirection(firstNonBlank(focusDirection, "录音复盘专项"));
         request.setTargetRole(firstNonBlank(targetRole, "Java 后端开发"));
         request.setTechStack(firstNonBlank(techStack, focusDirection, "表达复盘"));
+        StudyPlanCurrentVO generated = generate(userId, request);
+        return getOwnedPlan(userId, generated.getId());
+    }
+
+    private StudyPlan ensurePlanForInterviewReview(Long userId, String focusDirection, String targetRole, String techStack) {
+        StudyPlan plan = findActivePlan(userId);
+        if (plan != null) {
+            return plan;
+        }
+
+        StudyPlanGenerateRequest request = new StudyPlanGenerateRequest();
+        request.setDurationDays(7);
+        request.setFocusDirection(firstNonBlank(focusDirection, "面试复盘专项"));
+        request.setTargetRole(firstNonBlank(targetRole, "Java 后端开发"));
+        request.setTechStack(firstNonBlank(techStack, focusDirection, "模拟面试复盘"));
         StudyPlanCurrentVO generated = generate(userId, request);
         return getOwnedPlan(userId, generated.getId());
     }

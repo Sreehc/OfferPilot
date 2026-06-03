@@ -96,7 +96,7 @@ class PlanServiceImplTest {
         when(studyPlanMapper.selectById(21L)).thenReturn(activePlan);
         when(studyPlanTaskMapper.selectList(any())).thenAnswer(invocation -> new ArrayList<>(storedTasks));
         when(studyPlanTaskMapper.selectOne(any())).thenAnswer(invocation -> storedTasks.stream()
-                .filter(task -> "recording_review".equals(task.getModule()))
+                .filter(task -> List.of("recording_review", "topic_retrospective", "interview_review").contains(task.getModule()))
                 .findFirst()
                 .orElse(null));
         lenient().doAnswer(invocation -> {
@@ -199,5 +199,25 @@ class PlanServiceImplTest {
                 "topic_retrospective".equals(task.getModule())
                         && "领域回顾专项 | JVM".equals(task.getTitle())
                         && "/analytics?topic=12".equals(task.getActionPath())));
+    }
+
+    @Test
+    void saveInterviewReviewAction_appendsFormalTaskIntoCurrentPlan() {
+        StudyPlanCurrentVO result = planService.saveInterviewReviewAction(
+                1L,
+                77L,
+                null,
+                "Java 后端",
+                "后端开发",
+                "Spring, MySQL",
+                "面试复盘专项 | Redis",
+                "先补 Redis 缓存一致性，再回到一轮专项模拟。",
+                "/interview/detail/77");
+
+        assertEquals(2, result.getTodayTaskCount());
+        assertTrue(result.getTasks().stream().anyMatch(task ->
+                "interview_review".equals(task.getModule())
+                        && "面试复盘专项 | Redis".equals(task.getTitle())
+                        && "/interview/detail/77".equals(task.getActionPath())));
     }
 }
