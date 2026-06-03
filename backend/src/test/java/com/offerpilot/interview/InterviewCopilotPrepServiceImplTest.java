@@ -3,11 +3,15 @@ package com.offerpilot.interview;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.offerpilot.adaptive.service.AdaptiveService;
 import com.offerpilot.agent.service.UserProviderConfigService;
+import com.offerpilot.agent.vo.UserProviderConfigItemVO;
 import com.offerpilot.application.mapper.JobApplicationMapper;
+import com.offerpilot.interview.dto.CopilotPrepSessionCreateRequest;
 import com.offerpilot.interview.entity.CopilotPrepSession;
 import com.offerpilot.interview.mapper.CopilotPrepSessionMapper;
 import com.offerpilot.interview.mapper.JobPrepSessionMapper;
@@ -17,6 +21,7 @@ import com.offerpilot.resume.entity.ResumeFile;
 import com.offerpilot.resume.mapper.ResumeFileMapper;
 import com.offerpilot.resume.mapper.ResumeProjectMapper;
 import java.time.LocalDateTime;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -39,11 +44,41 @@ class InterviewCopilotPrepServiceImplTest {
     private ResumeProjectMapper resumeProjectMapper;
     @Mock
     private UserProviderConfigService userProviderConfigService;
+    @Mock
+    private AdaptiveService adaptiveService;
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
 
     @InjectMocks
     private InterviewCopilotPrepServiceImpl service;
+
+    @Test
+    void createSession_refreshesAbilityProfileAfterPersistingPrep() {
+        when(resumeFileMapper.selectOne(any())).thenReturn(null);
+        when(userProviderConfigService.listCurrentUserConfigs()).thenReturn(List.of(
+                UserProviderConfigItemVO.builder()
+                        .scope("asr")
+                        .label("语音识别")
+                        .status("ready")
+                        .statusMessage("配置完整")
+                        .build()));
+        when(copilotPrepSessionMapper.insert(any(CopilotPrepSession.class))).thenAnswer(invocation -> {
+            CopilotPrepSession session = invocation.getArgument(0);
+            session.setId(88L);
+            return 1;
+        });
+
+        CopilotPrepSessionCreateRequest request = new CopilotPrepSessionCreateRequest();
+        request.setJobTitle("Java 后端开发");
+        request.setJdText("负责 Java、Spring Boot、Redis 服务建设");
+        request.setNotes("关注缓存一致性追问");
+
+        CopilotPrepSessionVO result = service.createSession(1L, request);
+
+        assertEquals("/interview?workspace=copilot-live&copilotPrepSessionId=88", result.getNextActionPath());
+        assertTrue(result.getNextActions().stream().anyMatch(item -> item.contains("60-90 秒口语版")));
+        verify(adaptiveService).refreshAbilityProfile(1L);
+    }
 
     @Test
     void latest_returnsMostRecentCopilotPrepSession() {

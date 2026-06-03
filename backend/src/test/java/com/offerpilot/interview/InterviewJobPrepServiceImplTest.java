@@ -3,9 +3,11 @@ package com.offerpilot.interview;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.offerpilot.adaptive.service.AdaptiveService;
 import com.offerpilot.agent.service.UserProviderConfigService;
 import com.offerpilot.agent.vo.UserProviderConfigItemVO;
 import com.offerpilot.interview.dto.JobPrepSessionCreateRequest;
@@ -40,6 +42,8 @@ class InterviewJobPrepServiceImplTest {
     private ResumeProjectMapper resumeProjectMapper;
     @Mock
     private UserProviderConfigService userProviderConfigService;
+    @Mock
+    private AdaptiveService adaptiveService;
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -79,6 +83,7 @@ class InterviewJobPrepServiceImplTest {
         assertEquals("/interview?workspace=copilot-prep&jobPrepSessionId=101", result.getNextActionPath());
         assertTrue(result.getSummary().contains("降级生成"));
         assertTrue(result.getNextActions().stream().anyMatch(item -> item.contains("联网搜索未完全就绪")));
+        verify(adaptiveService).refreshAbilityProfile(1L);
     }
 
     @Test
