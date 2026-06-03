@@ -33,7 +33,7 @@
           <RouterLink v-if="currentFocus" :to="applicationCopilotPrepLink" class="hard-button-secondary">
             去 Copilot Prep
           </RouterLink>
-          <RouterLink to="/resume" class="hard-button-secondary">检查简历版本</RouterLink>
+          <RouterLink :to="applicationResumeLink" class="hard-button-secondary">检查简历版本</RouterLink>
           <RouterLink v-if="currentFocus" :to="`/applications/${currentFocus.id}`" class="hard-button-secondary">
             查看当前时间线
           </RouterLink>
@@ -410,6 +410,11 @@ const applicationCopilotPrepLink = computed(() => {
     query.set('resumeId', String(currentFocus.value.resumeFileId))
   }
   return `/interview?${query.toString()}`
+})
+const applicationResumeLink = computed(() => {
+  const resumeId = currentFocus.value?.resumeFileId || resumes.value[0]?.id
+  if (!resumeId) return '/resume'
+  return `/resume?resumeId=${encodeURIComponent(String(resumeId))}`
 })
 
 const statusLabel = (value: string) => {
