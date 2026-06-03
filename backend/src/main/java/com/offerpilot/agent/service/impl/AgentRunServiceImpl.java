@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.offerpilot.adaptive.vo.AbilityProfileVO;
+import com.offerpilot.adaptive.vo.CategoryAbilityVO;
 import com.offerpilot.agent.dto.AgentRunCreateRequest;
 import com.offerpilot.agent.entity.AgentRun;
 import com.offerpilot.agent.mapper.AgentRunMapper;
@@ -195,6 +196,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         TopicRetrospectiveActionPayload retrospectivePayload = resolveTopicRetrospectiveActionPayload(snapshot, payload);
         String focus = firstNonBlank(
                 snapshot.topicDetail() == null ? null : snapshot.topicDetail().getCategoryName(),
+                snapshot.weakTopicSnapshot() == null ? null : snapshot.weakTopicSnapshot().focusTopicName(),
                 snapshot.abilityProfile() == null ? null : snapshot.abilityProfile().getSuggestedFocus(),
                 payload.focusDirection());
         String summary = StringUtils.hasText(focus)
@@ -210,7 +212,10 @@ public class AgentRunServiceImpl implements AgentRunService {
                 summary,
                 recommendations,
                 List.of("确认主攻方向", "生成可执行任务", "审批通过后写回正式训练计划"),
-                resolveRunNextActionPath(snapshot.topicDetail() != null ? "/analytics" : "/study-plan", "study_planner", snapshot),
+                resolveRunNextActionPath(
+                        snapshot.topicDetail() != null || snapshot.weakTopicSnapshot() != null ? "/analytics" : "/study-plan",
+                        "study_planner",
+                        snapshot),
                 true,
                 useRetrospectiveAction ? "save_topic_retrospective_action" : "refresh_study_plan",
                 useRetrospectiveAction
@@ -632,6 +637,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         AbilityProfileVO abilityProfile = null;
         ProfileTopicDetailVO topicDetail = null;
         ProfileTopicRetrospectiveVO topicRetrospective = null;
+        WeakTopicSnapshot weakTopicSnapshot = null;
         DashboardOverviewVO dashboardOverview = null;
         StudyPlanCurrentVO currentPlan = null;
         InterviewDetailVO interviewDetail = null;
@@ -649,6 +655,9 @@ public class AgentRunServiceImpl implements AgentRunService {
 
         if (hasContext(contextRefs, "analytics:profile") || hasContext(contextRefs, "analytics:weak-topics")) {
             abilityProfile = loadOptional("analytics profile", () -> analyticsService.getAbilityProfile(userId));
+            if (abilityProfile != null && hasContext(contextRefs, "analytics:weak-topics")) {
+                weakTopicSnapshot = buildWeakTopicSnapshot(abilityProfile);
+            }
         }
 
         if (hasContext(contextRefs, "study-plan:active")) {
@@ -731,6 +740,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                 abilityProfile,
                 topicDetail,
                 topicRetrospective,
+                weakTopicSnapshot,
                 dashboardOverview,
                 currentPlan,
                 interviewDetail,
@@ -753,6 +763,15 @@ public class AgentRunServiceImpl implements AgentRunService {
             recommendations.addAll(limit(topicDetail.getFocusRecommendations(), 2));
             if (snapshot.topicRetrospective() != null) {
                 recommendations.addAll(retrospectiveRecommendations(snapshot.topicRetrospective()));
+            }
+        } else if (snapshot.weakTopicSnapshot() != null) {
+            WeakTopicSnapshot weakTopicSnapshot = snapshot.weakTopicSnapshot();
+            recommendations.add("当前弱项主题优先级是 "
+                    + defaultText(joinLimited(weakTopicSnapshot.topicLabels(), 3, "、"), "当前薄弱点")
+                    + "。");
+            if (StringUtils.hasText(weakTopicSnapshot.focusTopicName())) {
+                recommendations.add("下一轮计划先收紧「" + weakTopicSnapshot.focusTopicName()
+                        + "」，再扩展到相邻薄弱主题。");
             }
         } else if (snapshot.abilityProfile() != null) {
             AbilityProfileVO profile = snapshot.abilityProfile();
@@ -905,6 +924,11 @@ public class AgentRunServiceImpl implements AgentRunService {
         if (snapshot.abilityProfile() != null) {
             recommendations.add("长期画像建议先补 " + defaultText(snapshot.abilityProfile().getSuggestedFocus(), "当前薄弱点") + "。");
         }
+        if (snapshot.weakTopicSnapshot() != null && StringUtils.hasText(snapshot.weakTopicSnapshot().focusTopicName())) {
+            recommendations.add("当前最该收紧的弱项主题是 "
+                    + snapshot.weakTopicSnapshot().focusTopicName()
+                    + "，适合优先转成专项训练。");
+        }
         if (recommendations.isEmpty()) {
             recommendations.add("先确认你现在要推进的是训练、备面、简历还是投递。");
             recommendations.add("把结果写入对应模块，而不是停留在对话摘要。");
@@ -936,6 +960,43 @@ public class AgentRunServiceImpl implements AgentRunService {
         return recommendations;
     }
 
+    private WeakTopicSnapshot buildWeakTopicSnapshot(AbilityProfileVO profile) {
+        if (profile == null) {
+            return null;
+        }
+        List<String> weakCategories = nullSafeList(profile.getWeakCategories()).stream()
+                .filter(StringUtils::hasText)
+                .map(String::trim)
+                .toList();
+        List<CategoryAbilityVO> sortedWeakTopics = nullSafeList(profile.getCategoryAbilities()).stream()
+                .filter(item -> item != null && StringUtils.hasText(item.getCategoryName()))
+                .filter(item -> Boolean.TRUE.equals(item.getIsWeak()) || weakCategories.contains(item.getCategoryName()))
+                .sorted((left, right) -> {
+                    double leftScore = left.getAbilityScore() == null ? Double.MAX_VALUE : left.getAbilityScore();
+                    double rightScore = right.getAbilityScore() == null ? Double.MAX_VALUE : right.getAbilityScore();
+                    int scoreCompare = Double.compare(leftScore, rightScore);
+                    if (scoreCompare != 0) {
+                        return scoreCompare;
+                    }
+                    return defaultText(left.getCategoryName(), "").compareTo(defaultText(right.getCategoryName(), ""));
+                })
+                .limit(3)
+                .toList();
+        if (sortedWeakTopics.isEmpty()) {
+            return null;
+        }
+        CategoryAbilityVO focusTopic = sortedWeakTopics.get(0);
+        List<String> topicLabels = sortedWeakTopics.stream()
+                .map(item -> item.getCategoryName() + "（" + defaultText(formatNumber(item.getAbilityScore()), "-") + "）")
+                .toList();
+        return new WeakTopicSnapshot(
+                sortedWeakTopics,
+                focusTopic.getCategoryId(),
+                focusTopic.getCategoryName(),
+                focusTopic.getRecommendedDifficulty(),
+                topicLabels);
+    }
+
     private List<String> providerContextRecommendations(String agentType, ContextSnapshot snapshot) {
         if (snapshot.providerConfigs() == null) {
             return List.of();
@@ -961,6 +1022,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         String focusDirection = firstNonBlank(
                 snapshot.topicDetail() == null ? null : snapshot.topicDetail().getCategoryName(),
                 snapshot.topicRetrospective() == null ? null : snapshot.topicRetrospective().getCategoryName(),
+                snapshot.weakTopicSnapshot() == null ? null : snapshot.weakTopicSnapshot().focusTopicName(),
                 snapshot.currentPlan() == null ? null : snapshot.currentPlan().getFocusDirection(),
                 snapshot.abilityProfile() == null ? null : snapshot.abilityProfile().getSuggestedFocus(),
                 snapshot.interviewDetail() == null ? null : snapshot.interviewDetail().getDirection(),
@@ -1711,6 +1773,7 @@ public class AgentRunServiceImpl implements AgentRunService {
 
     private record ContextSnapshot(AbilityProfileVO abilityProfile, ProfileTopicDetailVO topicDetail,
                                    ProfileTopicRetrospectiveVO topicRetrospective,
+                                   WeakTopicSnapshot weakTopicSnapshot,
                                    DashboardOverviewVO dashboardOverview,
                                    StudyPlanCurrentVO currentPlan,
                                    InterviewDetailVO interviewDetail, RecordingReviewSessionVO recordingReview,
@@ -1724,5 +1787,9 @@ public class AgentRunServiceImpl implements AgentRunService {
     private record ApplicationBoardSnapshot(List<JobApplicationVO> applications, JobApplicationVO focusApplication,
                                             Integer totalCount, Integer activeCount, Integer offerCount,
                                             Integer rejectedCount) {
+    }
+
+    private record WeakTopicSnapshot(List<CategoryAbilityVO> topics, Long focusTopicId, String focusTopicName,
+                                     String recommendedDifficulty, List<String> topicLabels) {
     }
 }

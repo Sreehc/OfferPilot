@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.offerpilot.adaptive.vo.AbilityProfileVO;
+import com.offerpilot.adaptive.vo.CategoryAbilityVO;
 import com.offerpilot.agent.dto.AgentRunCreateRequest;
 import com.offerpilot.agent.entity.AgentRun;
 import com.offerpilot.agent.mapper.AgentRunMapper;
@@ -230,6 +231,52 @@ class AgentRunServiceImplTest {
         assertEquals("JVM", payload.get("focusDirection").asText());
         assertEquals("Java后端开发", payload.get("targetRole").asText());
         assertEquals("Spring Boot, Redis", payload.get("techStack").asText());
+    }
+
+    @Test
+    void createRun_studyPlannerUsesWeakTopicsContext() throws Exception {
+        when(analyticsService.getAbilityProfile(1L)).thenReturn(AbilityProfileVO.builder()
+                .recommendedDifficulty("medium")
+                .suggestedFocus("JVM")
+                .weakCategories(List.of("JVM", "系统设计"))
+                .categoryAbilities(List.of(
+                        CategoryAbilityVO.builder()
+                                .categoryId(12L)
+                                .categoryName("JVM")
+                                .abilityScore(52D)
+                                .isWeak(true)
+                                .recommendedDifficulty("medium")
+                                .build(),
+                        CategoryAbilityVO.builder()
+                                .categoryId(18L)
+                                .categoryName("系统设计")
+                                .abilityScore(57D)
+                                .isWeak(true)
+                                .recommendedDifficulty("hard")
+                                .build(),
+                        CategoryAbilityVO.builder()
+                                .categoryId(5L)
+                                .categoryName("Redis")
+                                .abilityScore(68D)
+                                .isWeak(false)
+                                .recommendedDifficulty("medium")
+                                .build()))
+                .build());
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "study_planner",
+                "analytics",
+                List.of("analytics:profile", "analytics:weak-topics"),
+                "按当前弱项生成下轮训练"));
+
+        assertTrue(result.getSummary().contains("JVM"));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("弱项主题优先级")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("JVM（52")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("系统设计（57")));
+        ArgumentCaptor<AgentRun> captor = ArgumentCaptor.forClass(AgentRun.class);
+        verify(agentRunMapper).insert(captor.capture());
+        JsonNode payload = objectMapper.readTree(captor.getValue().getApprovalPayloadJson());
+        assertEquals("JVM", payload.get("focusDirection").asText());
     }
 
     @Test
@@ -490,6 +537,39 @@ class AgentRunServiceImplTest {
 
         assertEquals("/applications/11", result.getNextActionPath());
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("投递看板当前最值得推进的是 小红书 后端工程师")));
+    }
+
+    @Test
+    void createRun_coordinatorUsesWeakTopicsContext() {
+        when(analyticsService.getAbilityProfile(1L)).thenReturn(AbilityProfileVO.builder()
+                .suggestedFocus("系统设计")
+                .weakCategories(List.of("系统设计", "JVM"))
+                .categoryAbilities(List.of(
+                        CategoryAbilityVO.builder()
+                                .categoryId(18L)
+                                .categoryName("系统设计")
+                                .abilityScore(49D)
+                                .isWeak(true)
+                                .recommendedDifficulty("hard")
+                                .build(),
+                        CategoryAbilityVO.builder()
+                                .categoryId(12L)
+                                .categoryName("JVM")
+                                .abilityScore(56D)
+                                .isWeak(true)
+                                .recommendedDifficulty("medium")
+                                .build()))
+                .build());
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "coordinator",
+                "analytics",
+                List.of("analytics:weak-topics"),
+                "先帮我判断今天最该补哪块"));
+
+        assertEquals("/analytics", result.getNextActionPath());
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("长期画像建议先补 系统设计")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("最该收紧的弱项主题是 系统设计")));
     }
 
     @Test
