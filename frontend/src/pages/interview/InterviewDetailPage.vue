@@ -59,8 +59,8 @@
               <RouterLink :to="interviewRecordingReviewLink" class="hard-button-secondary inline-flex items-center justify-center px-4">
                 去录音复盘
               </RouterLink>
-              <RouterLink to="/wrong" class="hard-button-secondary inline-flex items-center justify-center px-4">
-                查看错题本
+              <RouterLink :to="interviewWrongFocusLink" class="hard-button-secondary inline-flex items-center justify-center px-4">
+                {{ interviewWrongFocusLink === '/wrong' ? '查看错题本' : '查看低分题' }}
               </RouterLink>
             </div>
           </div>
@@ -228,6 +228,9 @@ const sortedRecords = computed(() => {
   if (!detail.value?.records) return []
   return [...detail.value.records].sort((a, b) => Number(b.isLowScore) - Number(a.isLowScore))
 })
+const firstWrongRecord = computed(() => {
+  return sortedRecords.value.find((item) => item.wrongQuestionId) || null
+})
 
 const formatScore = (score: number | undefined | null): string => {
   if (score == null) return '-'
@@ -270,6 +273,10 @@ const restartInterviewLink = computed(() => {
   return `/interview?workspace=mock-interview&resumeId=${encodeURIComponent(interviewResumeId.value)}`
 })
 const interviewRecordingReviewLink = computed(() => '/interview?workspace=recording-review')
+const interviewWrongFocusLink = computed(() => {
+  if (!firstWrongRecord.value?.wrongQuestionId) return '/wrong'
+  return `/wrong?wrongId=${encodeURIComponent(firstWrongRecord.value.wrongQuestionId)}`
+})
 const interviewReviewAgentLink = computed(() => {
   const id = sessionId()
   const contextRefs = ['analytics:profile']

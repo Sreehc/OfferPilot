@@ -16,6 +16,8 @@ import com.offerpilot.plan.service.PlanService;
 import com.offerpilot.plan.vo.StudyPlanCurrentVO;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -448,7 +450,7 @@ public class PlanServiceImpl implements PlanService {
             tasks.add(buildTask(plan, day, taskDate, "question",
                     "Day " + day + "：题库专项训练",
                     "围绕 " + profile.focusDirection() + " 和 " + joinWeakPoints(profile.weakPoints()) + " 刷一轮结构化题，优先补高频薄弱点。",
-                    "/question",
+                    buildQuestionActionPath(profile, day),
                     35,
                     day <= 3 ? "high" : "medium"));
 
@@ -502,6 +504,35 @@ public class PlanServiceImpl implements PlanService {
         task.setPriority(priority);
         task.setStatus("pending");
         return task;
+    }
+
+    private String buildQuestionActionPath(PlanProfile profile, int day) {
+        String keyword = resolveQuestionKeyword(profile, day);
+        if (keyword.isBlank()) {
+            return "/question";
+        }
+        return "/question?keyword=" + encodeQueryValue(keyword);
+    }
+
+    private String resolveQuestionKeyword(PlanProfile profile, int day) {
+        List<String> candidates = new ArrayList<>();
+        for (String weakPoint : profile.weakPoints()) {
+            if (weakPoint != null && !weakPoint.isBlank() && !candidates.contains(weakPoint.trim())) {
+                candidates.add(weakPoint.trim());
+            }
+        }
+        String focusDirection = firstNonBlank(profile.focusDirection());
+        if (!focusDirection.isBlank() && !candidates.contains(focusDirection)) {
+            candidates.add(focusDirection);
+        }
+        if (candidates.isEmpty()) {
+            return "";
+        }
+        return candidates.get(Math.floorMod(day - 1, candidates.size()));
+    }
+
+    private String encodeQueryValue(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
     }
 
     private void insertTasks(List<StudyPlanTask> tasks) {

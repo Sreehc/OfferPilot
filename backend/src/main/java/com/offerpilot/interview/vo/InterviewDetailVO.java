@@ -35,6 +35,8 @@ public class InterviewDetailVO {
     public static class InterviewRecordVO {
         @JsonSerialize(using = ToStringSerializer.class)
         private Long questionId;
+        @JsonSerialize(using = ToStringSerializer.class)
+        private Long wrongQuestionId;
         private String questionTitle;
         private String userAnswer;
         private BigDecimal score;

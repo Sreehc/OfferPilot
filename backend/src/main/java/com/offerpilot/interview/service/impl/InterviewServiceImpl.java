@@ -46,6 +46,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -284,6 +285,14 @@ public class InterviewServiceImpl implements InterviewService {
         Map<Long, Question> questionMap = questionMapper.selectBatchIds(questionIds)
                 .stream()
                 .collect(Collectors.toMap(Question::getId, Function.identity(), (a, b) -> a));
+        Map<Long, WrongQuestion> wrongQuestionMap = questionIds.isEmpty()
+                ? Map.of()
+                : wrongQuestionMapper.selectList(new LambdaQueryWrapper<WrongQuestion>()
+                        .eq(WrongQuestion::getUserId, userId)
+                        .in(WrongQuestion::getQuestionId, questionIds))
+                .stream()
+                .filter(wrong -> wrong.getQuestionId() != null)
+                .collect(Collectors.toMap(WrongQuestion::getQuestionId, Function.identity(), (left, right) -> left));
 
         // Load voice records if this is a voice session
         Map<Long, VoiceRecord> voiceRecordMap;
@@ -303,9 +312,11 @@ public class InterviewServiceImpl implements InterviewService {
                     InterviewRecord item = record.getKey();
                     int questionIndex = record.getValue();
                     Question q = questionMap.get(item.getQuestionId());
+                    WrongQuestion wrongQuestion = wrongQuestionMap.get(item.getQuestionId());
                     VoiceRecord vr = voiceRecordMap.get(item.getId());
                     return InterviewDetailVO.InterviewRecordVO.builder()
                             .questionId(item.getQuestionId())
+                            .wrongQuestionId(wrongQuestion == null ? null : wrongQuestion.getId())
                             .questionTitle(resolveQuestionTitle(q, questionIndex, session.getQuestionCount(), context))
                             .userAnswer(item.getUserAnswer())
                             .score(item.getScore())

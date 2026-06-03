@@ -1479,7 +1479,9 @@
           </div>
 
           <div class="flex gap-2">
-            <RouterLink to="/wrong" class="hard-button-secondary flex-1 text-center text-sm">错题本</RouterLink>
+            <RouterLink :to="finishedWrongFocusLink" class="hard-button-secondary flex-1 text-center text-sm">
+              {{ finishedWrongFocusLink === '/wrong' ? '错题本' : '低分题' }}
+            </RouterLink>
             <RouterLink to="/review" class="hard-button-secondary flex-1 text-center text-sm">去复习</RouterLink>
             <el-button type="primary" size="default" class="action-button flex-1" @click="handleNewInterview">
               开始新一场
@@ -1963,6 +1965,10 @@ const recordingReviewPlanRefreshLink = computed(() => {
   })
 })
 const recordingReviewAnalyticsLink = computed(() => '/analytics')
+const finishedWrongFocusLink = computed(() => {
+  const wrongQuestionId = detail.value?.records?.find((item) => item.wrongQuestionId)?.wrongQuestionId
+  return wrongQuestionId ? `/wrong?wrongId=${encodeURIComponent(wrongQuestionId)}` : '/wrong'
+})
 
 const handleStart = async (reanswerQuestionId?: number) => {
   if (interviewContextPath.value !== 'general' && !selectedResumeId.value) {

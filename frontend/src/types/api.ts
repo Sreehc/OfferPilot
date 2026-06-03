@@ -329,6 +329,7 @@ export interface InterviewAnswerResult {
 
 export interface InterviewRecordItem {
   questionId: string
+  wrongQuestionId?: string
   questionTitle: string
   userAnswer: string
   score: number
