@@ -233,6 +233,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
 import {
   checkProviderConfigsApi,
   fetchProviderConfigsApi,
@@ -254,9 +255,9 @@ type CapabilityCard = {
   summary: string
   gaps: string[]
   agentLaunchLabel: string
-  agentLaunchPath: string
+  agentLaunchPath: RouteLocationRaw
   reviewRunsLabel: string
-  reviewRunsPath: string
+  reviewRunsPath: RouteLocationRaw
 }
 
 const loading = ref(true)
@@ -333,6 +334,33 @@ const providerScopeLabel = (scope: ProviderScope) => {
   }
 }
 
+const buildInterviewWorkspaceLink = (
+  workspace: 'job-prep' | 'recording-review' | 'copilot-prep',
+  note: string
+): RouteLocationRaw => ({
+  path: '/interview',
+  query: {
+    workspace,
+    seedWorkflow: workspace,
+    seedNote: note
+  }
+})
+
+const buildAgentLaunchPath = (
+  agentType: string,
+  triggerSource: string,
+  contextRefs: string[],
+  userPrompt: string
+): RouteLocationRaw => ({
+  path: '/agent',
+  query: {
+    agentType,
+    triggerSource,
+    contextRefs,
+    userPrompt
+  }
+})
+
 const buildCapabilityCard = (
   key: string,
   label: string,
@@ -344,7 +372,7 @@ const buildCapabilityCard = (
   degradedSummary: string,
   blockedSummary: string,
   agentLaunchLabel: string,
-  agentLaunchPath: string
+  agentLaunchPath: RouteLocationRaw
 ): CapabilityCard => {
   const missingRequired = requiredScopes.filter((scope) => !isProviderReadyForCapability(scope))
   const optionalScopes = providerScopes.filter((scope) => !requiredScopes.includes(scope))
@@ -407,13 +435,13 @@ const buildCapabilityCard = (
   }
 }
 
-const buildAgentRunReviewPath = (agentType: string, providerGateStatus: string) => {
+const buildAgentRunReviewPath = (agentType: string, providerGateStatus: string): RouteLocationRaw => {
   const params = new URLSearchParams()
   params.set('listAgentType', agentType)
   if (providerGateStatus) {
     params.set('listProviderGateStatus', providerGateStatus)
   }
-  return `/agent?${params.toString()}`
+  return { path: '/agent', query: Object.fromEntries(params) }
 }
 
 const capabilityCards = computed<CapabilityCard[]>(() => [
@@ -428,7 +456,7 @@ const capabilityCards = computed<CapabilityCard[]>(() => [
     'JD 备面仍可运行，但公司背景研究和岗位情报会降级。',
     '主模型未就绪，JD 备面当前无法生成有效结果。',
     '进入 JD 备面工作区',
-    '/interview?workspace=job-prep'
+    buildInterviewWorkspaceLink('job-prep', '当前从 Provider 设置进入，先检查依赖恢复后再继续 JD 备面。')
   ),
   buildCapabilityCard(
     'recording_review',
@@ -441,7 +469,7 @@ const capabilityCards = computed<CapabilityCard[]>(() => [
     '录音复盘可继续，但长音频存储和上传承载能力会降级。',
     '录音复盘缺少关键依赖，当前无法稳定完成转写和复盘。',
     '进入录音复盘工作区',
-    '/interview?workspace=recording-review'
+    buildInterviewWorkspaceLink('recording-review', '当前从 Provider 设置进入，先确认转写和存储依赖后再继续录音复盘。')
   ),
   buildCapabilityCard(
     'realtime_copilot',
@@ -454,7 +482,7 @@ const capabilityCards = computed<CapabilityCard[]>(() => [
     '实时 Copilot 仍可进入，但说话人区分或部分增强能力会降级。',
     '实时 Copilot 缺少关键依赖，当前不建议进入实时阶段。',
     '进入 Copilot 工作区',
-    '/interview?workspace=copilot-prep'
+    buildInterviewWorkspaceLink('copilot-prep', '当前从 Provider 设置进入，先确认实时依赖恢复后再继续 Copilot Prep。')
   ),
   buildCapabilityCard(
     'profile_loop',
@@ -467,7 +495,12 @@ const capabilityCards = computed<CapabilityCard[]>(() => [
     '训练画像可继续，但知识检索和向量召回能力会降级。',
     '主模型未就绪，画像分析和下一轮训练刷新无法稳定生成。',
     '发起训练计划代理',
-    '/agent?agentType=study_planner&triggerSource=analytics&contextRefs=analytics:profile,analytics:weak-topics,settings:providers'
+    buildAgentLaunchPath(
+      'study_planner',
+      'analytics',
+      ['analytics:profile', 'analytics:weak-topics', 'settings:providers'],
+      '当前从 Provider 设置进入，优先检查依赖恢复后再刷新训练画像和下一轮计划。'
+    )
   )
 ])
 

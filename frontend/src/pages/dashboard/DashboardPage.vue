@@ -273,7 +273,7 @@
                   <div>
                     <h3 class="dashboard-section-title">最近模拟面试</h3>
                   </div>
-                  <RouterLink to="/interview?workspace=history" class="accent-link touch-link text-sm font-semibold">查看全部</RouterLink>
+                  <RouterLink :to="interviewHistoryLink" class="accent-link touch-link text-sm font-semibold">查看全部</RouterLink>
                 </div>
 
                 <template v-if="recentInterviewCard">
@@ -436,7 +436,7 @@
               </RouterLink>
             </section>
 
-            <DashboardApplicationDonut :items="applicationStats" :total="applications.length" />
+            <DashboardApplicationDonut :items="applicationStats" :total="applications.length" :link-to="applicationBoardEntryLink" />
           </div>
         </div>
       </template>
@@ -609,6 +609,14 @@ const mockInterviewEntryLink = computed<RouteLocationRaw>(() =>
     dashboardSeedTopic.value ? `当前从工作台进入，优先验证「${dashboardSeedTopic.value}」是否已经讲稳。` : undefined
   )
 )
+const interviewHistoryLink = computed<string>(() => appendDashboardSeedToPath('/interview?workspace=history'))
+const applicationBoardEntryLink = computed<RouteLocationRaw>(() =>
+  buildSeededPath(
+    '/applications',
+    'applications',
+    dashboardSeedTopic.value ? `当前从工作台进入，优先把「${dashboardSeedTopic.value}」带到真实岗位推进里验证。` : undefined
+  )
+)
 
 const quickEntries = computed<DashboardQuickEntry[]>(() => [
   { label: '模拟面试', description: 'AI 全真模拟', path: mockInterviewEntryLink.value, icon: 'interview', tone: 'blue' },
@@ -628,11 +636,7 @@ const quickEntries = computed<DashboardQuickEntry[]>(() => [
   {
     label: '投递管理',
     description: '追踪求职进度',
-    path: buildSeededPath(
-      '/applications',
-      'applications',
-      dashboardSeedTopic.value ? `当前从工作台进入，优先把「${dashboardSeedTopic.value}」带到真实岗位推进里验证。` : undefined
-    ),
+    path: applicationBoardEntryLink.value,
     icon: 'applications',
     tone: 'indigo'
   },
@@ -894,7 +898,7 @@ const recentInterviewTags = computed(() => {
 })
 
 const recentInterviewDetailLink = computed<string>(() => {
-  if (!recentInterviewCard.value?.sessionId) return '/interview?workspace=history'
+  if (!recentInterviewCard.value?.sessionId) return interviewHistoryLink.value
   return appendDashboardSeedToPath(`/interview/detail/${recentInterviewCard.value.sessionId}`)
 })
 

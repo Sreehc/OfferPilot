@@ -5,7 +5,7 @@
         <h3 class="dashboard-donut-card__title">投递进度总览</h3>
       </div>
       <RouterLink
-        to="/applications"
+        :to="linkTo"
         class="accent-link touch-link text-sm font-semibold"
       >
         查看全部
@@ -41,6 +41,7 @@
 <script setup lang="ts">
 import * as echarts from 'echarts'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
 import { EMPTY_STATE_COPY } from '@/constants/productCopy'
 import { useTheme } from '@/composables/useTheme'
 
@@ -54,6 +55,7 @@ interface DonutItem {
 const props = defineProps<{
   items: DonutItem[]
   total: number
+  linkTo?: RouteLocationRaw
 }>()
 
 const { theme } = useTheme()
@@ -61,6 +63,7 @@ const chartRef = ref<HTMLElement | null>(null)
 let chart: echarts.ECharts | null = null
 
 const hasData = computed(() => props.items.some((item) => item.count > 0))
+const linkTo = computed<RouteLocationRaw>(() => props.linkTo || '/applications')
 
 const readThemeToken = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 
