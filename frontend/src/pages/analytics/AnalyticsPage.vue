@@ -748,7 +748,7 @@ const analyticsAgentLink = computed(() =>
   buildAgentWorkbenchLocation({
     agentType: 'study_planner',
     triggerSource: 'analytics',
-    contextRefs: ['analytics:profile', 'analytics:weak-topics', 'study-plan:active'],
+    contextRefs: ['analytics:profile', 'analytics:weak-topics', 'study-plan:active', 'settings:providers'],
     userPrompt: abilityProfile.value.suggestedFocus
       ? `围绕当前薄弱点“${abilityProfile.value.suggestedFocus}”刷新下一轮训练动作。`
       : '根据当前训练画像刷新下一轮训练动作。'
@@ -764,7 +764,8 @@ const topicPlannerAgentLink = computed(() => {
     contextRefs: [
       'analytics:profile',
       'analytics:weak-topics',
-      `analytics:topic:${topicDetail.value.categoryId}`
+      `analytics:topic:${topicDetail.value.categoryId}`,
+      'settings:providers'
     ],
     userPrompt: `结合 ${topicDetail.value.categoryName} 的领域详情和回顾结果，生成下一轮训练动作。`
   })
@@ -781,7 +782,8 @@ const topicRetrospectivePlannerAgentLink = computed(() => {
       'analytics:weak-topics',
       `analytics:topic:${topicRetrospective.value.categoryId}`,
       `analytics:retrospective:topic:${topicRetrospective.value.categoryId}`,
-      'study-plan:active'
+      'study-plan:active',
+      'settings:providers'
     ],
     userPrompt: `把 ${topicRetrospective.value.categoryName} 的领域回顾结论转成下一轮正式训练动作。`
   })
