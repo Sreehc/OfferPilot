@@ -41,8 +41,16 @@ public class AgentRunController {
     public Result<List<AgentRunVO>> list(
             @Parameter(description = "按 agent 类型筛选") @RequestParam(required = false) String agentType,
             @Parameter(description = "按 run 状态筛选") @RequestParam(required = false) String status,
-            @Parameter(description = "按触发来源筛选") @RequestParam(required = false) String triggerSource) {
-        return Result.success(agentRunService.listRuns(currentUserId(), agentType, status, triggerSource));
+            @Parameter(description = "按触发来源筛选") @RequestParam(required = false) String triggerSource,
+            @Parameter(description = "按审批阶段筛选") @RequestParam(required = false) String approvalStage,
+            @Parameter(description = "按 provider gating 状态筛选") @RequestParam(required = false) String providerGateStatus) {
+        return Result.success(agentRunService.listRuns(
+                currentUserId(),
+                agentType,
+                status,
+                triggerSource,
+                approvalStage,
+                providerGateStatus));
     }
 
     @Operation(summary = "agent run 详情", description = "查看单个 run 的结果和下一步动作")

@@ -112,39 +112,64 @@ class AgentRunServiceImplTest {
     }
 
     @Test
-    void listRuns_appliesAgentStatusAndTriggerFilters() {
+    void listRuns_appliesAgentStatusTriggerApprovalAndProviderFilters() {
         AgentRun matchedRun = new AgentRun();
         matchedRun.setId(2001L);
         matchedRun.setUserId(1L);
-        matchedRun.setAgentType("job_prep");
-        matchedRun.setTriggerSource("interview");
+        matchedRun.setAgentType("realtime_copilot");
+        matchedRun.setTriggerSource("interview_live");
         matchedRun.setStatus("pending_approval");
-        matchedRun.setTitle("JD 备面代理");
-        matchedRun.setSummary("已整理当前岗位的备面重点。");
-        matchedRun.setContextRefsJson("[]");
+        matchedRun.setRequiresApproval(1);
+        matchedRun.setTitle("实时 Copilot 代理");
+        matchedRun.setSummary("这条 run 应命中 blocked provider 过滤。");
+        matchedRun.setContextRefsJson("[\"interview:copilot-realtime:91\"]");
+        matchedRun.setNextActionPath("/interview");
         matchedRun.setResultPayloadJson("{\"recommendations\":[],\"checkpoints\":[]}");
         matchedRun.setUpdateTime(LocalDateTime.of(2026, 6, 3, 9, 0));
 
         AgentRun ignoredRun = new AgentRun();
         ignoredRun.setId(2002L);
         ignoredRun.setUserId(1L);
-        ignoredRun.setAgentType("study_planner");
-        ignoredRun.setTriggerSource("analytics");
-        ignoredRun.setStatus("completed");
-        ignoredRun.setTitle("学习计划代理");
-        ignoredRun.setSummary("这条 run 不应命中过滤条件。");
+        ignoredRun.setAgentType("job_prep");
+        ignoredRun.setTriggerSource("interview");
+        ignoredRun.setStatus("pending_approval");
+        ignoredRun.setRequiresApproval(1);
+        ignoredRun.setTitle("JD 备面代理");
+        ignoredRun.setSummary("这条 run 只会是 degraded，不应命中过滤条件。");
         ignoredRun.setContextRefsJson("[]");
         ignoredRun.setResultPayloadJson("{\"recommendations\":[],\"checkpoints\":[]}");
         ignoredRun.setUpdateTime(LocalDateTime.of(2026, 6, 3, 8, 0));
 
+        when(userProviderConfigService.listCurrentUserConfigs()).thenReturn(List.of(
+                UserProviderConfigItemVO.builder()
+                        .scope("llm")
+                        .label("主模型")
+                        .status("ready")
+                        .statusMessage("配置完整，可供对应能力使用。")
+                        .build(),
+                UserProviderConfigItemVO.builder()
+                        .scope("search")
+                        .label("联网搜索")
+                        .status("missing")
+                        .statusMessage("还没有保存这类配置。")
+                        .build()));
+
         when(agentRunMapper.selectList(any())).thenReturn(List.of(matchedRun, ignoredRun));
 
-        List<AgentRunVO> result = agentRunService.listRuns(1L, "job_prep", "pending_approval", "interview");
+        List<AgentRunVO> result = agentRunService.listRuns(
+                1L,
+                "",
+                "pending_approval",
+                "",
+                "waiting",
+                "blocked");
 
         assertEquals(1, result.size());
-        assertEquals("job_prep", result.get(0).getAgentType());
+        assertEquals("realtime_copilot", result.get(0).getAgentType());
         assertEquals("pending_approval", result.get(0).getStatus());
-        assertEquals("interview", result.get(0).getTriggerSource());
+        assertEquals("interview_live", result.get(0).getTriggerSource());
+        assertEquals("waiting", result.get(0).getApprovalStage());
+        assertEquals("blocked", result.get(0).getProviderGateStatus());
     }
 
     @Test

@@ -126,7 +126,7 @@
           </div>
         </div>
 
-        <div class="mt-5 grid gap-3 md:grid-cols-3">
+        <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
           <div>
             <label class="flat-field-label">筛选 Agent</label>
             <el-select v-model="filters.agentType" class="w-full" clearable placeholder="全部 agent" @change="handleFilterChange">
@@ -143,6 +143,18 @@
             <label class="flat-field-label">筛选来源</label>
             <el-select v-model="filters.triggerSource" class="w-full" clearable placeholder="全部来源" @change="handleFilterChange">
               <el-option v-for="item in triggerOptions" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+          </div>
+          <div>
+            <label class="flat-field-label">审批阶段</label>
+            <el-select v-model="filters.approvalStage" class="w-full" clearable placeholder="全部阶段" @change="handleFilterChange">
+              <el-option v-for="item in approvalStageOptions" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+          </div>
+          <div>
+            <label class="flat-field-label">Provider 状态</label>
+            <el-select v-model="filters.providerGateStatus" class="w-full" clearable placeholder="全部依赖状态" @change="handleFilterChange">
+              <el-option v-for="item in providerGateFilterOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </div>
         </div>
@@ -444,6 +456,22 @@ const runStatusOptions = [
   { label: '执行失败', value: 'failed' }
 ] as const
 
+const approvalStageOptions = [
+  { label: '等待审批', value: 'waiting' },
+  { label: '已审批', value: 'approved' },
+  { label: '已拒绝', value: 'rejected' },
+  { label: '已取消', value: 'canceled' },
+  { label: '已完成', value: 'completed' },
+  { label: '无需审批', value: 'not_required' }
+] as const
+
+const providerGateFilterOptions = [
+  { label: '关键依赖缺失', value: 'blocked' },
+  { label: '可降级运行', value: 'degraded' },
+  { label: '依赖已就绪', value: 'ready' },
+  { label: '无额外依赖', value: 'not_applicable' }
+] as const
+
 const contextRefOptions = [
   'dashboard:overview',
   'analytics:profile',
@@ -545,7 +573,9 @@ const form = reactive({
 const filters = reactive({
   agentType: '',
   status: '',
-  triggerSource: ''
+  triggerSource: '',
+  approvalStage: '',
+  providerGateStatus: ''
 })
 
 const runs = ref<AgentRun[]>([])
@@ -578,7 +608,11 @@ const syncFiltersFromRoute = () => {
   filters.agentType = typeof route.query.listAgentType === 'string' ? route.query.listAgentType.trim() : ''
   filters.status = typeof route.query.listStatus === 'string' ? route.query.listStatus.trim() : ''
   filters.triggerSource = typeof route.query.listTriggerSource === 'string' ? route.query.listTriggerSource.trim() : ''
-  hasActiveFilters.value = Boolean(filters.agentType || filters.status || filters.triggerSource)
+  filters.approvalStage = typeof route.query.listApprovalStage === 'string' ? route.query.listApprovalStage.trim() : ''
+  filters.providerGateStatus = typeof route.query.listProviderGateStatus === 'string' ? route.query.listProviderGateStatus.trim() : ''
+  hasActiveFilters.value = Boolean(
+    filters.agentType || filters.status || filters.triggerSource || filters.approvalStage || filters.providerGateStatus
+  )
 }
 
 const applyRoutePrefill = () => {
@@ -614,6 +648,8 @@ const buildRunListQuery = (): AgentRunListQuery | undefined => {
   if (filters.agentType) query.agentType = filters.agentType
   if (filters.status) query.status = filters.status
   if (filters.triggerSource) query.triggerSource = filters.triggerSource
+  if (filters.approvalStage) query.approvalStage = filters.approvalStage
+  if (filters.providerGateStatus) query.providerGateStatus = filters.providerGateStatus
   return Object.keys(query).length ? query : undefined
 }
 
@@ -642,7 +678,9 @@ const loadRuns = async (selectedId?: string) => {
 }
 
 const handleFilterChange = async () => {
-  hasActiveFilters.value = Boolean(filters.agentType || filters.status || filters.triggerSource)
+  hasActiveFilters.value = Boolean(
+    filters.agentType || filters.status || filters.triggerSource || filters.approvalStage || filters.providerGateStatus
+  )
   await loadRuns()
 }
 

@@ -110,7 +110,8 @@ public class AgentRunServiceImpl implements AgentRunService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AgentRunVO> listRuns(Long userId, String agentType, String status, String triggerSource) {
+    public List<AgentRunVO> listRuns(Long userId, String agentType, String status, String triggerSource,
+                                     String approvalStage, String providerGateStatus) {
         return agentRunMapper.selectList(new LambdaQueryWrapper<AgentRun>()
                         .eq(AgentRun::getUserId, userId)
                         .eq(StringUtils.hasText(agentType), AgentRun::getAgentType, trimToNull(agentType))
@@ -119,7 +120,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                         .orderByDesc(AgentRun::getUpdateTime)
                         .orderByDesc(AgentRun::getId))
                 .stream()
-                .filter(run -> matchesRunFilter(run, agentType, status, triggerSource))
+                .filter(run -> matchesRunFilter(run, agentType, status, triggerSource, approvalStage, providerGateStatus))
                 .map(this::buildVo)
                 .toList();
     }
@@ -2228,10 +2229,14 @@ public class AgentRunServiceImpl implements AgentRunService {
         return StringUtils.hasText(value) ? value.trim() : fallback;
     }
 
-    private boolean matchesRunFilter(AgentRun run, String agentType, String status, String triggerSource) {
+    private boolean matchesRunFilter(AgentRun run, String agentType, String status, String triggerSource,
+                                     String approvalStage, String providerGateStatus) {
+        AgentRunVO runVo = buildVo(run);
         return matchesFilterValue(run == null ? null : run.getAgentType(), agentType)
                 && matchesFilterValue(run == null ? null : run.getStatus(), status)
-                && matchesFilterValue(run == null ? null : run.getTriggerSource(), triggerSource);
+                && matchesFilterValue(run == null ? null : run.getTriggerSource(), triggerSource)
+                && matchesFilterValue(runVo.getApprovalStage(), approvalStage)
+                && matchesFilterValue(runVo.getProviderGateStatus(), providerGateStatus);
     }
 
     private boolean matchesFilterValue(String actual, String expected) {

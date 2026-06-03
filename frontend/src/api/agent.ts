@@ -17,6 +17,8 @@ export interface AgentRunListQuery {
   agentType?: string
   status?: string
   triggerSource?: string
+  approvalStage?: string
+  providerGateStatus?: string
 }
 
 export const createAgentRunApi = (payload: AgentRunCreatePayload) => {
