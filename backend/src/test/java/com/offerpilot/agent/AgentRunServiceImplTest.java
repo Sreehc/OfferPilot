@@ -212,7 +212,7 @@ class AgentRunServiceImplTest {
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("画像分 61")));
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("准备下周一面")));
         assertEquals("/analytics?topic=12", result.getNextActionPath());
-        assertEquals("前往能力画像", result.getNextActionLabel());
+        assertEquals("前往主题画像", result.getNextActionLabel());
         assertTrue(Boolean.TRUE.equals(result.getRequiresApproval()));
 
         ArgumentCaptor<AgentRun> captor = ArgumentCaptor.forClass(AgentRun.class);
@@ -255,6 +255,7 @@ class AgentRunServiceImplTest {
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("领域回顾提示当前风险")));
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("专项题库训练")));
         assertEquals("/analytics?topic=12&retrospective=1", result.getNextActionPath());
+        assertEquals("前往领域回顾", result.getNextActionLabel());
         assertTrue(Boolean.TRUE.equals(result.getRequiresApproval()));
         assertEquals("save_topic_retrospective_action", result.getApprovalActionType());
     }
@@ -766,7 +767,8 @@ class AgentRunServiceImplTest {
                 List.of("analytics:weak-topics"),
                 "先帮我判断今天最该补哪块"));
 
-        assertEquals("/analytics", result.getNextActionPath());
+        assertEquals("/analytics?topic=18", result.getNextActionPath());
+        assertEquals("前往主题画像", result.getNextActionLabel());
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("长期画像建议先补 系统设计")));
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("最该收紧的弱项主题是 系统设计")));
     }

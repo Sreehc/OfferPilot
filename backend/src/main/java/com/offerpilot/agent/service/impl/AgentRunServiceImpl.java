@@ -1543,6 +1543,9 @@ public class AgentRunServiceImpl implements AgentRunService {
         if (snapshot.currentPlan() != null) {
             return "/study-plan";
         }
+        if (snapshot.weakTopicSnapshot() != null && snapshot.weakTopicSnapshot().focusTopicId() != null) {
+            return "/analytics?topic=" + snapshot.weakTopicSnapshot().focusTopicId();
+        }
         if (snapshot.topicDetail() != null || snapshot.abilityProfile() != null) {
             return "/analytics";
         }
@@ -1555,6 +1558,9 @@ public class AgentRunServiceImpl implements AgentRunService {
         }
         if (snapshot.topicDetail() != null && snapshot.topicDetail().getCategoryId() != null) {
             return "/analytics?topic=" + snapshot.topicDetail().getCategoryId();
+        }
+        if (snapshot.weakTopicSnapshot() != null && snapshot.weakTopicSnapshot().focusTopicId() != null) {
+            return "/analytics?topic=" + snapshot.weakTopicSnapshot().focusTopicId();
         }
         if (snapshot.weakTopicSnapshot() != null || snapshot.abilityProfile() != null) {
             return "/analytics";
@@ -1945,7 +1951,7 @@ public class AgentRunServiceImpl implements AgentRunService {
             return "发起面后复盘";
         }
         return switch (normalize(agentType)) {
-            case "study_planner" -> normalizedPath.startsWith("/analytics") ? "前往能力画像" : "前往训练计划";
+            case "study_planner" -> studyPlannerNextActionLabel(normalizedPath);
             case "job_prep" -> "前往 JD 备面";
             case "recording_review" -> "前往录音复盘";
             case "interview_review" -> normalizedPath.startsWith("/interview/detail/") ? "前往面试详情" : "前往面试复盘";
@@ -1957,7 +1963,26 @@ public class AgentRunServiceImpl implements AgentRunService {
         };
     }
 
+    private String studyPlannerNextActionLabel(String nextActionPath) {
+        if (nextActionPath.startsWith("/analytics?topic=") && nextActionPath.contains("retrospective=1")) {
+            return "前往领域回顾";
+        }
+        if (nextActionPath.startsWith("/analytics?topic=")) {
+            return "前往主题画像";
+        }
+        if (nextActionPath.startsWith("/analytics")) {
+            return "前往能力画像";
+        }
+        return "前往训练计划";
+    }
+
     private String coordinatorNextActionLabel(String nextActionPath) {
+        if (nextActionPath.startsWith("/analytics?topic=") && nextActionPath.contains("retrospective=1")) {
+            return "前往领域回顾";
+        }
+        if (nextActionPath.startsWith("/analytics?topic=")) {
+            return "前往主题画像";
+        }
         if (nextActionPath.startsWith("/analytics")) {
             return "前往能力画像";
         }
