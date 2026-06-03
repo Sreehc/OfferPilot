@@ -870,7 +870,7 @@ const resolveContextRefPath = (contextRef: string) => {
     return `/analytics?topic=${encodeURIComponent(contextRef.slice('analytics:topic:'.length))}`
   }
   if (contextRef.startsWith('analytics:retrospective:topic:')) {
-    return `/analytics?topic=${encodeURIComponent(contextRef.slice('analytics:retrospective:topic:'.length))}`
+    return `/analytics?topic=${encodeURIComponent(contextRef.slice('analytics:retrospective:topic:'.length))}&retrospective=1`
   }
   if (contextRef.startsWith('interview:session:')) {
     return `/interview/detail/${encodeURIComponent(contextRef.slice('interview:session:'.length))}`

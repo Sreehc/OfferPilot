@@ -211,7 +211,7 @@ class AgentRunServiceImplTest {
         assertTrue(result.getSummary().contains("JVM"));
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("画像分 61")));
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("准备下周一面")));
-        assertEquals("/analytics", result.getNextActionPath());
+        assertEquals("/analytics?topic=12", result.getNextActionPath());
         assertEquals("前往能力画像", result.getNextActionLabel());
         assertTrue(Boolean.TRUE.equals(result.getRequiresApproval()));
 
@@ -254,7 +254,7 @@ class AgentRunServiceImplTest {
         assertTrue(result.getSummary().contains("JVM"));
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("领域回顾提示当前风险")));
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("专项题库训练")));
-        assertEquals("/analytics", result.getNextActionPath());
+        assertEquals("/analytics?topic=12&retrospective=1", result.getNextActionPath());
         assertTrue(Boolean.TRUE.equals(result.getRequiresApproval()));
         assertEquals("save_topic_retrospective_action", result.getApprovalActionType());
     }
@@ -439,7 +439,7 @@ class AgentRunServiceImplTest {
                 org.mockito.ArgumentMatchers.contains("专项题库训练"),
                 org.mockito.ArgumentMatchers.contains("领域回顾专项"),
                 org.mockito.ArgumentMatchers.contains("画像分仍处在较低区间"),
-                org.mockito.ArgumentMatchers.eq("/analytics?topic=12"));
+                org.mockito.ArgumentMatchers.eq("/analytics?topic=12&retrospective=1"));
         assertEquals("approved", approved.getStatus());
         assertTrue(approved.getExecutionSummary().contains("正式训练任务"));
     }

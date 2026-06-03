@@ -1056,14 +1056,17 @@ const changeWeeks = (w: number) => {
   void loadTrend()
 }
 
-const syncTopicQuery = async (topicId?: string | null) => {
+const syncTopicQuery = async (topicId?: string | null, retrospective?: boolean) => {
   const nextTopic = topicId?.trim() || ''
   const currentTopic = typeof route.query.topic === 'string' ? route.query.topic.trim() : ''
-  if (nextTopic === currentTopic) return
+  const nextRetrospective = retrospective ? '1' : ''
+  const currentRetrospective = typeof route.query.retrospective === 'string' ? route.query.retrospective.trim() : ''
+  if (nextTopic === currentTopic && nextRetrospective === currentRetrospective) return
   await router.replace({
     query: {
       ...route.query,
-      ...(nextTopic ? { topic: nextTopic } : { topic: undefined })
+      ...(nextTopic ? { topic: nextTopic } : { topic: undefined }),
+      ...(nextRetrospective ? { retrospective: nextRetrospective } : { retrospective: undefined })
     }
   })
 }
@@ -1080,9 +1083,32 @@ const openTopicDetail = async (topicId: number) => {
   }
 }
 
+const openTopicRetrospective = async (topicId: number) => {
+  topicDetailLoading.value = true
+  retrospectiveLoading.value = true
+  try {
+    const [detailResponse, retrospectiveResponse] = await Promise.all([
+      fetchAnalyticsTopicProfileApi(String(topicId)),
+      createAnalyticsTopicRetrospectiveApi(String(topicId))
+    ])
+    topicDetail.value = detailResponse.data
+    topicRetrospective.value = retrospectiveResponse.data
+    await syncTopicQuery(detailResponse.data.categoryId, true)
+  } finally {
+    topicDetailLoading.value = false
+    retrospectiveLoading.value = false
+  }
+}
+
 const applyTopicFromRoute = async () => {
   const topicQuery = typeof route.query.topic === 'string' ? route.query.topic.trim() : ''
+  const retrospectiveQuery = typeof route.query.retrospective === 'string' ? route.query.retrospective.trim() : ''
   if (!topicQuery) return
+  if (retrospectiveQuery) {
+    if (topicDetail.value?.categoryId === topicQuery && topicRetrospective.value?.categoryId === topicQuery) return
+    await openTopicRetrospective(Number(topicQuery))
+    return
+  }
   if (topicDetail.value?.categoryId === topicQuery) return
   await openTopicDetail(Number(topicQuery))
 }
@@ -1099,6 +1125,7 @@ const generateRetrospective = async () => {
   try {
     const response = await createAnalyticsTopicRetrospectiveApi(String(topicDetail.value.categoryId))
     topicRetrospective.value = response.data
+    await syncTopicQuery(String(topicDetail.value.categoryId), true)
   } catch {
     ElMessage.error('生成领域回顾失败，请稍后重试。')
   } finally {

@@ -242,10 +242,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                 summary,
                 recommendations,
                 List.of("确认主攻方向", "生成可执行任务", "审批通过后写回正式训练计划"),
-                resolveRunNextActionPath(
-                        snapshot.topicDetail() != null || snapshot.weakTopicSnapshot() != null ? "/analytics" : "/study-plan",
-                        "study_planner",
-                        snapshot),
+                resolveRunNextActionPath(resolveStudyPlannerNextActionPath(snapshot), "study_planner", snapshot),
                 true,
                 useRetrospectiveAction ? "save_topic_retrospective_action" : "refresh_study_plan",
                 useRetrospectiveAction
@@ -1504,7 +1501,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                 studyPlanPayload == null ? null : studyPlanPayload.techStack(),
                 taskTitle,
                 taskDescription,
-                "/analytics?topic=" + retrospective.getCategoryId());
+                resolveAnalyticsRetrospectivePath(retrospective.getCategoryId()));
     }
 
     private String resolveCoordinatorNextActionPath(ContextSnapshot snapshot) {
@@ -1517,7 +1514,7 @@ public class AgentRunServiceImpl implements AgentRunService {
             return resolveRecordingReviewWorkspacePath(snapshot);
         }
         if (snapshot.topicRetrospective() != null) {
-            return "/analytics";
+            return resolveAnalyticsRetrospectivePath(snapshot.topicRetrospective().getCategoryId());
         }
         if (snapshot.copilotRealtimeSession() != null) {
             String reviewActionPath = realtimeReviewNextActionPath(snapshot.copilotRealtimeSession());
@@ -1550,6 +1547,26 @@ public class AgentRunServiceImpl implements AgentRunService {
             return "/analytics";
         }
         return "/dashboard";
+    }
+
+    private String resolveStudyPlannerNextActionPath(ContextSnapshot snapshot) {
+        if (snapshot.topicRetrospective() != null && snapshot.topicRetrospective().getCategoryId() != null) {
+            return resolveAnalyticsRetrospectivePath(snapshot.topicRetrospective().getCategoryId());
+        }
+        if (snapshot.topicDetail() != null && snapshot.topicDetail().getCategoryId() != null) {
+            return "/analytics?topic=" + snapshot.topicDetail().getCategoryId();
+        }
+        if (snapshot.weakTopicSnapshot() != null || snapshot.abilityProfile() != null) {
+            return "/analytics";
+        }
+        return "/study-plan";
+    }
+
+    private String resolveAnalyticsRetrospectivePath(Long categoryId) {
+        if (categoryId == null) {
+            return "/analytics";
+        }
+        return "/analytics?topic=" + categoryId + "&retrospective=1";
     }
 
     private String resolveJobPrepWorkspacePath(ContextSnapshot snapshot) {
