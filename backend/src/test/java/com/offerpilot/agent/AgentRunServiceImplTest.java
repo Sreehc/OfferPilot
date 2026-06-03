@@ -789,7 +789,8 @@ class AgentRunServiceImplTest {
                 List.of("interview:copilot-prep:58"),
                 "帮我判断现在先进入实时还是继续准备"));
 
-        assertEquals("/interview?workspace=copilot-prep&copilotPrepSessionId=58", result.getNextActionPath());
+        assertEquals("/interview?workspace=copilot-live&copilotPrepSessionId=58", result.getNextActionPath());
+        assertEquals("前往实时 Copilot", result.getNextActionLabel());
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("Copilot Prep 已整理完成")));
     }
 
@@ -910,7 +911,8 @@ class AgentRunServiceImplTest {
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("开场提纲")));
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("Kafka")));
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("Copilot Prep 压成可口述")));
-        assertEquals("/interview?workspace=copilot-prep&copilotPrepSessionId=58", result.getNextActionPath());
+        assertEquals("/interview?workspace=copilot-live&copilotPrepSessionId=58", result.getNextActionPath());
+        assertEquals("前往实时 Copilot", result.getNextActionLabel());
     }
 
     @Test

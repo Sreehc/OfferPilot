@@ -560,6 +560,7 @@ public class AgentRunServiceImpl implements AgentRunService {
             summary = "已根据 " + defaultText(prepSession.getCompany(), "当前岗位") + " "
                     + defaultText(prepSession.getJobTitle(), "会前 Prep")
                     + " 整理会前提示，后续可以直接进入实时阶段。";
+            nextActionPath = resolveCopilotLiveWorkspacePath(snapshot);
             recommendations = mergeRecommendations(
                     List.of("先把 Copilot Prep 压成可口述的开场提纲，再建立实时连接。"),
                     limit(prepSession.getOpeningBrief(), 2),
@@ -1521,7 +1522,7 @@ public class AgentRunServiceImpl implements AgentRunService {
             return StringUtils.hasText(reviewActionPath) ? reviewActionPath : resolveCopilotLiveWorkspacePath(snapshot);
         }
         if (snapshot.copilotPrepSession() != null) {
-            return resolveCopilotPrepWorkspacePath(snapshot);
+            return resolveCopilotLiveWorkspacePath(snapshot);
         }
         if (snapshot.jobPrepSession() != null) {
             return resolveJobPrepWorkspacePath(snapshot);
@@ -1602,6 +1603,9 @@ public class AgentRunServiceImpl implements AgentRunService {
     private String resolveCopilotLiveWorkspacePath(ContextSnapshot snapshot) {
         if (snapshot.copilotRealtimeSession() != null && snapshot.copilotRealtimeSession().getId() != null) {
             return "/interview?workspace=copilot-live&copilotRealtimeSessionId=" + snapshot.copilotRealtimeSession().getId();
+        }
+        if (snapshot.copilotPrepSession() != null && snapshot.copilotPrepSession().getId() != null) {
+            return "/interview?workspace=copilot-live&copilotPrepSessionId=" + snapshot.copilotPrepSession().getId();
         }
         return "/interview?workspace=copilot-live";
     }
