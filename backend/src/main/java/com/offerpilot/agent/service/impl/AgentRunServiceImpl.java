@@ -749,6 +749,8 @@ public class AgentRunServiceImpl implements AgentRunService {
             copilotRealtimeSession = loadOptional(
                     "copilot realtime " + copilotRealtimeSessionId,
                     () -> interviewCopilotRealtimeService.detail(userId, copilotRealtimeSessionId));
+        } else if (hasContext(contextRefs, "interview:copilot-realtime")) {
+            copilotRealtimeSession = loadOptional("latest copilot realtime", () -> interviewCopilotRealtimeService.latest(userId));
         }
 
         Long resumeId = findContextRefId(contextRefs, "resume:");

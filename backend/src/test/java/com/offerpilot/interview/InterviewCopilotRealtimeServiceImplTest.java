@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -71,8 +73,8 @@ class InterviewCopilotRealtimeServiceImplTest {
         storedSession.setConnectedAt(LocalDateTime.of(2026, 6, 2, 10, 0));
         storedSession.setUpdateTime(LocalDateTime.of(2026, 6, 2, 10, 0));
 
-        when(copilotRealtimeSessionMapper.selectById(45L)).thenAnswer(invocation -> storedSession);
-        doAnswer(invocation -> {
+        lenient().when(copilotRealtimeSessionMapper.selectById(45L)).thenAnswer(invocation -> storedSession);
+        lenient().doAnswer(invocation -> {
             CopilotRealtimeSession updated = invocation.getArgument(0);
             storedSession = updated;
             if (storedSession.getUpdateTime() == null) {
@@ -80,7 +82,7 @@ class InterviewCopilotRealtimeServiceImplTest {
             }
             return 1;
         }).when(copilotRealtimeSessionMapper).updateById(any(CopilotRealtimeSession.class));
-        doAnswer(invocation -> {
+        lenient().doAnswer(invocation -> {
             CopilotEvent event = invocation.getArgument(0);
             if (event.getId() == null) {
                 event.setId(700L + storedEvents.size());
@@ -113,5 +115,40 @@ class InterviewCopilotRealtimeServiceImplTest {
         assertTrue(completed.getPostInterviewReview().getNextActionPath().contains("interview:copilot-realtime:45"));
         assertTrue(completed.getEvents().stream().anyMatch(item -> "runtime_note".equals(item.getEventType())));
         assertTrue(completed.getEvents().stream().anyMatch(item -> "session_completed".equals(item.getEventType())));
+    }
+
+    @Test
+    void latest_returnsMostRecentSessionSnapshot() {
+        storedSession.setId(88L);
+        storedSession.setStatus("completed");
+        storedSession.setEndedAt(LocalDateTime.of(2026, 6, 2, 11, 30));
+        storedSession.setLatestEventSummary("当前实时阶段已结束，准备进入面后复盘。");
+        storedEvents.add(realtimeEvent(801L, "runtime_note", "client", "先稳住项目背景，再回答缓存一致性。", 12));
+        storedEvents.add(realtimeEvent(802L, "session_completed", "client", "当前实时阶段已结束，准备进入面后复盘。", 13));
+
+        when(copilotRealtimeSessionMapper.selectOne(any())).thenReturn(storedSession);
+
+        CopilotRealtimeSessionVO latest = service.latest(1L);
+
+        assertNotNull(latest);
+        assertEquals(88L, latest.getId());
+        assertEquals("Java 后端简历", latest.getResumeTitle());
+        assertEquals("completed", latest.getStatus());
+        assertNotNull(latest.getPostInterviewReview());
+        assertTrue(latest.getPostInterviewReview().getRecommendedActions().stream().anyMatch(item -> item.contains("面后复盘 run")));
+        assertTrue(latest.getEvents().stream().anyMatch(item -> "runtime_note".equals(item.getEventType())));
+        verify(copilotRealtimeSessionMapper).selectOne(any());
+    }
+
+    private CopilotEvent realtimeEvent(Long id, String eventType, String source, String summary, int minute) {
+        CopilotEvent event = new CopilotEvent();
+        event.setId(id);
+        event.setSessionId(storedSession.getId());
+        event.setUserId(storedSession.getUserId());
+        event.setEventType(eventType);
+        event.setSource(source);
+        event.setSummary(summary);
+        event.setCreateTime(LocalDateTime.of(2026, 6, 2, 10, minute));
+        return event;
     }
 }

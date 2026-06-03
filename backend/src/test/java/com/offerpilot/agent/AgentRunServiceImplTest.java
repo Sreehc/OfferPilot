@@ -431,6 +431,36 @@ class AgentRunServiceImplTest {
     }
 
     @Test
+    void createRun_interviewReviewUsesLatestCopilotRealtimeContext() {
+        when(interviewCopilotRealtimeService.latest(1L)).thenReturn(CopilotRealtimeSessionVO.builder()
+                .id(46L)
+                .company("美团")
+                .jobTitle("资深 Java 工程师")
+                .status("completed")
+                .endedAt(LocalDateTime.of(2026, 6, 2, 19, 45))
+                .postInterviewReview(CopilotRealtimeSessionVO.PostInterviewReviewVO.builder()
+                        .summary("美团 / 资深 Java 工程师 的实时阶段已结束，下一步适合直接转入面后复盘。")
+                        .weakPoints(List.of("现场备注已记录，但还没有沉淀成正式训练动作。"))
+                        .recommendedActions(List.of(
+                                "先把本轮实时阶段转成面后复盘 run，整理追问、卡壳点和表达缺口。",
+                                "结合 资深 Java 工程师 岗位目标，决定是否刷新下一轮训练计划。"))
+                        .build())
+                .build());
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "interview_review",
+                "interview_live",
+                List.of("interview:copilot-realtime"),
+                "直接消费最近一次实时会话"));
+
+        assertTrue(result.getSummary().contains("实时阶段已结束"));
+        assertEquals("/interview", result.getNextActionPath());
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("面后复盘 run")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("直接消费最近一次实时会话")));
+        assertTrue(Boolean.TRUE.equals(result.getRequiresApproval()));
+    }
+
+    @Test
     void createRun_applicationStrategistUsesApplicationContext() {
         when(jobApplicationService.detail(1L, 6L)).thenReturn(JobApplicationVO.builder()
                 .id(6L)

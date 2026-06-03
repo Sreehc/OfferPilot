@@ -97,6 +97,22 @@ public class InterviewCopilotRealtimeServiceImpl implements InterviewCopilotReal
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public CopilotRealtimeSessionVO latest(Long userId) {
+        CopilotRealtimeSession session = copilotRealtimeSessionMapper.selectOne(new LambdaQueryWrapper<CopilotRealtimeSession>()
+                .eq(CopilotRealtimeSession::getUserId, userId)
+                .orderByDesc(CopilotRealtimeSession::getUpdateTime)
+                .orderByDesc(CopilotRealtimeSession::getId)
+                .last("LIMIT 1"));
+        if (session == null) {
+            return null;
+        }
+        ResumeFile resumeFile = session.getResumeFileId() == null ? null : resumeFileMapper.selectById(session.getResumeFileId());
+        List<CopilotEvent> events = loadEvents(session.getId());
+        return buildVo(session, resumeFile == null ? null : resumeFile.getTitle(), events);
+    }
+
+    @Override
     @Transactional
     public CopilotRealtimeSessionVO connect(Long userId, Long sessionId) {
         CopilotRealtimeSession session = loadRealtimeSession(userId, sessionId);

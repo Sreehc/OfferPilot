@@ -9,6 +9,8 @@ public interface InterviewCopilotRealtimeService {
 
     CopilotRealtimeSessionVO detail(Long userId, Long sessionId);
 
+    CopilotRealtimeSessionVO latest(Long userId);
+
     CopilotRealtimeSessionVO connect(Long userId, Long sessionId);
 
     CopilotRealtimeSessionVO disconnect(Long userId, Long sessionId, String reason);
