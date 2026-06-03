@@ -1,6 +1,7 @@
 package com.offerpilot.application.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.offerpilot.adaptive.service.AdaptiveService;
 import com.offerpilot.application.dto.JobApplicationCreateRequest;
 import com.offerpilot.application.dto.JobApplicationEventCreateRequest;
 import com.offerpilot.application.dto.JobApplicationStatusRequest;
@@ -45,6 +46,7 @@ public class JobApplicationServiceImpl implements JobApplicationService {
     private final JobApplicationEventMapper jobApplicationEventMapper;
     private final ResumeFileMapper resumeFileMapper;
     private final ResumeProjectMapper resumeProjectMapper;
+    private final AdaptiveService adaptiveService;
 
     @Override
     @Transactional
@@ -71,6 +73,7 @@ public class JobApplicationServiceImpl implements JobApplicationService {
         jobApplicationMapper.insert(application);
 
         createEvent(application.getId(), userId, "note", "已记录岗位并完成初步分析", "这条投递已经建档，接下来先决定什么时候投递。", LocalDateTime.now(), null, null, null, null);
+        adaptiveService.refreshAbilityProfile(userId);
         return detail(userId, application.getId());
     }
 
@@ -105,6 +108,7 @@ public class JobApplicationServiceImpl implements JobApplicationService {
         createEvent(applicationId, userId, "status_change", "已推进到「" + statusLabel(application.getStatus()) + "」",
                 StringUtils.hasText(request.getNote()) ? request.getNote() : "已更新当前推进阶段。", LocalDateTime.now(), application.getStatus(), null, null, null);
         refreshSuggestions(application);
+        adaptiveService.refreshAbilityProfile(userId);
         return detail(userId, applicationId);
     }
 
@@ -125,6 +129,7 @@ public class JobApplicationServiceImpl implements JobApplicationService {
                 request.getFeedbackTags());
         JobApplication application = getOwnedApplication(userId, applicationId);
         refreshSuggestions(application);
+        adaptiveService.refreshAbilityProfile(userId);
         return detail(userId, applicationId);
     }
 
@@ -143,6 +148,7 @@ public class JobApplicationServiceImpl implements JobApplicationService {
         application.setNextStepSuggestion(buildNextStepSuggestion(application.getStatus(), analysis, application.getNextStepDate(), loadEvents(applicationId)));
         jobApplicationMapper.updateById(application);
         createEvent(applicationId, userId, "analysis", "已刷新 JD 分析", analysis.summary(), LocalDateTime.now(), null, null, null, null);
+        adaptiveService.refreshAbilityProfile(userId);
         return detail(userId, applicationId);
     }
 
@@ -172,6 +178,7 @@ public class JobApplicationServiceImpl implements JobApplicationService {
                 null,
                 null,
                 List.of("agent", "strategy-draft"));
+        adaptiveService.refreshAbilityProfile(userId);
         return detail(userId, applicationId);
     }
 

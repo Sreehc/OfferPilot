@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.offerpilot.adaptive.service.AdaptiveService;
 import com.offerpilot.common.api.ResultCode;
 import com.offerpilot.common.exception.BusinessException;
 import com.offerpilot.common.storage.FileStorageService;
@@ -69,6 +70,7 @@ public class ResumeServiceImpl implements ResumeService {
     private final FileStorageService fileStorageService;
     private final UploadPolicyService uploadPolicyService;
     private final DocumentParserService documentParserService;
+    private final AdaptiveService adaptiveService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -118,6 +120,7 @@ public class ResumeServiceImpl implements ResumeService {
         }
 
         log.info("Resume uploaded: userId={}, resumeId={}, title={}", userId, resumeFile.getId(), resumeFile.getTitle());
+        adaptiveService.refreshAbilityProfile(userId);
         return buildDetail(resumeFile, loadProjects(resumeFile.getId()));
     }
 
@@ -190,6 +193,7 @@ public class ResumeServiceImpl implements ResumeService {
         file.setLastParsedAt(LocalDateTime.now());
         resumeFileMapper.updateById(file);
         replaceProjects(file, userId, snapshot.projects(), false);
+        adaptiveService.refreshAbilityProfile(userId);
         return buildDetail(file, loadProjects(file.getId()));
     }
 
@@ -215,6 +219,7 @@ public class ResumeServiceImpl implements ResumeService {
         }
         resumeFileMapper.updateById(file);
         replaceProjects(file, userId, parsedProjects, true);
+        adaptiveService.refreshAbilityProfile(userId);
         return buildDetail(file, loadProjects(file.getId()));
     }
 
@@ -238,6 +243,7 @@ public class ResumeServiceImpl implements ResumeService {
         resumeFileMapper.updateById(file);
 
         mergeProjectFollowUpDrafts(projects, normalizedRecommendations);
+        adaptiveService.refreshAbilityProfile(userId);
         return buildDetail(file, loadProjects(file.getId()));
     }
 
@@ -396,6 +402,7 @@ public class ResumeServiceImpl implements ResumeService {
         } catch (JsonProcessingException e) {
             throw new BusinessException(ResultCode.SERVER_ERROR.getCode(), "failed to restore version snapshot");
         }
+        adaptiveService.refreshAbilityProfile(userId);
         return buildDetail(file, loadProjects(file.getId()));
     }
 
