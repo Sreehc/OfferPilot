@@ -1459,7 +1459,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router'
 import { fetchApplicationBoardApi } from '@/api/applications'
 import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
 import {
@@ -1695,7 +1695,7 @@ const syncInterviewWorkspaceRoute = async (
     recordingReviewSessionId?: string
   } = {}
 ) => {
-  const nextQuery = { ...route.query } as Record<string, unknown>
+  const nextQuery: LocationQueryRaw = { ...route.query }
   delete nextQuery.jobPrep
   delete nextQuery.jobPrepSessionId
   delete nextQuery.copilotPrep
@@ -2334,7 +2334,6 @@ const hydrateInterviewWorkspaceFromRoute = async () => {
     recordingReviewSessionId
   } = resolveInterviewWorkspaceRouteState()
 
-  const hasJobPrepSeedContext = Boolean(jobPrepSessionId)
   const hasCopilotPrepSeedContext = Boolean(copilotPrepSessionId || jobPrepSessionId)
   const hasCopilotRealtimeSeedContext = Boolean(copilotRealtimeSessionId || copilotPrepSessionId || jobPrepSessionId)
 

@@ -242,11 +242,11 @@ public class DashboardServiceImpl implements DashboardService {
         }
         if (activeApplicationCount > 0) {
             return NextActionVO.builder()
-                    .key("follow_application")
-                    .title("继续推进当前投递")
-                    .description("先更新投递进度、补面试记录，避免信息断档。")
-                    .path("/applications")
-                    .reason("当前有真实投递在推进，优先处理最接近真实结果的链路。")
+                    .key("job_prep")
+                    .title("先做一轮 JD 定向备面")
+                    .description("围绕正在推进的岗位，先把 JD 要求、简历表达和面试追问拆成一轮正式备面结果。")
+                    .path("/interview?workspace=job-prep")
+                    .reason("当前有真实投递在推进，优先进入与岗位直接关联的备面工作区，而不是停留在泛化投递列表。")
                     .priority("P1")
                     .build();
         }

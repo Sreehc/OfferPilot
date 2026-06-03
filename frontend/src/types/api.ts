@@ -141,7 +141,7 @@ export interface NextStepSummary {
 }
 
 export interface NextAction {
-  key: 'upload_resume' | 'generate_plan' | 'complete_today_plan' | 'follow_application' | 'start_interview'
+  key: 'upload_resume' | 'generate_plan' | 'complete_today_plan' | 'job_prep' | 'follow_application' | 'start_interview'
   title: string
   description: string
   path: string

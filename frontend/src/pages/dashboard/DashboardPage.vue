@@ -103,7 +103,7 @@
             <section class="shell-section-card dashboard-card-panel dashboard-card-panel--compact dashboard-quick-panel p-4 sm:p-5">
               <div class="dashboard-section-head">
                 <div>
-                  <h3 class="dashboard-section-title">快速入口</h3>
+                  <h3 class="dashboard-section-title">主线入口</h3>
                 </div>
               </div>
 
@@ -202,6 +202,34 @@
                     <div class="dashboard-quick-card__title">{{ entry.label }}</div>
                     <div class="dashboard-quick-card__description">{{ entry.description }}</div>
                   </div>
+                </RouterLink>
+              </div>
+            </section>
+
+            <section class="shell-section-card dashboard-card-panel dashboard-card-panel--compact dashboard-loop-panel p-4 sm:p-5">
+              <div class="dashboard-section-head">
+                <div>
+                  <h3 class="dashboard-section-title">面试闭环</h3>
+                  <p class="dashboard-section-subtitle">让 JD 备面、Prep、实时阶段和录音复盘进入同一条工作流。</p>
+                </div>
+              </div>
+
+              <div class="dashboard-loop-grid">
+                <RouterLink
+                  v-for="entry in interviewWorkflowEntries"
+                  :key="entry.path"
+                  :to="entry.path"
+                  class="dashboard-loop-card"
+                >
+                  <div class="dashboard-loop-card__head">
+                    <span class="dashboard-loop-card__badge" :class="`dashboard-loop-card__badge--${entry.tone}`">
+                      {{ entry.stage }}
+                    </span>
+                    <span class="dashboard-loop-card__status">{{ entry.status }}</span>
+                  </div>
+                  <div class="dashboard-loop-card__title">{{ entry.label }}</div>
+                  <div class="dashboard-loop-card__description">{{ entry.description }}</div>
+                  <div class="dashboard-loop-card__hint">{{ entry.hint }}</div>
                 </RouterLink>
               </div>
             </section>
@@ -415,6 +443,16 @@ type DashboardQuickEntry = {
   tone: 'blue' | 'green' | 'violet' | 'indigo' | 'cyan' | 'sky'
 }
 
+type DashboardInterviewWorkflowEntry = {
+  stage: string
+  label: string
+  description: string
+  hint: string
+  status: string
+  path: string
+  tone: 'blue' | 'teal' | 'violet' | 'amber'
+}
+
 type DashboardProgressItem = {
   label: string
   value: number
@@ -482,7 +520,7 @@ const currentUser = ref<UserInfo | null>(storage.getUser())
 const weekDays = ['一', '二', '三', '四', '五', '六', '日']
 
 const quickEntries: DashboardQuickEntry[] = [
-  { label: '模拟面试', description: 'AI 全真模拟', path: '/interview', icon: 'interview', tone: 'blue' },
+  { label: '模拟面试', description: 'AI 全真模拟', path: '/interview?workspace=mock-interview', icon: 'interview', tone: 'blue' },
   { label: '知识库', description: '查看推荐资料和个人文档', path: '/knowledge', icon: 'knowledge', tone: 'green' },
   { label: '简历助手', description: '整理简历与面试提纲', path: '/resume', icon: 'resume', tone: 'violet' },
   { label: '学习计划', description: '定制学习路径', path: '/study-plan', icon: 'plan', tone: 'cyan' },
@@ -598,6 +636,51 @@ const dashboardAgentLink = computed(() => {
       ? `围绕“${dashboardNextAction.value.title}”统筹今天的训练与求职动作。`
       : '结合当前工作台状态，整理今天最值得推进的训练与求职动作。'
   })
+})
+const interviewWorkflowEntries = computed<DashboardInterviewWorkflowEntry[]>(() => {
+  const hasRecentInterview = overview.value.recentInterviews.length > 0
+  const hasWeakSignals = overview.value.weakPoints.length > 0 || (overview.value.reviewDebtCount ?? 0) > 0
+  const hasApplicationContext = applications.value.length > 0
+  const focusTopic = overview.value.weakPoints[0]?.categoryName || overview.value.suggestedFocus || '当前岗位方向'
+
+  return [
+    {
+      stage: 'JD 备面',
+      label: '定向拆解岗位要求',
+      description: '结合岗位信息、简历和投递记录，先补一轮针对性的备面草案。',
+      hint: hasApplicationContext ? '当前已有岗位上下文，可直接进入定向准备。' : '还没有投递记录时，也可以先手动填入 JD 做预演。',
+      status: hasApplicationContext ? '有岗位上下文' : '可手动开始',
+      path: '/interview?workspace=job-prep',
+      tone: 'blue'
+    },
+    {
+      stage: 'Copilot Prep',
+      label: '整理实时阶段提纲',
+      description: '把开场提纲、风险点和追问建议整理成实时阶段可直接消费的准备结果。',
+      hint: hasApplicationContext ? '建议先基于目标岗位准备开场和追问。' : '即使没有投递记录，也可以先用当前简历预演。',
+      status: hasApplicationContext ? '建议接续 JD 备面' : '可先独立准备',
+      path: '/interview?workspace=copilot-prep',
+      tone: 'teal'
+    },
+    {
+      stage: 'Realtime',
+      label: '进入实时 Copilot',
+      description: '承接 Prep 结果，连接实时阶段并记录事件时间线与面后复盘入口。',
+      hint: hasRecentInterview ? '最近已有面试记录，适合把实时阶段纳入正式工作流。' : '建议先完成 Prep，再进入实时阶段。',
+      status: hasRecentInterview ? '已有训练上下文' : '先做 Prep',
+      path: '/interview?workspace=copilot-live',
+      tone: 'violet'
+    },
+    {
+      stage: '录音复盘',
+      label: '上传真实录音做异步复盘',
+      description: '把真实音频转写、评分并回写成下一轮训练动作和画像证据。',
+      hint: hasWeakSignals ? `当前弱项集中在 ${focusTopic}，适合用真实录音补证据。` : '当你需要复盘真实表达状态时，这里会承接整条异步链路。',
+      status: hasWeakSignals ? '建议补证据' : '随时可用',
+      path: '/interview?workspace=recording-review',
+      tone: 'amber'
+    }
+  ]
 })
 const todayFormatted = computed(() =>
   new Intl.DateTimeFormat('zh-CN', {
@@ -744,7 +827,7 @@ const fallbackTasks = computed<StudyPlanTaskItem[]>(() => {
       module: 'interview',
       title: '完成一次模拟面试训练',
       description: '',
-      actionPath: '/interview',
+      actionPath: '/interview?workspace=mock-interview',
       estimatedMinutes: 30,
       priority: 'high',
       status: overview.value.recentInterviews.length > 0 ? 'completed' : 'pending'
@@ -1330,7 +1413,15 @@ onMounted(() => {
   text-wrap: balance;
 }
 
+.dashboard-section-subtitle {
+  margin-top: 0.22rem;
+  color: #7f8da4;
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
 .dashboard-quick-grid,
+.dashboard-loop-grid,
 .dashboard-summary-grid,
 .dashboard-recommend-grid {
   display: grid;
@@ -1344,6 +1435,10 @@ onMounted(() => {
 .dashboard-summary-grid {
   grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr);
   align-items: stretch;
+}
+
+.dashboard-loop-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .dashboard-summary-grid > .dashboard-card-panel {
@@ -1361,6 +1456,7 @@ onMounted(() => {
 }
 
 .dashboard-quick-card,
+.dashboard-loop-card,
 .dashboard-recommend-card {
   display: flex;
   min-width: 0;
@@ -1384,6 +1480,7 @@ onMounted(() => {
 }
 
 .dashboard-quick-card:hover,
+.dashboard-loop-card:hover,
 .dashboard-recommend-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 16px rgba(35, 58, 110, 0.045);
@@ -1444,6 +1541,78 @@ onMounted(() => {
   color: #8b98ab;
   font-size: 0.68rem;
   line-height: 1.2;
+}
+
+.dashboard-loop-card {
+  min-height: 144px;
+  flex-direction: column;
+  gap: 0.55rem;
+  justify-content: space-between;
+  padding: 0.9rem 0.95rem;
+  background: linear-gradient(180deg, rgba(248, 251, 255, 0.98), rgba(255, 255, 255, 0.98));
+}
+
+.dashboard-loop-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.dashboard-loop-card__badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.32rem 0.58rem;
+}
+
+.dashboard-loop-card__badge--blue {
+  background: rgba(63, 103, 255, 0.1);
+  color: #3f67ff;
+}
+
+.dashboard-loop-card__badge--teal {
+  background: rgba(29, 160, 170, 0.12);
+  color: #11838b;
+}
+
+.dashboard-loop-card__badge--violet {
+  background: rgba(116, 92, 255, 0.12);
+  color: #6952f0;
+}
+
+.dashboard-loop-card__badge--amber {
+  background: rgba(255, 174, 76, 0.15);
+  color: #bf6f16;
+}
+
+.dashboard-loop-card__status {
+  color: #6e7f96;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+.dashboard-loop-card__title {
+  color: #152b4b;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.dashboard-loop-card__description {
+  color: #60728d;
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+.dashboard-loop-card__hint {
+  color: #446185;
+  font-size: 0.74rem;
+  line-height: 1.55;
 }
 
 .dashboard-interview-card {
@@ -1884,7 +2053,8 @@ onMounted(() => {
     grid-template-columns: minmax(0, 1fr) 390px;
   }
 
-  .dashboard-quick-grid {
+  .dashboard-quick-grid,
+  .dashboard-loop-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
@@ -1902,7 +2072,8 @@ onMounted(() => {
 
 @media (max-width: 1100px) {
   .dashboard-summary-grid,
-  .dashboard-quick-grid {
+  .dashboard-quick-grid,
+  .dashboard-loop-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1933,6 +2104,7 @@ onMounted(() => {
   }
 
   .dashboard-quick-grid,
+  .dashboard-loop-grid,
   .dashboard-summary-grid,
   .dashboard-recommend-grid,
   .dashboard-interview-card__stats {
@@ -1947,18 +2119,22 @@ onMounted(() => {
     order: 2;
   }
 
-  .dashboard-hero {
+  .dashboard-loop-panel {
     order: 3;
+  }
+
+  .dashboard-hero {
+    order: 4;
     gap: 0.75rem;
     padding: 1rem 1rem 0.92rem;
   }
 
   .dashboard-summary-grid {
-    order: 4;
+    order: 5;
   }
 
   .dashboard-recommend-panel {
-    order: 5;
+    order: 6;
   }
 
   .dashboard-hero__title {
