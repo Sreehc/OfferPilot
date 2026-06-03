@@ -13,12 +13,18 @@ export interface AgentRunDecisionPayload {
   note?: string
 }
 
+export interface AgentRunListQuery {
+  agentType?: string
+  status?: string
+  triggerSource?: string
+}
+
 export const createAgentRunApi = (payload: AgentRunCreatePayload) => {
   return request<AgentRun>({ url: '/agent/runs', method: 'post', data: payload })
 }
 
-export const fetchAgentRunsApi = () => {
-  return request<AgentRun[]>({ url: '/agent/runs', method: 'get' })
+export const fetchAgentRunsApi = (params?: AgentRunListQuery) => {
+  return request<AgentRun[]>({ url: '/agent/runs', method: 'get', params })
 }
 
 export const fetchAgentRunDetailApi = (runId: string) => {

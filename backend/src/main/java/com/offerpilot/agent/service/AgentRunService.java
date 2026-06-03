@@ -8,7 +8,7 @@ public interface AgentRunService {
 
     AgentRunVO createRun(Long userId, AgentRunCreateRequest request);
 
-    List<AgentRunVO> listRuns(Long userId);
+    List<AgentRunVO> listRuns(Long userId, String agentType, String status, String triggerSource);
 
     AgentRunVO detail(Long userId, Long runId);
 

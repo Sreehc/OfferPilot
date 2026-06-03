@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -37,8 +38,11 @@ public class AgentRunController {
 
     @Operation(summary = "agent run 列表", description = "查看当前用户最近发起的 run")
     @GetMapping
-    public Result<List<AgentRunVO>> list() {
-        return Result.success(agentRunService.listRuns(currentUserId()));
+    public Result<List<AgentRunVO>> list(
+            @Parameter(description = "按 agent 类型筛选") @RequestParam(required = false) String agentType,
+            @Parameter(description = "按 run 状态筛选") @RequestParam(required = false) String status,
+            @Parameter(description = "按触发来源筛选") @RequestParam(required = false) String triggerSource) {
+        return Result.success(agentRunService.listRuns(currentUserId(), agentType, status, triggerSource));
     }
 
     @Operation(summary = "agent run 详情", description = "查看单个 run 的结果和下一步动作")

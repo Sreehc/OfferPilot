@@ -126,6 +126,27 @@
           </div>
         </div>
 
+        <div class="mt-5 grid gap-3 md:grid-cols-3">
+          <div>
+            <label class="flat-field-label">筛选 Agent</label>
+            <el-select v-model="filters.agentType" class="w-full" clearable placeholder="全部 agent" @change="handleFilterChange">
+              <el-option v-for="item in agentOptions" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+          </div>
+          <div>
+            <label class="flat-field-label">筛选状态</label>
+            <el-select v-model="filters.status" class="w-full" clearable placeholder="全部状态" @change="handleFilterChange">
+              <el-option v-for="item in runStatusOptions" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+          </div>
+          <div>
+            <label class="flat-field-label">筛选来源</label>
+            <el-select v-model="filters.triggerSource" class="w-full" clearable placeholder="全部来源" @change="handleFilterChange">
+              <el-option v-for="item in triggerOptions" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+          </div>
+        </div>
+
         <div v-if="loading" class="mt-6 flex h-[280px] items-center justify-center">
           <div class="text-center">
             <div class="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
@@ -135,8 +156,8 @@
         <div v-else-if="!runs.length" class="mt-6">
           <EmptyState
             icon="clipboard"
-            title="还没有 Agent Run"
-            description="先从上面的统一入口发起一个任务，这里会开始沉淀最近执行记录。"
+            :title="hasActiveFilters ? '当前筛选下没有 Run' : '还没有 Agent Run'"
+            :description="hasActiveFilters ? '换一个筛选条件，或者先清空筛选再查看全部 run。' : '先从上面的统一入口发起一个任务，这里会开始沉淀最近执行记录。'"
             compact
           />
         </div>
@@ -372,7 +393,8 @@ import {
   createAgentRunApi,
   fetchAgentRunDetailApi,
   fetchAgentRunsApi,
-  rejectAgentRunApi
+  rejectAgentRunApi,
+  type AgentRunListQuery
 } from '@/api/agent'
 import EmptyState from '@/components/EmptyState.vue'
 import { PRODUCT_PAGE_NAMES } from '@/constants/productCopy'
@@ -411,6 +433,15 @@ const triggerOptions = [
   { label: PRODUCT_PAGE_NAMES.resume, value: 'resume' },
   { label: PRODUCT_PAGE_NAMES.applications, value: 'applications' },
   { label: 'Provider 设置', value: 'settings' }
+] as const
+
+const runStatusOptions = [
+  { label: '待审批', value: 'pending_approval' },
+  { label: '已审批', value: 'approved' },
+  { label: '已拒绝', value: 'rejected' },
+  { label: '已取消', value: 'canceled' },
+  { label: '已完成', value: 'completed' },
+  { label: '执行失败', value: 'failed' }
 ] as const
 
 const contextRefOptions = [
@@ -511,11 +542,19 @@ const form = reactive({
   contextRefs: [] as string[]
 })
 
+const filters = reactive({
+  agentType: '',
+  status: '',
+  triggerSource: ''
+})
+
 const runs = ref<AgentRun[]>([])
 const selectedRun = ref<AgentRun | null>(null)
 const loading = ref(false)
 const creating = ref(false)
 const actionLoading = ref('')
+
+const hasActiveFilters = ref(false)
 
 const parseQueryList = (value: unknown) => {
   if (Array.isArray(value)) {
@@ -535,8 +574,16 @@ const resetForm = () => {
   form.userPrompt = defaultForm.userPrompt
 }
 
+const syncFiltersFromRoute = () => {
+  filters.agentType = typeof route.query.listAgentType === 'string' ? route.query.listAgentType.trim() : ''
+  filters.status = typeof route.query.listStatus === 'string' ? route.query.listStatus.trim() : ''
+  filters.triggerSource = typeof route.query.listTriggerSource === 'string' ? route.query.listTriggerSource.trim() : ''
+  hasActiveFilters.value = Boolean(filters.agentType || filters.status || filters.triggerSource)
+}
+
 const applyRoutePrefill = () => {
   resetForm()
+  syncFiltersFromRoute()
   if (typeof route.query.agentType === 'string' && route.query.agentType.trim()) {
     form.agentType = route.query.agentType.trim()
   }
@@ -562,10 +609,18 @@ const applyQuickStart = (item: QuickStart) => {
   form.userPrompt = item.userPrompt
 }
 
+const buildRunListQuery = (): AgentRunListQuery | undefined => {
+  const query: AgentRunListQuery = {}
+  if (filters.agentType) query.agentType = filters.agentType
+  if (filters.status) query.status = filters.status
+  if (filters.triggerSource) query.triggerSource = filters.triggerSource
+  return Object.keys(query).length ? query : undefined
+}
+
 const loadRuns = async (selectedId?: string) => {
   loading.value = true
   try {
-    const response = await fetchAgentRunsApi()
+    const response = await fetchAgentRunsApi(buildRunListQuery())
     runs.value = response.data
     const preferred = selectedId
       ? runs.value.find((item) => item.id === selectedId)
@@ -584,6 +639,11 @@ const loadRuns = async (selectedId?: string) => {
   } finally {
     loading.value = false
   }
+}
+
+const handleFilterChange = async () => {
+  hasActiveFilters.value = Boolean(filters.agentType || filters.status || filters.triggerSource)
+  await loadRuns()
 }
 
 const selectRun = async (run: AgentRun) => {
@@ -900,6 +960,7 @@ onMounted(() => {
 
 watch(() => route.fullPath, () => {
   applyRoutePrefill()
+  void loadRuns(selectedRun.value?.id)
 })
 </script>
 

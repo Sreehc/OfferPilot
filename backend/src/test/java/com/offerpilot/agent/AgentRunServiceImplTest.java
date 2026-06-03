@@ -10,6 +10,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.offerpilot.adaptive.vo.AbilityProfileVO;
@@ -108,6 +109,42 @@ class AgentRunServiceImplTest {
             lastInsertedRun = run;
             return 1;
         }).when(agentRunMapper).updateById(any(AgentRun.class));
+    }
+
+    @Test
+    void listRuns_appliesAgentStatusAndTriggerFilters() {
+        AgentRun matchedRun = new AgentRun();
+        matchedRun.setId(2001L);
+        matchedRun.setUserId(1L);
+        matchedRun.setAgentType("job_prep");
+        matchedRun.setTriggerSource("interview");
+        matchedRun.setStatus("pending_approval");
+        matchedRun.setTitle("JD 备面代理");
+        matchedRun.setSummary("已整理当前岗位的备面重点。");
+        matchedRun.setContextRefsJson("[]");
+        matchedRun.setResultPayloadJson("{\"recommendations\":[],\"checkpoints\":[]}");
+        matchedRun.setUpdateTime(LocalDateTime.of(2026, 6, 3, 9, 0));
+
+        AgentRun ignoredRun = new AgentRun();
+        ignoredRun.setId(2002L);
+        ignoredRun.setUserId(1L);
+        ignoredRun.setAgentType("study_planner");
+        ignoredRun.setTriggerSource("analytics");
+        ignoredRun.setStatus("completed");
+        ignoredRun.setTitle("学习计划代理");
+        ignoredRun.setSummary("这条 run 不应命中过滤条件。");
+        ignoredRun.setContextRefsJson("[]");
+        ignoredRun.setResultPayloadJson("{\"recommendations\":[],\"checkpoints\":[]}");
+        ignoredRun.setUpdateTime(LocalDateTime.of(2026, 6, 3, 8, 0));
+
+        when(agentRunMapper.selectList(any())).thenReturn(List.of(matchedRun, ignoredRun));
+
+        List<AgentRunVO> result = agentRunService.listRuns(1L, "job_prep", "pending_approval", "interview");
+
+        assertEquals(1, result.size());
+        assertEquals("job_prep", result.get(0).getAgentType());
+        assertEquals("pending_approval", result.get(0).getStatus());
+        assertEquals("interview", result.get(0).getTriggerSource());
     }
 
     @Test
