@@ -612,7 +612,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter, type LocationQueryRaw, type RouteLocationRaw } from 'vue-router'
 import {
   fetchInterviewResumeApi,
   fetchLatestResumeApi,
@@ -715,6 +715,24 @@ const appendSeedQuery = (query: URLSearchParams) => {
   return query
 }
 
+const buildSeededAgentWorkbenchLocation = (
+  prefill: Parameters<typeof buildAgentWorkbenchLocation>[0]
+): RouteLocationRaw => {
+  const location = buildAgentWorkbenchLocation(prefill) as {
+    path: string
+    query?: LocationQueryRaw
+  }
+  return {
+    path: location.path,
+    query: {
+      ...(location.query || {}),
+      ...(seededTopic.value ? { seedTopic: seededTopic.value } : {}),
+      ...(seededWorkflow.value ? { seedWorkflow: seededWorkflow.value } : {}),
+      ...(seededNote.value ? { seedNote: seededNote.value } : {})
+    }
+  }
+}
+
 const flattenedRisks = computed(() => {
   if (!currentResume.value) return []
   return [...new Set(currentResume.value.projects.flatMap((item) => item.riskHints || []))]
@@ -748,7 +766,7 @@ const resumeCoachAgentLink = computed(() => {
   } else {
     contextRefs.unshift('resume:latest')
   }
-  return buildAgentWorkbenchLocation({
+  return buildSeededAgentWorkbenchLocation({
     agentType: 'resume_coach',
     triggerSource: 'resume',
     contextRefs: seededTopic.value ? [...contextRefs, `analytics:topic-name:${seededTopic.value}`] : contextRefs,

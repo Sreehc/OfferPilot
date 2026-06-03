@@ -240,12 +240,12 @@
                   <h3 class="dashboard-section-title">工作流接续</h3>
                   <p class="dashboard-section-subtitle">待审批、转写处理中或未完成的会话会优先回到这里。</p>
                 </div>
-                <RouterLink to="/agent" class="accent-link touch-link text-sm font-semibold">查看 Agent</RouterLink>
+                <RouterLink :to="dashboardAgentLink" class="accent-link touch-link text-sm font-semibold">查看 Agent</RouterLink>
               </div>
 
               <div v-if="workflowContinuations.length" class="dashboard-continuation-grid">
                 <RouterLink
-                  v-for="entry in workflowContinuations"
+                  v-for="entry in workflowContinuationEntries"
                   :key="`${entry.key}-${entry.path}`"
                   :to="entry.path"
                   class="dashboard-loop-card dashboard-continuation-card"
@@ -569,6 +569,24 @@ const buildSeededPath = (path: string, workflow?: string, note?: string): RouteL
   query: buildSeedQuery(workflow, note)
 })
 
+const buildSeededAgentWorkbenchLocation = (
+  prefill: Parameters<typeof buildAgentWorkbenchLocation>[0],
+  workflow = 'dashboard',
+  note?: string
+): RouteLocationRaw => {
+  const location = buildAgentWorkbenchLocation(prefill) as {
+    path: string
+    query?: Record<string, string>
+  }
+  return {
+    path: location.path,
+    query: {
+      ...(location.query || {}),
+      ...buildSeedQuery(workflow, note)
+    }
+  }
+}
+
 const buildInterviewWorkspaceLink = (
   workspace: 'mock-interview' | 'job-prep' | 'copilot-prep' | 'copilot-live' | 'recording-review',
   note?: string
@@ -743,15 +761,21 @@ const dashboardAgentLink = computed(() => {
   if (applications.value.length) {
     contextRefs.push('application:board')
   }
-  return buildAgentWorkbenchLocation({
+  return buildSeededAgentWorkbenchLocation({
     agentType: 'coordinator',
     triggerSource: 'dashboard',
     contextRefs,
     userPrompt: dashboardNextAction.value?.title
       ? `围绕“${dashboardNextAction.value.title}”统筹今天的训练与求职动作。`
       : '结合当前工作台状态，整理今天最值得推进的训练与求职动作。'
-  })
+  }, 'dashboard', dashboardSeedTopic.value ? `当前从工作台发起，优先围绕「${dashboardSeedTopic.value}」统筹下一步动作。` : undefined)
 })
+const workflowContinuationEntries = computed<DashboardContinuationEntry[]>(() =>
+  workflowContinuations.value.map((entry) => ({
+    ...entry,
+    path: appendDashboardSeedToPath(entry.path)
+  }))
+)
 const workflowContinuations = computed<DashboardContinuationEntry[]>(() => overview.value.workflowContinuations || [])
 const interviewWorkflowEntries = computed<DashboardInterviewWorkflowEntry[]>(() => {
   const hasRecentInterview = overview.value.recentInterviews.length > 0

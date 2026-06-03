@@ -309,7 +309,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, type LocationQueryRaw, type RouteLocationRaw } from 'vue-router'
 import { createJobApplicationApi, fetchApplicationBoardApi } from '@/api/applications'
 import { EMPTY_STATE_COPY } from '@/constants/productCopy'
 import { fetchResumeListApi } from '@/api/resume'
@@ -372,6 +372,24 @@ const appendSeedQuery = (query: URLSearchParams) => {
     query.set('seedNote', seededNote.value)
   }
   return query
+}
+
+const buildSeededAgentWorkbenchLocation = (
+  prefill: Parameters<typeof buildAgentWorkbenchLocation>[0]
+): RouteLocationRaw => {
+  const location = buildAgentWorkbenchLocation(prefill) as {
+    path: string
+    query?: LocationQueryRaw
+  }
+  return {
+    path: location.path,
+    query: {
+      ...(location.query || {}),
+      ...(seededTopic.value ? { seedTopic: seededTopic.value } : {}),
+      ...(seededWorkflow.value ? { seedWorkflow: seededWorkflow.value } : {}),
+      ...(seededNote.value ? { seedNote: seededNote.value } : {})
+    }
+  }
 }
 
 const statuses = computed(() => {
@@ -439,7 +457,7 @@ const applicationBoardAgentLink = computed(() => {
   if (currentFocus.value?.id) {
     contextRefs.unshift(`application:${currentFocus.value.id}`)
   }
-  return buildAgentWorkbenchLocation({
+  return buildSeededAgentWorkbenchLocation({
     agentType: 'application_strategist',
     triggerSource: 'applications',
     contextRefs,

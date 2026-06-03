@@ -217,7 +217,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter, type LocationQueryRaw, type RouteLocationRaw } from 'vue-router'
 import { interviewDetailApi } from '@/api/interview'
 import { ERROR_COPY } from '@/constants/productCopy'
 import type { InterviewDetail } from '@/types/api'
@@ -300,6 +300,24 @@ const appendSeedQuery = (query: URLSearchParams) => {
   return query
 }
 
+const buildSeededAgentWorkbenchLocation = (
+  prefill: Parameters<typeof buildAgentWorkbenchLocation>[0]
+): RouteLocationRaw => {
+  const location = buildAgentWorkbenchLocation(prefill) as {
+    path: string
+    query?: LocationQueryRaw
+  }
+  return {
+    path: location.path,
+    query: {
+      ...(location.query || {}),
+      ...(seededTopic.value ? { seedTopic: seededTopic.value } : {}),
+      ...(seededWorkflow.value ? { seedWorkflow: seededWorkflow.value } : {}),
+      ...(seededNote.value ? { seedNote: seededNote.value } : {})
+    }
+  }
+}
+
 const sessionId = () => String(route.params.id || '')
 const buildInterviewWorkspaceLink = (workspace: 'mock-interview' | 'recording-review') => {
   const query = appendSeedQuery(new URLSearchParams({ workspace }))
@@ -330,7 +348,7 @@ const interviewReviewAgentLink = computed(() => {
   if (detail.value?.contextSource?.type === 'resume' || detail.value?.contextSource?.type === 'project') {
     contextRefs.push('resume:latest')
   }
-  return buildAgentWorkbenchLocation({
+  return buildSeededAgentWorkbenchLocation({
     agentType: 'interview_review',
     triggerSource: 'interview',
     contextRefs,
@@ -347,7 +365,7 @@ const interviewPlanRefreshLink = computed(() => {
   } else {
     contextRefs.unshift('interview:latest')
   }
-  return buildAgentWorkbenchLocation({
+  return buildSeededAgentWorkbenchLocation({
     agentType: 'study_planner',
     triggerSource: 'interview',
     contextRefs,
