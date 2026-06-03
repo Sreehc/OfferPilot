@@ -21,6 +21,61 @@
       </div>
     </section>
 
+    <section v-if="!loading" class="shell-section-card p-5 sm:p-6">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p class="section-kicker">能力影响</p>
+          <h3 class="mt-2 text-2xl font-semibold tracking-[-0.03em] text-ink">
+            当前配置会影响哪些能力
+          </h3>
+          <p class="mt-2 max-w-3xl text-sm leading-7 text-secondary">
+            这里直接映射训练闭环、JD 备面、录音复盘和实时 Copilot 的可用性，避免只看到 provider 状态却不知道会影响哪条链路。
+          </p>
+        </div>
+        <div class="provider-capability-summary">
+          <span class="detail-pill">可用 {{ capabilityStatusSummary.ready }}</span>
+          <span class="detail-pill">降级 {{ capabilityStatusSummary.degraded }}</span>
+          <span class="detail-pill">待补齐 {{ capabilityStatusSummary.blocked }}</span>
+        </div>
+      </div>
+
+      <div class="provider-capability-grid mt-5">
+        <article
+          v-for="capability in capabilityCards"
+          :key="capability.key"
+          class="provider-capability-card"
+          :class="`provider-capability-card--${capability.status}`"
+        >
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p class="text-sm font-semibold text-ink">{{ capability.label }}</p>
+              <p class="mt-2 text-sm leading-6 text-secondary">{{ capability.description }}</p>
+            </div>
+            <span class="provider-status-badge" :class="`provider-status-badge--${capability.status}`">
+              {{ capabilityCardStatusLabel(capability.status) }}
+            </span>
+          </div>
+
+          <div class="mt-4 flex flex-wrap gap-2">
+            <span
+              v-for="scope in capability.providerScopes"
+              :key="`${capability.key}-${scope}`"
+              class="provider-impact-pill"
+              :class="providerScopePillClass(scope, capability.requiredScopes.includes(scope))"
+            >
+              {{ providerScopeLabel(scope) }}{{ capability.requiredScopes.includes(scope) ? ' / 关键' : ' / 增强' }}
+            </span>
+          </div>
+
+          <p class="mt-4 text-sm leading-6 text-primary">{{ capability.summary }}</p>
+
+          <ul v-if="capability.gaps.length" class="provider-impact-list mt-3">
+            <li v-for="gap in capability.gaps" :key="gap">{{ gap }}</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
     <div v-if="loading" class="provider-grid">
       <article
         v-for="item in 3"
@@ -168,7 +223,7 @@
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import {
   checkProviderConfigsApi,
   fetchProviderConfigsApi,
@@ -178,6 +233,17 @@ import {
 import type { ProviderScope, UserProviderConfigItem } from '@/types/api'
 
 type ProviderDraft = ProviderConfigUpdateItemPayload
+type CapabilityCardStatus = 'ready' | 'degraded' | 'missing'
+type CapabilityCard = {
+  key: string
+  label: string
+  description: string
+  providerScopes: ProviderScope[]
+  requiredScopes: ProviderScope[]
+  status: CapabilityCardStatus
+  summary: string
+  gaps: string[]
+}
 
 const loading = ref(true)
 const savingScope = ref<ProviderScope | ''>('')
@@ -223,6 +289,139 @@ const ensureDraft = (scope: ProviderScope) => {
   }
   return draftByScope[scope]
 }
+
+const providerConfigMap = computed<Record<ProviderScope, UserProviderConfigItem | undefined>>(() => {
+  const entries = configs.value.map((item) => [item.scope, item] as const)
+  return Object.fromEntries(entries) as Record<ProviderScope, UserProviderConfigItem | undefined>
+})
+
+const isProviderReadyForCapability = (scope: ProviderScope) => {
+  const item = providerConfigMap.value[scope]
+  return item?.status === 'ready' || item?.status === 'saved'
+}
+
+const providerScopeLabel = (scope: ProviderScope) => {
+  switch (scope) {
+    case 'llm':
+      return '主模型'
+    case 'embedding':
+      return '向量检索'
+    case 'asr':
+      return '语音识别'
+    case 'search':
+      return '联网搜索'
+    case 'oss':
+      return '对象存储'
+    case 'voiceprint':
+      return '声纹识别'
+    default:
+      return scope
+  }
+}
+
+const buildCapabilityCard = (
+  key: string,
+  label: string,
+  description: string,
+  providerScopes: ProviderScope[],
+  requiredScopes: ProviderScope[],
+  fallbackReadySummary: string,
+  degradedSummary: string,
+  blockedSummary: string
+): CapabilityCard => {
+  const missingRequired = requiredScopes.filter((scope) => !isProviderReadyForCapability(scope))
+  const optionalScopes = providerScopes.filter((scope) => !requiredScopes.includes(scope))
+  const missingOptional = optionalScopes.filter((scope) => !isProviderReadyForCapability(scope))
+  const gaps = [
+    ...missingRequired.map((scope) => `${providerScopeLabel(scope)} 还没就绪，会直接阻断这条能力链路。`),
+    ...missingOptional.map((scope) => `${providerScopeLabel(scope)} 未配置，能力可继续但会降级。`)
+  ]
+
+  if (missingRequired.length) {
+    return {
+      key,
+      label,
+      description,
+      providerScopes,
+      requiredScopes,
+      status: 'missing',
+      summary: blockedSummary,
+      gaps
+    }
+  }
+  if (missingOptional.length) {
+    return {
+      key,
+      label,
+      description,
+      providerScopes,
+      requiredScopes,
+      status: 'degraded',
+      summary: degradedSummary,
+      gaps
+    }
+  }
+  return {
+    key,
+    label,
+    description,
+    providerScopes,
+    requiredScopes,
+    status: 'ready',
+    summary: fallbackReadySummary,
+    gaps
+  }
+}
+
+const capabilityCards = computed<CapabilityCard[]>(() => [
+  buildCapabilityCard(
+    'job_prep',
+    'JD 备面',
+    '围绕岗位 JD、简历和投递上下文生成针对性的备面重点与会前清单。',
+    ['llm', 'search'],
+    ['llm'],
+    '当前 JD 备面链路可完整使用，包括岗位研究和会前重点整理。',
+    'JD 备面仍可运行，但公司背景研究和岗位情报会降级。',
+    '主模型未就绪，JD 备面当前无法生成有效结果。'
+  ),
+  buildCapabilityCard(
+    'recording_review',
+    '录音复盘',
+    '把真实面试录音转成转写、弱点提炼、训练动作和画像回写。',
+    ['llm', 'asr', 'oss'],
+    ['llm', 'asr'],
+    '当前录音复盘链路可完整使用，包括转写、复盘和训练建议。',
+    '录音复盘可继续，但长音频存储和上传承载能力会降级。',
+    '录音复盘缺少关键依赖，当前无法稳定完成转写和复盘。'
+  ),
+  buildCapabilityCard(
+    'realtime_copilot',
+    '实时 Copilot',
+    '承接 Copilot Prep、实时追问辅助和面后复盘入口，是最依赖 provider 完整性的链路。',
+    ['llm', 'asr', 'search', 'voiceprint'],
+    ['llm', 'asr', 'search'],
+    '当前实时 Copilot 可完整使用，包括现场转写、背景检索和追问辅助。',
+    '实时 Copilot 仍可进入，但说话人区分或部分增强能力会降级。',
+    '实时 Copilot 缺少关键依赖，当前不建议进入实时阶段。'
+  ),
+  buildCapabilityCard(
+    'profile_loop',
+    '训练画像与长期闭环',
+    '支撑训练结果回写、知识检索、画像分析和下一轮训练刷新。',
+    ['llm', 'embedding'],
+    ['llm'],
+    '当前训练画像与长期闭环已具备基础能力，可继续承接训练结果和画像分析。',
+    '训练画像可继续，但知识检索和向量召回能力会降级。',
+    '主模型未就绪，画像分析和下一轮训练刷新无法稳定生成。'
+  )
+])
+
+const capabilityStatusSummary = computed(() => capabilityCards.value.reduce((summary, item) => {
+  if (item.status === 'ready') summary.ready += 1
+  else if (item.status === 'degraded') summary.degraded += 1
+  else summary.blocked += 1
+  return summary
+}, { ready: 0, degraded: 0, blocked: 0 }))
 
 const loadConfigs = async () => {
   loading.value = true
@@ -278,6 +477,17 @@ const statusLabel = (status: string) => {
   return '未配置'
 }
 
+const capabilityCardStatusLabel = (status: CapabilityCardStatus) => {
+  if (status === 'ready') return '可完整使用'
+  if (status === 'degraded') return '可降级运行'
+  return '待补齐'
+}
+
+const providerScopePillClass = (scope: ProviderScope, required: boolean) => {
+  const status = isProviderReadyForCapability(scope) ? 'ready' : required ? 'missing' : 'degraded'
+  return `provider-impact-pill--${status}`
+}
+
 const formatDateTime = (value?: string) => {
   if (!value) return '尚未检查'
   return new Intl.DateTimeFormat('zh-CN', {
@@ -301,6 +511,74 @@ onMounted(loadConfigs)
 .provider-grid {
   display: grid;
   gap: 1rem;
+}
+
+.provider-capability-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.provider-capability-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.provider-capability-card {
+  border-radius: calc(var(--radius-md) - 2px);
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--panel-bg);
+  padding: 1rem;
+}
+
+.provider-capability-card--ready {
+  background:
+    linear-gradient(180deg, rgba(41, 163, 110, 0.06), transparent 52%),
+    var(--panel-bg);
+}
+
+.provider-capability-card--degraded {
+  background:
+    linear-gradient(180deg, rgba(203, 143, 33, 0.08), transparent 52%),
+    var(--panel-bg);
+}
+
+.provider-capability-card--missing {
+  background:
+    linear-gradient(180deg, rgba(148, 163, 184, 0.08), transparent 52%),
+    var(--panel-bg);
+}
+
+.provider-impact-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  border-radius: 999px;
+  padding: 0 0.75rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.provider-impact-pill--ready {
+  background: rgba(41, 163, 110, 0.12);
+  color: #1d7b52;
+}
+
+.provider-impact-pill--degraded {
+  background: rgba(203, 143, 33, 0.14);
+  color: #8c6110;
+}
+
+.provider-impact-pill--missing {
+  background: rgba(var(--bc-ink-rgb), 0.08);
+  color: var(--bc-ink-secondary);
+}
+
+.provider-impact-list {
+  display: grid;
+  gap: 0.55rem;
+  padding-left: 1rem;
+  color: var(--bc-ink-secondary);
 }
 
 .provider-card {
@@ -407,6 +685,10 @@ onMounted(loadConfigs)
 }
 
 @media (min-width: 1100px) {
+  .provider-capability-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .provider-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
