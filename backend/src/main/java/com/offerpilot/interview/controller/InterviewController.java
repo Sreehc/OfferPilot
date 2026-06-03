@@ -110,6 +110,12 @@ public class InterviewController {
         return Result.success(interviewJobPrepService.detail(currentUserId(), sessionId));
     }
 
+    @Operation(summary = "最近一次 JD 备面", description = "获取当前用户最近一次生成的 JD 备面会话")
+    @GetMapping("/job-prep/sessions/latest")
+    public Result<JobPrepSessionVO> latestJobPrepSession() {
+        return Result.success(interviewJobPrepService.latest(currentUserId()));
+    }
+
     @Operation(summary = "创建 Copilot Prep 会话", description = "根据 JD、简历、JD 备面和 provider readiness 生成会前 Prep 结果")
     @PostMapping("/copilot/prep-sessions")
     public Result<CopilotPrepSessionVO> createCopilotPrepSession(@Valid @RequestBody CopilotPrepSessionCreateRequest request) {
@@ -120,6 +126,12 @@ public class InterviewController {
     @GetMapping("/copilot/prep-sessions/{sessionId}")
     public Result<CopilotPrepSessionVO> copilotPrepSession(@Parameter(description = "会话 ID") @PathVariable Long sessionId) {
         return Result.success(interviewCopilotPrepService.detail(currentUserId(), sessionId));
+    }
+
+    @Operation(summary = "最近一次 Copilot Prep", description = "获取当前用户最近一次生成的 Copilot Prep 会话")
+    @GetMapping("/copilot/prep-sessions/latest")
+    public Result<CopilotPrepSessionVO> latestCopilotPrepSession() {
+        return Result.success(interviewCopilotPrepService.latest(currentUserId()));
     }
 
     @Operation(summary = "创建实时 Copilot 会话", description = "根据 Copilot Prep 结果创建实时阶段会话，供后续 WebSocket 连接使用")
@@ -134,6 +146,12 @@ public class InterviewController {
     public Result<CopilotRealtimeSessionVO> copilotRealtimeSession(
             @Parameter(description = "会话 ID") @PathVariable Long sessionId) {
         return Result.success(interviewCopilotRealtimeService.detail(currentUserId(), sessionId));
+    }
+
+    @Operation(summary = "最近一次实时 Copilot 会话", description = "获取当前用户最近一次实时 Copilot 会话状态")
+    @GetMapping("/copilot/realtime-sessions/latest")
+    public Result<CopilotRealtimeSessionVO> latestCopilotRealtimeSession() {
+        return Result.success(interviewCopilotRealtimeService.latest(currentUserId()));
     }
 
     @Operation(summary = "创建录音复盘", description = "上传真实面试录音并生成转写与结构化复盘结果")
@@ -169,6 +187,12 @@ public class InterviewController {
     @GetMapping("/recording-reviews/{sessionId}")
     public Result<RecordingReviewSessionVO> recordingReview(@Parameter(description = "会话 ID") @PathVariable Long sessionId) {
         return Result.success(interviewRecordingReviewService.detail(currentUserId(), sessionId));
+    }
+
+    @Operation(summary = "最近一次录音复盘", description = "获取当前用户最近一次录音复盘会话")
+    @GetMapping("/recording-reviews/latest")
+    public Result<RecordingReviewSessionVO> latestRecordingReview() {
+        return Result.success(interviewRecordingReviewService.latest(currentUserId()));
     }
 
     // ── Voice Interview Endpoints ──────────────────────────
