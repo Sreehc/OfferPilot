@@ -1065,6 +1065,9 @@ const resolveNextActionLabel = (run: AgentRun) => {
   if (nextActionPath.startsWith('/interview?workspace=copilot-live')) {
     return '前往实时 Copilot'
   }
+  if (nextActionPath.startsWith('/interview?workspace=recording-review')) {
+    return '前往录音复盘'
+  }
   if (nextActionPath.startsWith('/interview?workspace=mock-interview') || nextActionPath === '/interview') {
     return '前往模拟面试'
   }
@@ -1082,7 +1085,7 @@ const resolveNextActionLabel = (run: AgentRun) => {
     case 'application_strategist':
       return '前往投递页'
     case 'realtime_copilot':
-      return '前往 Copilot Prep'
+      return '前往实时 Copilot'
     default:
       return '前往下一步'
   }
