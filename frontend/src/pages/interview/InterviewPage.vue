@@ -665,6 +665,33 @@
                       </div>
                     </div>
 
+                    <div v-if="copilotRealtimeRecoveryVisible" class="copilot-prep-provider-alert">
+                      <p class="text-sm font-semibold text-ink">{{ copilotRealtimeRecoveryTitle }}</p>
+                      <p class="mt-2 text-sm leading-6 text-secondary">
+                        {{ copilotRealtimeRecoveryDescription }}
+                      </p>
+                      <div class="mt-4 flex flex-wrap gap-2">
+                        <el-button
+                          :loading="copilotRealtimeConnecting"
+                          type="primary"
+                          size="small"
+                          @click="handleConnectCopilotRealtime"
+                        >
+                          {{ copilotRealtimeSocketState === 'error' ? '重新连接' : '恢复连接' }}
+                        </el-button>
+                        <RouterLink :to="providerSettingsPath" class="hard-button-secondary inline-flex text-sm">
+                          去补 Provider 配置
+                        </RouterLink>
+                        <RouterLink
+                          v-if="copilotRealtimeSession.postInterviewReview"
+                          :to="copilotRealtimePostReviewLink"
+                          class="hard-button-secondary inline-flex text-sm"
+                        >
+                          转面后复盘
+                        </RouterLink>
+                      </div>
+                    </div>
+
                     <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr),minmax(0,1.2fr)]">
                       <div class="space-y-3">
                         <div>
@@ -918,9 +945,17 @@
                         <span class="recording-review-score__label">复盘分</span>
                         <span class="recording-review-score__value">{{ Math.round(recordingReviewSession.overallScore || 0) }}</span>
                       </div>
-                      <RouterLink :to="recordingReviewNextActionLink" class="hard-button-secondary text-sm">
-                        {{ recordingReviewSession.nextActionLabel || '转成训练动作' }}
-                      </RouterLink>
+                      <div class="flex flex-wrap justify-end gap-2">
+                        <RouterLink :to="recordingReviewNextActionLink" class="hard-button-secondary text-sm">
+                          {{ recordingReviewSession.nextActionLabel || '转成训练动作' }}
+                        </RouterLink>
+                        <RouterLink :to="recordingReviewPlanRefreshLink" class="hard-button-secondary text-sm">
+                          按结果刷新计划
+                        </RouterLink>
+                        <RouterLink :to="recordingReviewAnalyticsLink" class="hard-button-secondary text-sm">
+                          回到能力画像
+                        </RouterLink>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1902,6 +1937,32 @@ const copilotRealtimePostReviewLink = computed(() => {
   }
   return copilotRealtimeAgentLink.value
 })
+const copilotRealtimeRecoveryVisible = computed(() => {
+  if (!copilotRealtimeSession.value) return false
+  if (copilotRealtimeSession.value.status === 'completed') return false
+  return copilotRealtimeSocketState.value === 'error' || copilotRealtimeSocketState.value === 'disconnected'
+})
+const copilotRealtimeRecoveryTitle = computed(() => {
+  if (copilotRealtimeSocketState.value === 'error') return '实时连接失败'
+  if (copilotRealtimeSocketState.value === 'disconnected') return '实时连接已中断'
+  return '实时连接待恢复'
+})
+const copilotRealtimeRecoveryDescription = computed(() => {
+  if (copilotRealtimeSocketState.value === 'error') {
+    return '当前实时连接没有建立成功。可以先重试连接，或者先补齐 Provider 配置后再继续当前会话。'
+  }
+  return '当前会话已经断开，但这轮实时阶段还没有结束。可以直接恢复连接，或者转去面后复盘先消费已产生的上下文。'
+})
+const recordingReviewPlanRefreshLink = computed(() => {
+  if (!recordingReviewSession.value) return '/study-plan'
+  return buildAgentWorkbenchLocation({
+    agentType: 'study_planner',
+    triggerSource: 'recording_review',
+    contextRefs: [`interview:recording-review:${recordingReviewSession.value.id}`, 'analytics:profile', 'study-plan:active'],
+    userPrompt: '把这次录音复盘结果写回学习计划，并刷新下一轮训练任务。'
+  })
+})
+const recordingReviewAnalyticsLink = computed(() => '/analytics')
 
 const handleStart = async (reanswerQuestionId?: number) => {
   if (interviewContextPath.value !== 'general' && !selectedResumeId.value) {
