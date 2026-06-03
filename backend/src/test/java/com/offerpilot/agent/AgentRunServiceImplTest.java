@@ -728,6 +728,31 @@ class AgentRunServiceImplTest {
     }
 
     @Test
+    void createRun_realtimeCopilotUsesJobPrepContextForApprovalDraft() {
+        when(interviewJobPrepService.detail(1L, 62L)).thenReturn(JobPrepSessionVO.builder()
+                .id(62L)
+                .applicationId(8L)
+                .resumeFileId(15L)
+                .company("美团")
+                .jobTitle("资深 Java 工程师")
+                .jdText("负责 Java、Redis、Kafka 相关服务建设")
+                .nextActions(List.of("先把 JD 备面结果转成开场和追问清单。"))
+                .build());
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "realtime_copilot",
+                "interview_live",
+                List.of("interview:job-prep:62"),
+                "把这轮备面结果整理成会前 Prep"));
+
+        assertTrue(result.getSummary().contains("会前清单"));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("开场和追问清单")));
+        assertEquals("save_copilot_prep_draft", result.getApprovalActionType());
+        assertTrue(Boolean.TRUE.equals(result.getRequiresApproval()));
+        assertEquals("waiting", result.getApprovalStage());
+    }
+
+    @Test
     void createRun_realtimeCopilotUsesRealtimeSessionContext() {
         when(interviewCopilotRealtimeService.detail(1L, 88L)).thenReturn(CopilotRealtimeSessionVO.builder()
                 .id(88L)
@@ -964,6 +989,40 @@ class AgentRunServiceImplTest {
         assertEquals("approved", approved.getStatus());
         assertTrue(approved.getExecutionSummary().contains("正式 JD 备面草案"));
         assertTrue(approved.getExecutionSummary().contains("Java 后端"));
+    }
+
+    @Test
+    void approveRun_persistsCopilotPrepDraftViaDomainService() {
+        when(interviewJobPrepService.detail(1L, 62L)).thenReturn(JobPrepSessionVO.builder()
+                .id(62L)
+                .applicationId(8L)
+                .resumeFileId(15L)
+                .company("美团")
+                .jobTitle("资深 Java 工程师")
+                .jdText("负责 Java、Redis、Kafka 相关服务建设")
+                .nextActions(List.of("先把 JD 备面结果转成开场和追问清单。"))
+                .build());
+        when(interviewCopilotPrepService.createSession(any(), any())).thenReturn(CopilotPrepSessionVO.builder()
+                .id(501L)
+                .applicationId(8L)
+                .resumeFileId(15L)
+                .jobPrepSessionId(62L)
+                .company("美团")
+                .jobTitle("资深 Java 工程师")
+                .build());
+
+        AgentRunVO created = agentRunService.createRun(1L, request(
+                "realtime_copilot",
+                "interview_live",
+                List.of("interview:job-prep:62"),
+                "把这轮备面结果整理成会前 Prep"));
+
+        AgentRunVO approved = agentRunService.approveRun(1L, Long.valueOf(String.valueOf(created.getId())), null);
+
+        verify(interviewCopilotPrepService).createSession(any(), any());
+        assertEquals("approved", approved.getStatus());
+        assertTrue(approved.getExecutionSummary().contains("正式 Copilot Prep 草案"));
+        assertTrue(approved.getExecutionSummary().contains("资深 Java 工程师"));
     }
 
     @Test

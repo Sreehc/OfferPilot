@@ -24,6 +24,7 @@ import com.offerpilot.common.exception.BusinessException;
 import com.offerpilot.dashboard.dto.DashboardOverviewVO;
 import com.offerpilot.dashboard.dto.NextActionVO;
 import com.offerpilot.dashboard.service.DashboardService;
+import com.offerpilot.interview.dto.CopilotPrepSessionCreateRequest;
 import com.offerpilot.interview.dto.JobPrepSessionCreateRequest;
 import com.offerpilot.interview.service.InterviewCopilotPrepService;
 import com.offerpilot.interview.service.InterviewCopilotRealtimeService;
@@ -510,6 +511,11 @@ public class AgentRunServiceImpl implements AgentRunService {
         List<String> recommendations;
         String nextActionPath = "/interview";
         String nextActionAgentType = "realtime_copilot";
+        CopilotPrepDraftPayload copilotPrepDraftPayload = resolveCopilotPrepDraftPayload(snapshot, prompt);
+        boolean requiresApproval = false;
+        String approvalActionType = null;
+        String approvalSummary = null;
+        String approvalPayloadJson = null;
         if (snapshot.copilotRealtimeSession() != null) {
             CopilotRealtimeSessionVO realtimeSession = snapshot.copilotRealtimeSession();
             summary = realtimeCopilotSummary(realtimeSession);
@@ -544,12 +550,19 @@ public class AgentRunServiceImpl implements AgentRunService {
                     jobPrepSession.getNextActions(),
                     prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”纳入 Copilot Prep。") : List.of(),
                     contextRefsText(contextRefs, "Prep 阶段引用："));
+            requiresApproval = copilotPrepDraftPayload != null;
         } else {
             summary = "已生成会前准备清单，后续可以继续接实时建议流。";
             recommendations = mergeRecommendations(
                     List.of("先完成 Copilot Prep，再进入实时阶段。", "把当前岗位、简历和 JD 统一成可速读的会前提纲。"),
                     prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”纳入 Copilot Prep。") : List.of(),
                     contextRefsText(contextRefs, "Prep 阶段引用："));
+            requiresApproval = copilotPrepDraftPayload != null;
+        }
+        if (requiresApproval) {
+            approvalActionType = "save_copilot_prep_draft";
+            approvalSummary = "审批通过后会把这轮 Copilot Prep 建议写成正式会前草案，方便继续进入实时阶段。";
+            approvalPayloadJson = writeObject(copilotPrepDraftPayload, "{}");
         }
         return blueprint(
                 "实时 Copilot 代理",
@@ -559,10 +572,10 @@ public class AgentRunServiceImpl implements AgentRunService {
                         providerContextRecommendations("realtime_copilot", snapshot)),
                 List.of("会前准备", "连接实时会话", "面后复盘回写"),
                 resolveRunNextActionPath(nextActionPath, nextActionAgentType, snapshot),
-                false,
-                null,
-                null,
-                null);
+                requiresApproval,
+                approvalActionType,
+                approvalSummary,
+                approvalPayloadJson);
     }
 
     private RunBlueprint buildCoordinatorBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
@@ -591,6 +604,7 @@ public class AgentRunServiceImpl implements AgentRunService {
             case "refresh_study_plan" -> executeStudyPlanAction(userId, run.getApprovalPayloadJson());
             case "save_topic_retrospective_action" -> executeTopicRetrospectiveAction(userId, run.getApprovalPayloadJson());
             case "save_job_prep_draft" -> executeJobPrepDraftAction(userId, run.getApprovalPayloadJson());
+            case "save_copilot_prep_draft" -> executeCopilotPrepDraftAction(userId, run.getApprovalPayloadJson());
             case "save_resume_follow_up_draft" -> executeResumeFollowUpDraftAction(userId, run.getApprovalPayloadJson());
             case "save_application_strategy" -> executeApplicationStrategyAction(userId, run.getApprovalPayloadJson());
             case "save_recording_review_action" -> executeRecordingReviewAction(userId, run.getApprovalPayloadJson());
@@ -650,6 +664,25 @@ public class AgentRunServiceImpl implements AgentRunService {
         JobPrepSessionVO session = interviewJobPrepService.createSession(userId, request);
         String title = firstNonBlank(session.getJobTitle(), payload.jobTitle(), "当前岗位");
         return new ExecutionResult("已生成正式 JD 备面草案《" + title + "》，可以继续在面试页查看和消费。");
+    }
+
+    private ExecutionResult executeCopilotPrepDraftAction(Long userId, String payloadJson) {
+        CopilotPrepDraftPayload payload = readObject(payloadJson, CopilotPrepDraftPayload.class);
+        if (payload == null || (!StringUtils.hasText(payload.jobTitle()) && payload.applicationId() == null
+                && payload.jobPrepSessionId() == null && payload.resumeId() == null)) {
+            return new ExecutionResult("当前缺少可写入的 Copilot Prep 内容，暂未生成正式草案。");
+        }
+        CopilotPrepSessionCreateRequest request = new CopilotPrepSessionCreateRequest();
+        request.setApplicationId(payload.applicationId());
+        request.setResumeId(payload.resumeId());
+        request.setJobPrepSessionId(payload.jobPrepSessionId());
+        request.setCompany(payload.company());
+        request.setJobTitle(payload.jobTitle());
+        request.setJdText(payload.jdText());
+        request.setNotes(payload.notes());
+        CopilotPrepSessionVO session = interviewCopilotPrepService.createSession(userId, request);
+        String title = firstNonBlank(session.getJobTitle(), payload.jobTitle(), "当前岗位");
+        return new ExecutionResult("已生成正式 Copilot Prep 草案《" + title + "》，可以继续在面试页进入实时阶段。");
     }
 
     private ExecutionResult executeApplicationStrategyAction(Long userId, String payloadJson) {
@@ -1245,6 +1278,43 @@ public class AgentRunServiceImpl implements AgentRunService {
                     null,
                     null,
                     null);
+        }
+        return null;
+    }
+
+    private CopilotPrepDraftPayload resolveCopilotPrepDraftPayload(ContextSnapshot snapshot, String prompt) {
+        if (snapshot.jobPrepSession() != null) {
+            JobPrepSessionVO session = snapshot.jobPrepSession();
+            return new CopilotPrepDraftPayload(
+                    session.getApplicationId(),
+                    session.getResumeFileId(),
+                    session.getId(),
+                    session.getCompany(),
+                    session.getJobTitle(),
+                    session.getJdText(),
+                    prompt);
+        }
+        if (snapshot.application() != null) {
+            JobApplicationVO application = snapshot.application();
+            return new CopilotPrepDraftPayload(
+                    application.getId(),
+                    application.getResumeFileId(),
+                    null,
+                    application.getCompany(),
+                    application.getJobTitle(),
+                    application.getJdText(),
+                    prompt);
+        }
+        if (snapshot.applicationBoard() != null && snapshot.applicationBoard().focusApplication() != null) {
+            JobApplicationVO application = snapshot.applicationBoard().focusApplication();
+            return new CopilotPrepDraftPayload(
+                    application.getId(),
+                    application.getResumeFileId(),
+                    null,
+                    application.getCompany(),
+                    application.getJobTitle(),
+                    application.getJdText(),
+                    prompt);
         }
         return null;
     }
@@ -1914,6 +1984,10 @@ public class AgentRunServiceImpl implements AgentRunService {
     }
 
     private record JobPrepDraftPayload(Long applicationId, Long resumeId, String company, String jobTitle, String jdText) {
+    }
+
+    private record CopilotPrepDraftPayload(Long applicationId, Long resumeId, Long jobPrepSessionId, String company,
+                                           String jobTitle, String jdText, String notes) {
     }
 
     private record ApplicationStrategyPayload(Long applicationId, String summary, List<String> recommendations) {
