@@ -29,7 +29,9 @@ import com.offerpilot.dashboard.dto.DashboardOverviewVO;
 import com.offerpilot.dashboard.dto.NextActionVO;
 import com.offerpilot.dashboard.dto.WeakPointVO;
 import com.offerpilot.dashboard.service.DashboardService;
+import com.offerpilot.interview.service.InterviewCopilotPrepService;
 import com.offerpilot.interview.service.InterviewCopilotRealtimeService;
+import com.offerpilot.interview.vo.CopilotPrepSessionVO;
 import com.offerpilot.interview.vo.JobPrepSessionVO;
 import com.offerpilot.interview.vo.RecordingReviewSessionVO;
 import com.offerpilot.interview.vo.CopilotRealtimeSessionVO;
@@ -75,6 +77,8 @@ class AgentRunServiceImplTest {
     private InterviewRecordingReviewService interviewRecordingReviewService;
     @Mock
     private InterviewJobPrepService interviewJobPrepService;
+    @Mock
+    private InterviewCopilotPrepService interviewCopilotPrepService;
     @Mock
     private InterviewCopilotRealtimeService interviewCopilotRealtimeService;
     @Mock
@@ -632,6 +636,26 @@ class AgentRunServiceImplTest {
     }
 
     @Test
+    void createRun_coordinatorUsesCopilotPrepContext() {
+        when(interviewCopilotPrepService.detail(1L, 58L)).thenReturn(CopilotPrepSessionVO.builder()
+                .id(58L)
+                .company("美团")
+                .jobTitle("资深 Java 工程师")
+                .summary("最近一次 Copilot Prep")
+                .nextActions(List.of("先把开场提纲压成 60-90 秒口语版，再进入实时阶段。"))
+                .build());
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "coordinator",
+                "interview_live",
+                List.of("interview:copilot-prep:58"),
+                "帮我判断现在先进入实时还是继续准备"));
+
+        assertEquals("/interview", result.getNextActionPath());
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("Copilot Prep 已整理完成")));
+    }
+
+    @Test
     void createRun_realtimeCopilotExposesTimelineAndProviderGating() {
         when(userProviderConfigService.listCurrentUserConfigs()).thenReturn(List.of(
                 UserProviderConfigItemVO.builder()
@@ -673,6 +697,34 @@ class AgentRunServiceImplTest {
         assertTrue(result.getTimeline().stream().anyMatch(item -> "request_received".equals(item.getKey())));
         assertTrue(result.getTimeline().stream().anyMatch(item -> "next_action".equals(item.getKey())));
         assertEquals("not_required", result.getApprovalStage());
+    }
+
+    @Test
+    void createRun_realtimeCopilotUsesLatestCopilotPrepContext() {
+        when(interviewCopilotPrepService.latest(1L)).thenReturn(CopilotPrepSessionVO.builder()
+                .id(58L)
+                .company("美团")
+                .jobTitle("资深 Java 工程师")
+                .summary("最近一次 Copilot Prep")
+                .openingBrief(List.of("开场先讲最贴近岗位的项目背景和核心职责。"))
+                .liveCues(List.of("如果问题很大，先回答结论，再拆为什么和怎么做。"))
+                .keyRisks(List.of("Kafka 追问深挖容易暴露准备边界。"))
+                .nextActions(List.of("先把开场提纲压成 60-90 秒口语版，再进入实时阶段。"))
+                .build());
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "realtime_copilot",
+                "interview_live",
+                List.of("interview:copilot-prep"),
+                "继续沿最近一次 Prep 进入实时阶段"));
+
+        verify(interviewCopilotPrepService).latest(1L);
+        assertTrue(result.getSummary().contains("美团"));
+        assertTrue(result.getSummary().contains("资深 Java 工程师"));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("开场提纲")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("Kafka")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("Copilot Prep 压成可口述")));
+        assertEquals("/interview", result.getNextActionPath());
     }
 
     @Test

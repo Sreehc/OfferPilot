@@ -25,10 +25,12 @@ import com.offerpilot.dashboard.dto.DashboardOverviewVO;
 import com.offerpilot.dashboard.dto.NextActionVO;
 import com.offerpilot.dashboard.service.DashboardService;
 import com.offerpilot.interview.dto.JobPrepSessionCreateRequest;
+import com.offerpilot.interview.service.InterviewCopilotPrepService;
 import com.offerpilot.interview.service.InterviewCopilotRealtimeService;
 import com.offerpilot.interview.service.InterviewJobPrepService;
 import com.offerpilot.interview.service.InterviewRecordingReviewService;
 import com.offerpilot.interview.service.InterviewService;
+import com.offerpilot.interview.vo.CopilotPrepSessionVO;
 import com.offerpilot.interview.vo.CopilotRealtimeSessionVO;
 import com.offerpilot.interview.vo.InterviewDetailVO;
 import com.offerpilot.interview.vo.InterviewHistoryVO;
@@ -70,6 +72,7 @@ public class AgentRunServiceImpl implements AgentRunService {
     private final InterviewService interviewService;
     private final InterviewRecordingReviewService interviewRecordingReviewService;
     private final InterviewJobPrepService interviewJobPrepService;
+    private final InterviewCopilotPrepService interviewCopilotPrepService;
     private final InterviewCopilotRealtimeService interviewCopilotRealtimeService;
     private final ResumeService resumeService;
     private final JobApplicationService jobApplicationService;
@@ -505,7 +508,20 @@ public class AgentRunServiceImpl implements AgentRunService {
     private RunBlueprint buildRealtimeCopilotBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
         String summary;
         List<String> recommendations;
-        if (snapshot.jobPrepSession() != null) {
+        if (snapshot.copilotPrepSession() != null) {
+            CopilotPrepSessionVO prepSession = snapshot.copilotPrepSession();
+            summary = "已根据 " + defaultText(prepSession.getCompany(), "当前岗位") + " "
+                    + defaultText(prepSession.getJobTitle(), "会前 Prep")
+                    + " 整理会前提示，后续可以直接进入实时阶段。";
+            recommendations = mergeRecommendations(
+                    List.of("先把 Copilot Prep 压成可口述的开场提纲，再建立实时连接。"),
+                    limit(prepSession.getOpeningBrief(), 2),
+                    limit(prepSession.getLiveCues(), 2),
+                    limit(prepSession.getKeyRisks(), 1),
+                    prepSession.getNextActions(),
+                    prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”同步到实时 Copilot Prep。") : List.of(),
+                    contextRefsText(contextRefs, "Prep 阶段引用："));
+        } else if (snapshot.jobPrepSession() != null) {
             JobPrepSessionVO jobPrepSession = snapshot.jobPrepSession();
             summary = "已根据 " + defaultText(jobPrepSession.getCompany(), "当前岗位") + " " + defaultText(jobPrepSession.getJobTitle(), "会前准备")
                     + " 生成会前清单，后续可以继续接实时建议流。";
@@ -678,6 +694,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         JobApplicationVO application = null;
         ApplicationBoardSnapshot applicationBoard = null;
         JobPrepSessionVO jobPrepSession = null;
+        CopilotPrepSessionVO copilotPrepSession = null;
         CopilotRealtimeSessionVO copilotRealtimeSession = null;
         List<UserProviderConfigItemVO> providerConfigs = null;
 
@@ -744,6 +761,15 @@ public class AgentRunServiceImpl implements AgentRunService {
             jobPrepSession = loadOptional("latest job prep", () -> interviewJobPrepService.latest(userId));
         }
 
+        Long copilotPrepSessionId = findContextRefId(contextRefs, "interview:copilot-prep:");
+        if (copilotPrepSessionId != null) {
+            copilotPrepSession = loadOptional(
+                    "copilot prep " + copilotPrepSessionId,
+                    () -> interviewCopilotPrepService.detail(userId, copilotPrepSessionId));
+        } else if (hasContext(contextRefs, "interview:copilot-prep")) {
+            copilotPrepSession = loadOptional("latest copilot prep", () -> interviewCopilotPrepService.latest(userId));
+        }
+
         Long copilotRealtimeSessionId = findContextRefId(contextRefs, "interview:copilot-realtime:");
         if (copilotRealtimeSessionId != null) {
             copilotRealtimeSession = loadOptional(
@@ -787,6 +813,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                 application,
                 applicationBoard,
                 jobPrepSession,
+                copilotPrepSession,
                 copilotRealtimeSession,
                 providerConfigs);
     }
@@ -964,6 +991,9 @@ public class AgentRunServiceImpl implements AgentRunService {
         }
         if (snapshot.copilotRealtimeSession() != null) {
             recommendations.add("实时 Copilot 已结束，先把现场备注和追问链路整理成正式复盘。");
+        }
+        if (snapshot.copilotPrepSession() != null) {
+            recommendations.add("Copilot Prep 已整理完成，下一步可以直接进入实时阶段或补一轮会前口语演练。");
         }
         if (snapshot.topicRetrospective() != null) {
             recommendations.add("领域回顾已经生成，可以直接把阶段性风险和下一步动作转成正式计划。");
@@ -1236,6 +1266,9 @@ public class AgentRunServiceImpl implements AgentRunService {
             return "/analytics";
         }
         if (snapshot.copilotRealtimeSession() != null) {
+            return "/interview";
+        }
+        if (snapshot.copilotPrepSession() != null) {
             return "/interview";
         }
         if (snapshot.application() != null && snapshot.application().getId() != null) {
@@ -1841,6 +1874,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                                    ResumeFileVO resume, JobApplicationVO application,
                                    ApplicationBoardSnapshot applicationBoard,
                                    JobPrepSessionVO jobPrepSession,
+                                   CopilotPrepSessionVO copilotPrepSession,
                                    CopilotRealtimeSessionVO copilotRealtimeSession,
                                    List<UserProviderConfigItemVO> providerConfigs) {
     }

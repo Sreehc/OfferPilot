@@ -8,4 +8,6 @@ public interface InterviewCopilotPrepService {
     CopilotPrepSessionVO createSession(Long userId, CopilotPrepSessionCreateRequest request);
 
     CopilotPrepSessionVO detail(Long userId, Long sessionId);
+
+    CopilotPrepSessionVO latest(Long userId);
 }

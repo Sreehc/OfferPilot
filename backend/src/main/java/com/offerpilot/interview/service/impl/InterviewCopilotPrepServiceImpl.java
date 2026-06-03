@@ -121,6 +121,21 @@ public class InterviewCopilotPrepServiceImpl implements InterviewCopilotPrepServ
         return buildVo(session, resumeFile == null ? null : resumeFile.getTitle());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public CopilotPrepSessionVO latest(Long userId) {
+        CopilotPrepSession session = copilotPrepSessionMapper.selectOne(new LambdaQueryWrapper<CopilotPrepSession>()
+                .eq(CopilotPrepSession::getUserId, userId)
+                .orderByDesc(CopilotPrepSession::getUpdateTime)
+                .orderByDesc(CopilotPrepSession::getId)
+                .last("LIMIT 1"));
+        if (session == null) {
+            return null;
+        }
+        ResumeFile resumeFile = session.getResumeFileId() == null ? null : resumeFileMapper.selectById(session.getResumeFileId());
+        return buildVo(session, resumeFile == null ? null : resumeFile.getTitle());
+    }
+
     private PrepBlueprint buildBlueprint(String company, String jobTitle, String jdText, String notes, ResumeSnapshot resumeSnapshot) {
         List<String> jdKeywords = extractKeywords(jdText);
         List<String> matchedKeywords = jdKeywords.stream()
