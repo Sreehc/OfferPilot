@@ -656,7 +656,7 @@ class AgentRunServiceImplTest {
     }
 
     @Test
-    void createRun_realtimeCopilotExposesTimelineAndProviderGating() {
+    void createRun_realtimeCopilotPrepPhaseDegradesWithoutBlocking() {
         when(userProviderConfigService.listCurrentUserConfigs()).thenReturn(List.of(
                 UserProviderConfigItemVO.builder()
                         .scope("llm")
@@ -689,14 +689,54 @@ class AgentRunServiceImplTest {
                 List.of("resume:latest", "settings:providers"),
                 "先做一轮会前准备"));
 
-        assertEquals("blocked", result.getProviderGateStatus());
-        assertTrue(result.getProviderGateSummary().contains("关键 provider"));
+        assertEquals("degraded", result.getProviderGateStatus());
+        assertTrue(result.getProviderGateSummary().contains("关键 provider 已基本就绪"));
         assertTrue(result.getProviderGates().stream().anyMatch(item -> "search".equals(item.getScope()) && "missing".equals(item.getStatus())));
-        assertEquals("/settings", result.getNextActionPath());
-        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("补齐") && item.contains("联网搜索")));
+        assertEquals("/interview", result.getNextActionPath());
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("联网搜索") && item.contains("降级")));
         assertTrue(result.getTimeline().stream().anyMatch(item -> "request_received".equals(item.getKey())));
         assertTrue(result.getTimeline().stream().anyMatch(item -> "next_action".equals(item.getKey())));
         assertEquals("not_required", result.getApprovalStage());
+    }
+
+    @Test
+    void createRun_realtimeCopilotLivePhaseBlocksWithoutRequiredProviders() {
+        when(userProviderConfigService.listCurrentUserConfigs()).thenReturn(List.of(
+                UserProviderConfigItemVO.builder()
+                        .scope("llm")
+                        .label("主模型")
+                        .status("ready")
+                        .statusMessage("配置完整，可供对应能力使用。")
+                        .build(),
+                UserProviderConfigItemVO.builder()
+                        .scope("asr")
+                        .label("语音识别")
+                        .status("ready")
+                        .statusMessage("配置完整，可供对应能力使用。")
+                        .build(),
+                UserProviderConfigItemVO.builder()
+                        .scope("search")
+                        .label("联网搜索")
+                        .status("missing")
+                        .statusMessage("还没有保存这类配置。")
+                        .build()));
+        when(interviewCopilotRealtimeService.detail(1L, 91L)).thenReturn(CopilotRealtimeSessionVO.builder()
+                .id(91L)
+                .company("小红书")
+                .jobTitle("后端开发")
+                .status("live")
+                .latestEventSummary("实时连接已建立。")
+                .build());
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "realtime_copilot",
+                "interview_live",
+                List.of("interview:copilot-realtime:91", "settings:providers"),
+                "继续实时阶段"));
+
+        assertEquals("blocked", result.getProviderGateStatus());
+        assertEquals("/settings", result.getNextActionPath());
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("补齐") && item.contains("联网搜索")));
     }
 
     @Test

@@ -1183,7 +1183,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         if (snapshot.providerConfigs() == null) {
             return List.of();
         }
-        List<AgentRunVO.ProviderGateVO> providerGates = resolveProviderGates(agentType, snapshot.providerConfigs());
+        List<AgentRunVO.ProviderGateVO> providerGates = resolveProviderGates(agentType, snapshot.providerConfigs(), snapshot);
         String overallStatus = resolveProviderGateStatus(providerGates);
         if ("blocked".equals(overallStatus)) {
             return List.of(
@@ -1438,7 +1438,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         if (snapshot.providerConfigs() == null) {
             return basePath;
         }
-        String providerGateStatus = resolveProviderGateStatus(resolveProviderGates(agentType, snapshot.providerConfigs()));
+        String providerGateStatus = resolveProviderGateStatus(resolveProviderGates(agentType, snapshot.providerConfigs(), snapshot));
         return "blocked".equals(providerGateStatus) ? "/settings" : basePath;
     }
 
@@ -1619,11 +1619,25 @@ public class AgentRunServiceImpl implements AgentRunService {
     }
 
     private List<AgentRunVO.ProviderGateVO> resolveProviderGates(AgentRun run) {
-        return resolveProviderGates(run.getAgentType(), loadProviderConfigs());
+        return resolveProviderGates(run.getAgentType(), loadProviderConfigs(), inferAgentPhase(run));
     }
 
     private List<AgentRunVO.ProviderGateVO> resolveProviderGates(String agentType, List<UserProviderConfigItemVO> configs) {
-        List<ProviderRequirement> requirements = providerRequirements(agentType);
+        return resolveProviderGates(agentType, configs, (String) null);
+    }
+
+    private List<AgentRunVO.ProviderGateVO> resolveProviderGates(
+            String agentType,
+            List<UserProviderConfigItemVO> configs,
+            ContextSnapshot snapshot) {
+        return resolveProviderGates(agentType, configs, inferAgentPhase(agentType, snapshot));
+    }
+
+    private List<AgentRunVO.ProviderGateVO> resolveProviderGates(
+            String agentType,
+            List<UserProviderConfigItemVO> configs,
+            String phase) {
+        List<ProviderRequirement> requirements = providerRequirements(agentType, phase);
         if (requirements.isEmpty()) {
             return List.of();
         }
@@ -1645,6 +1659,40 @@ public class AgentRunServiceImpl implements AgentRunService {
                     .build());
         }
         return gates;
+    }
+
+    private String inferAgentPhase(String agentType, ContextSnapshot snapshot) {
+        if (!"realtime_copilot".equals(normalize(agentType))) {
+            return "default";
+        }
+        if (snapshot == null) {
+            return "default";
+        }
+        CopilotRealtimeSessionVO realtimeSession = snapshot.copilotRealtimeSession();
+        if (realtimeSession != null) {
+            String status = normalize(realtimeSession.getStatus());
+            return "completed".equals(status) ? "post_review" : "live";
+        }
+        if (snapshot.copilotPrepSession() != null || snapshot.jobPrepSession() != null
+                || snapshot.application() != null || snapshot.applicationBoard() != null || snapshot.resume() != null) {
+            return "prep";
+        }
+        return "prep";
+    }
+
+    private String inferAgentPhase(AgentRun run) {
+        String agentType = normalize(run.getAgentType());
+        if (!"realtime_copilot".equals(agentType)) {
+            return "default";
+        }
+        List<String> contextRefs = readList(run.getContextRefsJson());
+        boolean hasRealtimeContext = contextRefs.stream().anyMatch(ref -> ref.regionMatches(true, 0, "interview:copilot-realtime", 0,
+                "interview:copilot-realtime".length()));
+        if (hasRealtimeContext) {
+            String nextActionPath = defaultText(run.getNextActionPath(), "");
+            return nextActionPath.contains("agentType=interview_review") ? "post_review" : "live";
+        }
+        return "prep";
     }
 
     private List<UserProviderConfigItemVO> loadProviderConfigs() {
@@ -1696,8 +1744,9 @@ public class AgentRunServiceImpl implements AgentRunService {
                 .toList();
     }
 
-    private List<ProviderRequirement> providerRequirements(String agentType) {
+    private List<ProviderRequirement> providerRequirements(String agentType, String phase) {
         String normalized = normalize(agentType);
+        String normalizedPhase = normalize(phase);
         List<ProviderRequirement> requirements = new ArrayList<>();
         requirements.add(new ProviderRequirement("llm", "主模型", true, "还没有保存主模型配置。"));
         switch (normalized) {
@@ -1707,9 +1756,15 @@ public class AgentRunServiceImpl implements AgentRunService {
             }
             case "job_prep" -> requirements.add(new ProviderRequirement("search", "联网搜索", false, "联网搜索未配置，公司与岗位背景研究会降级。"));
             case "realtime_copilot" -> {
-                requirements.add(new ProviderRequirement("asr", "语音识别", true, "实时 Copilot 至少需要语音识别配置。"));
-                requirements.add(new ProviderRequirement("search", "联网搜索", true, "实时 Copilot 需要联网搜索支持背景检索。"));
-                requirements.add(new ProviderRequirement("voiceprint", "声纹识别", false, "声纹识别未配置，说话人区分会降级。"));
+                if ("live".equals(normalizedPhase)) {
+                    requirements.add(new ProviderRequirement("asr", "语音识别", true, "实时 Copilot 至少需要语音识别配置。"));
+                    requirements.add(new ProviderRequirement("search", "联网搜索", true, "实时 Copilot 需要联网搜索支持背景检索。"));
+                    requirements.add(new ProviderRequirement("voiceprint", "声纹识别", false, "声纹识别未配置，说话人区分会降级。"));
+                } else if ("prep".equals(normalizedPhase)) {
+                    requirements.add(new ProviderRequirement("search", "联网搜索", false, "联网搜索未配置，Copilot Prep 的公司与岗位研究会降级。"));
+                    requirements.add(new ProviderRequirement("asr", "语音识别", false, "语音识别未配置，后续进入实时阶段前仍需补齐。"));
+                    requirements.add(new ProviderRequirement("voiceprint", "声纹识别", false, "声纹识别未配置，后续说话人区分会降级。"));
+                }
             }
             default -> {
             }
