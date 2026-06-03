@@ -23,6 +23,10 @@ import com.offerpilot.interview.mapper.JobPrepSessionMapper;
 import com.offerpilot.question.entity.Question;
 import com.offerpilot.question.mapper.QuestionMapper;
 import com.offerpilot.common.config.OfferPilotProperties;
+import com.offerpilot.resume.entity.ResumeFile;
+import com.offerpilot.resume.entity.ResumeProject;
+import com.offerpilot.resume.mapper.ResumeFileMapper;
+import com.offerpilot.resume.mapper.ResumeProjectMapper;
 import com.offerpilot.wrong.mapper.WrongQuestionMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
@@ -54,6 +58,8 @@ public class AdaptiveServiceImpl implements AdaptiveService {
     private final JobPrepSessionMapper jobPrepSessionMapper;
     private final CopilotPrepSessionMapper copilotPrepSessionMapper;
     private final JobApplicationMapper jobApplicationMapper;
+    private final ResumeFileMapper resumeFileMapper;
+    private final ResumeProjectMapper resumeProjectMapper;
     private final QuestionMapper questionMapper;
     private final WrongQuestionMapper wrongQuestionMapper;
     private final CategoryService categoryService;
@@ -245,6 +251,10 @@ public class AdaptiveServiceImpl implements AdaptiveService {
                 new LambdaQueryWrapper<JobApplication>()
                         .eq(JobApplication::getUserId, userId)
                         .orderByDesc(JobApplication::getUpdateTime));
+        List<ResumeFile> resumes = resumeFileMapper.selectList(
+                new LambdaQueryWrapper<ResumeFile>()
+                        .eq(ResumeFile::getUserId, userId)
+                        .orderByDesc(ResumeFile::getUpdateTime));
 
         // Load all finished sessions with records
         List<InterviewSession> sessions = sessionMapper.selectList(
@@ -254,7 +264,7 @@ public class AdaptiveServiceImpl implements AdaptiveService {
                         .orderByDesc(InterviewSession::getCreateTime));
 
         if (sessions.isEmpty() && recordingReviews.isEmpty() && jobPrepSessions.isEmpty()
-                && copilotPrepSessions.isEmpty() && applications.isEmpty()) {
+                && copilotPrepSessions.isEmpty() && applications.isEmpty() && resumes.isEmpty()) {
             return AbilityProfileVO.builder()
                     .overallAbility(0.0)
                     .recommendedDifficulty("easy")
@@ -299,6 +309,7 @@ public class AdaptiveServiceImpl implements AdaptiveService {
         Map<Long, Integer> jobPrepCountByCategory = new HashMap<>();
         Map<Long, Integer> copilotPrepCountByCategory = new HashMap<>();
         Map<Long, Integer> applicationFeedbackCountByCategory = new HashMap<>();
+        Map<Long, Integer> resumeEvidenceCountByCategory = new HashMap<>();
         LocalDateTime now = LocalDateTime.now();
 
         for (InterviewRecord record : allRecords) {
@@ -326,6 +337,18 @@ public class AdaptiveServiceImpl implements AdaptiveService {
 
         Map<Long, String> categoryNameMap = allCategories.stream()
                 .collect(Collectors.toMap(Category::getId, Category::getName, (a, b) -> a));
+        List<Long> resumeIds = resumes.stream()
+                .map(ResumeFile::getId)
+                .filter(java.util.Objects::nonNull)
+                .toList();
+        Map<Long, List<ResumeProject>> resumeProjectsMap = new HashMap<>();
+        if (!resumeIds.isEmpty()) {
+            resumeProjectMapper.selectList(new LambdaQueryWrapper<ResumeProject>()
+                            .in(ResumeProject::getResumeFileId, resumeIds)
+                            .orderByAsc(ResumeProject::getSortOrder)
+                            .orderByAsc(ResumeProject::getId))
+                    .forEach(project -> resumeProjectsMap.computeIfAbsent(project.getResumeFileId(), key -> new ArrayList<>()).add(project));
+        }
 
         for (RecordingReviewSession review : recordingReviews) {
             for (Long categoryId : resolveRecordingReviewCategories(review, allCategories)) {
@@ -375,6 +398,21 @@ public class AdaptiveServiceImpl implements AdaptiveService {
             }
         }
 
+        for (ResumeFile resume : resumes) {
+            List<ResumeProject> projects = resume.getId() == null
+                    ? List.of()
+                    : resumeProjectsMap.getOrDefault(resume.getId(), List.of());
+            for (Long categoryId : resolveResumeCategories(resume, projects, allCategories)) {
+                double resumeScore = resolveResumeEvidenceScore(resume, projects);
+                double recencyWeight = computeRecencyWeight(
+                        resume.getUpdateTime() == null ? resume.getCreateTime() : resume.getUpdateTime(),
+                        now) * 0.45;
+                categoryScores.computeIfAbsent(categoryId, k -> new ArrayList<>())
+                        .add(new ScoreEntry(resumeScore, recencyWeight));
+                resumeEvidenceCountByCategory.merge(categoryId, 1, Integer::sum);
+            }
+        }
+
         for (Map.Entry<Long, List<ScoreEntry>> entry : categoryScores.entrySet()) {
             Long categoryId = entry.getKey();
             List<ScoreEntry> scores = entry.getValue();
@@ -410,6 +448,7 @@ public class AdaptiveServiceImpl implements AdaptiveService {
                     .jobPrepCount(jobPrepCountByCategory.getOrDefault(categoryId, 0))
                     .copilotPrepCount(copilotPrepCountByCategory.getOrDefault(categoryId, 0))
                     .applicationFeedbackCount(applicationFeedbackCountByCategory.getOrDefault(categoryId, 0))
+                    .resumeEvidenceCount(resumeEvidenceCountByCategory.getOrDefault(categoryId, 0))
                     .wrongCount((int) wrongCount)
                     .isWeak(isWeak)
                     .recommendedDifficulty(recDifficulty)
@@ -429,7 +468,7 @@ public class AdaptiveServiceImpl implements AdaptiveService {
         String suggestedFocus = categoryAbilities.isEmpty() ? null
                 : categoryAbilities.get(0).getCategoryName();
         int totalEvidenceCount = allRecords.size() + recordingReviews.size()
-                + jobPrepSessions.size() + copilotPrepSessions.size() + applications.size();
+                + jobPrepSessions.size() + copilotPrepSessions.size() + applications.size() + resumes.size();
         String evidenceStatus = resolveEvidenceStatus(categoryAbilities, totalEvidenceCount);
 
         return AbilityProfileVO.builder()
@@ -537,6 +576,29 @@ public class AdaptiveServiceImpl implements AdaptiveService {
         return matchCategoryIds(evidence, categories);
     }
 
+    private List<Long> resolveResumeCategories(ResumeFile resume, List<ResumeProject> projects, List<Category> categories) {
+        List<String> projectEvidence = projects.stream()
+                .flatMap(project -> java.util.stream.Stream.of(
+                        nullSafe(project.getProjectName()),
+                        nullSafe(project.getRoleName()),
+                        nullSafe(project.getTechStack()),
+                        nullSafe(project.getResponsibility()),
+                        nullSafe(project.getAchievement()),
+                        nullSafe(project.getProjectSummary()),
+                        nullSafe(project.getRiskHints()),
+                        nullSafe(project.getFollowUpQuestionsJson())))
+                .toList();
+        String evidence = String.join(" ",
+                nullSafe(resume.getTitle()),
+                nullSafe(resume.getSummary()),
+                nullSafe(resume.getSkills()),
+                nullSafe(resume.getEducation()),
+                nullSafe(resume.getSelfIntro()),
+                nullSafe(resume.getInterviewResumeText()),
+                String.join(" ", projectEvidence));
+        return matchCategoryIds(evidence, categories);
+    }
+
     private List<Long> matchCategoryIds(String evidence, List<Category> categories) {
         if (evidence.isBlank()) {
             return List.of();
@@ -608,6 +670,29 @@ public class AdaptiveServiceImpl implements AdaptiveService {
             base -= 2.0;
         }
         return Math.max(35.0, Math.min(88.0, base));
+    }
+
+    private double resolveResumeEvidenceScore(ResumeFile resume, List<ResumeProject> projects) {
+        double base = 54.0;
+        if ("parsed".equals(normalize(resume.getParseStatus()))) {
+            base += 5.0;
+        }
+        if (org.springframework.util.StringUtils.hasText(resume.getSummary())) {
+            base += 4.0;
+        }
+        if (org.springframework.util.StringUtils.hasText(resume.getSelfIntro())) {
+            base += 3.0;
+        }
+        if (org.springframework.util.StringUtils.hasText(resume.getInterviewResumeText())) {
+            base += 4.0;
+        }
+        if (org.springframework.util.StringUtils.hasText(resume.getSkills())) {
+            base += 3.0;
+        }
+        if (!projects.isEmpty()) {
+            base += Math.min(8.0, projects.size() * 2.0);
+        }
+        return Math.max(40.0, Math.min(82.0, base));
     }
 
     private int countDelimitedItems(String value) {

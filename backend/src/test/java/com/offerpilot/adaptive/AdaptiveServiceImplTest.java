@@ -35,11 +35,15 @@ import com.offerpilot.interview.mapper.InterviewSessionMapper;
 import com.offerpilot.interview.mapper.JobPrepSessionMapper;
 import com.offerpilot.question.entity.Question;
 import com.offerpilot.question.mapper.QuestionMapper;
+import com.offerpilot.resume.entity.ResumeFile;
+import com.offerpilot.resume.entity.ResumeProject;
+import com.offerpilot.resume.mapper.ResumeFileMapper;
+import com.offerpilot.resume.mapper.ResumeProjectMapper;
 import com.offerpilot.wrong.mapper.WrongQuestionMapper;
 import java.math.BigDecimal;
+import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.lang.reflect.Field;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -64,6 +68,10 @@ class AdaptiveServiceImplTest {
     private CopilotPrepSessionMapper copilotPrepSessionMapper;
     @Mock
     private JobApplicationMapper jobApplicationMapper;
+    @Mock
+    private ResumeFileMapper resumeFileMapper;
+    @Mock
+    private ResumeProjectMapper resumeProjectMapper;
     @Mock
     private QuestionMapper questionMapper;
     @Mock
@@ -95,6 +103,8 @@ class AdaptiveServiceImplTest {
         propsField.set(service, props);
 
         lenient().doReturn("{}").when(objectMapper).writeValueAsString(any());
+        lenient().when(resumeFileMapper.selectList(any())).thenReturn(List.of());
+        lenient().when(resumeProjectMapper.selectList(any())).thenReturn(List.of());
     }
 
     @Test
@@ -440,6 +450,35 @@ class AdaptiveServiceImplTest {
         assertTrue(redisAbility.getAbilityScore() > 0);
     }
 
+    @Test
+    void getAbilityProfile_withResumeEvidence_countsResumeSignals() {
+        mockCacheMiss();
+        mockCategories(makeCategory(100L, "Redis"), makeCategory(200L, "Spring"));
+        when(sessionMapper.selectList(any())).thenReturn(List.of());
+        when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
+        when(jobPrepSessionMapper.selectList(any())).thenReturn(List.of());
+        when(copilotPrepSessionMapper.selectList(any())).thenReturn(List.of());
+        when(jobApplicationMapper.selectList(any())).thenReturn(List.of());
+        when(resumeFileMapper.selectList(any())).thenReturn(List.of(
+                makeResume(51L, "Java 后端简历", "Redis,Spring", "Redis 高并发缓存项目", "Redis 一致性案例")));
+        when(resumeProjectMapper.selectList(any())).thenReturn(List.of(
+                makeResumeProject(51L, "Redis 缓存平台", "后端开发", "Redis,Spring Boot")));
+        when(wrongQuestionMapper.selectCount(any())).thenReturn(0L);
+
+        AbilityProfileVO profile = service.getAbilityProfile(1L);
+
+        assertEquals("forming", profile.getEvidenceStatus());
+        assertEquals(2, profile.getCategoryAbilities().size());
+        CategoryAbilityVO redisAbility = profile.getCategoryAbilities().stream()
+                .filter(item -> "Redis".equals(item.getCategoryName()))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(1, redisAbility.getResumeEvidenceCount());
+        assertEquals(0, redisAbility.getInterviewCount());
+        assertTrue(redisAbility.getAbilityScore() >= 40.0);
+        assertTrue(profile.getEvidenceSummary().contains("画像还在形成中"));
+    }
+
     private void mockCacheMiss() {
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.get(anyString())).thenReturn(null);
@@ -555,5 +594,35 @@ class AdaptiveServiceImplTest {
         application.setCreateTime(LocalDateTime.now().minusDays(1));
         application.setUpdateTime(LocalDateTime.now());
         return application;
+    }
+
+    private ResumeFile makeResume(Long id, String title, String skills, String summary, String interviewResumeText) {
+        ResumeFile resume = new ResumeFile();
+        resume.setId(id);
+        resume.setUserId(1L);
+        resume.setTitle(title);
+        resume.setParseStatus("parsed");
+        resume.setSkills(skills);
+        resume.setSummary(summary);
+        resume.setSelfIntro("我负责 Redis 与 Spring 服务治理");
+        resume.setInterviewResumeText(interviewResumeText);
+        resume.setCreateTime(LocalDateTime.now().minusDays(2));
+        resume.setUpdateTime(LocalDateTime.now().minusDays(1));
+        return resume;
+    }
+
+    private ResumeProject makeResumeProject(Long resumeFileId, String projectName, String roleName, String techStack) {
+        ResumeProject project = new ResumeProject();
+        project.setResumeFileId(resumeFileId);
+        project.setUserId(1L);
+        project.setProjectName(projectName);
+        project.setRoleName(roleName);
+        project.setTechStack(techStack);
+        project.setResponsibility("负责 Redis 缓存一致性与 Spring 服务接入");
+        project.setAchievement("完成高并发缓存链路优化");
+        project.setProjectSummary("聚焦 Redis 缓存一致性和 Spring 工程治理");
+        project.setRiskHints("需要补 Redis 雪崩追问");
+        project.setFollowUpQuestionsJson("[\"Redis 一致性怎么做\"]");
+        return project;
     }
 }

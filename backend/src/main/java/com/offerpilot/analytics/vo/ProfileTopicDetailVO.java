@@ -20,6 +20,7 @@ public class ProfileTopicDetailVO {
     private Integer jobPrepCount;
     private Integer copilotPrepCount;
     private Integer applicationFeedbackCount;
+    private Integer resumeEvidenceCount;
     private Integer wrongCount;
     private Boolean weak;
     private String recommendedDifficulty;

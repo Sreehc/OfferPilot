@@ -312,6 +312,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .jobPrepCount(categoryAbility.getJobPrepCount())
                 .copilotPrepCount(categoryAbility.getCopilotPrepCount())
                 .applicationFeedbackCount(categoryAbility.getApplicationFeedbackCount())
+                .resumeEvidenceCount(categoryAbility.getResumeEvidenceCount())
                 .wrongCount(categoryAbility.getWrongCount())
                 .weak(Boolean.TRUE.equals(categoryAbility.getIsWeak()))
                 .recommendedDifficulty(categoryAbility.getRecommendedDifficulty())
@@ -411,8 +412,9 @@ public class AnalyticsServiceImpl implements AnalyticsService {
             signals.add("同时已有 " + safeInt(detail.getJobPrepCount()) + " 次 JD 备面、"
                     + safeInt(detail.getCopilotPrepCount()) + " 次 Copilot Prep 证据写回长期画像。");
         }
-        if (safeInt(detail.getApplicationFeedbackCount()) > 0) {
-            signals.add("另外已有 " + safeInt(detail.getApplicationFeedbackCount()) + " 条相关投递反馈证据写回长期画像。");
+        if (safeInt(detail.getApplicationFeedbackCount()) > 0 || safeInt(detail.getResumeEvidenceCount()) > 0) {
+            signals.add("另外已有 " + safeInt(detail.getApplicationFeedbackCount()) + " 条相关投递反馈证据、"
+                    + safeInt(detail.getResumeEvidenceCount()) + " 份相关简历表达证据写回长期画像。");
         }
         if (!detail.getRecentScores().isEmpty()) {
             double latest = detail.getRecentScores().get(detail.getRecentScores().size() - 1).getScore();
@@ -439,6 +441,9 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         if (safeInt(detail.getApplicationFeedbackCount()) == 0 && detail.getAbilityScore() < 75) {
             risks.add("当前还缺真实投递反馈证据，这个主题是否真能支撑岗位推进还没被验证。");
         }
+        if (safeInt(detail.getResumeEvidenceCount()) == 0 && detail.getAbilityScore() < 75) {
+            risks.add("当前还缺简历项目表达证据，这个主题在自我介绍和项目叙述里还没被验证。");
+        }
         if (detail.getDueCount() > 0) {
             risks.add("还有 " + detail.getDueCount() + " 个待复盘点没有清完，容易让掌握度回落。");
         }
@@ -463,8 +468,12 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         if (safeInt(detail.getJobPrepCount()) == 0) {
             actions.add("补 1 次 JD 定向备面，把这个主题压到目标岗位语境下重新收紧。");
         }
-        if (safeInt(detail.getApplicationFeedbackCount()) == 0) {
+        if (safeInt(detail.getApplicationFeedbackCount()) == 0 && safeInt(detail.getResumeEvidenceCount()) == 0) {
+            actions.add("把这个主题同步到至少 1 条真实投递推进反馈里，并补 1 轮简历项目表达或自我介绍打磨，验证它是否真的能支撑岗位转化。");
+        } else if (safeInt(detail.getApplicationFeedbackCount()) == 0) {
             actions.add("把这个主题同步到至少 1 条真实投递推进反馈里，验证它是否真的能支撑岗位转化。");
+        } else if (safeInt(detail.getResumeEvidenceCount()) == 0) {
+            actions.add("补 1 轮简历项目表达或自我介绍打磨，把这个主题写进真实面试口径。");
         }
         if (safeInt(detail.getCopilotPrepCount()) == 0) {
             actions.add("在下一次正式面试前补 1 次 Copilot Prep，提前暴露实时追问风险。");
@@ -500,6 +509,11 @@ public class AnalyticsServiceImpl implements AnalyticsService {
             suggestions.add("把已出现的投递反馈缺口同步回训练和简历表达，避免同类问题在下一批岗位重复出现。");
         } else {
             suggestions.add("当前还缺真实投递反馈，建议把这个主题同步到至少 1 条在投岗位里验证。");
+        }
+        if (safeInt(categoryAbility.getResumeEvidenceCount()) > 0) {
+            suggestions.add("把简历里的项目表达继续对齐训练口径，确保这个主题能直接讲成案例。");
+        } else {
+            suggestions.add("当前还缺简历项目表达证据，建议先补项目案例和自我介绍口径。");
         }
         if (categoryAbility.getRecordingReviewCount() != null && categoryAbility.getRecordingReviewCount() > 0) {
             suggestions.add("把真实录音复盘里暴露的表达问题同步进下一轮模拟，避免只修知识点不修表达。");
@@ -545,6 +559,9 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         String applicationText = safeInt(categoryAbility.getApplicationFeedbackCount()) > 0
                 ? "，同时已有 " + safeInt(categoryAbility.getApplicationFeedbackCount()) + " 条投递反馈证据"
                 : "，但还缺真实投递反馈证据";
+        String resumeText = safeInt(categoryAbility.getResumeEvidenceCount()) > 0
+                ? "，并且已有 " + safeInt(categoryAbility.getResumeEvidenceCount()) + " 份简历表达证据"
+                : "，当前还缺简历项目表达证据";
         String trendText = "";
         if (recentScores.size() >= 2) {
             Double first = recentScores.get(0).getScore();
@@ -558,7 +575,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
             case "forming" -> "，当前画像仍在形成中";
             default -> "";
         };
-        return "主题「" + categoryAbility.getCategoryName() + "」" + abilityText + reviewText + recordingText + prepText + applicationText + trendText + evidenceText + "。";
+        return "主题「" + categoryAbility.getCategoryName() + "」" + abilityText + reviewText + recordingText + prepText + applicationText + resumeText + trendText + evidenceText + "。";
     }
 
     private String resolveTopicEvidenceStatus(CategoryAbilityVO categoryAbility,
@@ -569,6 +586,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 + safeInt(categoryAbility.getJobPrepCount())
                 + safeInt(categoryAbility.getCopilotPrepCount())
                 + safeInt(categoryAbility.getApplicationFeedbackCount())
+                + safeInt(categoryAbility.getResumeEvidenceCount())
                 + (safeInt(categoryAbility.getWrongCount()) > 0 ? 1 : 0)
                 + (safeInt(categoryMastery.getDueCount()) > 0 ? 1 : 0);
         if (evidenceUnits <= 1 && recentScores.size() <= 1) {
@@ -589,6 +607,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         int jobPrepCount = safeInt(categoryAbility.getJobPrepCount());
         int copilotPrepCount = safeInt(categoryAbility.getCopilotPrepCount());
         int applicationFeedbackCount = safeInt(categoryAbility.getApplicationFeedbackCount());
+        int resumeEvidenceCount = safeInt(categoryAbility.getResumeEvidenceCount());
         int wrongCount = safeInt(categoryAbility.getWrongCount());
         int dueCount = safeInt(categoryMastery.getDueCount());
         return switch (evidenceStatus) {
@@ -598,6 +617,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                     + jobPrepCount + " 次 JD 备面、"
                     + copilotPrepCount + " 次 Copilot Prep、"
                     + applicationFeedbackCount + " 条投递反馈、"
+                    + resumeEvidenceCount + " 份简历表达、"
                     + wrongCount + " 道相关错题。建议先补 1-2 次同主题训练。";
             case "forming" -> "当前领域画像还在形成中，已沉淀 "
                     + interviews + " 场模拟面试、"
@@ -605,6 +625,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                     + jobPrepCount + " 次 JD 备面、"
                     + copilotPrepCount + " 次 Copilot Prep、"
                     + applicationFeedbackCount + " 条投递反馈、"
+                    + resumeEvidenceCount + " 份简历表达、"
                     + wrongCount + " 道相关错题"
                     + (dueCount > 0 ? "，以及 " + dueCount + " 个待复盘点" : "")
                     + "。";

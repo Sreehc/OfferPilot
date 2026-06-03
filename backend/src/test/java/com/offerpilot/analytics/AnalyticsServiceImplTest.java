@@ -298,6 +298,7 @@ class AnalyticsServiceImplTest {
                         .jobPrepCount(1)
                         .copilotPrepCount(1)
                         .applicationFeedbackCount(1)
+                        .resumeEvidenceCount(1)
                         .wrongCount(1)
                         .isWeak(false)
                         .recommendedDifficulty("medium")
@@ -356,17 +357,21 @@ class AnalyticsServiceImplTest {
         assertEquals(1, detail.getJobPrepCount());
         assertEquals(1, detail.getCopilotPrepCount());
         assertEquals(1, detail.getApplicationFeedbackCount());
+        assertEquals(1, detail.getResumeEvidenceCount());
         assertEquals("ready", detail.getEvidenceStatus());
         assertEquals(Boolean.TRUE, detail.getRetrospectiveReady());
         assertTrue(detail.getSummary().contains("真实录音复盘证据"));
         assertTrue(detail.getSummary().contains("Copilot Prep"));
         assertTrue(detail.getSummary().contains("投递反馈证据"));
+        assertTrue(detail.getSummary().contains("简历表达证据"));
         assertTrue(detail.getFocusRecommendations().stream()
                 .anyMatch(item -> item.contains("真实录音复盘里暴露的表达问题")));
         assertTrue(detail.getFocusRecommendations().stream()
                 .anyMatch(item -> item.contains("岗位化表达")));
         assertTrue(detail.getFocusRecommendations().stream()
                 .anyMatch(item -> item.contains("投递反馈缺口")));
+        assertTrue(detail.getFocusRecommendations().stream()
+                .anyMatch(item -> item.contains("项目表达") || item.contains("案例")));
     }
 
     @Test
@@ -384,6 +389,7 @@ class AnalyticsServiceImplTest {
                         .jobPrepCount(0)
                         .copilotPrepCount(0)
                         .applicationFeedbackCount(0)
+                        .resumeEvidenceCount(0)
                         .wrongCount(2)
                         .isWeak(true)
                         .recommendedDifficulty("easy")
@@ -450,5 +456,9 @@ class AnalyticsServiceImplTest {
                 .anyMatch(item -> item.contains("缺真实投递反馈证据")));
         assertTrue(retrospective.getNextActions().stream()
                 .anyMatch(item -> item.contains("真实投递推进反馈")));
+        assertTrue(retrospective.getRiskSignals().stream()
+                .anyMatch(item -> item.contains("缺简历项目表达证据")));
+        assertTrue(retrospective.getNextActions().stream()
+                .anyMatch(item -> item.contains("简历项目表达") || item.contains("自我介绍")));
     }
 }
