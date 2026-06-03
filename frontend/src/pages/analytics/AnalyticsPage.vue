@@ -629,7 +629,7 @@ import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import type { RouteLocationRaw } from 'vue-router'
+import type { LocationQueryRaw, RouteLocationRaw } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
 import { EMPTY_STATE_COPY } from '@/constants/productCopy'
 import { useTheme } from '@/composables/useTheme'
@@ -866,6 +866,25 @@ const buildSeededProductLink = (
   query: buildInterviewSeedQuery(topicName, workflow, note)
 })
 
+const buildSeededAgentWorkbenchLocation = (
+  prefill: Parameters<typeof buildAgentWorkbenchLocation>[0],
+  topicName?: string | null,
+  workflow?: string,
+  note?: string
+): RouteLocationRaw => {
+  const location = buildAgentWorkbenchLocation(prefill) as {
+    path: string
+    query?: LocationQueryRaw
+  }
+  return {
+    path: location.path,
+    query: {
+      ...(location.query || {}),
+      ...buildInterviewSeedQuery(topicName, workflow, note)
+    }
+  }
+}
+
 const buildTopicQuestionSeed = (topicName: string) => ({
   sourceQuestionTitle: `${topicName} 定向模拟`,
   sourceQuestionDirection: topicName
@@ -890,14 +909,16 @@ const buildTopicCopilotLiveLink = (topicName?: string | null, note?: string) =>
   buildInterviewWorkspaceLink('copilot-live', buildInterviewSeedQuery(topicName, 'copilot-live', note))
 
 const analyticsAgentLink = computed(() =>
-  buildAgentWorkbenchLocation({
+  buildSeededAgentWorkbenchLocation({
     agentType: 'study_planner',
     triggerSource: 'analytics',
     contextRefs: ['analytics:profile', 'analytics:weak-topics', 'study-plan:active', 'settings:providers'],
     userPrompt: abilityProfile.value.suggestedFocus
       ? `围绕当前薄弱点“${abilityProfile.value.suggestedFocus}”刷新下一轮训练动作。`
       : '根据当前训练画像刷新下一轮训练动作。'
-  })
+  }, abilityProfile.value.suggestedFocus, 'analytics', abilityProfile.value.suggestedFocus
+    ? `当前从训练洞察进入，优先围绕「${abilityProfile.value.suggestedFocus}」刷新下一轮动作。`
+    : '当前从训练洞察进入，优先根据训练画像刷新下一轮动作。')
 )
 const profileEmptyStateActions = computed(() => {
   const focusTopic = abilityProfile.value.suggestedFocus || '当前重点方向'
@@ -906,7 +927,12 @@ const profileEmptyStateActions = computed(() => {
       key: 'question-training',
       title: '先补一轮题库训练',
       description: `围绕 ${focusTopic} 先补基础训练证据，再回来观察画像是否开始成形。`,
-      to: '/question',
+      to: buildSeededProductLink(
+        '/question',
+        focusTopic,
+        'question',
+        `当前从训练洞察进入，优先补 ${focusTopic} 相关题库证据。`
+      ),
       toneClass: 'profile-action-card--accent'
     },
     {
@@ -1013,7 +1039,7 @@ const topicPlannerAgentLink = computed(() => {
   if (!topicDetail.value?.categoryId) {
     return analyticsAgentLink.value
   }
-  return buildAgentWorkbenchLocation({
+  return buildSeededAgentWorkbenchLocation({
     agentType: 'study_planner',
     triggerSource: 'analytics',
     contextRefs: [
@@ -1023,13 +1049,13 @@ const topicPlannerAgentLink = computed(() => {
       'settings:providers'
     ],
     userPrompt: `结合 ${topicDetail.value.categoryName} 的领域详情和回顾结果，生成下一轮训练动作。`
-  })
+  }, topicDetail.value.categoryName, 'analytics', `当前从领域详情进入，优先围绕「${topicDetail.value.categoryName}」刷新下一轮动作。`)
 })
 const topicRetrospectivePlannerAgentLink = computed(() => {
   if (!topicRetrospective.value?.categoryId) {
     return topicPlannerAgentLink.value
   }
-  return buildAgentWorkbenchLocation({
+  return buildSeededAgentWorkbenchLocation({
     agentType: 'study_planner',
     triggerSource: 'analytics',
     contextRefs: [
@@ -1041,7 +1067,7 @@ const topicRetrospectivePlannerAgentLink = computed(() => {
       'settings:providers'
     ],
     userPrompt: `把 ${topicRetrospective.value.categoryName} 的领域回顾结论转成下一轮正式训练动作。`
-  })
+  }, topicRetrospective.value.categoryName, 'analytics', `当前从领域回顾进入，优先围绕「${topicRetrospective.value.categoryName}」刷新下一轮动作。`)
 })
 const topicWorkflowActions = computed(() => {
   if (!topicDetail.value) return profileWorkflowActions.value
