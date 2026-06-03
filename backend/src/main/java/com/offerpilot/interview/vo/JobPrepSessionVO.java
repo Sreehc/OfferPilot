@@ -31,6 +31,8 @@ public class JobPrepSessionVO {
     private List<String> resumeTalkingPoints;
     private List<String> mockQuestions;
     private List<String> nextActions;
+    private String providerStatus;
+    private String providerStatusMessage;
     private List<ProviderReadinessVO> providerReadiness;
     private String summary;
     private LocalDateTime updateTime;

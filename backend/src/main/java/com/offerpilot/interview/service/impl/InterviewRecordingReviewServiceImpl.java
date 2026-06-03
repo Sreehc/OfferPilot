@@ -122,6 +122,7 @@ public class InterviewRecordingReviewServiceImpl implements InterviewRecordingRe
     }
 
     private RecordingReviewSessionVO buildVo(RecordingReviewSession session, List<RecordingTranscriptSegment> segments) {
+        List<RecordingReviewSessionVO.ProviderReadinessVO> providerReadiness = resolveProviderReadiness();
         return RecordingReviewSessionVO.builder()
                 .id(session.getId())
                 .direction(session.getDirection())
@@ -137,7 +138,9 @@ public class InterviewRecordingReviewServiceImpl implements InterviewRecordingRe
                 .strengths(readList(session.getStrengthsJson()))
                 .weakPoints(readList(session.getWeakPointsJson()))
                 .suggestedActions(readList(session.getSuggestedActionsJson()))
-                .providerReadiness(resolveProviderReadiness())
+                .providerStatus(resolveProviderStatus(providerReadiness))
+                .providerStatusMessage(buildProviderStatusMessage(providerReadiness))
+                .providerReadiness(providerReadiness)
                 .segments(segments.stream()
                         .map(item -> RecordingReviewSessionVO.SegmentVO.builder()
                                 .id(item.getId())
@@ -152,6 +155,34 @@ public class InterviewRecordingReviewServiceImpl implements InterviewRecordingRe
                 .build();
     }
 
+    private String resolveProviderStatus(List<RecordingReviewSessionVO.ProviderReadinessVO> providerReadiness) {
+        boolean asrMissing = providerReadiness.stream()
+                .filter(item -> "asr".equalsIgnoreCase(item.getScope()))
+                .anyMatch(item -> !isProviderAvailable(item.getStatus()));
+        if (asrMissing) {
+            return "blocked";
+        }
+        boolean hasUnavailable = providerReadiness.stream()
+                .anyMatch(item -> !isProviderAvailable(item.getStatus()));
+        return hasUnavailable ? "degraded" : "ready";
+    }
+
+    private String buildProviderStatusMessage(List<RecordingReviewSessionVO.ProviderReadinessVO> providerReadiness) {
+        List<String> unavailable = providerReadiness.stream()
+                .filter(item -> !isProviderAvailable(item.getStatus()))
+                .map(RecordingReviewSessionVO.ProviderReadinessVO::getLabel)
+                .toList();
+        if (unavailable.isEmpty()) {
+            return "录音复盘当前依赖已就绪。";
+        }
+        boolean asrMissing = providerReadiness.stream()
+                .filter(item -> "asr".equalsIgnoreCase(item.getScope()))
+                .anyMatch(item -> !isProviderAvailable(item.getStatus()));
+        return asrMissing
+                ? "录音复盘当前缺少关键依赖：" + String.join("、", unavailable) + "。"
+                : "录音复盘当前有依赖未完全就绪：" + String.join("、", unavailable) + "，部分能力会按降级模式运行。";
+    }
+
     private List<RecordingReviewSessionVO.ProviderReadinessVO> resolveProviderReadiness() {
         Map<String, UserProviderConfigItemVO> configMap = new LinkedHashMap<>();
         for (UserProviderConfigItemVO item : userProviderConfigService.listCurrentUserConfigs()) {
@@ -162,7 +193,7 @@ public class InterviewRecordingReviewServiceImpl implements InterviewRecordingRe
         List<RecordingReviewSessionVO.ProviderReadinessVO> readiness = new ArrayList<>();
         for (String scope : RECORDING_REVIEW_PROVIDER_SCOPES) {
             UserProviderConfigItemVO item = configMap.get(scope);
-            String label = item == null ? scope.toUpperCase(Locale.ROOT) : item.getLabel();
+            String label = item == null ? fallbackProviderLabel(scope) : item.getLabel();
             String status = item == null ? "missing" : item.getStatus();
             String statusMessage = item == null ? "还没有保存这类配置。" : item.getStatusMessage();
             if ("oss".equals(scope) && item == null) {
@@ -195,5 +226,21 @@ public class InterviewRecordingReviewServiceImpl implements InterviewRecordingRe
             return null;
         }
         return value.trim();
+    }
+
+    private boolean isProviderAvailable(String status) {
+        return "ready".equalsIgnoreCase(status) || "saved".equalsIgnoreCase(status);
+    }
+
+    private String fallbackProviderLabel(String scope) {
+        return switch (scope == null ? "" : scope.toLowerCase(Locale.ROOT)) {
+            case "search" -> "联网搜索";
+            case "asr" -> "语音识别";
+            case "oss" -> "对象存储";
+            case "voiceprint" -> "声纹识别";
+            case "llm" -> "主模型";
+            case "embedding" -> "向量模型";
+            default -> scope == null ? "" : scope.toUpperCase(Locale.ROOT);
+        };
     }
 }

@@ -274,7 +274,7 @@ public class InterviewCopilotPrepServiceImpl implements InterviewCopilotPrepServ
             UserProviderConfigItemVO item = configMap.get(scope);
             readiness.add(CopilotPrepSessionVO.ProviderReadinessVO.builder()
                     .scope(scope)
-                    .label(item == null ? scope.toUpperCase(Locale.ROOT) : item.getLabel())
+                    .label(item == null ? fallbackProviderLabel(scope) : item.getLabel())
                     .status(item == null ? "missing" : item.getStatus())
                     .statusMessage(item == null ? "还没有保存这类配置。" : item.getStatusMessage())
                     .build());
@@ -330,6 +330,7 @@ public class InterviewCopilotPrepServiceImpl implements InterviewCopilotPrepServ
     }
 
     private CopilotPrepSessionVO buildVo(CopilotPrepSession session, String resumeTitle) {
+        List<CopilotPrepSessionVO.ProviderReadinessVO> providerReadiness = readProviderList(session.getProviderReadinessJson());
         return CopilotPrepSessionVO.builder()
                 .id(session.getId())
                 .applicationId(session.getApplicationId())
@@ -347,9 +348,28 @@ public class InterviewCopilotPrepServiceImpl implements InterviewCopilotPrepServ
                 .liveCues(readList(session.getLiveCuesJson()))
                 .followUpQuestions(readList(session.getFollowUpQuestionsJson()))
                 .nextActions(readList(session.getNextActionsJson()))
-                .providerReadiness(readProviderList(session.getProviderReadinessJson()))
+                .providerStatus(resolveProviderStatus(providerReadiness))
+                .providerStatusMessage(buildProviderStatusMessage(providerReadiness))
+                .providerReadiness(providerReadiness)
                 .updateTime(session.getUpdateTime())
                 .build();
+    }
+
+    private String resolveProviderStatus(List<CopilotPrepSessionVO.ProviderReadinessVO> providerReadiness) {
+        boolean hasUnavailable = providerReadiness.stream()
+                .anyMatch(item -> !isProviderAvailable(item.getStatus()));
+        return hasUnavailable ? "degraded" : "ready";
+    }
+
+    private String buildProviderStatusMessage(List<CopilotPrepSessionVO.ProviderReadinessVO> providerReadiness) {
+        List<String> unavailable = providerReadiness.stream()
+                .filter(item -> !isProviderAvailable(item.getStatus()))
+                .map(CopilotPrepSessionVO.ProviderReadinessVO::getLabel)
+                .toList();
+        if (unavailable.isEmpty()) {
+            return "Copilot Prep 当前依赖已就绪。";
+        }
+        return "Copilot Prep 当前有依赖未完全就绪：" + String.join("、", unavailable) + "，会前建议会按降级模式生成。";
     }
 
     private List<String> extractKeywords(String jdText) {
@@ -427,6 +447,22 @@ public class InterviewCopilotPrepServiceImpl implements InterviewCopilotPrepServ
             }
         }
         return null;
+    }
+
+    private boolean isProviderAvailable(String status) {
+        return "ready".equalsIgnoreCase(status) || "saved".equalsIgnoreCase(status);
+    }
+
+    private String fallbackProviderLabel(String scope) {
+        return switch (scope == null ? "" : scope.toLowerCase(Locale.ROOT)) {
+            case "search" -> "联网搜索";
+            case "asr" -> "语音识别";
+            case "oss" -> "对象存储";
+            case "voiceprint" -> "声纹识别";
+            case "llm" -> "主模型";
+            case "embedding" -> "向量模型";
+            default -> scope == null ? "" : scope.toUpperCase(Locale.ROOT);
+        };
     }
 
     private Long firstNonNull(Long... values) {

@@ -77,6 +77,8 @@ class InterviewCopilotPrepServiceImplTest {
         assertEquals("Java 后端简历", result.getResumeTitle());
         assertEquals("美团", result.getCompany());
         assertEquals("资深 Java 工程师", result.getJobTitle());
+        assertEquals("ready", result.getProviderStatus());
+        assertTrue(result.getProviderStatusMessage().contains("已就绪"));
         assertTrue(result.getOpeningBrief().stream().anyMatch(item -> item.contains("项目背景")));
         assertTrue(result.getNextActions().stream().anyMatch(item -> item.contains("60-90 秒口语版")));
     }

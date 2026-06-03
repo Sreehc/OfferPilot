@@ -315,7 +315,7 @@ public class InterviewJobPrepServiceImpl implements InterviewJobPrepService {
             UserProviderConfigItemVO item = configMap.get(scope);
             readiness.add(JobPrepSessionVO.ProviderReadinessVO.builder()
                     .scope(scope)
-                    .label(item == null ? scope.toUpperCase(Locale.ROOT) : item.getLabel())
+                    .label(item == null ? fallbackProviderLabel(scope) : item.getLabel())
                     .status(item == null ? "missing" : item.getStatus())
                     .statusMessage(item == null ? "还没有保存这类配置。" : item.getStatusMessage())
                     .build());
@@ -382,6 +382,7 @@ public class InterviewJobPrepServiceImpl implements InterviewJobPrepService {
     }
 
     private JobPrepSessionVO buildVo(JobPrepSession session, String resumeTitle) {
+        List<JobPrepSessionVO.ProviderReadinessVO> providerReadiness = resolveProviderReadiness();
         return JobPrepSessionVO.builder()
                 .id(session.getId())
                 .applicationId(session.getApplicationId())
@@ -398,10 +399,52 @@ public class InterviewJobPrepServiceImpl implements InterviewJobPrepService {
                 .resumeTalkingPoints(readList(session.getResumeTalkingPointsJson()))
                 .mockQuestions(readList(session.getMockQuestionsJson()))
                 .nextActions(readList(session.getNextActionsJson()))
-                .providerReadiness(resolveProviderReadiness())
+                .providerStatus(resolveProviderStatus(providerReadiness, false))
+                .providerStatusMessage(buildProviderStatusMessage(providerReadiness, false, "JD 备面"))
+                .providerReadiness(providerReadiness)
                 .summary(session.getSummary())
                 .updateTime(session.getUpdateTime())
                 .build();
+    }
+
+    private String resolveProviderStatus(List<JobPrepSessionVO.ProviderReadinessVO> providerReadiness, boolean requiredOnly) {
+        boolean hasUnavailable = providerReadiness.stream()
+                .anyMatch(item -> !isProviderAvailable(item.getStatus()));
+        if (!hasUnavailable) {
+            return "ready";
+        }
+        return requiredOnly ? "blocked" : "degraded";
+    }
+
+    private String buildProviderStatusMessage(List<JobPrepSessionVO.ProviderReadinessVO> providerReadiness,
+                                              boolean requiredOnly,
+                                              String label) {
+        List<String> unavailable = providerReadiness.stream()
+                .filter(item -> !isProviderAvailable(item.getStatus()))
+                .map(JobPrepSessionVO.ProviderReadinessVO::getLabel)
+                .toList();
+        if (unavailable.isEmpty()) {
+            return label + " 当前依赖已就绪。";
+        }
+        return requiredOnly
+                ? label + " 当前缺少关键依赖：" + String.join("、", unavailable) + "。"
+                : label + " 当前有依赖未完全就绪：" + String.join("、", unavailable) + "，相关能力会按降级模式运行。";
+    }
+
+    private boolean isProviderAvailable(String status) {
+        return "ready".equalsIgnoreCase(status) || "saved".equalsIgnoreCase(status);
+    }
+
+    private String fallbackProviderLabel(String scope) {
+        return switch (scope == null ? "" : scope.toLowerCase(Locale.ROOT)) {
+            case "search" -> "联网搜索";
+            case "asr" -> "语音识别";
+            case "oss" -> "对象存储";
+            case "voiceprint" -> "声纹识别";
+            case "llm" -> "主模型";
+            case "embedding" -> "向量模型";
+            default -> scope == null ? "" : scope.toUpperCase(Locale.ROOT);
+        };
     }
 
     private String firstNonBlank(String... values) {

@@ -28,6 +28,8 @@ public class RecordingReviewSessionVO {
     private List<String> strengths;
     private List<String> weakPoints;
     private List<String> suggestedActions;
+    private String providerStatus;
+    private String providerStatusMessage;
     private List<ProviderReadinessVO> providerReadiness;
     private List<SegmentVO> segments;
     private LocalDateTime updateTime;

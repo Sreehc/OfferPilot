@@ -32,6 +32,8 @@ public class CopilotPrepSessionVO {
     private List<String> liveCues;
     private List<String> followUpQuestions;
     private List<String> nextActions;
+    private String providerStatus;
+    private String providerStatusMessage;
     private List<ProviderReadinessVO> providerReadiness;
     private LocalDateTime updateTime;
 

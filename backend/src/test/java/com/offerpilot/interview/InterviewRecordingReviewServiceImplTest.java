@@ -87,6 +87,8 @@ class InterviewRecordingReviewServiceImplTest {
         assertEquals("ready", result.getProviderReadiness().get(0).getStatus());
         assertEquals("oss", result.getProviderReadiness().get(1).getScope());
         assertEquals("missing", result.getProviderReadiness().get(1).getStatus());
+        assertEquals("degraded", result.getProviderStatus());
+        assertTrue(result.getProviderStatusMessage().contains("对象存储"));
         assertTrue(result.getProviderReadiness().get(1).getStatusMessage().contains("长音频上传能力可能受限"));
         verify(recordingReviewAsyncProcessor).processReview(eq(88L), any(byte[].class), eq("audio/webm"));
     }
@@ -113,6 +115,8 @@ class InterviewRecordingReviewServiceImplTest {
 
         assertEquals("33", String.valueOf(result.getId()));
         assertEquals("Java 后端", result.getDirection());
+        assertEquals("blocked", result.getProviderStatus());
+        assertTrue(result.getProviderStatusMessage().contains("关键依赖"));
         assertEquals(1, result.getSegments().size());
         assertEquals("这里是片段转写", result.getSegments().get(0).getTranscriptText());
     }

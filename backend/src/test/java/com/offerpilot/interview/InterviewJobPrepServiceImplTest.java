@@ -71,6 +71,8 @@ class InterviewJobPrepServiceImplTest {
         assertEquals(1, result.getProviderReadiness().size());
         assertEquals("search", result.getProviderReadiness().get(0).getScope());
         assertEquals("missing", result.getProviderReadiness().get(0).getStatus());
+        assertEquals("degraded", result.getProviderStatus());
+        assertTrue(result.getProviderStatusMessage().contains("联网搜索"));
         assertTrue(result.getSummary().contains("降级生成"));
         assertTrue(result.getNextActions().stream().anyMatch(item -> item.contains("联网搜索未完全就绪")));
     }
@@ -108,6 +110,8 @@ class InterviewJobPrepServiceImplTest {
         assertEquals("后端专项简历", result.getResumeTitle());
         assertEquals("字节跳动", result.getCompany());
         assertEquals("后端开发", result.getJobTitle());
+        assertEquals("degraded", result.getProviderStatus());
+        assertTrue(result.getProviderStatusMessage().contains("JD 备面"));
         assertTrue(result.getMissingKeywords().contains("Kafka"));
     }
 }
