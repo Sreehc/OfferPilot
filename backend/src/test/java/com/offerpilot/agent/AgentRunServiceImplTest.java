@@ -728,6 +728,51 @@ class AgentRunServiceImplTest {
     }
 
     @Test
+    void createRun_realtimeCopilotUsesRealtimeSessionContext() {
+        when(interviewCopilotRealtimeService.detail(1L, 88L)).thenReturn(CopilotRealtimeSessionVO.builder()
+                .id(88L)
+                .company("小红书")
+                .jobTitle("资深后端工程师")
+                .status("live")
+                .providerStatus("degraded")
+                .latestEventSummary("面试官正在追问 Redis 双写一致性。")
+                .liveChecklist(List.of("先给结论，再补一致性权衡。", "如果继续追问，再落到项目案例。"))
+                .build());
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "realtime_copilot",
+                "interview_live",
+                List.of("interview:copilot-realtime:88"),
+                "根据现场追问调整回答重点"));
+
+        assertTrue(result.getSummary().contains("实时 Copilot 已连接"));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("Redis 双写一致性")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("实时检查清单")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("降级模式")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("根据现场追问调整回答重点")));
+        assertEquals("/interview", result.getNextActionPath());
+    }
+
+    @Test
+    void createRun_coordinatorUsesLiveRealtimeContext() {
+        when(interviewCopilotRealtimeService.detail(1L, 88L)).thenReturn(CopilotRealtimeSessionVO.builder()
+                .id(88L)
+                .company("小红书")
+                .jobTitle("资深后端工程师")
+                .status("live")
+                .build());
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "coordinator",
+                "interview_live",
+                List.of("interview:copilot-realtime:88"),
+                "帮我判断当前阶段的下一步"));
+
+        assertEquals("/interview", result.getNextActionPath());
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("实时 Copilot 当前仍在连接中")));
+    }
+
+    @Test
     void createRun_jobPrepUsesProviderSettingsContextForDegradedRecommendations() {
         when(userProviderConfigService.listCurrentUserConfigs()).thenReturn(List.of(
                 UserProviderConfigItemVO.builder()

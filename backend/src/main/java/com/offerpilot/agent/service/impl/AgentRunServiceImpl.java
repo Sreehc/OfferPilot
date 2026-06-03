@@ -508,7 +508,14 @@ public class AgentRunServiceImpl implements AgentRunService {
     private RunBlueprint buildRealtimeCopilotBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
         String summary;
         List<String> recommendations;
-        if (snapshot.copilotPrepSession() != null) {
+        if (snapshot.copilotRealtimeSession() != null) {
+            CopilotRealtimeSessionVO realtimeSession = snapshot.copilotRealtimeSession();
+            summary = realtimeCopilotSummary(realtimeSession);
+            recommendations = mergeRecommendations(
+                    realtimeCopilotLiveRecommendations(realtimeSession),
+                    prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”同步到当前实时 Copilot 会话。") : List.of(),
+                    contextRefsText(contextRefs, "实时阶段引用："));
+        } else if (snapshot.copilotPrepSession() != null) {
             CopilotPrepSessionVO prepSession = snapshot.copilotPrepSession();
             summary = "已根据 " + defaultText(prepSession.getCompany(), "当前岗位") + " "
                     + defaultText(prepSession.getJobTitle(), "会前 Prep")
@@ -892,6 +899,44 @@ public class AgentRunServiceImpl implements AgentRunService {
         return recommendations;
     }
 
+    private String realtimeCopilotSummary(CopilotRealtimeSessionVO session) {
+        String label = defaultText(session.getCompany(), "当前岗位") + " / " + defaultText(session.getJobTitle(), "实时阶段");
+        return switch (normalize(session.getStatus())) {
+            case "live" -> label + " 的实时 Copilot 已连接，可以继续按当前会话信号调整回答。";
+            case "awaiting_connection" -> label + " 的实时 Copilot 会话已创建，等待建立连接。";
+            case "disconnected" -> label + " 的实时 Copilot 已断开，适合先决定重连还是转入面后复盘。";
+            case "completed" -> defaultText(
+                    session.getPostInterviewReview() == null ? null : session.getPostInterviewReview().getSummary(),
+                    label + " 的实时阶段已结束，下一步适合整理面后复盘。");
+            default -> label + " 的实时 Copilot 会话已就绪。";
+        };
+    }
+
+    private List<String> realtimeCopilotLiveRecommendations(CopilotRealtimeSessionVO session) {
+        List<String> recommendations = new ArrayList<>();
+        if (StringUtils.hasText(session.getLatestEventSummary())) {
+            recommendations.add("当前会话最新状态：" + abbreviate(session.getLatestEventSummary(), 48));
+        }
+        if (!nullSafeList(session.getLiveChecklist()).isEmpty()) {
+            recommendations.add("优先盯住这些实时检查清单：" + joinLimited(session.getLiveChecklist(), 2, "；") + "。");
+        }
+        switch (normalize(session.getStatus())) {
+            case "live" -> recommendations.add("当前实时连接已建立，建议边答边收束重点，避免现场追问失焦。");
+            case "awaiting_connection" -> recommendations.add("先确认 WebSocket 连接和会前提纲都已就绪，再正式进入实时阶段。");
+            case "disconnected" -> recommendations.add("如果面试还在继续，先尝试恢复连接；否则立即整理现场备注，避免细节丢失。");
+            case "completed" -> recommendations.addAll(copilotRealtimeRecommendations(session));
+            default -> {
+            }
+        }
+        if ("degraded".equals(normalize(session.getProviderStatus()))) {
+            recommendations.add("当前实时阶段处于降级模式，建议优先保留关键追问和现场备注，避免过度依赖自动能力。");
+        }
+        if (recommendations.isEmpty()) {
+            recommendations.add("先确认当前实时阶段是要继续连接、补记录，还是直接转入面后复盘。");
+        }
+        return recommendations;
+    }
+
     private List<String> retrospectiveRecommendations(ProfileTopicRetrospectiveVO retrospective) {
         List<String> recommendations = new ArrayList<>();
         if (!nullSafeList(retrospective.getRiskSignals()).isEmpty()) {
@@ -990,7 +1035,7 @@ public class AgentRunServiceImpl implements AgentRunService {
             recommendations.add("真实录音已经形成复盘证据，优先把薄弱点转成正式训练动作。");
         }
         if (snapshot.copilotRealtimeSession() != null) {
-            recommendations.add("实时 Copilot 已结束，先把现场备注和追问链路整理成正式复盘。");
+            recommendations.add(realtimeCoordinatorHint(snapshot.copilotRealtimeSession()));
         }
         if (snapshot.copilotPrepSession() != null) {
             recommendations.add("Copilot Prep 已整理完成，下一步可以直接进入实时阶段或补一轮会前口语演练。");
@@ -1014,6 +1059,16 @@ public class AgentRunServiceImpl implements AgentRunService {
             recommendations.add("把结果写入对应模块，而不是停留在对话摘要。");
         }
         return recommendations;
+    }
+
+    private String realtimeCoordinatorHint(CopilotRealtimeSessionVO session) {
+        return switch (normalize(session.getStatus())) {
+            case "live" -> "实时 Copilot 当前仍在连接中，先围绕现场信号和检查清单继续推进。";
+            case "awaiting_connection" -> "实时 Copilot 会话已创建，下一步先完成连接并进入实时阶段。";
+            case "disconnected" -> "实时 Copilot 已断开，先决定是否重连，或立即整理现场备注转入复盘。";
+            case "completed" -> "实时 Copilot 已结束，先把现场备注和追问链路整理成正式复盘。";
+            default -> "实时 Copilot 会话已就绪，建议先确认当前阶段应该继续连接还是转入复盘。";
+        };
     }
 
     private List<String> applicationBoardRecommendations(ApplicationBoardSnapshot boardSnapshot) {
