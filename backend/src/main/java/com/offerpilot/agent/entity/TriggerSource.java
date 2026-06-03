@@ -8,6 +8,7 @@ public enum TriggerSource {
     DASHBOARD("dashboard"),
     ANALYTICS("analytics"),
     INTERVIEW("interview"),
+    RESUME("resume"),
     APPLICATIONS("applications"),
     RECORDING_REVIEW("recording_review"),
     INTERVIEW_LIVE("interview_live"),

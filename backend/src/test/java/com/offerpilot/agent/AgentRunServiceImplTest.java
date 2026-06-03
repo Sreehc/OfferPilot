@@ -1279,6 +1279,28 @@ class AgentRunServiceImplTest {
     }
 
     @Test
+    void createRun_resumeCoachAcceptsResumeTriggerSource() {
+        when(resumeService.detail(1L, 15L)).thenReturn(ResumeFileVO.builder()
+                .id(15L)
+                .title("Java 后端简历")
+                .summary("3 年 Java 后端开发，负责高并发交易链路。")
+                .selfIntro("我会先用交易链路改造作为开场。")
+                .skills(List.of("Java", "Spring Boot", "Redis"))
+                .build());
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "resume_coach",
+                "resume",
+                List.of("resume:15", "analytics:profile"),
+                "围绕当前简历整理下一轮优化动作"));
+
+        assertTrue(result.getSummary().contains("Java 后端简历"));
+        assertEquals("resume", result.getTriggerSource());
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("Java")));
+        assertEquals("save_resume_follow_up_draft", result.getApprovalActionType());
+    }
+
+    @Test
     void approveRun_persistsResumeFollowUpDraftFromApplicationBoardFocus() {
         when(jobApplicationService.board(1L)).thenReturn(List.of(
                 JobApplicationVO.builder()
