@@ -701,6 +701,8 @@ public class AgentRunServiceImpl implements AgentRunService {
             recordingReview = loadOptional(
                     "recording review " + recordingReviewId,
                     () -> interviewRecordingReviewService.detail(userId, recordingReviewId));
+        } else if (hasContext(contextRefs, "interview:recording-review")) {
+            recordingReview = loadOptional("latest recording review", () -> interviewRecordingReviewService.latest(userId));
         }
 
         Long jobPrepSessionId = findContextRefId(contextRefs, "interview:job-prep:");

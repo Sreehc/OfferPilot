@@ -8,4 +8,6 @@ public interface InterviewRecordingReviewService {
                                           byte[] audioData, String mimeType, String originalFilename);
 
     RecordingReviewSessionVO detail(Long userId, Long sessionId);
+
+    RecordingReviewSessionVO latest(Long userId);
 }

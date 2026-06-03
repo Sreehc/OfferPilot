@@ -775,6 +775,29 @@ class AgentRunServiceImplTest {
         assertTrue(approved.getExecutionSummary().contains("正式训练任务"));
     }
 
+    @Test
+    void createRun_recordingReviewUsesLatestContextWhenIdMissing() {
+        when(interviewRecordingReviewService.latest(1L)).thenReturn(RecordingReviewSessionVO.builder()
+                .id(77L)
+                .direction("系统设计")
+                .jobRole("后端开发")
+                .overallScore(new BigDecimal("59"))
+                .weakPoints(List.of("回答结构", "案例细节"))
+                .suggestedActions(List.of("先回听录音片段", "把问题转成专项训练"))
+                .build());
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "recording_review",
+                "recording_review",
+                List.of("interview:recording-review", "study-plan:active"),
+                "把最近一次真实复盘转成训练动作"));
+
+        verify(interviewRecordingReviewService).latest(1L);
+        assertTrue(result.getSummary().contains("录音复盘"));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("回答结构")));
+        assertEquals("save_recording_review_action", result.getApprovalActionType());
+    }
+
     private AgentRunCreateRequest request(String agentType, String triggerSource, List<String> contextRefs, String prompt) {
         AgentRunCreateRequest request = new AgentRunCreateRequest();
         request.setAgentType(agentType);

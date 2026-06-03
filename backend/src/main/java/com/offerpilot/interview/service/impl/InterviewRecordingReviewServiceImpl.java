@@ -87,6 +87,20 @@ public class InterviewRecordingReviewServiceImpl implements InterviewRecordingRe
         return buildVo(session, loadSegments(sessionId));
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public RecordingReviewSessionVO latest(Long userId) {
+        RecordingReviewSession session = recordingReviewSessionMapper.selectOne(new LambdaQueryWrapper<RecordingReviewSession>()
+                .eq(RecordingReviewSession::getUserId, userId)
+                .orderByDesc(RecordingReviewSession::getUpdateTime)
+                .orderByDesc(RecordingReviewSession::getId)
+                .last("LIMIT 1"));
+        if (session == null) {
+            return null;
+        }
+        return buildVo(session, loadSegments(session.getId()));
+    }
+
     private void launchAfterCommit(Long sessionId, byte[] audioData, String mimeType) {
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
             recordingReviewAsyncProcessor.processReview(sessionId, audioData, mimeType);
