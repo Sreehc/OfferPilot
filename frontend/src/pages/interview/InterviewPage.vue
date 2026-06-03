@@ -2335,6 +2335,10 @@ const hydrateInterviewWorkspaceFromRoute = async () => {
     recordingReviewSessionId
   } = resolveInterviewWorkspaceRouteState()
 
+  const hasJobPrepSeedContext = Boolean(jobPrepSessionId)
+  const hasCopilotPrepSeedContext = Boolean(copilotPrepSessionId || jobPrepSessionId)
+  const hasCopilotRealtimeSeedContext = Boolean(copilotRealtimeSessionId || copilotPrepSessionId || jobPrepSessionId)
+
   try {
     if (jobPrepSessionId && jobPrepSession.value?.id !== jobPrepSessionId) {
       const response = await fetchJobPrepSessionApi(jobPrepSessionId)
@@ -2351,7 +2355,7 @@ const hydrateInterviewWorkspaceFromRoute = async () => {
         linkedCopilotJobPrepId.value = response.data.jobPrepSessionId
       }
       await syncInterviewWorkspaceRoute('copilot-prep', response.data.id)
-    } else if (workspace === 'copilot-prep' && !copilotPrepSessionId && !copilotPrepSession.value) {
+    } else if (workspace === 'copilot-prep' && !hasCopilotPrepSeedContext && !copilotPrepSession.value) {
       await hydrateLatestCopilotPrepSession()
     }
     if (copilotRealtimeSessionId && copilotRealtimeSession.value?.id !== copilotRealtimeSessionId) {
@@ -2364,7 +2368,7 @@ const hydrateInterviewWorkspaceFromRoute = async () => {
       if (copilotRealtimeSession.value?.id) {
         await syncInterviewWorkspaceRoute('copilot-live', copilotRealtimeSession.value.id)
       }
-    } else if (workspace === 'copilot-live' && !copilotRealtimeSessionId && !copilotRealtimeSession.value) {
+    } else if (workspace === 'copilot-live' && !hasCopilotRealtimeSeedContext && !copilotRealtimeSession.value) {
       await hydrateLatestCopilotRealtimeSession()
     }
     if (recordingReviewSessionId && recordingReviewSession.value?.id !== recordingReviewSessionId) {
@@ -2381,7 +2385,7 @@ const hydrateInterviewWorkspaceFromRoute = async () => {
     ElMessage.error('无法恢复指定的面试工作区上下文，请稍后重试。')
   }
 
-  if (workspace === 'job-prep' && jobPrepSession.value?.id) {
+  if (workspace === 'job-prep' && hasJobPrepSeedContext && jobPrepSession.value?.id) {
     await syncInterviewWorkspaceRoute('job-prep', jobPrepSession.value.id)
   }
   if (workspace === 'copilot-prep' && copilotPrepSession.value?.id) {
