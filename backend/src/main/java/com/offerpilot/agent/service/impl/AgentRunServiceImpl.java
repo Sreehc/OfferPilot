@@ -841,6 +841,18 @@ public class AgentRunServiceImpl implements AgentRunService {
             recommendations.add("目标岗位仍缺 "
                     + joinLimited(snapshot.application().getMissingKeywords(), 2, "、")
                     + " 关键词，计划里要补这组内容。");
+        } else if (snapshot.applicationBoard() != null
+                && snapshot.applicationBoard().focusApplication() != null
+                && !nullSafeList(snapshot.applicationBoard().focusApplication().getMissingKeywords()).isEmpty()) {
+            JobApplicationVO focusApplication = snapshot.applicationBoard().focusApplication();
+            recommendations.add("当前优先投递岗位「"
+                    + defaultText(focusApplication.getJobTitle(), defaultText(focusApplication.getCompany(), "当前焦点岗位"))
+                    + "」仍缺 "
+                    + joinLimited(focusApplication.getMissingKeywords(), 2, "、")
+                    + " 关键词，下一轮计划要补这组内容。");
+            if (StringUtils.hasText(focusApplication.getNextStepSuggestion())) {
+                recommendations.add("看板推进提醒：" + abbreviate(focusApplication.getNextStepSuggestion(), 40));
+            }
         }
         if (recommendations.isEmpty()) {
             recommendations.add("先处理到期待复盘，再安排新的专项训练。");

@@ -280,6 +280,35 @@ class AgentRunServiceImplTest {
     }
 
     @Test
+    void createRun_studyPlannerUsesApplicationBoardFocus() {
+        when(analyticsService.getAbilityProfile(1L)).thenReturn(AbilityProfileVO.builder()
+                .suggestedFocus("系统设计")
+                .recommendedDifficulty("medium")
+                .build());
+        when(jobApplicationService.board(1L)).thenReturn(List.of(
+                JobApplicationVO.builder()
+                        .id(5L)
+                        .resumeFileId(12L)
+                        .company("字节跳动")
+                        .jobTitle("后端开发")
+                        .status("interview")
+                        .matchScore(new BigDecimal("81"))
+                        .missingKeywords(List.of("Redis", "Kafka"))
+                        .nextStepSuggestion("下周一面前先补缓存一致性和 MQ 场景。")
+                        .build()));
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "study_planner",
+                "analytics",
+                List.of("study-plan:active", "analytics:profile", "application:board"),
+                "把训练动作和优先投递岗位对齐"));
+
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("当前优先投递岗位")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("Redis")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("MQ 场景")));
+    }
+
+    @Test
     void approveRun_persistsTopicRetrospectiveAsFormalTrainingAction() {
         when(analyticsService.getAbilityProfile(1L)).thenReturn(AbilityProfileVO.builder()
                 .suggestedFocus("JVM")
