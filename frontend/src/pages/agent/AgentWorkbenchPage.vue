@@ -124,6 +124,13 @@
             <h2 class="text-2xl font-semibold tracking-[-0.03em] text-ink">最近 Run</h2>
             <p class="mt-1 text-sm text-secondary">按更新时间倒序显示，可回看各模块发起过的结果。</p>
           </div>
+          <el-button
+            v-if="hasActiveFilters"
+            class="action-button"
+            @click="handleClearFilters"
+          >
+            清空筛选
+          </el-button>
         </div>
 
         <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
@@ -398,7 +405,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import {
   approveAgentRunApi,
   cancelAgentRunApi,
@@ -413,6 +420,7 @@ import { PRODUCT_PAGE_NAMES } from '@/constants/productCopy'
 import type { AgentRun } from '@/types/api'
 
 const route = useRoute()
+const router = useRouter()
 
 type QuickStart = {
   id: string
@@ -596,6 +604,13 @@ const parseQueryList = (value: unknown) => {
   return []
 }
 
+const readRouteString = (value: unknown) => {
+  if (Array.isArray(value)) {
+    return typeof value[0] === 'string' ? value[0].trim() : ''
+  }
+  return typeof value === 'string' ? value.trim() : ''
+}
+
 const resetForm = () => {
   form.agentType = defaultForm.agentType
   form.triggerSource = defaultForm.triggerSource
@@ -605,11 +620,11 @@ const resetForm = () => {
 }
 
 const syncFiltersFromRoute = () => {
-  filters.agentType = typeof route.query.listAgentType === 'string' ? route.query.listAgentType.trim() : ''
-  filters.status = typeof route.query.listStatus === 'string' ? route.query.listStatus.trim() : ''
-  filters.triggerSource = typeof route.query.listTriggerSource === 'string' ? route.query.listTriggerSource.trim() : ''
-  filters.approvalStage = typeof route.query.listApprovalStage === 'string' ? route.query.listApprovalStage.trim() : ''
-  filters.providerGateStatus = typeof route.query.listProviderGateStatus === 'string' ? route.query.listProviderGateStatus.trim() : ''
+  filters.agentType = readRouteString(route.query.listAgentType)
+  filters.status = readRouteString(route.query.listStatus)
+  filters.triggerSource = readRouteString(route.query.listTriggerSource)
+  filters.approvalStage = readRouteString(route.query.listApprovalStage)
+  filters.providerGateStatus = readRouteString(route.query.listProviderGateStatus)
   hasActiveFilters.value = Boolean(
     filters.agentType || filters.status || filters.triggerSource || filters.approvalStage || filters.providerGateStatus
   )
@@ -653,18 +668,53 @@ const buildRunListQuery = (): AgentRunListQuery | undefined => {
   return Object.keys(query).length ? query : undefined
 }
 
+const buildRouteQuery = (overrides?: { runId?: string | null }) => {
+  const query: Record<string, string> = {}
+  Object.entries(route.query).forEach(([key, value]) => {
+    const normalized = readRouteString(value)
+    if (normalized) {
+      query[key] = normalized
+    }
+  })
+
+  const syncField = (key: string, value: string) => {
+    if (value) {
+      query[key] = value
+      return
+    }
+    delete query[key]
+  }
+
+  syncField('listAgentType', filters.agentType)
+  syncField('listStatus', filters.status)
+  syncField('listTriggerSource', filters.triggerSource)
+  syncField('listApprovalStage', filters.approvalStage)
+  syncField('listProviderGateStatus', filters.providerGateStatus)
+
+  if (overrides && 'runId' in overrides) {
+    syncField('runId', overrides.runId || '')
+  }
+
+  return query
+}
+
+const syncRouteState = async (overrides?: { runId?: string | null }) => {
+  await router.replace({ query: buildRouteQuery(overrides) })
+}
+
 const loadRuns = async (selectedId?: string) => {
   loading.value = true
   try {
     const response = await fetchAgentRunsApi(buildRunListQuery())
     runs.value = response.data
-    const preferred = selectedId
-      ? runs.value.find((item) => item.id === selectedId)
+    const preferredId = selectedId || readRouteString(route.query.runId)
+    const preferred = preferredId
+      ? runs.value.find((item) => item.id === preferredId)
       : selectedRun.value
         ? runs.value.find((item) => item.id === selectedRun.value?.id)
         : runs.value[0]
     if (preferred) {
-      await selectRun(preferred)
+      await selectRun(preferred, false)
     } else {
       selectedRun.value = null
     }
@@ -681,13 +731,26 @@ const handleFilterChange = async () => {
   hasActiveFilters.value = Boolean(
     filters.agentType || filters.status || filters.triggerSource || filters.approvalStage || filters.providerGateStatus
   )
-  await loadRuns()
+  await syncRouteState()
 }
 
-const selectRun = async (run: AgentRun) => {
+const handleClearFilters = async () => {
+  filters.agentType = ''
+  filters.status = ''
+  filters.triggerSource = ''
+  filters.approvalStage = ''
+  filters.providerGateStatus = ''
+  hasActiveFilters.value = false
+  await syncRouteState()
+}
+
+const selectRun = async (run: AgentRun, syncRoute = true) => {
   try {
     const response = await fetchAgentRunDetailApi(run.id)
     selectedRun.value = response.data
+    if (syncRoute) {
+      await syncRouteState({ runId: run.id })
+    }
   } catch {
     ElMessage.error('无法加载这个 Agent Run 的详情。')
   }
