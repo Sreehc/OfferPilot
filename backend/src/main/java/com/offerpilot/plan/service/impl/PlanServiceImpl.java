@@ -240,7 +240,7 @@ public class PlanServiceImpl implements PlanService {
         StudyPlan synced = syncPlanState(plan);
         String normalizedActionPath = firstNonBlank(
                 actionPath,
-                categoryId == null ? null : "/analytics?topic=" + categoryId,
+                categoryId == null ? null : "/analytics?topic=" + categoryId + "&retrospective=1",
                 "/analytics");
 
         StudyPlanTask existingTask = studyPlanTaskMapper.selectOne(new LambdaQueryWrapper<StudyPlanTask>()

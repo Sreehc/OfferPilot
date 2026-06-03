@@ -192,13 +192,13 @@ class PlanServiceImplTest {
                 "专项题库训练, 定向模拟",
                 "领域回顾专项 | JVM",
                 "先处理画像分偏低和待复盘点，再补一轮专项题库训练。",
-                "/analytics?topic=12");
+                "/analytics?topic=12&retrospective=1");
 
         assertEquals(2, result.getTodayTaskCount());
         assertTrue(result.getTasks().stream().anyMatch(task ->
                 "topic_retrospective".equals(task.getModule())
                         && "领域回顾专项 | JVM".equals(task.getTitle())
-                        && "/analytics?topic=12".equals(task.getActionPath())));
+                        && "/analytics?topic=12&retrospective=1".equals(task.getActionPath())));
     }
 
     @Test
