@@ -342,8 +342,8 @@ const targetTypeLabel = (type: string) => {
 }
 
 const getTargetLink = (fav: FavoriteItem) => {
-  if (fav.targetType === 'knowledge') return '/knowledge'
-  if (fav.targetType === 'question') return '/question'
+  if (fav.targetType === 'knowledge') return `/knowledge?docId=${encodeURIComponent(String(fav.targetId))}`
+  if (fav.targetType === 'question') return `/question?questionId=${encodeURIComponent(String(fav.targetId))}`
   if (fav.targetType === 'community') return `/community/question/${fav.targetId}`
   return '/dashboard'
 }
