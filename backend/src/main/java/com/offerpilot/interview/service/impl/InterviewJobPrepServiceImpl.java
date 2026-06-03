@@ -404,21 +404,18 @@ public class InterviewJobPrepServiceImpl implements InterviewJobPrepService {
                 .suggestedAgentType("realtime_copilot")
                 .suggestedTriggerSource("interview")
                 .nextActionLabel("转成 Copilot Prep")
-                .nextActionPath(buildCopilotPrepAgentPath(session))
+                .nextActionPath(buildCopilotPrepWorkspacePath(session))
                 .providerReadiness(providerReadiness)
                 .summary(session.getSummary())
                 .updateTime(session.getUpdateTime())
                 .build();
     }
 
-    private String buildCopilotPrepAgentPath(JobPrepSession session) {
+    private String buildCopilotPrepWorkspacePath(JobPrepSession session) {
         if (session.getId() == null) {
-            return "/agent";
+            return "/interview?workspace=copilot-prep";
         }
-        return "/agent?agentType=realtime_copilot"
-                + "&triggerSource=interview"
-                + "&contextRefs=interview:job-prep:" + session.getId() + ",settings:providers"
-                + "&userPrompt=把这次JD备面结果转成Copilot%20Prep会前草案。";
+        return "/interview?workspace=copilot-prep&jobPrepSessionId=" + session.getId();
     }
 
     private String resolveProviderStatus(List<JobPrepSessionVO.ProviderReadinessVO> providerReadiness, boolean requiredOnly) {

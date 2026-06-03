@@ -82,7 +82,7 @@ class InterviewCopilotPrepServiceImplTest {
         assertEquals("realtime_copilot", result.getSuggestedAgentType());
         assertEquals("interview_live", result.getSuggestedTriggerSource());
         assertEquals("继续实时阶段", result.getNextActionLabel());
-        assertTrue(result.getNextActionPath().contains("interview:copilot-prep:53"));
+        assertEquals("/interview?workspace=copilot-live&copilotPrepSessionId=53", result.getNextActionPath());
         assertTrue(result.getOpeningBrief().stream().anyMatch(item -> item.contains("项目背景")));
         assertTrue(result.getNextActions().stream().anyMatch(item -> item.contains("60-90 秒口语版")));
     }

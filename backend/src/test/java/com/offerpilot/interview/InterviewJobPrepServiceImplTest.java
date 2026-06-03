@@ -76,8 +76,7 @@ class InterviewJobPrepServiceImplTest {
         assertEquals("realtime_copilot", result.getSuggestedAgentType());
         assertEquals("interview", result.getSuggestedTriggerSource());
         assertEquals("转成 Copilot Prep", result.getNextActionLabel());
-        assertTrue(result.getNextActionPath().contains("agentType=realtime_copilot"));
-        assertTrue(result.getNextActionPath().contains("interview:job-prep:101"));
+        assertEquals("/interview?workspace=copilot-prep&jobPrepSessionId=101", result.getNextActionPath());
         assertTrue(result.getSummary().contains("降级生成"));
         assertTrue(result.getNextActions().stream().anyMatch(item -> item.contains("联网搜索未完全就绪")));
     }
@@ -119,7 +118,7 @@ class InterviewJobPrepServiceImplTest {
         assertTrue(result.getProviderStatusMessage().contains("JD 备面"));
         assertEquals("realtime_copilot", result.getSuggestedAgentType());
         assertEquals("interview", result.getSuggestedTriggerSource());
-        assertTrue(result.getNextActionPath().contains("interview:job-prep:42"));
+        assertEquals("/interview?workspace=copilot-prep&jobPrepSessionId=42", result.getNextActionPath());
         assertTrue(result.getMissingKeywords().contains("Kafka"));
     }
 }
