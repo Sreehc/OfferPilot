@@ -346,6 +346,13 @@
                   <div class="flex flex-wrap items-center justify-between gap-3">
                     <p class="job-prep-panel__title">下一步动作</p>
                     <div class="flex flex-wrap items-center gap-2">
+                      <RouterLink
+                        v-if="jobPrepNextActionLink"
+                        :to="jobPrepNextActionLink"
+                        class="hard-button-secondary inline-flex min-h-8 items-center justify-center px-3 text-sm"
+                      >
+                        {{ jobPrepSession.nextActionLabel || '转成 Copilot Prep' }}
+                      </RouterLink>
                       <el-button type="default" size="small" @click="handleGenerateCopilotPrep(true)">生成 Copilot Prep</el-button>
                       <el-button type="default" size="small" @click="applyJobPrepToInterview">把结果带入模拟面试</el-button>
                     </div>
@@ -537,7 +544,16 @@
                 </div>
 
                 <article class="copilot-prep-panel">
-                  <p class="copilot-prep-panel__title">下一步动作</p>
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <p class="copilot-prep-panel__title !mb-0">下一步动作</p>
+                    <RouterLink
+                      v-if="copilotPrepNextActionLink"
+                      :to="copilotPrepNextActionLink"
+                      class="hard-button-secondary inline-flex min-h-8 items-center justify-center px-3 text-sm"
+                    >
+                      {{ copilotPrepSession.nextActionLabel || '继续实时阶段' }}
+                    </RouterLink>
+                  </div>
                   <ul class="copilot-prep-list mt-3">
                     <li v-for="item in copilotPrepSession.nextActions" :key="item">{{ item }}</li>
                   </ul>
@@ -684,7 +700,7 @@
                                 {{ copilotRealtimeSession.postInterviewReview.summary }}
                               </p>
                             </div>
-                            <RouterLink :to="copilotRealtimeAgentLink" class="hard-button-primary">
+                            <RouterLink :to="copilotRealtimePostReviewLink" class="hard-button-primary">
                               {{ copilotRealtimeSession.postInterviewReview.nextActionLabel || '前往面后复盘' }}
                             </RouterLink>
                           </div>
@@ -877,8 +893,8 @@
                         <span class="recording-review-score__label">复盘分</span>
                         <span class="recording-review-score__value">{{ Math.round(recordingReviewSession.overallScore || 0) }}</span>
                       </div>
-                      <RouterLink :to="recordingReviewAgentLink" class="hard-button-secondary text-sm">
-                        转成训练动作
+                      <RouterLink :to="recordingReviewNextActionLink" class="hard-button-secondary text-sm">
+                        {{ recordingReviewSession.nextActionLabel || '转成训练动作' }}
                       </RouterLink>
                     </div>
                   </div>
@@ -1752,7 +1768,28 @@ const copilotRealtimeConnectionLabel = computed(() => {
   return '未连接'
 })
 const recordingReviewPending = computed(() => isRecordingReviewPendingStatus(recordingReviewSession.value?.status))
-const recordingReviewAgentLink = computed(() => {
+const jobPrepNextActionLink = computed(() => {
+  if (jobPrepSession.value?.nextActionPath) return jobPrepSession.value.nextActionPath
+  if (!jobPrepSession.value) return ''
+  return buildAgentWorkbenchLocation({
+    agentType: 'realtime_copilot',
+    triggerSource: 'interview',
+    contextRefs: [`interview:job-prep:${jobPrepSession.value.id}`, 'settings:providers'],
+    userPrompt: '把这次JD备面结果转成Copilot Prep会前草案。'
+  })
+})
+const copilotPrepNextActionLink = computed(() => {
+  if (copilotPrepSession.value?.nextActionPath) return copilotPrepSession.value.nextActionPath
+  if (!copilotPrepSession.value) return ''
+  return buildAgentWorkbenchLocation({
+    agentType: 'realtime_copilot',
+    triggerSource: 'interview_live',
+    contextRefs: [`interview:copilot-prep:${copilotPrepSession.value.id}`, 'settings:providers'],
+    userPrompt: '把这份Copilot Prep整理成进入实时阶段前的检查清单。'
+  })
+})
+const recordingReviewNextActionLink = computed(() => {
+  if (recordingReviewSession.value?.nextActionPath) return recordingReviewSession.value.nextActionPath
   if (!recordingReviewSession.value) return '/agent'
   return buildAgentWorkbenchLocation({
     agentType: 'recording_review',
@@ -1769,6 +1806,12 @@ const copilotRealtimeAgentLink = computed(() => {
     contextRefs: [`interview:copilot-realtime:${copilotRealtimeSession.value.id}`, 'analytics:profile', 'study-plan:active'],
     userPrompt: '把这次实时面试的现场追问和卡壳点转成面后复盘与下一轮训练动作。'
   })
+})
+const copilotRealtimePostReviewLink = computed(() => {
+  if (copilotRealtimeSession.value?.postInterviewReview?.nextActionPath) {
+    return copilotRealtimeSession.value.postInterviewReview.nextActionPath
+  }
+  return copilotRealtimeAgentLink.value
 })
 
 const handleStart = async (reanswerQuestionId?: number) => {
