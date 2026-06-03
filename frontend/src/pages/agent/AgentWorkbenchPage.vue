@@ -153,7 +153,7 @@
               <div class="min-w-0">
                 <p class="text-sm font-semibold text-ink">{{ run.title }}</p>
                 <p class="mt-1 text-xs uppercase tracking-[0.18em] text-tertiary">
-                  {{ run.agentType }} · {{ run.triggerSource }}
+                  {{ resolveAgentLabel(run.agentType) }} · {{ resolveTriggerLabel(run.triggerSource) }}
                 </p>
               </div>
               <span class="agent-run-status" :class="resolveRunStatusClass(run.status)">
@@ -174,8 +174,8 @@
               <p class="mt-2 text-sm leading-6 text-secondary">{{ selectedRun.summary }}</p>
             </div>
             <div class="agent-detail-meta">
-              <span class="detail-pill">{{ selectedRun.agentType }}</span>
-              <span class="detail-pill">{{ selectedRun.triggerSource }}</span>
+              <span class="detail-pill">{{ resolveAgentLabel(selectedRun.agentType) }}</span>
+              <span class="detail-pill">{{ resolveTriggerLabel(selectedRun.triggerSource) }}</span>
               <span class="detail-pill">{{ selectedRun.streamMode || 'sync' }}</span>
             </div>
           </div>
@@ -188,7 +188,14 @@
           <div v-if="selectedRun.contextRefs.length" class="agent-detail-block">
             <p class="agent-detail-block__title">上下文引用</p>
             <div class="mt-3 flex flex-wrap gap-2">
-              <span v-for="item in selectedRun.contextRefs" :key="item" class="agent-context-pill">{{ item }}</span>
+              <span
+                v-for="item in selectedRun.contextRefs"
+                :key="item"
+                class="agent-context-pill"
+                :title="item"
+              >
+                {{ resolveContextRefLabel(item) }}
+              </span>
             </div>
           </div>
 
@@ -221,6 +228,31 @@
                   </span>
                 </div>
                 <p class="mt-3 text-sm leading-6 text-secondary">{{ item.statusMessage }}</p>
+              </div>
+            </div>
+            <div
+              v-if="selectedRun.providerGateStatus === 'blocked' || selectedRun.providerGateStatus === 'degraded'"
+              class="agent-provider-recovery"
+            >
+              <div>
+                <p class="text-sm font-semibold text-ink">
+                  {{ selectedRun.providerGateStatus === 'blocked' ? '建议先补齐关键依赖' : '可以先降级运行，也可以先补齐依赖' }}
+                </p>
+                <p class="mt-1 text-sm leading-6 text-secondary">
+                  {{ resolveProviderRecoveryText(selectedRun.providerGateStatus) }}
+                </p>
+              </div>
+              <div class="flex flex-wrap gap-3">
+                <RouterLink to="/settings?tab=providers" class="hard-button-secondary">
+                  前往 Provider 设置
+                </RouterLink>
+                <RouterLink
+                  v-if="selectedRun.nextActionPath && selectedRun.nextActionPath !== '/settings?tab=providers'"
+                  :to="selectedRun.nextActionPath"
+                  class="hard-button-primary"
+                >
+                  {{ resolveNextActionLabel(selectedRun) }}
+                </RouterLink>
               </div>
             </div>
           </div>
@@ -312,7 +344,7 @@
                 取消 Run
               </el-button>
               <RouterLink v-if="selectedRun.nextActionPath" :to="selectedRun.nextActionPath" class="hard-button-primary">
-                前往下一步
+                {{ resolveNextActionLabel(selectedRun) }}
               </RouterLink>
             </div>
           </div>
@@ -594,6 +626,47 @@ const resolveRunStatusClass = (status: string) => {
   }
 }
 
+const resolveAgentLabel = (agentType: string) => {
+  return agentOptions.find((item) => item.value === agentType)?.label || agentType
+}
+
+const resolveTriggerLabel = (triggerSource: string) => {
+  return triggerOptions.find((item) => item.value === triggerSource)?.label || triggerSource
+}
+
+const resolveContextRefLabel = (contextRef: string) => {
+  if (contextRef === 'dashboard:overview') return '工作台总览'
+  if (contextRef === 'analytics:profile') return '能力画像'
+  if (contextRef === 'analytics:weak-topics') return '薄弱主题'
+  if (contextRef === 'study-plan:active') return '当前学习计划'
+  if (contextRef === 'interview:latest') return '最近一次模拟面试'
+  if (contextRef === 'interview:recording-review') return '最近一次录音复盘'
+  if (contextRef === 'interview:job-prep') return '最近一次 JD 备面'
+  if (contextRef === 'interview:copilot-prep') return '最近一次 Copilot Prep'
+  if (contextRef === 'interview:copilot-realtime') return '最近一次实时 Copilot'
+  if (contextRef === 'resume:latest') return '最新简历'
+  if (contextRef === 'application:board') return '投递看板'
+  if (contextRef === 'settings:providers') return 'Provider 配置'
+  if (contextRef.startsWith('analytics:topic:')) return `主题详情 #${contextRef.slice('analytics:topic:'.length)}`
+  if (contextRef.startsWith('analytics:retrospective:topic:')) {
+    return `领域回顾 #${contextRef.slice('analytics:retrospective:topic:'.length)}`
+  }
+  if (contextRef.startsWith('interview:session:')) return `模拟面试 #${contextRef.slice('interview:session:'.length)}`
+  if (contextRef.startsWith('interview:recording-review:')) {
+    return `录音复盘 #${contextRef.slice('interview:recording-review:'.length)}`
+  }
+  if (contextRef.startsWith('interview:job-prep:')) return `JD 备面 #${contextRef.slice('interview:job-prep:'.length)}`
+  if (contextRef.startsWith('interview:copilot-prep:')) {
+    return `Copilot Prep #${contextRef.slice('interview:copilot-prep:'.length)}`
+  }
+  if (contextRef.startsWith('interview:copilot-realtime:')) {
+    return `实时 Copilot #${contextRef.slice('interview:copilot-realtime:'.length)}`
+  }
+  if (contextRef.startsWith('resume:')) return `简历 #${contextRef.slice('resume:'.length)}`
+  if (contextRef.startsWith('application:')) return `岗位投递 #${contextRef.slice('application:'.length)}`
+  return contextRef
+}
+
 const resolveApprovalTitle = (run: AgentRun) => {
   switch (run.status) {
     case 'pending_approval':
@@ -676,6 +749,13 @@ const resolveProviderItemClass = (status: string) => {
   }
 }
 
+const resolveProviderRecoveryText = (status?: string) => {
+  if (status === 'blocked') {
+    return '当前 run 依赖的关键服务尚未配置完整。先补齐这里的模型、转写或外部服务配置，再重新发起会更稳妥。'
+  }
+  return '当前 run 可以继续，但部分增强能力会缺失。若要拿到更完整的备面、复盘或实时建议，建议先补齐依赖。'
+}
+
 const resolveTimelineStatusLabel = (status: string) => {
   switch (status) {
     case 'waiting':
@@ -743,6 +823,30 @@ const resolveTimelineDotClass = (status: string) => {
 }
 
 const formatDateTime = (value?: string) => (value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '刚刚')
+
+const resolveNextActionLabel = (run: AgentRun) => {
+  if (run.providerGateStatus === 'blocked') {
+    return '前往 Provider 设置'
+  }
+  switch (run.agentType) {
+    case 'study_planner':
+      return '前往训练计划'
+    case 'job_prep':
+      return '前往 JD 备面'
+    case 'recording_review':
+      return '前往录音复盘'
+    case 'interview_review':
+      return '前往面试复盘'
+    case 'resume_coach':
+      return '前往简历页'
+    case 'application_strategist':
+      return '前往投递页'
+    case 'realtime_copilot':
+      return '前往 Copilot'
+    default:
+      return '前往下一步'
+  }
+}
 
 const handleDecision = async (decision: 'approve' | 'reject' | 'cancel') => {
   if (!selectedRun.value) return
@@ -926,6 +1030,19 @@ watch(() => route.fullPath, () => {
   border-radius: calc(var(--radius-md) - 6px);
   border: 1px solid var(--bc-border-subtle);
   background: var(--panel-muted);
+  padding: 14px;
+}
+
+.agent-provider-recovery {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 16px;
+  border-radius: calc(var(--radius-md) - 6px);
+  border: 1px dashed rgba(var(--bc-accent-rgb), 0.28);
+  background: rgba(var(--bc-accent-rgb), 0.05);
   padding: 14px;
 }
 
