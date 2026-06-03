@@ -311,6 +311,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .recordingReviewCount(categoryAbility.getRecordingReviewCount())
                 .jobPrepCount(categoryAbility.getJobPrepCount())
                 .copilotPrepCount(categoryAbility.getCopilotPrepCount())
+                .applicationFeedbackCount(categoryAbility.getApplicationFeedbackCount())
                 .wrongCount(categoryAbility.getWrongCount())
                 .weak(Boolean.TRUE.equals(categoryAbility.getIsWeak()))
                 .recommendedDifficulty(categoryAbility.getRecommendedDifficulty())
@@ -410,6 +411,9 @@ public class AnalyticsServiceImpl implements AnalyticsService {
             signals.add("同时已有 " + safeInt(detail.getJobPrepCount()) + " 次 JD 备面、"
                     + safeInt(detail.getCopilotPrepCount()) + " 次 Copilot Prep 证据写回长期画像。");
         }
+        if (safeInt(detail.getApplicationFeedbackCount()) > 0) {
+            signals.add("另外已有 " + safeInt(detail.getApplicationFeedbackCount()) + " 条相关投递反馈证据写回长期画像。");
+        }
         if (!detail.getRecentScores().isEmpty()) {
             double latest = detail.getRecentScores().get(detail.getRecentScores().size() - 1).getScore();
             double first = detail.getRecentScores().get(0).getScore();
@@ -424,12 +428,6 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
     private List<String> buildRetrospectiveRisks(ProfileTopicDetailVO detail, LearningInsightsVO insights) {
         LinkedHashSet<String> risks = new LinkedHashSet<>();
-        if (detail.getDueCount() > 0) {
-            risks.add("还有 " + detail.getDueCount() + " 个待复盘点没有清完，容易让掌握度回落。");
-        }
-        if (detail.getWrongCount() >= detail.getInterviewCount() && detail.getWrongCount() > 0) {
-            risks.add("错题沉积速度仍高于面试验证速度，说明理解还没完全转成稳定表达。");
-        }
         if ((detail.getRecordingReviewCount() == null || detail.getRecordingReviewCount() == 0)
                 && detail.getAbilityScore() < 70) {
             risks.add("当前还缺真实录音复盘证据，表达层问题可能还没被完整暴露。");
@@ -437,6 +435,15 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         if (safeInt(detail.getJobPrepCount()) == 0 && safeInt(detail.getCopilotPrepCount()) == 0
                 && detail.getAbilityScore() < 75) {
             risks.add("当前还缺岗位化 Prep 证据，主题能力还没完整映射到真实 JD 和实战场景。");
+        }
+        if (safeInt(detail.getApplicationFeedbackCount()) == 0 && detail.getAbilityScore() < 75) {
+            risks.add("当前还缺真实投递反馈证据，这个主题是否真能支撑岗位推进还没被验证。");
+        }
+        if (detail.getDueCount() > 0) {
+            risks.add("还有 " + detail.getDueCount() + " 个待复盘点没有清完，容易让掌握度回落。");
+        }
+        if (detail.getWrongCount() >= detail.getInterviewCount() && detail.getWrongCount() > 0) {
+            risks.add("错题沉积速度仍高于面试验证速度，说明理解还没完全转成稳定表达。");
         }
         if (detail.getAbilityScore() < 65) {
             risks.add("画像分仍处在较低区间，继续追问时容易暴露原理或案例深度不够。");
@@ -455,6 +462,9 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         }
         if (safeInt(detail.getJobPrepCount()) == 0) {
             actions.add("补 1 次 JD 定向备面，把这个主题压到目标岗位语境下重新收紧。");
+        }
+        if (safeInt(detail.getApplicationFeedbackCount()) == 0) {
+            actions.add("把这个主题同步到至少 1 条真实投递推进反馈里，验证它是否真的能支撑岗位转化。");
         }
         if (safeInt(detail.getCopilotPrepCount()) == 0) {
             actions.add("在下一次正式面试前补 1 次 Copilot Prep，提前暴露实时追问风险。");
@@ -486,11 +496,10 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         if (Boolean.TRUE.equals(categoryAbility.getIsWeak())) {
             suggestions.add("先围绕这个主题做一轮基础巩固，再回到高强度模拟。");
         }
-        if (categoryMastery.getDueCount() > 0) {
-            suggestions.add("当前有 " + categoryMastery.getDueCount() + " 道题待复盘，先清掉到期负债。");
-        }
-        if (categoryAbility.getWrongCount() != null && categoryAbility.getWrongCount() > 0) {
-            suggestions.add("把错题里重复出现的追问方式整理成标准答题骨架。");
+        if (safeInt(categoryAbility.getApplicationFeedbackCount()) > 0) {
+            suggestions.add("把已出现的投递反馈缺口同步回训练和简历表达，避免同类问题在下一批岗位重复出现。");
+        } else {
+            suggestions.add("当前还缺真实投递反馈，建议把这个主题同步到至少 1 条在投岗位里验证。");
         }
         if (categoryAbility.getRecordingReviewCount() != null && categoryAbility.getRecordingReviewCount() > 0) {
             suggestions.add("把真实录音复盘里暴露的表达问题同步进下一轮模拟，避免只修知识点不修表达。");
@@ -501,6 +510,12 @@ public class AnalyticsServiceImpl implements AnalyticsService {
             suggestions.add("把已有 JD 备面和 Copilot Prep 里的岗位化表达直接带进下一轮模拟，不要重新起草。");
         } else {
             suggestions.add("当前还没把这个主题压到真实岗位语境，建议补 1 次 JD 备面或 Copilot Prep。");
+        }
+        if (categoryMastery.getDueCount() > 0) {
+            suggestions.add("当前有 " + categoryMastery.getDueCount() + " 道题待复盘，先清掉到期负债。");
+        }
+        if (categoryAbility.getWrongCount() != null && categoryAbility.getWrongCount() > 0) {
+            suggestions.add("把错题里重复出现的追问方式整理成标准答题骨架。");
         }
         if (recentScores.size() >= 2) {
             Double last = recentScores.get(recentScores.size() - 1).getScore();
@@ -527,6 +542,9 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 ? "，并且已有 " + safeInt(categoryAbility.getJobPrepCount()) + " 次 JD 备面、"
                 + safeInt(categoryAbility.getCopilotPrepCount()) + " 次 Copilot Prep 证据"
                 : "，当前还没沉淀岗位化 Prep 证据";
+        String applicationText = safeInt(categoryAbility.getApplicationFeedbackCount()) > 0
+                ? "，同时已有 " + safeInt(categoryAbility.getApplicationFeedbackCount()) + " 条投递反馈证据"
+                : "，但还缺真实投递反馈证据";
         String trendText = "";
         if (recentScores.size() >= 2) {
             Double first = recentScores.get(0).getScore();
@@ -540,7 +558,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
             case "forming" -> "，当前画像仍在形成中";
             default -> "";
         };
-        return "主题「" + categoryAbility.getCategoryName() + "」" + abilityText + reviewText + recordingText + prepText + trendText + evidenceText + "。";
+        return "主题「" + categoryAbility.getCategoryName() + "」" + abilityText + reviewText + recordingText + prepText + applicationText + trendText + evidenceText + "。";
     }
 
     private String resolveTopicEvidenceStatus(CategoryAbilityVO categoryAbility,
@@ -550,6 +568,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 + safeInt(categoryAbility.getRecordingReviewCount())
                 + safeInt(categoryAbility.getJobPrepCount())
                 + safeInt(categoryAbility.getCopilotPrepCount())
+                + safeInt(categoryAbility.getApplicationFeedbackCount())
                 + (safeInt(categoryAbility.getWrongCount()) > 0 ? 1 : 0)
                 + (safeInt(categoryMastery.getDueCount()) > 0 ? 1 : 0);
         if (evidenceUnits <= 1 && recentScores.size() <= 1) {
@@ -569,6 +588,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         int recordingReviews = safeInt(categoryAbility.getRecordingReviewCount());
         int jobPrepCount = safeInt(categoryAbility.getJobPrepCount());
         int copilotPrepCount = safeInt(categoryAbility.getCopilotPrepCount());
+        int applicationFeedbackCount = safeInt(categoryAbility.getApplicationFeedbackCount());
         int wrongCount = safeInt(categoryAbility.getWrongCount());
         int dueCount = safeInt(categoryMastery.getDueCount());
         return switch (evidenceStatus) {
@@ -577,12 +597,14 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                     + recordingReviews + " 次录音复盘、"
                     + jobPrepCount + " 次 JD 备面、"
                     + copilotPrepCount + " 次 Copilot Prep、"
+                    + applicationFeedbackCount + " 条投递反馈、"
                     + wrongCount + " 道相关错题。建议先补 1-2 次同主题训练。";
             case "forming" -> "当前领域画像还在形成中，已沉淀 "
                     + interviews + " 场模拟面试、"
                     + recordingReviews + " 次录音复盘、"
                     + jobPrepCount + " 次 JD 备面、"
                     + copilotPrepCount + " 次 Copilot Prep、"
+                    + applicationFeedbackCount + " 条投递反馈、"
                     + wrongCount + " 道相关错题"
                     + (dueCount > 0 ? "，以及 " + dueCount + " 个待复盘点" : "")
                     + "。";

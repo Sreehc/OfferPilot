@@ -6,6 +6,8 @@ import com.offerpilot.adaptive.vo.AbilityProfileVO;
 import com.offerpilot.adaptive.vo.CategoryAbilityVO;
 import com.offerpilot.adaptive.vo.RecommendInterviewVO;
 import com.offerpilot.adaptive.vo.RecommendQuestionsVO;
+import com.offerpilot.application.entity.JobApplication;
+import com.offerpilot.application.mapper.JobApplicationMapper;
 import com.offerpilot.category.entity.Category;
 import com.offerpilot.category.service.CategoryService;
 import com.offerpilot.interview.entity.CopilotPrepSession;
@@ -51,6 +53,7 @@ public class AdaptiveServiceImpl implements AdaptiveService {
     private final RecordingReviewSessionMapper recordingReviewSessionMapper;
     private final JobPrepSessionMapper jobPrepSessionMapper;
     private final CopilotPrepSessionMapper copilotPrepSessionMapper;
+    private final JobApplicationMapper jobApplicationMapper;
     private final QuestionMapper questionMapper;
     private final WrongQuestionMapper wrongQuestionMapper;
     private final CategoryService categoryService;
@@ -238,6 +241,10 @@ public class AdaptiveServiceImpl implements AdaptiveService {
                         .eq(CopilotPrepSession::getUserId, userId)
                         .eq(CopilotPrepSession::getStatus, "ready")
                         .orderByDesc(CopilotPrepSession::getUpdateTime));
+        List<JobApplication> applications = jobApplicationMapper.selectList(
+                new LambdaQueryWrapper<JobApplication>()
+                        .eq(JobApplication::getUserId, userId)
+                        .orderByDesc(JobApplication::getUpdateTime));
 
         // Load all finished sessions with records
         List<InterviewSession> sessions = sessionMapper.selectList(
@@ -246,7 +253,8 @@ public class AdaptiveServiceImpl implements AdaptiveService {
                         .eq(InterviewSession::getStatus, "finished")
                         .orderByDesc(InterviewSession::getCreateTime));
 
-        if (sessions.isEmpty() && recordingReviews.isEmpty() && jobPrepSessions.isEmpty() && copilotPrepSessions.isEmpty()) {
+        if (sessions.isEmpty() && recordingReviews.isEmpty() && jobPrepSessions.isEmpty()
+                && copilotPrepSessions.isEmpty() && applications.isEmpty()) {
             return AbilityProfileVO.builder()
                     .overallAbility(0.0)
                     .recommendedDifficulty("easy")
@@ -290,6 +298,7 @@ public class AdaptiveServiceImpl implements AdaptiveService {
         Map<Long, Integer> recordingReviewCountByCategory = new HashMap<>();
         Map<Long, Integer> jobPrepCountByCategory = new HashMap<>();
         Map<Long, Integer> copilotPrepCountByCategory = new HashMap<>();
+        Map<Long, Integer> applicationFeedbackCountByCategory = new HashMap<>();
         LocalDateTime now = LocalDateTime.now();
 
         for (InterviewRecord record : allRecords) {
@@ -354,6 +363,18 @@ public class AdaptiveServiceImpl implements AdaptiveService {
             }
         }
 
+        for (JobApplication application : applications) {
+            for (Long categoryId : resolveApplicationCategories(application, allCategories)) {
+                double feedbackScore = resolveApplicationFeedbackScore(application);
+                double recencyWeight = computeRecencyWeight(
+                        application.getUpdateTime() == null ? application.getCreateTime() : application.getUpdateTime(),
+                        now) * 0.50;
+                categoryScores.computeIfAbsent(categoryId, k -> new ArrayList<>())
+                        .add(new ScoreEntry(feedbackScore, recencyWeight));
+                applicationFeedbackCountByCategory.merge(categoryId, 1, Integer::sum);
+            }
+        }
+
         for (Map.Entry<Long, List<ScoreEntry>> entry : categoryScores.entrySet()) {
             Long categoryId = entry.getKey();
             List<ScoreEntry> scores = entry.getValue();
@@ -388,6 +409,7 @@ public class AdaptiveServiceImpl implements AdaptiveService {
                     .recordingReviewCount(recordingReviewCountByCategory.getOrDefault(categoryId, 0))
                     .jobPrepCount(jobPrepCountByCategory.getOrDefault(categoryId, 0))
                     .copilotPrepCount(copilotPrepCountByCategory.getOrDefault(categoryId, 0))
+                    .applicationFeedbackCount(applicationFeedbackCountByCategory.getOrDefault(categoryId, 0))
                     .wrongCount((int) wrongCount)
                     .isWeak(isWeak)
                     .recommendedDifficulty(recDifficulty)
@@ -406,7 +428,8 @@ public class AdaptiveServiceImpl implements AdaptiveService {
         // Suggested focus: the weakest category
         String suggestedFocus = categoryAbilities.isEmpty() ? null
                 : categoryAbilities.get(0).getCategoryName();
-        int totalEvidenceCount = allRecords.size() + recordingReviews.size() + jobPrepSessions.size() + copilotPrepSessions.size();
+        int totalEvidenceCount = allRecords.size() + recordingReviews.size()
+                + jobPrepSessions.size() + copilotPrepSessions.size() + applications.size();
         String evidenceStatus = resolveEvidenceStatus(categoryAbilities, totalEvidenceCount);
 
         return AbilityProfileVO.builder()
@@ -499,6 +522,21 @@ public class AdaptiveServiceImpl implements AdaptiveService {
         return matchCategoryIds(evidence, categories);
     }
 
+    private List<Long> resolveApplicationCategories(JobApplication application, List<Category> categories) {
+        String evidence = String.join(" ",
+                nullSafe(application.getCompany()),
+                nullSafe(application.getJobTitle()),
+                nullSafe(application.getCity()),
+                nullSafe(application.getSource()),
+                nullSafe(application.getJdText()),
+                nullSafe(application.getJdKeywords()),
+                nullSafe(application.getMissingKeywords()),
+                nullSafe(application.getAnalysisSummary()),
+                nullSafe(application.getReviewSuggestion()),
+                nullSafe(application.getNextStepSuggestion()));
+        return matchCategoryIds(evidence, categories);
+    }
+
     private List<Long> matchCategoryIds(String evidence, List<Category> categories) {
         if (evidence.isBlank()) {
             return List.of();
@@ -548,6 +586,42 @@ public class AdaptiveServiceImpl implements AdaptiveService {
             base -= 6.0;
         }
         return Math.max(45.0, Math.min(82.0, base));
+    }
+
+    private double resolveApplicationFeedbackScore(JobApplication application) {
+        double base = application.getMatchScore() == null ? 56.0 : application.getMatchScore().doubleValue();
+        String status = normalize(application.getStatus());
+        if ("offer".equals(status)) {
+            base += 8.0;
+        } else if ("interview".equals(status)) {
+            base += 4.0;
+        } else if ("written".equals(status)) {
+            base += 2.0;
+        } else if ("rejected".equals(status)) {
+            base -= 8.0;
+        }
+        int gapCount = countDelimitedItems(application.getMissingKeywords());
+        if (gapCount > 0) {
+            base -= Math.min(12.0, gapCount * 2.0);
+        }
+        if (org.springframework.util.StringUtils.hasText(application.getReviewSuggestion())) {
+            base -= 2.0;
+        }
+        return Math.max(35.0, Math.min(88.0, base));
+    }
+
+    private int countDelimitedItems(String value) {
+        if (!org.springframework.util.StringUtils.hasText(value)) {
+            return 0;
+        }
+        return (int) java.util.Arrays.stream(value.split("[,，]"))
+                .map(String::trim)
+                .filter(org.springframework.util.StringUtils::hasText)
+                .count();
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.trim().toLowerCase(java.util.Locale.ROOT);
     }
 
     private String nullSafe(String value) {

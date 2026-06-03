@@ -18,6 +18,8 @@ import com.offerpilot.adaptive.service.impl.AdaptiveServiceImpl;
 import com.offerpilot.adaptive.vo.AbilityProfileVO;
 import com.offerpilot.adaptive.vo.CategoryAbilityVO;
 import com.offerpilot.adaptive.vo.RecommendInterviewVO;
+import com.offerpilot.application.entity.JobApplication;
+import com.offerpilot.application.mapper.JobApplicationMapper;
 import com.offerpilot.category.entity.Category;
 import com.offerpilot.category.service.CategoryService;
 import com.offerpilot.common.config.OfferPilotProperties;
@@ -61,6 +63,8 @@ class AdaptiveServiceImplTest {
     @Mock
     private CopilotPrepSessionMapper copilotPrepSessionMapper;
     @Mock
+    private JobApplicationMapper jobApplicationMapper;
+    @Mock
     private QuestionMapper questionMapper;
     @Mock
     private WrongQuestionMapper wrongQuestionMapper;
@@ -100,6 +104,7 @@ class AdaptiveServiceImplTest {
         when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
         when(jobPrepSessionMapper.selectList(any())).thenReturn(List.of());
         when(copilotPrepSessionMapper.selectList(any())).thenReturn(List.of());
+        when(jobApplicationMapper.selectList(any())).thenReturn(List.of());
 
         AbilityProfileVO profile = service.getAbilityProfile(1L);
 
@@ -120,6 +125,7 @@ class AdaptiveServiceImplTest {
         when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
         when(jobPrepSessionMapper.selectList(any())).thenReturn(List.of());
         when(copilotPrepSessionMapper.selectList(any())).thenReturn(List.of());
+        when(jobApplicationMapper.selectList(any())).thenReturn(List.of());
 
         InterviewSession session = makeSession(1L, LocalDateTime.now().minusDays(1));
         when(sessionMapper.selectList(any())).thenReturn(List.of(session));
@@ -149,6 +155,7 @@ class AdaptiveServiceImplTest {
         when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
         when(jobPrepSessionMapper.selectList(any())).thenReturn(List.of());
         when(copilotPrepSessionMapper.selectList(any())).thenReturn(List.of());
+        when(jobApplicationMapper.selectList(any())).thenReturn(List.of());
 
         when(sessionMapper.selectList(any())).thenReturn(List.of(makeSession(1L, LocalDateTime.now().minusDays(1))));
         when(recordMapper.selectList(any())).thenReturn(List.of(makeRecord(1L, 10L, new BigDecimal("30"))));
@@ -168,6 +175,7 @@ class AdaptiveServiceImplTest {
         when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
         when(jobPrepSessionMapper.selectList(any())).thenReturn(List.of());
         when(copilotPrepSessionMapper.selectList(any())).thenReturn(List.of());
+        when(jobApplicationMapper.selectList(any())).thenReturn(List.of());
 
         when(sessionMapper.selectList(any())).thenReturn(List.of(
                 makeSession(2L, LocalDateTime.now()),
@@ -191,6 +199,7 @@ class AdaptiveServiceImplTest {
         when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
         when(jobPrepSessionMapper.selectList(any())).thenReturn(List.of());
         when(copilotPrepSessionMapper.selectList(any())).thenReturn(List.of());
+        when(jobApplicationMapper.selectList(any())).thenReturn(List.of());
         when(sessionMapper.selectList(any())).thenReturn(List.of(makeSession(1L, LocalDateTime.now().minusDays(1))));
         when(recordMapper.selectList(any())).thenReturn(List.of(makeRecord(1L, 10L, new BigDecimal("20"))));
         when(questionMapper.selectBatchIds(any())).thenReturn(List.of(makeQuestion(10L, 100L)));
@@ -212,6 +221,7 @@ class AdaptiveServiceImplTest {
         when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
         when(jobPrepSessionMapper.selectList(any())).thenReturn(List.of());
         when(copilotPrepSessionMapper.selectList(any())).thenReturn(List.of());
+        when(jobApplicationMapper.selectList(any())).thenReturn(List.of());
         when(sessionMapper.selectList(any())).thenReturn(List.of(makeSession(1L, LocalDateTime.now().minusDays(1))));
         when(recordMapper.selectList(any())).thenReturn(List.of(
                 makeRecord(1L, 10L, new BigDecimal("30")),
@@ -235,6 +245,7 @@ class AdaptiveServiceImplTest {
         when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
         when(jobPrepSessionMapper.selectList(any())).thenReturn(List.of());
         when(copilotPrepSessionMapper.selectList(any())).thenReturn(List.of());
+        when(jobApplicationMapper.selectList(any())).thenReturn(List.of());
         mockCategories(makeCategory(100L, "Java基础"));
 
         RecommendInterviewVO result = service.getRecommendInterview(1L);
@@ -270,6 +281,7 @@ class AdaptiveServiceImplTest {
         when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
         when(jobPrepSessionMapper.selectList(any())).thenReturn(List.of());
         when(copilotPrepSessionMapper.selectList(any())).thenReturn(List.of());
+        when(jobApplicationMapper.selectList(any())).thenReturn(List.of());
 
         service.refreshAbilityProfile(1L);
 
@@ -284,6 +296,7 @@ class AdaptiveServiceImplTest {
         when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
         when(jobPrepSessionMapper.selectList(any())).thenReturn(List.of());
         when(copilotPrepSessionMapper.selectList(any())).thenReturn(List.of());
+        when(jobApplicationMapper.selectList(any())).thenReturn(List.of());
         when(sessionMapper.selectList(any())).thenReturn(List.of(makeSession(1L, LocalDateTime.now().minusDays(1))));
         when(recordMapper.selectList(any())).thenReturn(List.of(
                 makeRecord(1L, 10L, new BigDecimal("90")),
@@ -313,6 +326,7 @@ class AdaptiveServiceImplTest {
         when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
         when(jobPrepSessionMapper.selectList(any())).thenReturn(List.of());
         when(copilotPrepSessionMapper.selectList(any())).thenReturn(List.of());
+        when(jobApplicationMapper.selectList(any())).thenReturn(List.of());
         when(sessionMapper.selectList(any())).thenReturn(List.of(makeSession(1L, LocalDateTime.now().minusDays(1))));
         when(questionMapper.selectBatchIds(any())).thenReturn(List.of(makeQuestion(10L, 100L)));
         when(wrongQuestionMapper.selectCount(any())).thenReturn(0L);
@@ -333,6 +347,7 @@ class AdaptiveServiceImplTest {
                 makeRecordingReview(10L, "Java后端", "Spring工程师", "Spring 事务和 Bean 生命周期表达一般", new BigDecimal("42"))));
         when(jobPrepSessionMapper.selectList(any())).thenReturn(List.of());
         when(copilotPrepSessionMapper.selectList(any())).thenReturn(List.of());
+        when(jobApplicationMapper.selectList(any())).thenReturn(List.of());
 
         when(wrongQuestionMapper.selectCount(any())).thenReturn(1L);
 
@@ -367,6 +382,7 @@ class AdaptiveServiceImplTest {
                 makeRecordingReview(10L, "Redis", "后端开发", "Redis 缓存一致性表达较稳", new BigDecimal("78"))));
         when(jobPrepSessionMapper.selectList(any())).thenReturn(List.of());
         when(copilotPrepSessionMapper.selectList(any())).thenReturn(List.of());
+        when(jobApplicationMapper.selectList(any())).thenReturn(List.of());
         when(wrongQuestionMapper.selectCount(any())).thenReturn(0L);
 
         AbilityProfileVO profile = service.getAbilityProfile(1L);
@@ -385,6 +401,7 @@ class AdaptiveServiceImplTest {
                 makeJobPrep(21L, "Redis 后端工程师", "负责 Redis 缓存设计", "Redis 高并发缓存", new BigDecimal("76"))));
         when(copilotPrepSessionMapper.selectList(any())).thenReturn(List.of(
                 makeCopilotPrep(31L, "Redis 实时面试", "Redis 缓存一致性追问", "Redis 追问风险与 live cue")));
+        when(jobApplicationMapper.selectList(any())).thenReturn(List.of());
         when(wrongQuestionMapper.selectCount(any())).thenReturn(0L);
 
         AbilityProfileVO profile = service.getAbilityProfile(1L);
@@ -396,6 +413,30 @@ class AdaptiveServiceImplTest {
         assertEquals(1, redisAbility.getJobPrepCount());
         assertEquals(1, redisAbility.getCopilotPrepCount());
         assertEquals(0, redisAbility.getInterviewCount());
+        assertTrue(redisAbility.getAbilityScore() > 0);
+    }
+
+    @Test
+    void getAbilityProfile_withApplicationFeedbackEvidence_countsApplicationSignals() {
+        mockCacheMiss();
+        mockCategories(makeCategory(100L, "Redis"), makeCategory(200L, "Kafka"));
+        when(sessionMapper.selectList(any())).thenReturn(List.of());
+        when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
+        when(jobPrepSessionMapper.selectList(any())).thenReturn(List.of());
+        when(copilotPrepSessionMapper.selectList(any())).thenReturn(List.of());
+        when(jobApplicationMapper.selectList(any())).thenReturn(List.of(
+                makeApplication(41L, "后端开发", "Redis,Kafka", "Redis", "继续补 Redis 一致性")));
+        when(wrongQuestionMapper.selectCount(any())).thenReturn(0L);
+
+        AbilityProfileVO profile = service.getAbilityProfile(1L);
+
+        assertEquals("forming", profile.getEvidenceStatus());
+        assertEquals(2, profile.getCategoryAbilities().size());
+        CategoryAbilityVO redisAbility = profile.getCategoryAbilities().stream()
+                .filter(item -> "Redis".equals(item.getCategoryName()))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(1, redisAbility.getApplicationFeedbackCount());
         assertTrue(redisAbility.getAbilityScore() > 0);
     }
 
@@ -496,5 +537,23 @@ class AdaptiveServiceImplTest {
         session.setCreateTime(LocalDateTime.now().minusDays(1));
         session.setUpdateTime(LocalDateTime.now());
         return session;
+    }
+
+    private JobApplication makeApplication(Long id, String jobTitle, String jdKeywords, String missingKeywords, String reviewSuggestion) {
+        JobApplication application = new JobApplication();
+        application.setId(id);
+        application.setUserId(1L);
+        application.setCompany("字节跳动");
+        application.setJobTitle(jobTitle);
+        application.setStatus("interview");
+        application.setMatchScore(new BigDecimal("78"));
+        application.setJdKeywords(jdKeywords);
+        application.setMissingKeywords(missingKeywords);
+        application.setReviewSuggestion(reviewSuggestion);
+        application.setAnalysisSummary("Redis 和 Kafka 都会被重点追问");
+        application.setNextStepSuggestion("下轮重点补 Redis");
+        application.setCreateTime(LocalDateTime.now().minusDays(1));
+        application.setUpdateTime(LocalDateTime.now());
+        return application;
     }
 }

@@ -13,6 +13,7 @@ public class CategoryAbilityVO {
     private Integer recordingReviewCount;
     private Integer jobPrepCount;
     private Integer copilotPrepCount;
+    private Integer applicationFeedbackCount;
     private Integer wrongCount;
     private Boolean isWeak;
     private String recommendedDifficulty;
