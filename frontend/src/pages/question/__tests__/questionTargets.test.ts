@@ -42,4 +42,24 @@ describe('questionTargets', () => {
       }
     })
   })
+
+  it('carries seed context into downstream targets when present', () => {
+    expect(buildQuestionChatTarget(question, {
+      seedTopic: 'Redis',
+      seedWorkflow: 'analytics',
+      seedNote: '优先补 Redis 持久化表达'
+    })).toEqual({
+      path: '/chat',
+      query: {
+        sourceQuestionId: '42',
+        sourceQuestionTitle: '说一下 Redis 持久化',
+        sourceQuestionCategory: 'Redis',
+        sourceQuestionTag: 'Redis',
+        sourceQuestionDirection: 'Java 后端',
+        seedTopic: 'Redis',
+        seedWorkflow: 'analytics',
+        seedNote: '优先补 Redis 持久化表达'
+      }
+    })
+  })
 })

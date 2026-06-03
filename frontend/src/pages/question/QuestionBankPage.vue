@@ -268,7 +268,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter, type LocationQueryRaw, type RouteLocationRaw } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchCategoriesApi } from '@/api/category'
 import { fetchQuestionDetailApi, fetchQuestionsApi } from '@/api/question'
@@ -290,6 +290,35 @@ const questions = ref<QuestionItem[]>([])
 const detailVisible = ref(false)
 const selectedQuestion = ref<QuestionItem | null>(null)
 const showAdvancedFilters = ref(false)
+const readSeedQueryValue = (key: 'seedTopic' | 'seedWorkflow' | 'seedNote') => {
+  const value = route.query[key]
+  return typeof value === 'string' ? value.trim() : ''
+}
+const seededTopic = computed(() => readSeedQueryValue('seedTopic'))
+const seededWorkflow = computed(() => readSeedQueryValue('seedWorkflow'))
+const seededNote = computed(() => readSeedQueryValue('seedNote'))
+
+const buildSeedQuery = () => ({
+  ...(seededTopic.value ? { seedTopic: seededTopic.value } : {}),
+  ...(seededWorkflow.value ? { seedWorkflow: seededWorkflow.value } : {}),
+  ...(seededNote.value ? { seedNote: seededNote.value } : {})
+})
+
+const buildSeededAgentWorkbenchLocation = (
+  prefill: Parameters<typeof buildAgentWorkbenchLocation>[0]
+): RouteLocationRaw => {
+  const location = buildAgentWorkbenchLocation(prefill) as {
+    path: string
+    query?: LocationQueryRaw
+  }
+  return {
+    path: location.path,
+    query: {
+      ...(location.query || {}),
+      ...buildSeedQuery()
+    }
+  }
+}
 
 const filters = reactive<{
   categoryId?: number
@@ -404,11 +433,11 @@ const openDetail = (question: QuestionItem) => {
   void syncQuestionRoute(question.id)
 }
 
-const questionChatTarget = (question: QuestionItem) => buildQuestionChatTarget(question)
+const questionChatTarget = (question: QuestionItem) => buildQuestionChatTarget(question, buildSeedQuery())
 
-const questionInterviewTarget = (question: QuestionItem) => buildQuestionInterviewTarget(question)
+const questionInterviewTarget = (question: QuestionItem) => buildQuestionInterviewTarget(question, buildSeedQuery())
 
-const questionStudyPlannerTarget = (question: QuestionItem) => buildAgentWorkbenchLocation({
+const questionStudyPlannerTarget = (question: QuestionItem) => buildSeededAgentWorkbenchLocation({
   agentType: 'study_planner',
   triggerSource: 'manual',
   contextRefs: [`question:${question.id}`, 'study-plan:active', 'analytics:profile'],

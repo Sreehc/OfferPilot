@@ -211,7 +211,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter, type LocationQueryRaw, type RouteLocationRaw } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
 import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
 import {
@@ -238,6 +238,35 @@ const wrongItems = ref<WrongQuestionItem[]>([])
 const selectedWrong = ref<WrongQuestionItem | null>(null)
 const selectedWrongId = ref<number | null>(null)
 const savingMastery = ref<WrongQuestionItem['masteryLevel'] | null>(null)
+const readSeedQueryValue = (key: 'seedTopic' | 'seedWorkflow' | 'seedNote') => {
+  const value = route.query[key]
+  return typeof value === 'string' ? value.trim() : ''
+}
+const seededTopic = computed(() => readSeedQueryValue('seedTopic'))
+const seededWorkflow = computed(() => readSeedQueryValue('seedWorkflow'))
+const seededNote = computed(() => readSeedQueryValue('seedNote'))
+
+const buildSeedQuery = () => ({
+  ...(seededTopic.value ? { seedTopic: seededTopic.value } : {}),
+  ...(seededWorkflow.value ? { seedWorkflow: seededWorkflow.value } : {}),
+  ...(seededNote.value ? { seedNote: seededNote.value } : {})
+})
+
+const buildSeededAgentWorkbenchLocation = (
+  prefill: Parameters<typeof buildAgentWorkbenchLocation>[0]
+): RouteLocationRaw => {
+  const location = buildAgentWorkbenchLocation(prefill) as {
+    path: string
+    query?: LocationQueryRaw
+  }
+  return {
+    path: location.path,
+    query: {
+      ...(location.query || {}),
+      ...buildSeedQuery()
+    }
+  }
+}
 
 const masteryOptions: Array<{ value: WrongQuestionItem['masteryLevel']; label: string }> = [
   { value: 'not_started', label: '设为未开始' },
@@ -248,13 +277,13 @@ const masteryOptions: Array<{ value: WrongQuestionItem['masteryLevel']; label: s
 const pendingCount = computed(() => wrongItems.value.filter((item) => item.masteryLevel !== 'mastered').length)
 const masteredCount = computed(() => wrongItems.value.filter((item) => item.masteryLevel === 'mastered').length)
 const wrongPlanRefreshLink = computed(() => {
-  if (!selectedWrong.value) return buildAgentWorkbenchLocation({
+  if (!selectedWrong.value) return buildSeededAgentWorkbenchLocation({
     agentType: 'study_planner',
     triggerSource: 'manual',
     contextRefs: ['study-plan:active', 'analytics:profile'],
     userPrompt: '结合当前错题和训练画像，刷新下一轮训练计划。'
   })
-  return buildAgentWorkbenchLocation({
+  return buildSeededAgentWorkbenchLocation({
     agentType: 'study_planner',
     triggerSource: 'manual',
     contextRefs: [`wrong:${selectedWrong.value.id}`, 'study-plan:active', 'analytics:profile'],
@@ -263,7 +292,7 @@ const wrongPlanRefreshLink = computed(() => {
 })
 const wrongAgentLink = computed(() => {
   if (!selectedWrong.value) return '/agent'
-  return buildAgentWorkbenchLocation({
+  return buildSeededAgentWorkbenchLocation({
     agentType: 'coordinator',
     triggerSource: 'manual',
     contextRefs: [`wrong:${selectedWrong.value.id}`, 'analytics:profile', 'study-plan:active'],
@@ -277,7 +306,8 @@ const wrongInterviewLink = computed(() => {
     query: {
       workspace: 'mock-interview',
       sourceQuestionId: String(selectedWrong.value.questionId),
-      sourceQuestionTitle: selectedWrong.value.title
+      sourceQuestionTitle: selectedWrong.value.title,
+      ...buildSeedQuery()
     }
   }
 })
