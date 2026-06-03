@@ -152,7 +152,7 @@ public class PlanServiceImpl implements PlanService {
         String normalizedActionPath = firstNonBlank(
                 actionPath,
                 interviewSessionId == null ? null : "/interview/detail/" + interviewSessionId,
-                copilotRealtimeSessionId == null ? null : "/interview?copilotRealtime=" + copilotRealtimeSessionId,
+                copilotRealtimeSessionId == null ? null : "/interview?workspace=copilot-live&copilotRealtimeSessionId=" + copilotRealtimeSessionId,
                 "/interview");
 
         StudyPlanTask existingTask = studyPlanTaskMapper.selectOne(new LambdaQueryWrapper<StudyPlanTask>()
@@ -196,7 +196,7 @@ public class PlanServiceImpl implements PlanService {
         StudyPlan synced = syncPlanState(plan);
         String normalizedActionPath = firstNonBlank(
                 actionPath,
-                recordingReviewSessionId == null ? null : "/interview?recordingReview=" + recordingReviewSessionId,
+                recordingReviewSessionId == null ? null : "/interview?workspace=recording-review&recordingReviewSessionId=" + recordingReviewSessionId,
                 "/interview");
 
         StudyPlanTask existingTask = studyPlanTaskMapper.selectOne(new LambdaQueryWrapper<StudyPlanTask>()

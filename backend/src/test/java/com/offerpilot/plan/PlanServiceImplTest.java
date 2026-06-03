@@ -136,13 +136,13 @@ class PlanServiceImplTest {
                 "Spring Boot, Redis",
                 "录音复盘专项 | 表达结构",
                 "先回听录音片段，再把表达结构带入下一轮模拟。",
-                "/interview?recordingReview=55");
+                "/interview?workspace=recording-review&recordingReviewSessionId=55");
 
         assertEquals(2, result.getTodayTaskCount());
         assertTrue(result.getTasks().stream().anyMatch(task ->
                 "recording_review".equals(task.getModule())
                         && "录音复盘专项 | 表达结构".equals(task.getTitle())
-                        && "/interview?recordingReview=55".equals(task.getActionPath())));
+                        && "/interview?workspace=recording-review&recordingReviewSessionId=55".equals(task.getActionPath())));
     }
 
     @Test
@@ -156,7 +156,7 @@ class PlanServiceImplTest {
         existing.setModule("recording_review");
         existing.setTitle("旧录音复盘任务");
         existing.setDescription("旧描述");
-        existing.setActionPath("/interview?recordingReview=55");
+        existing.setActionPath("/interview?workspace=recording-review&recordingReviewSessionId=55");
         existing.setEstimatedMinutes(25);
         existing.setPriority("medium");
         existing.setStatus("pending");
@@ -170,7 +170,7 @@ class PlanServiceImplTest {
                 "Spring Boot, Redis",
                 "录音复盘专项 | 项目案例支撑",
                 "先补项目案例支撑，再回到专项模拟。",
-                "/interview?recordingReview=55");
+                "/interview?workspace=recording-review&recordingReviewSessionId=55");
 
         long recordingReviewTaskCount = result.getTasks().stream()
                 .filter(task -> "recording_review".equals(task.getModule()))
