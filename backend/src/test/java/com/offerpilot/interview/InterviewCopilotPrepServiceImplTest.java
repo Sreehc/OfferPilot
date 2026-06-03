@@ -7,7 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.offerpilot.adaptive.service.AdaptiveService;
+import com.offerpilot.adaptive.service.TrainingSignalService;
 import com.offerpilot.agent.service.UserProviderConfigService;
 import com.offerpilot.agent.vo.UserProviderConfigItemVO;
 import com.offerpilot.application.mapper.JobApplicationMapper;
@@ -45,7 +45,7 @@ class InterviewCopilotPrepServiceImplTest {
     @Mock
     private UserProviderConfigService userProviderConfigService;
     @Mock
-    private AdaptiveService adaptiveService;
+    private TrainingSignalService trainingSignalService;
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -77,7 +77,7 @@ class InterviewCopilotPrepServiceImplTest {
 
         assertEquals("/interview?workspace=copilot-live&copilotPrepSessionId=88", result.getNextActionPath());
         assertTrue(result.getNextActions().stream().anyMatch(item -> item.contains("60-90 秒口语版")));
-        verify(adaptiveService).refreshAbilityProfile(1L);
+        verify(trainingSignalService).handleEvidenceUpdate(1L);
     }
 
     @Test

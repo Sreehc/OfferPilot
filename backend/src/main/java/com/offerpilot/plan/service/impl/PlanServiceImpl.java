@@ -46,7 +46,7 @@ public class PlanServiceImpl implements PlanService {
         validateDuration(request.getDurationDays());
         archiveActivePlans(userId);
 
-        DashboardOverviewVO overview = dashboardService.overview();
+        DashboardOverviewVO overview = dashboardService.overview(userId);
         PlanProfile profile = buildProfile(request, overview);
 
         StudyPlan plan = new StudyPlan();
@@ -86,7 +86,17 @@ public class PlanServiceImpl implements PlanService {
             return null;
         }
         StudyPlan synced = syncPlanState(plan);
-        return toCurrentVO(synced, loadPlanTasks(synced.getId()), dashboardService.overview());
+        return toCurrentVO(synced, loadPlanTasks(synced.getId()), dashboardService.overview(userId));
+    }
+
+    @Override
+    @Transactional
+    public StudyPlanCurrentVO refreshActivePlan(Long userId) {
+        StudyPlan activePlan = findActivePlan(userId);
+        if (activePlan == null) {
+            return null;
+        }
+        return refresh(userId, activePlan.getId());
     }
 
     @Override
@@ -107,7 +117,7 @@ public class PlanServiceImpl implements PlanService {
         studyPlanTaskMapper.updateById(task);
 
         StudyPlan plan = syncPlanState(getOwnedPlan(userId, task.getPlanId()));
-        return toCurrentVO(plan, loadPlanTasks(plan.getId()), dashboardService.overview());
+        return toCurrentVO(plan, loadPlanTasks(plan.getId()), dashboardService.overview(userId));
     }
 
     @Override
@@ -118,7 +128,7 @@ public class PlanServiceImpl implements PlanService {
             throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "archived study plan cannot be refreshed");
         }
 
-        DashboardOverviewVO overview = dashboardService.overview();
+        DashboardOverviewVO overview = dashboardService.overview(userId);
         PlanProfile profile = buildProfile(
                 new StudyPlanGenerateRequestBuilder(plan.getDurationDays(), plan.getFocusDirection(), plan.getTargetRole(), plan.getTechStack()).build(),
                 overview);
@@ -186,7 +196,7 @@ public class PlanServiceImpl implements PlanService {
         }
 
         StudyPlan latestPlan = syncPlanState(getOwnedPlan(userId, synced.getId()));
-        return toCurrentVO(latestPlan, loadPlanTasks(latestPlan.getId()), dashboardService.overview());
+        return toCurrentVO(latestPlan, loadPlanTasks(latestPlan.getId()), dashboardService.overview(userId));
     }
 
     @Override
@@ -230,7 +240,7 @@ public class PlanServiceImpl implements PlanService {
         }
 
         StudyPlan latestPlan = syncPlanState(getOwnedPlan(userId, synced.getId()));
-        return toCurrentVO(latestPlan, loadPlanTasks(latestPlan.getId()), dashboardService.overview());
+        return toCurrentVO(latestPlan, loadPlanTasks(latestPlan.getId()), dashboardService.overview(userId));
     }
 
     @Override
@@ -274,7 +284,7 @@ public class PlanServiceImpl implements PlanService {
         }
 
         StudyPlan latestPlan = syncPlanState(getOwnedPlan(userId, synced.getId()));
-        return toCurrentVO(latestPlan, loadPlanTasks(latestPlan.getId()), dashboardService.overview());
+        return toCurrentVO(latestPlan, loadPlanTasks(latestPlan.getId()), dashboardService.overview(userId));
     }
 
     private StudyPlan getOwnedPlan(Long userId, Long planId) {

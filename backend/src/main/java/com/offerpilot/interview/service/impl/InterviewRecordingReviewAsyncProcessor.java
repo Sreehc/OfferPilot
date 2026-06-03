@@ -3,7 +3,7 @@ package com.offerpilot.interview.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.offerpilot.adaptive.service.AdaptiveService;
+import com.offerpilot.adaptive.service.TrainingSignalService;
 import com.offerpilot.interview.entity.RecordingReviewSession;
 import com.offerpilot.interview.entity.RecordingTranscriptSegment;
 import com.offerpilot.interview.mapper.RecordingReviewSessionMapper;
@@ -29,7 +29,7 @@ public class InterviewRecordingReviewAsyncProcessor {
     private final RecordingTranscriptSegmentMapper recordingTranscriptSegmentMapper;
     private final RecordingReviewBlueprintFactory blueprintFactory;
     private final SttGateway sttGateway;
-    private final AdaptiveService adaptiveService;
+    private final TrainingSignalService trainingSignalService;
     private final ObjectMapper objectMapper;
 
     @Async
@@ -76,7 +76,7 @@ public class InterviewRecordingReviewAsyncProcessor {
             session.setWeakPointsJson(writeList(blueprint.weakPoints()));
             session.setSuggestedActionsJson(writeList(blueprint.suggestedActions()));
             recordingReviewSessionMapper.updateById(session);
-            adaptiveService.refreshAbilityProfile(session.getUserId());
+            trainingSignalService.handleEvidenceUpdate(session.getUserId());
         } catch (Exception e) {
             log.error("Async recording review processing failed for session {}", sessionId, e);
             fail(session, "录音复盘生成失败: " + abbreviate(e.getMessage(), 120));

@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.offerpilot.adaptive.service.AdaptiveService;
+import com.offerpilot.adaptive.service.TrainingSignalService;
 import com.offerpilot.agent.service.UserProviderConfigService;
 import com.offerpilot.agent.vo.UserProviderConfigItemVO;
 import com.offerpilot.application.entity.JobApplication;
@@ -55,7 +55,7 @@ public class InterviewJobPrepServiceImpl implements InterviewJobPrepService {
     private final ResumeFileMapper resumeFileMapper;
     private final ResumeProjectMapper resumeProjectMapper;
     private final UserProviderConfigService userProviderConfigService;
-    private final AdaptiveService adaptiveService;
+    private final TrainingSignalService trainingSignalService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -90,7 +90,7 @@ public class InterviewJobPrepServiceImpl implements InterviewJobPrepService {
         session.setNextActionsJson(writeList(blueprint.nextActions()));
         session.setSummary(blueprint.summary());
         jobPrepSessionMapper.insert(session);
-        adaptiveService.refreshAbilityProfile(userId);
+        trainingSignalService.handleEvidenceUpdate(userId);
         return buildVo(session, resumeSnapshot.resumeTitle());
     }
 

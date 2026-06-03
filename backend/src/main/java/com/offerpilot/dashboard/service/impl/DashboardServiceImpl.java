@@ -76,7 +76,11 @@ public class DashboardServiceImpl implements DashboardService {
         if (userId == null) {
             throw new BusinessException(ResultCode.UNAUTHORIZED.getCode(), "login required");
         }
+        return overview(userId);
+    }
 
+    @Override
+    public DashboardOverviewVO overview(Long userId) {
         String cacheKey = CACHE_PREFIX + userId;
         try {
             String cached = redisTemplate.opsForValue().get(cacheKey);
@@ -132,6 +136,7 @@ public class DashboardServiceImpl implements DashboardService {
         return result;
     }
 
+    @Override
     public void evictCache(Long userId) {
         try {
             redisTemplate.delete(CACHE_PREFIX + userId);

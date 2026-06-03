@@ -7,7 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.offerpilot.adaptive.service.AdaptiveService;
+import com.offerpilot.adaptive.service.TrainingSignalService;
 import com.offerpilot.interview.entity.RecordingReviewSession;
 import com.offerpilot.interview.entity.RecordingTranscriptSegment;
 import com.offerpilot.interview.mapper.RecordingReviewSessionMapper;
@@ -36,7 +36,7 @@ class InterviewRecordingReviewAsyncProcessorTest {
     @Mock
     private SttGateway sttGateway;
     @Mock
-    private AdaptiveService adaptiveService;
+    private TrainingSignalService trainingSignalService;
     @Mock
     private ObjectMapper objectMapper;
 
@@ -83,7 +83,7 @@ class InterviewRecordingReviewAsyncProcessorTest {
 
         verify(recordingReviewSessionMapper, atLeast(3)).updateById(any(RecordingReviewSession.class));
         verify(recordingTranscriptSegmentMapper).insert(any(RecordingTranscriptSegment.class));
-        verify(adaptiveService).refreshAbilityProfile(9L);
+        verify(trainingSignalService).handleEvidenceUpdate(9L);
         assertEquals("ready", session.getStatus());
         assertEquals("录音复盘已生成。", session.getStatusMessage());
         assertEquals(new BigDecimal("78"), session.getOverallScore());

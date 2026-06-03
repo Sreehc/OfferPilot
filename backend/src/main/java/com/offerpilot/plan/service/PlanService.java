@@ -9,6 +9,8 @@ public interface PlanService {
 
     StudyPlanCurrentVO current(Long userId);
 
+    StudyPlanCurrentVO refreshActivePlan(Long userId);
+
     StudyPlanCurrentVO updateTaskStatus(Long userId, Long taskId, StudyPlanTaskStatusRequest request);
 
     StudyPlanCurrentVO refresh(Long userId, Long planId);
