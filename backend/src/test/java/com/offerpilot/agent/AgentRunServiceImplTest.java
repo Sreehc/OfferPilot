@@ -822,6 +822,72 @@ class AgentRunServiceImplTest {
     }
 
     @Test
+    void createRun_resumeCoachUsesApplicationBoardFocus() {
+        when(jobApplicationService.board(1L)).thenReturn(List.of(
+                JobApplicationVO.builder()
+                        .id(2L)
+                        .resumeFileId(11L)
+                        .company("携程")
+                        .jobTitle("Java 开发")
+                        .status("saved")
+                        .matchScore(new BigDecimal("85"))
+                        .missingKeywords(List.of("Spring Cloud"))
+                        .build(),
+                JobApplicationVO.builder()
+                        .id(7L)
+                        .resumeFileId(15L)
+                        .company("字节跳动")
+                        .jobTitle("后端开发")
+                        .status("interview")
+                        .matchScore(new BigDecimal("79"))
+                        .missingKeywords(List.of("Redis", "Kafka"))
+                        .reviewSuggestion("把上一轮面试反馈同步到项目追问清单。")
+                        .build()));
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "resume_coach",
+                "applications",
+                List.of("application:board"),
+                "把项目亮点改得更适合下轮深挖"));
+
+        assertTrue(result.getSummary().contains("后端开发"));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("Redis")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("项目追问清单")));
+        assertEquals("save_resume_follow_up_draft", result.getApprovalActionType());
+    }
+
+    @Test
+    void approveRun_persistsResumeFollowUpDraftFromApplicationBoardFocus() {
+        when(jobApplicationService.board(1L)).thenReturn(List.of(
+                JobApplicationVO.builder()
+                        .id(7L)
+                        .resumeFileId(15L)
+                        .company("字节跳动")
+                        .jobTitle("后端开发")
+                        .status("interview")
+                        .matchScore(new BigDecimal("79"))
+                        .missingKeywords(List.of("Redis", "Kafka"))
+                        .build()));
+        when(resumeService.saveFollowUpDraft(any(), any(), any(), any())).thenReturn(ResumeFileVO.builder()
+                .id(15L)
+                .title("后端专项简历")
+                .build());
+
+        AgentRunVO created = agentRunService.createRun(1L, request(
+                "resume_coach",
+                "applications",
+                List.of("application:board"),
+                "围绕下轮一面优化项目表达"));
+
+        AgentRunVO approved = agentRunService.approveRun(1L, Long.valueOf(String.valueOf(created.getId())), null);
+
+        verify(resumeService).saveFollowUpDraft(any(), any(), any(), any());
+        assertEquals("approved", approved.getStatus());
+        assertTrue(approved.getExecutionSummary().contains("简历追问草稿"));
+        assertTrue(approved.getExecutionSummary().contains("后端专项简历"));
+    }
+
+    @Test
     void approveRun_persistsRecordingReviewAsFormalTrainingAction() {
         when(interviewRecordingReviewService.detail(1L, 55L)).thenReturn(RecordingReviewSessionVO.builder()
                 .id(55L)

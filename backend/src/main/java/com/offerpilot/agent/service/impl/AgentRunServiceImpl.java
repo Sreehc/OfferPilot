@@ -338,6 +338,7 @@ public class AgentRunServiceImpl implements AgentRunService {
     private RunBlueprint buildResumeCoachBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
         ResumeFileVO resume = snapshot.resume();
         JobApplicationVO application = snapshot.application();
+        JobApplicationVO boardFocusApplication = snapshot.applicationBoard() == null ? null : snapshot.applicationBoard().focusApplication();
         String summary;
         List<String> baseRecommendations = new ArrayList<>();
         if (resume != null) {
@@ -366,6 +367,15 @@ public class AgentRunServiceImpl implements AgentRunService {
         }
         if (application != null && !nullSafeList(application.getMissingKeywords()).isEmpty()) {
             baseRecommendations.add("结合目标岗位，补齐这些关键词：" + joinLimited(application.getMissingKeywords(), 3, "、") + "。");
+        } else if (boardFocusApplication != null && !nullSafeList(boardFocusApplication.getMissingKeywords()).isEmpty()) {
+            summary = StringUtils.hasText(boardFocusApplication.getJobTitle())
+                    ? "已按当前投递看板的焦点岗位「" + boardFocusApplication.getJobTitle() + "」整理简历修改与项目表达建议。"
+                    : summary;
+            baseRecommendations.add("结合当前优先投递岗位，补齐这些关键词："
+                    + joinLimited(boardFocusApplication.getMissingKeywords(), 3, "、") + "。");
+            if (StringUtils.hasText(boardFocusApplication.getReviewSuggestion())) {
+                baseRecommendations.add(boardFocusApplication.getReviewSuggestion());
+            }
         }
         List<String> recommendations = mergeRecommendations(
                 baseRecommendations,
@@ -1127,6 +1137,8 @@ public class AgentRunServiceImpl implements AgentRunService {
             resumeId = snapshot.resume().getId();
         } else if (snapshot.application() != null) {
             resumeId = snapshot.application().getResumeFileId();
+        } else if (snapshot.applicationBoard() != null && snapshot.applicationBoard().focusApplication() != null) {
+            resumeId = snapshot.applicationBoard().focusApplication().getResumeFileId();
         } else if (snapshot.jobPrepSession() != null) {
             resumeId = snapshot.jobPrepSession().getResumeFileId();
         }
