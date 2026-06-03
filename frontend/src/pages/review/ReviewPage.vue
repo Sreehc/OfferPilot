@@ -63,7 +63,8 @@
             </div>
             <div class="flex flex-wrap items-center gap-2">
               <span class="detail-pill">连续 {{ stats?.currentStreak ?? reviewData?.currentStreak ?? 0 }} 天</span>
-              <RouterLink to="/interview?workspace=recording-review" class="hard-button-secondary">去录音复盘</RouterLink>
+              <span v-if="seededFocusLabel" class="detail-pill">{{ seededFocusLabel }}</span>
+              <RouterLink :to="recordingReviewLink" class="hard-button-secondary">去录音复盘</RouterLink>
               <RouterLink :to="reviewFocusWrongLink" class="hard-button-secondary">
                 {{ reviewFocusWrongLink === '/wrong' ? '查看错题本' : '定位首个错题' }}
               </RouterLink>
@@ -100,7 +101,7 @@
             <template #action>
               <div class="flex justify-center gap-3">
                 <RouterLink :to="reviewPlannerAgentLink" class="hard-button-primary">刷新学习计划</RouterLink>
-                <RouterLink to="/interview?workspace=mock-interview" class="hard-button-secondary">去模拟面试</RouterLink>
+                <RouterLink :to="mockInterviewLink" class="hard-button-secondary">去模拟面试</RouterLink>
                 <RouterLink :to="reviewFocusWrongLink" class="hard-button-primary">
                   {{ reviewFocusWrongLink === '/wrong' ? '去错题本' : '看这道错题' }}
                 </RouterLink>
@@ -235,7 +236,7 @@
             <div class="flex justify-center gap-3">
               <button type="button" class="hard-button-secondary" @click="resetSession">返回任务总览</button>
               <RouterLink :to="reviewPlannerAgentLink" class="hard-button-secondary">转成下一轮计划</RouterLink>
-              <RouterLink to="/interview?workspace=recording-review" class="hard-button-secondary">去录音复盘</RouterLink>
+              <RouterLink :to="recordingReviewLink" class="hard-button-secondary">去录音复盘</RouterLink>
               <RouterLink :to="completedReviewWrongLink" class="hard-button-primary">
                 {{ completedReviewWrongLink === '/wrong' ? '回到错题本' : '回看这道错题' }}
               </RouterLink>
@@ -251,12 +252,14 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
 import { ERROR_COPY } from '@/constants/productCopy'
 import { fetchReviewStatsApi, fetchReviewTodayApi, submitReviewRateApi } from '@/api/review'
 import type { ReviewContentType, ReviewStats, ReviewTodayData, UnifiedReviewItem } from '@/types/api'
-import { buildAgentWorkbenchLocation } from '@/utils/agent'
+import { buildAgentWorkbenchQuery } from '@/utils/agent'
 
+const route = useRoute()
 const loading = ref(true)
 const submitting = ref(false)
 const started = ref(false)
@@ -271,6 +274,45 @@ let touchStartX = 0
 let touchStartY = 0
 let touchStartTime = 0
 
+const readSeedQueryValue = (key: 'seedTopic' | 'seedWorkflow' | 'seedNote') => {
+  const value = route.query[key]
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+const seededTopic = computed(() => readSeedQueryValue('seedTopic'))
+const seededWorkflow = computed(() => readSeedQueryValue('seedWorkflow'))
+const seededNote = computed(() => readSeedQueryValue('seedNote'))
+const seededFocusLabel = computed(() => {
+  if (!seededTopic.value) return ''
+  return seededWorkflow.value === 'review' ? `${seededTopic.value} 错题复盘` : `${seededTopic.value} 定向上下文`
+})
+const seededWorkspaceSummary = computed(() => {
+  if (seededNote.value) return seededNote.value
+  if (!seededTopic.value) return ''
+  return `当前沿着「${seededTopic.value}」上下文处理错题复盘，后续模拟面试和录音复盘会继续保留这个主题。`
+})
+
+const appendSeedQuery = (query: URLSearchParams) => {
+  if (seededTopic.value) {
+    query.set('seedTopic', seededTopic.value)
+  }
+  if (seededWorkflow.value) {
+    query.set('seedWorkflow', seededWorkflow.value)
+  }
+  if (seededNote.value) {
+    query.set('seedNote', seededNote.value)
+  }
+  return query
+}
+
+const buildInterviewWorkspaceLink = (workspace: 'mock-interview' | 'recording-review') => {
+  const query = appendSeedQuery(new URLSearchParams({ workspace }))
+  return `/interview?${query.toString()}`
+}
+
+const recordingReviewLink = computed(() => buildInterviewWorkspaceLink('recording-review'))
+const mockInterviewLink = computed(() => buildInterviewWorkspaceLink('mock-interview'))
+
 const reviewItems = computed(() => reviewData.value?.items ?? [])
 const currentReviewItem = computed(() => reviewItems.value[currentIndex.value] ?? null)
 const reviewFocusWrongLink = computed(() => {
@@ -281,16 +323,28 @@ const completedReviewWrongLink = computed(() => {
   const wrongQuestionId = currentReviewItem.value?.wrongQuestionId || reviewItems.value.at(-1)?.wrongQuestionId
   return wrongQuestionId ? `/wrong?wrongId=${encodeURIComponent(wrongQuestionId)}` : '/wrong'
 })
-const reviewPlannerAgentLink = computed(() =>
-  buildAgentWorkbenchLocation({
-    agentType: 'study_planner',
-    triggerSource: 'analytics',
-    contextRefs: ['study-plan:active', 'analytics:profile', 'analytics:weak-topics'],
-    userPrompt: reviewItems.value.length
-      ? `今天还有 ${reviewItems.value.length} 项错题复习待处理，请结合这些复习信号刷新下一轮训练计划。`
+const reviewPlannerPrompt = computed(() =>
+  reviewItems.value.length
+    ? seededTopic.value
+      ? `今天还有 ${reviewItems.value.length} 项围绕「${seededTopic.value}」的错题复习待处理，请结合这些复习信号刷新下一轮训练计划。`
+      : `今天还有 ${reviewItems.value.length} 项错题复习待处理，请结合这些复习信号刷新下一轮训练计划。`
+    : seededTopic.value
+      ? `今天围绕「${seededTopic.value}」的错题复习已经处理完，请结合长期画像和复习结果刷新下一轮训练计划。`
       : '今天的错题复习已经处理完，请结合长期画像和复习结果刷新下一轮训练计划。'
-  })
 )
+
+const reviewPlannerAgentLink = computed(() => ({
+  path: '/agent',
+  query: {
+    ...buildAgentWorkbenchQuery({
+      agentType: 'study_planner',
+      triggerSource: 'analytics',
+      contextRefs: ['study-plan:active', 'analytics:profile', 'analytics:weak-topics'],
+      userPrompt: reviewPlannerPrompt.value
+    }),
+    ...Object.fromEntries(appendSeedQuery(new URLSearchParams()))
+  }
+}))
 
 const heroTitle = computed(() => {
   if (!reviewItems.value.length) {
@@ -301,9 +355,9 @@ const heroTitle = computed(() => {
 
 const heroSummary = computed(() => {
   if (!reviewItems.value.length) {
-    return '可以回到错题本补题，或开始新的训练。'
+    return seededWorkspaceSummary.value || '可以回到错题本补题，或开始新的训练。'
   }
-  return '处理今天到期和逾期的内容。'
+  return seededWorkspaceSummary.value || '处理今天到期和逾期的内容。'
 })
 
 const selectedFilterLabel = computed(() => '错题本')

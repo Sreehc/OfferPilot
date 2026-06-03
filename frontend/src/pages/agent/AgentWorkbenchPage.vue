@@ -474,6 +474,41 @@ import type { AgentRun } from '@/types/api'
 const route = useRoute()
 const router = useRouter()
 
+const readSeedQueryValue = (key: 'seedTopic' | 'seedWorkflow' | 'seedNote') => {
+  const value = route.query[key]
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+const seededTopic = computed(() => readSeedQueryValue('seedTopic'))
+const seededWorkflow = computed(() => readSeedQueryValue('seedWorkflow'))
+const seededNote = computed(() => readSeedQueryValue('seedNote'))
+
+const appendSeedToPath = (path: string | null): string | null => {
+  if (!path) return null
+  if (!seededTopic.value && !seededWorkflow.value && !seededNote.value) return path
+  if (!path.startsWith('/interview') && !path.startsWith('/resume') && !path.startsWith('/applications') && !path.startsWith('/analytics')) {
+    return path
+  }
+  const hashSplit = path.split('#')
+  const pathWithoutHash = hashSplit[0] || path
+  const hash = hashSplit[1] || ''
+  const pathQuerySplit = pathWithoutHash.split('?')
+  const pathname = pathQuerySplit[0] || pathWithoutHash
+  const queryString = pathQuerySplit[1] || ''
+  const query = new URLSearchParams(queryString)
+  if (seededTopic.value && !query.get('seedTopic')) {
+    query.set('seedTopic', seededTopic.value)
+  }
+  if (seededWorkflow.value && !query.get('seedWorkflow') && pathname !== '/analytics') {
+    query.set('seedWorkflow', seededWorkflow.value)
+  }
+  if (seededNote.value && !query.get('seedNote') && pathname !== '/analytics') {
+    query.set('seedNote', seededNote.value)
+  }
+  const nextPath = query.toString() ? `${pathname}?${query.toString()}` : pathname
+  return hash ? `${nextPath}#${hash}` : nextPath
+}
+
 type QuickStart = {
   id: string
   label: string
@@ -913,15 +948,15 @@ const resolveContextRefLabel = (contextRef: string) => {
 
 const resolveContextRefPath = (contextRef: string) => {
   if (contextRef === 'dashboard:overview') return '/dashboard'
-  if (contextRef === 'analytics:profile' || contextRef === 'analytics:weak-topics') return '/analytics'
+  if (contextRef === 'analytics:profile' || contextRef === 'analytics:weak-topics') return appendSeedToPath('/analytics')
   if (contextRef === 'study-plan:active') return '/study-plan'
-  if (contextRef === 'interview:latest') return '/interview'
-  if (contextRef === 'interview:recording-review') return '/interview?workspace=recording-review'
-  if (contextRef === 'interview:job-prep') return '/interview?workspace=job-prep'
-  if (contextRef === 'interview:copilot-prep') return '/interview?workspace=copilot-prep'
-  if (contextRef === 'interview:copilot-realtime') return '/interview?workspace=copilot-live'
-  if (contextRef === 'resume:latest') return '/resume'
-  if (contextRef === 'application:board') return '/applications'
+  if (contextRef === 'interview:latest') return appendSeedToPath('/interview')
+  if (contextRef === 'interview:recording-review') return appendSeedToPath('/interview?workspace=recording-review')
+  if (contextRef === 'interview:job-prep') return appendSeedToPath('/interview?workspace=job-prep')
+  if (contextRef === 'interview:copilot-prep') return appendSeedToPath('/interview?workspace=copilot-prep')
+  if (contextRef === 'interview:copilot-realtime') return appendSeedToPath('/interview?workspace=copilot-live')
+  if (contextRef === 'resume:latest') return appendSeedToPath('/resume')
+  if (contextRef === 'application:board') return appendSeedToPath('/applications')
   if (contextRef === 'settings:providers') return '/settings?tab=providers'
   if (contextRef.startsWith('knowledge:')) {
     return `/knowledge?docId=${encodeURIComponent(contextRef.slice('knowledge:'.length))}`
@@ -933,31 +968,31 @@ const resolveContextRefPath = (contextRef: string) => {
     return `/wrong?wrongId=${encodeURIComponent(contextRef.slice('wrong:'.length))}`
   }
   if (contextRef.startsWith('analytics:topic:')) {
-    return `/analytics?topic=${encodeURIComponent(contextRef.slice('analytics:topic:'.length))}`
+    return appendSeedToPath(`/analytics?topic=${encodeURIComponent(contextRef.slice('analytics:topic:'.length))}`)
   }
   if (contextRef.startsWith('analytics:retrospective:topic:')) {
-    return `/analytics?topic=${encodeURIComponent(contextRef.slice('analytics:retrospective:topic:'.length))}&retrospective=1`
+    return appendSeedToPath(`/analytics?topic=${encodeURIComponent(contextRef.slice('analytics:retrospective:topic:'.length))}&retrospective=1`)
   }
   if (contextRef.startsWith('interview:session:')) {
-    return `/interview/detail/${encodeURIComponent(contextRef.slice('interview:session:'.length))}`
+    return appendSeedToPath(`/interview/detail/${encodeURIComponent(contextRef.slice('interview:session:'.length))}`)
   }
   if (contextRef.startsWith('interview:recording-review:')) {
-    return `/interview?workspace=recording-review&recordingReviewSessionId=${encodeURIComponent(contextRef.slice('interview:recording-review:'.length))}`
+    return appendSeedToPath(`/interview?workspace=recording-review&recordingReviewSessionId=${encodeURIComponent(contextRef.slice('interview:recording-review:'.length))}`)
   }
   if (contextRef.startsWith('interview:job-prep:')) {
-    return `/interview?workspace=job-prep&jobPrepSessionId=${encodeURIComponent(contextRef.slice('interview:job-prep:'.length))}`
+    return appendSeedToPath(`/interview?workspace=job-prep&jobPrepSessionId=${encodeURIComponent(contextRef.slice('interview:job-prep:'.length))}`)
   }
   if (contextRef.startsWith('interview:copilot-prep:')) {
-    return `/interview?workspace=copilot-prep&copilotPrepSessionId=${encodeURIComponent(contextRef.slice('interview:copilot-prep:'.length))}`
+    return appendSeedToPath(`/interview?workspace=copilot-prep&copilotPrepSessionId=${encodeURIComponent(contextRef.slice('interview:copilot-prep:'.length))}`)
   }
   if (contextRef.startsWith('interview:copilot-realtime:')) {
-    return `/interview?workspace=copilot-live&copilotRealtimeSessionId=${encodeURIComponent(contextRef.slice('interview:copilot-realtime:'.length))}`
+    return appendSeedToPath(`/interview?workspace=copilot-live&copilotRealtimeSessionId=${encodeURIComponent(contextRef.slice('interview:copilot-realtime:'.length))}`)
   }
   if (contextRef.startsWith('resume:')) {
-    return `/resume?resumeId=${encodeURIComponent(contextRef.slice('resume:'.length))}`
+    return appendSeedToPath(`/resume?resumeId=${encodeURIComponent(contextRef.slice('resume:'.length))}`)
   }
   if (contextRef.startsWith('application:')) {
-    return `/applications/${encodeURIComponent(contextRef.slice('application:'.length))}`
+    return appendSeedToPath(`/applications/${encodeURIComponent(contextRef.slice('application:'.length))}`)
   }
   return null
 }
@@ -1062,15 +1097,17 @@ const buildFollowUpActions = (run: AgentRun): FollowUpAction[] => {
   }
 
   if (run.nextActionPath) {
-    addAction('next', resolveNextActionLabel(run), run.nextActionPath, describeFollowUpPath(run.nextActionPath), 'primary')
+    const nextPath = appendSeedToPath(run.nextActionPath) ?? run.nextActionPath
+    addAction('next', resolveNextActionLabel(run), nextPath, describeFollowUpPath(nextPath), 'primary')
   }
 
   if (run.executionActionPath && run.executionActionPath !== run.nextActionPath) {
+    const executionPath = appendSeedToPath(run.executionActionPath) ?? run.executionActionPath
     addAction(
       'execution',
       run.executionActionLabel || '查看执行结果',
-      run.executionActionPath,
-      describeFollowUpPath(run.executionActionPath),
+      executionPath,
+      describeFollowUpPath(executionPath),
       run.nextActionPath ? 'secondary' : 'primary'
     )
   }
