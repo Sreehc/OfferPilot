@@ -229,12 +229,15 @@ public class AgentRunServiceImpl implements AgentRunService {
     private RunBlueprint buildJobPrepBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
         JobPrepSessionVO jobPrepSession = snapshot.jobPrepSession();
         JobApplicationVO application = snapshot.application();
+        JobApplicationVO boardFocusApplication = snapshot.applicationBoard() == null ? null : snapshot.applicationBoard().focusApplication();
         String company = firstNonBlank(
                 jobPrepSession == null ? null : jobPrepSession.getCompany(),
-                application == null ? null : application.getCompany());
+                application == null ? null : application.getCompany(),
+                boardFocusApplication == null ? null : boardFocusApplication.getCompany());
         String jobTitle = firstNonBlank(
                 jobPrepSession == null ? null : jobPrepSession.getJobTitle(),
-                application == null ? null : application.getJobTitle());
+                application == null ? null : application.getJobTitle(),
+                boardFocusApplication == null ? null : boardFocusApplication.getJobTitle());
         String summary;
         List<String> recommendations;
         if (jobPrepSession != null) {
@@ -253,6 +256,21 @@ public class AgentRunServiceImpl implements AgentRunService {
                             : List.of("优先补齐 JD 缺口：" + joinLimited(application.getMissingKeywords(), 3, "、") + "。"),
                     StringUtils.hasText(application.getReviewSuggestion()) ? List.of(application.getReviewSuggestion()) : List.of(),
                     StringUtils.hasText(application.getNextStepSuggestion()) ? List.of(application.getNextStepSuggestion()) : List.of(),
+                    prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”纳入这轮备面优先级。") : List.of(),
+                    contextRefsText(contextRefs, "当前引用的上下文："));
+        } else if (boardFocusApplication != null) {
+            summary = "已根据当前投递看板整理下一场优先备面的岗位。当前建议先准备 "
+                    + defaultText(boardFocusApplication.getCompany(), "目标公司")
+                    + " "
+                    + defaultText(boardFocusApplication.getJobTitle(), "目标岗位")
+                    + "。";
+            recommendations = mergeRecommendations(
+                    List.of("当前看板焦点岗位状态：" + applicationStatusLabel(boardFocusApplication.getStatus()) + "。"),
+                    nullSafeList(boardFocusApplication.getMissingKeywords()).isEmpty()
+                            ? List.of("当前 JD 缺口不明显，可以把重点放到项目表达和高频追问准备。")
+                            : List.of("优先补齐 JD 缺口：" + joinLimited(boardFocusApplication.getMissingKeywords(), 3, "、") + "。"),
+                    StringUtils.hasText(boardFocusApplication.getReviewSuggestion()) ? List.of(boardFocusApplication.getReviewSuggestion()) : List.of(),
+                    StringUtils.hasText(boardFocusApplication.getNextStepSuggestion()) ? List.of(boardFocusApplication.getNextStepSuggestion()) : List.of(),
                     prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”纳入这轮备面优先级。") : List.of(),
                     contextRefsText(contextRefs, "当前引用的上下文："));
         } else {
@@ -1074,6 +1092,15 @@ public class AgentRunServiceImpl implements AgentRunService {
         }
         if (snapshot.application() != null) {
             JobApplicationVO application = snapshot.application();
+            return new JobPrepDraftPayload(
+                    application.getId(),
+                    application.getResumeFileId(),
+                    application.getCompany(),
+                    application.getJobTitle(),
+                    application.getJdText());
+        }
+        if (snapshot.applicationBoard() != null && snapshot.applicationBoard().focusApplication() != null) {
+            JobApplicationVO application = snapshot.applicationBoard().focusApplication();
             return new JobPrepDraftPayload(
                     application.getId(),
                     application.getResumeFileId(),

@@ -651,6 +651,47 @@ class AgentRunServiceImplTest {
     }
 
     @Test
+    void createRun_jobPrepUsesApplicationBoardFocus() {
+        when(jobApplicationService.board(1L)).thenReturn(List.of(
+                JobApplicationVO.builder()
+                        .id(3L)
+                        .resumeFileId(8L)
+                        .company("携程")
+                        .jobTitle("Java 开发")
+                        .status("saved")
+                        .matchScore(new BigDecimal("88"))
+                        .jdText("负责 Spring Boot 服务开发")
+                        .missingKeywords(List.of("Spring Cloud"))
+                        .nextStepSuggestion("先决定投递时间。")
+                        .build(),
+                JobApplicationVO.builder()
+                        .id(9L)
+                        .resumeFileId(12L)
+                        .company("字节跳动")
+                        .jobTitle("后端开发")
+                        .status("interview")
+                        .matchScore(new BigDecimal("76"))
+                        .jdText("负责 Java、Redis、Kafka 相关服务建设")
+                        .missingKeywords(List.of("Redis", "Kafka"))
+                        .reviewSuggestion("把上一轮面试反馈同步到项目追问清单。")
+                        .nextStepSuggestion("下周一面前先补缓存一致性和 MQ 场景。")
+                        .build()));
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "job_prep",
+                "manual",
+                List.of("resume:latest", "application:board"),
+                "优先准备下周最可能进入一面的岗位"));
+
+        assertTrue(result.getSummary().contains("字节跳动"));
+        assertTrue(result.getSummary().contains("后端开发"));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("面试中")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("Redis")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("MQ 场景")));
+        assertEquals("save_job_prep_draft", result.getApprovalActionType());
+    }
+
+    @Test
     void approveRun_persistsJobPrepDraftViaDomainService() {
         when(jobApplicationService.detail(1L, 6L)).thenReturn(JobApplicationVO.builder()
                 .id(6L)
@@ -682,6 +723,43 @@ class AgentRunServiceImplTest {
         verify(interviewJobPrepService).createSession(any(), any());
         assertEquals("approved", approved.getStatus());
         assertTrue(approved.getExecutionSummary().contains("正式 JD 备面草案"));
+    }
+
+    @Test
+    void approveRun_persistsJobPrepDraftFromApplicationBoardFocus() {
+        when(jobApplicationService.board(1L)).thenReturn(List.of(
+                JobApplicationVO.builder()
+                        .id(4L)
+                        .resumeFileId(16L)
+                        .company("小红书")
+                        .jobTitle("Java 后端")
+                        .status("written")
+                        .matchScore(new BigDecimal("81"))
+                        .jdText("负责 Java、Redis 与分布式服务建设")
+                        .missingKeywords(List.of("Redis"))
+                        .nextStepSuggestion("先完成笔试，再准备项目细节。")
+                        .build()));
+        when(interviewJobPrepService.createSession(any(), any())).thenReturn(JobPrepSessionVO.builder()
+                .id(401L)
+                .applicationId(4L)
+                .resumeFileId(16L)
+                .company("小红书")
+                .jobTitle("Java 后端")
+                .jdText("负责 Java、Redis 与分布式服务建设")
+                .build());
+
+        AgentRunVO created = agentRunService.createRun(1L, request(
+                "job_prep",
+                "manual",
+                List.of("resume:latest", "application:board"),
+                "优先准备下一场一面"));
+
+        AgentRunVO approved = agentRunService.approveRun(1L, Long.valueOf(String.valueOf(created.getId())), null);
+
+        verify(interviewJobPrepService).createSession(any(), any());
+        assertEquals("approved", approved.getStatus());
+        assertTrue(approved.getExecutionSummary().contains("正式 JD 备面草案"));
+        assertTrue(approved.getExecutionSummary().contains("Java 后端"));
     }
 
     @Test
