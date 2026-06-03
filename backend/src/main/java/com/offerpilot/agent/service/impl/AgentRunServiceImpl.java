@@ -2007,12 +2007,14 @@ public class AgentRunServiceImpl implements AgentRunService {
         if (nextActionPath.startsWith("/interview?workspace=recording-review")) {
             return "前往录音复盘";
         }
-        if (nextActionPath.startsWith("/interview?workspace=copilot-prep")
-                || nextActionPath.startsWith("/interview?workspace=copilot-live")) {
-            return "前往 Copilot";
+        if (nextActionPath.startsWith("/interview?workspace=copilot-prep")) {
+            return "前往 Copilot Prep";
+        }
+        if (nextActionPath.startsWith("/interview?workspace=copilot-live")) {
+            return "前往实时 Copilot";
         }
         if (nextActionPath.startsWith("/interview")) {
-            return "前往面试页";
+            return "前往模拟面试";
         }
         return "前往工作台";
     }

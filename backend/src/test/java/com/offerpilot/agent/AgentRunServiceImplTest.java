@@ -1006,7 +1006,7 @@ class AgentRunServiceImplTest {
                 "帮我判断当前阶段的下一步"));
 
         assertEquals("/interview?workspace=copilot-live&copilotRealtimeSessionId=88", result.getNextActionPath());
-        assertEquals("前往 Copilot", result.getNextActionLabel());
+        assertEquals("前往实时 Copilot", result.getNextActionLabel());
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("实时 Copilot 当前仍在连接中")));
     }
 

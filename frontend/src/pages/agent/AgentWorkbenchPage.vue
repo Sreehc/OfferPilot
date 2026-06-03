@@ -1058,6 +1058,16 @@ const resolveNextActionLabel = (run: AgentRun) => {
   if (run.providerGateStatus === 'blocked') {
     return '前往 Provider 设置'
   }
+  const nextActionPath = run.nextActionPath || ''
+  if (nextActionPath.startsWith('/interview?workspace=copilot-prep')) {
+    return '前往 Copilot Prep'
+  }
+  if (nextActionPath.startsWith('/interview?workspace=copilot-live')) {
+    return '前往实时 Copilot'
+  }
+  if (nextActionPath.startsWith('/interview?workspace=mock-interview') || nextActionPath === '/interview') {
+    return '前往模拟面试'
+  }
   switch (run.agentType) {
     case 'study_planner':
       return '前往训练计划'
@@ -1072,7 +1082,7 @@ const resolveNextActionLabel = (run: AgentRun) => {
     case 'application_strategist':
       return '前往投递页'
     case 'realtime_copilot':
-      return '前往 Copilot'
+      return '前往 Copilot Prep'
     default:
       return '前往下一步'
   }
