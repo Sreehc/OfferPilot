@@ -427,8 +427,8 @@ const capabilityCards = computed<CapabilityCard[]>(() => [
     '当前 JD 备面链路可完整使用，包括岗位研究和会前重点整理。',
     'JD 备面仍可运行，但公司背景研究和岗位情报会降级。',
     '主模型未就绪，JD 备面当前无法生成有效结果。',
-    '发起 JD 备面代理',
-    '/agent?agentType=job_prep&triggerSource=interview&contextRefs=resume:latest,application:board,settings:providers'
+    '进入 JD 备面工作区',
+    '/interview?workspace=job-prep'
   ),
   buildCapabilityCard(
     'recording_review',
@@ -440,8 +440,8 @@ const capabilityCards = computed<CapabilityCard[]>(() => [
     '当前录音复盘链路可完整使用，包括转写、复盘和训练建议。',
     '录音复盘可继续，但长音频存储和上传承载能力会降级。',
     '录音复盘缺少关键依赖，当前无法稳定完成转写和复盘。',
-    '发起录音复盘代理',
-    '/agent?agentType=recording_review&triggerSource=recording_review&contextRefs=interview:recording-review,study-plan:active,settings:providers'
+    '进入录音复盘工作区',
+    '/interview?workspace=recording-review'
   ),
   buildCapabilityCard(
     'realtime_copilot',
@@ -453,8 +453,8 @@ const capabilityCards = computed<CapabilityCard[]>(() => [
     '当前实时 Copilot 可完整使用，包括现场转写、背景检索和追问辅助。',
     '实时 Copilot 仍可进入，但说话人区分或部分增强能力会降级。',
     '实时 Copilot 缺少关键依赖，当前不建议进入实时阶段。',
-    '发起 Copilot 链路',
-    '/agent?agentType=realtime_copilot&triggerSource=interview&contextRefs=interview:job-prep,settings:providers'
+    '进入 Copilot 工作区',
+    '/interview?workspace=copilot-prep'
   ),
   buildCapabilityCard(
     'profile_loop',
