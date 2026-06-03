@@ -856,6 +856,16 @@ const buildInterviewSeedQuery = (topicName?: string | null, workflow?: string, n
   }
 }
 
+const buildSeededProductLink = (
+  path: string,
+  topicName?: string | null,
+  workflow?: string,
+  note?: string
+): RouteLocationRaw => ({
+  path,
+  query: buildInterviewSeedQuery(topicName, workflow, note)
+})
+
 const buildTopicQuestionSeed = (topicName: string) => ({
   sourceQuestionTitle: `${topicName} 定向模拟`,
   sourceQuestionDirection: topicName
@@ -1101,7 +1111,12 @@ const topicWorkflowActions = computed(() => {
       key: 'topic-applications',
       title: '同步到投递推进',
       description: '把这个主题带到真实岗位推进中验证，而不是只停留在训练页。',
-      to: '/applications',
+      to: buildSeededProductLink(
+        '/applications',
+        topicName,
+        'applications',
+        `当前从领域详情进入，优先把「${topicName}」带到真实岗位推进和投递反馈里验证。`
+      ),
       toneClass: ''
     })
   } else if ((topicDetail.value.copilotPrepCount || 0) > 0 && (topicDetail.value.resumeEvidenceCount || 0) === 0) {
@@ -1109,7 +1124,12 @@ const topicWorkflowActions = computed(() => {
       key: 'topic-resume',
       title: '补简历表达证据',
       description: '把这个主题写进项目表达和自我介绍，形成可复用面试口径。',
-      to: '/resume',
+      to: buildSeededProductLink(
+        '/resume',
+        topicName,
+        'resume',
+        `当前从领域详情进入，优先把「${topicName}」写进项目表达、自我介绍和可复用面试口径。`
+      ),
       toneClass: ''
     })
   }

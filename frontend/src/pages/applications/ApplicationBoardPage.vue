@@ -7,6 +7,7 @@
             <span class="hard-chip">{{ applications.length ? '投递进行中' : '记录第一条岗位' }}</span>
             <span class="detail-pill">{{ applications.length }} 条岗位</span>
             <span class="detail-pill">{{ activeCount }} 条正在推进</span>
+            <span v-if="seededFocusLabel" class="detail-pill">{{ seededFocusLabel }}</span>
             <span v-if="currentFocus" class="detail-pill">{{ statusLabel(currentFocus.status) }}</span>
           </div>
 
@@ -14,8 +15,8 @@
           <p class="workspace-summary">
             {{
               currentFocus
-                ? `${currentFocus.company} · ${currentFocus.jobTitle}，处理这条岗位的下一步动作。`
-                : '录入岗位和 JD 后，这里会显示匹配度和下一步建议。'
+                ? `${currentFocus.company} · ${currentFocus.jobTitle}，${seededWorkspaceSummary || '处理这条岗位的下一步动作。'}`
+                : seededWorkspaceSummary || '录入岗位和 JD 后，这里会显示匹配度和下一步建议。'
             }}
           </p>
         </div>
@@ -57,6 +58,21 @@
     </section>
 
     <section class="grid gap-4 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
+      <article v-if="seededFocusCard" class="shell-section-card p-5 sm:p-6 xl:col-span-2">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <div class="text-xs font-semibold uppercase tracking-[0.22em] text-tertiary">当前进入上下文</div>
+            <h3 class="mt-2 text-xl font-semibold tracking-[-0.03em] text-ink">{{ seededFocusCard.title }}</h3>
+            <p class="mt-2 text-sm leading-7 text-secondary">{{ seededFocusCard.description }}</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <RouterLink :to="applicationJobPrepLink" class="hard-button-secondary">带去 JD 备面</RouterLink>
+            <RouterLink :to="applicationCopilotPrepLink" class="hard-button-secondary">带去 Copilot Prep</RouterLink>
+            <RouterLink :to="applicationBoardAgentLink" class="hard-button-secondary">交给 Agent 推进</RouterLink>
+          </div>
+        </div>
+      </article>
+
       <article v-if="!currentFocus" id="application-create" class="shell-section-card p-5 sm:p-6">
         <div class="flex items-start justify-between gap-3">
           <div>
@@ -293,6 +309,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { createJobApplicationApi, fetchApplicationBoardApi } from '@/api/applications'
 import { EMPTY_STATE_COPY } from '@/constants/productCopy'
 import { fetchResumeListApi } from '@/api/resume'
@@ -305,6 +322,7 @@ const creating = ref(false)
 const applications = ref<JobApplicationItem[]>([])
 const resumes = ref<ResumeSummaryItem[]>([])
 const currentUser = storage.getUser()
+const route = useRoute()
 
 const form = reactive({
   company: '',
@@ -314,6 +332,47 @@ const form = reactive({
   jdText: '',
   resumeFileId: ''
 })
+
+const readSeedQueryValue = (key: 'seedTopic' | 'seedWorkflow' | 'seedNote') => {
+  const value = route.query[key]
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+const seededTopic = computed(() => readSeedQueryValue('seedTopic'))
+const seededWorkflow = computed(() => readSeedQueryValue('seedWorkflow'))
+const seededNote = computed(() => readSeedQueryValue('seedNote'))
+
+const seededFocusLabel = computed(() => {
+  if (!seededTopic.value) return ''
+  return seededWorkflow.value === 'applications' ? `${seededTopic.value} 投递验证` : `${seededTopic.value} 定向上下文`
+})
+
+const seededWorkspaceSummary = computed(() => {
+  if (seededNote.value) return seededNote.value
+  if (!seededTopic.value) return ''
+  return `当前从其他工作区带入「${seededTopic.value}」上下文，优先把它压到真实岗位推进、备面和反馈验证里。`
+})
+
+const seededFocusCard = computed(() => {
+  if (!seededTopic.value && !seededNote.value) return null
+  return {
+    title: seededTopic.value ? `围绕 ${seededTopic.value} 推进真实岗位验证` : '沿着当前上下文推进岗位动作',
+    description: seededWorkspaceSummary.value || '优先把当前薄弱点落到 JD、投递反馈和真实岗位推进里。'
+  }
+})
+
+const appendSeedQuery = (query: URLSearchParams) => {
+  if (seededTopic.value) {
+    query.set('seedTopic', seededTopic.value)
+  }
+  if (seededWorkflow.value) {
+    query.set('seedWorkflow', seededWorkflow.value)
+  }
+  if (seededNote.value) {
+    query.set('seedNote', seededNote.value)
+  }
+  return query
+}
 
 const statuses = computed(() => {
   const map = {
@@ -385,16 +444,20 @@ const applicationBoardAgentLink = computed(() => {
     triggerSource: 'applications',
     contextRefs,
     userPrompt: currentFocus.value?.jobTitle
-      ? `围绕 ${currentFocus.value.company} 的 ${currentFocus.value.jobTitle} 岗位，整理下一步推进策略和备面动作。`
-      : '结合当前投递看板、JD 分析和简历上下文，整理下一步推进策略。'
+      ? seededTopic.value
+        ? `围绕 ${currentFocus.value.company} 的 ${currentFocus.value.jobTitle} 岗位，重点验证「${seededTopic.value}」，整理下一步推进策略和备面动作。`
+        : `围绕 ${currentFocus.value.company} 的 ${currentFocus.value.jobTitle} 岗位，整理下一步推进策略和备面动作。`
+      : seededTopic.value
+        ? `结合当前投递看板、JD 分析和简历上下文，重点围绕「${seededTopic.value}」整理下一步推进策略。`
+        : '结合当前投递看板、JD 分析和简历上下文，整理下一步推进策略。'
   })
 })
 const applicationJobPrepLink = computed(() => {
   if (!currentFocus.value?.id) return '/interview?workspace=job-prep'
-  const query = new URLSearchParams({
+  const query = appendSeedQuery(new URLSearchParams({
     workspace: 'job-prep',
     applicationId: String(currentFocus.value.id)
-  })
+  }))
   if (currentFocus.value.resumeFileId) {
     query.set('resumeId', String(currentFocus.value.resumeFileId))
   }
@@ -402,10 +465,10 @@ const applicationJobPrepLink = computed(() => {
 })
 const applicationCopilotPrepLink = computed(() => {
   if (!currentFocus.value?.id) return '/interview?workspace=copilot-prep'
-  const query = new URLSearchParams({
+  const query = appendSeedQuery(new URLSearchParams({
     workspace: 'copilot-prep',
     applicationId: String(currentFocus.value.id)
-  })
+  }))
   if (currentFocus.value.resumeFileId) {
     query.set('resumeId', String(currentFocus.value.resumeFileId))
   }
@@ -413,8 +476,14 @@ const applicationCopilotPrepLink = computed(() => {
 })
 const applicationResumeLink = computed(() => {
   const resumeId = currentFocus.value?.resumeFileId || resumes.value[0]?.id
-  if (!resumeId) return '/resume'
-  return `/resume?resumeId=${encodeURIComponent(String(resumeId))}`
+  if (!resumeId) {
+    const query = appendSeedQuery(new URLSearchParams())
+    return query.toString() ? `/resume?${query.toString()}` : '/resume'
+  }
+  const query = appendSeedQuery(new URLSearchParams({
+    resumeId: String(resumeId)
+  }))
+  return `/resume?${query.toString()}`
 })
 
 const statusLabel = (value: string) => {

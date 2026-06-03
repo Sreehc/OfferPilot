@@ -6,6 +6,7 @@
           <div class="flex flex-wrap gap-2">
             <span class="hard-chip">{{ stateChip }}</span>
             <span class="detail-pill">{{ resumeList.length }} 份简历</span>
+            <span v-if="seededFocusLabel" class="detail-pill">{{ seededFocusLabel }}</span>
             <span v-if="currentResume" class="detail-pill">{{ currentResume.projects.length }} 个项目</span>
             <span v-if="currentResume" class="detail-pill">{{ flattenedRisks.length }} 条待检查提醒</span>
           </div>
@@ -14,8 +15,8 @@
           <p class="workspace-summary">
             {{
               !currentResume
-                ? '上传简历后，你可以修改内容、导出提纲或进入模拟面试。'
-                : `${stateTitle}，处理待修改的重点内容。`
+                ? seededWorkspaceSummary || '上传简历后，你可以修改内容、导出提纲或进入模拟面试。'
+                : `${stateTitle}，${seededWorkspaceSummary || '处理待修改的重点内容。'}`
             }}
           </p>
         </div>
@@ -85,7 +86,7 @@
       </div>
     </section>
 
-    <section class="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
+      <section class="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
       <aside class="space-y-4">
         <article id="resume-upload" class="shell-section-card p-5 sm:p-6">
           <section>
@@ -181,6 +182,21 @@
       </aside>
 
       <section class="space-y-4">
+        <article v-if="seededFocusCard" class="shell-section-card p-5 sm:p-6">
+          <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <div class="text-xs font-semibold uppercase tracking-[0.22em] text-tertiary">当前进入上下文</div>
+              <h3 class="mt-2 text-xl font-semibold tracking-[-0.03em] text-ink">{{ seededFocusCard.title }}</h3>
+              <p class="mt-2 text-sm leading-7 text-secondary">{{ seededFocusCard.description }}</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <RouterLink :to="resumeJobPrepLink" class="hard-button-secondary">带去 JD 备面</RouterLink>
+              <RouterLink :to="resumeCopilotPrepLink" class="hard-button-secondary">带去 Copilot Prep</RouterLink>
+              <RouterLink :to="resumeCoachAgentLink" class="hard-button-secondary">交给 Agent 收口</RouterLink>
+            </div>
+          </div>
+        </article>
+
         <article v-if="currentResume?.parseStatus === 'failed'" class="shell-section-card p-5 sm:p-6">
           <div class="rounded-2xl border border-coral/25 bg-coral/6 p-4">
             <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -658,6 +674,47 @@ const draft = reactive({
 const editingProjects = ref<ResumeProjectDraft[]>([])
 const currentUser = storage.getUser()
 
+const readSeedQueryValue = (key: 'seedTopic' | 'seedWorkflow' | 'seedNote') => {
+  const value = route.query[key]
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+const seededTopic = computed(() => readSeedQueryValue('seedTopic'))
+const seededWorkflow = computed(() => readSeedQueryValue('seedWorkflow'))
+const seededNote = computed(() => readSeedQueryValue('seedNote'))
+
+const seededFocusLabel = computed(() => {
+  if (!seededTopic.value) return ''
+  return seededWorkflow.value === 'resume' ? `${seededTopic.value} 简历表达` : `${seededTopic.value} 定向上下文`
+})
+
+const seededWorkspaceSummary = computed(() => {
+  if (seededNote.value) return seededNote.value
+  if (!seededTopic.value) return ''
+  return `当前从其他工作区带入「${seededTopic.value}」上下文，优先把它写进项目表达、自我介绍和后续面试口径。`
+})
+
+const seededFocusCard = computed(() => {
+  if (!seededTopic.value && !seededNote.value) return null
+  return {
+    title: seededTopic.value ? `围绕 ${seededTopic.value} 收紧简历表达` : '沿着当前上下文继续整理简历',
+    description: seededWorkspaceSummary.value || '优先把当前薄弱点落到项目表达、自我介绍和后续备面素材里。'
+  }
+})
+
+const appendSeedQuery = (query: URLSearchParams) => {
+  if (seededTopic.value) {
+    query.set('seedTopic', seededTopic.value)
+  }
+  if (seededWorkflow.value) {
+    query.set('seedWorkflow', seededWorkflow.value)
+  }
+  if (seededNote.value) {
+    query.set('seedNote', seededNote.value)
+  }
+  return query
+}
+
 const flattenedRisks = computed(() => {
   if (!currentResume.value) return []
   return [...new Set(currentResume.value.projects.flatMap((item) => item.riskHints || []))]
@@ -694,23 +751,37 @@ const resumeCoachAgentLink = computed(() => {
   return buildAgentWorkbenchLocation({
     agentType: 'resume_coach',
     triggerSource: 'resume',
-    contextRefs,
+    contextRefs: seededTopic.value ? [...contextRefs, `analytics:topic-name:${seededTopic.value}`] : contextRefs,
     userPrompt: currentResume.value?.parseStatus === 'failed'
       ? '先修正这份简历的缺失内容，再整理成可用于面试和投递的版本。'
-      : '结合当前简历内容、项目追问和面试提纲，生成下一轮简历优化动作。'
+      : seededTopic.value
+        ? `围绕「${seededTopic.value}」补强简历表达、项目追问和面试提纲，生成下一轮简历优化动作。`
+        : '结合当前简历内容、项目追问和面试提纲，生成下一轮简历优化动作。'
   })
 })
 const resumeInterviewLink = computed(() => {
   if (!currentResume.value?.id) return '/interview?workspace=mock-interview'
-  return `/interview?workspace=mock-interview&resumeId=${encodeURIComponent(String(currentResume.value.id))}`
+  const query = appendSeedQuery(new URLSearchParams({
+    workspace: 'mock-interview',
+    resumeId: String(currentResume.value.id)
+  }))
+  return `/interview?${query.toString()}`
 })
 const resumeJobPrepLink = computed(() => {
   if (!currentResume.value?.id) return '/interview?workspace=job-prep'
-  return `/interview?workspace=job-prep&resumeId=${encodeURIComponent(String(currentResume.value.id))}`
+  const query = appendSeedQuery(new URLSearchParams({
+    workspace: 'job-prep',
+    resumeId: String(currentResume.value.id)
+  }))
+  return `/interview?${query.toString()}`
 })
 const resumeCopilotPrepLink = computed(() => {
   if (!currentResume.value?.id) return '/interview?workspace=copilot-prep'
-  return `/interview?workspace=copilot-prep&resumeId=${encodeURIComponent(String(currentResume.value.id))}`
+  const query = appendSeedQuery(new URLSearchParams({
+    workspace: 'copilot-prep',
+    resumeId: String(currentResume.value.id)
+  }))
+  return `/interview?${query.toString()}`
 })
 
 const readRouteResumeId = () => {
