@@ -110,7 +110,7 @@
               <div class="dashboard-quick-grid">
                 <RouterLink
                   v-for="entry in quickEntries"
-                  :key="entry.path"
+                  :key="entry.label"
                   :to="entry.path"
                   class="dashboard-quick-card"
                 >
@@ -217,7 +217,7 @@
               <div class="dashboard-loop-grid">
                 <RouterLink
                   v-for="entry in interviewWorkflowEntries"
-                  :key="entry.path"
+                  :key="entry.stage"
                   :to="entry.path"
                   class="dashboard-loop-card"
                 >
@@ -308,7 +308,7 @@
 
                     <div class="dashboard-interview-card__footer">
                       <RouterLink
-                        :to="`/interview/detail/${recentInterviewCard.sessionId}`"
+                        :to="recentInterviewDetailLink"
                         class="dashboard-interview-card__detail-link touch-link"
                       >
                         查看详细分析
@@ -323,7 +323,7 @@
                 <div v-else class="dashboard-inline-empty">
                   <div class="dashboard-inline-empty__title">{{ EMPTY_STATE_COPY.dashboardRecentInterview.title }}</div>
                   <p class="dashboard-inline-empty__desc">{{ EMPTY_STATE_COPY.dashboardRecentInterview.description }}</p>
-                  <RouterLink to="/interview?workspace=mock-interview" class="hard-button-primary mt-4 inline-flex">开始模拟面试</RouterLink>
+                  <RouterLink :to="mockInterviewEntryLink" class="hard-button-primary mt-4 inline-flex">开始模拟面试</RouterLink>
                 </div>
               </article>
 
@@ -363,7 +363,7 @@
               <div class="dashboard-recommend-grid">
                 <RouterLink
                   v-for="item in recommendations"
-                  :key="`${item.title}-${item.path}`"
+                  :key="item.title"
                   :to="item.path"
                   class="dashboard-recommend-card"
                 >
@@ -447,6 +447,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
 import { fetchApplicationBoardApi } from '@/api/applications'
 import { fetchRecommendQuestionsApi } from '@/api/adaptive'
 import { fetchDashboardOverviewApi } from '@/api/dashboard'
@@ -472,7 +473,7 @@ import heroIllustrationUrl from '@/assets/dashboard-hero-illustration.svg'
 type DashboardQuickEntry = {
   label: string
   description: string
-  path: string
+  path: RouteLocationRaw
   icon: 'interview' | 'knowledge' | 'resume' | 'plan' | 'applications' | 'question'
   tone: 'blue' | 'green' | 'violet' | 'indigo' | 'cyan' | 'sky'
 }
@@ -483,7 +484,7 @@ type DashboardInterviewWorkflowEntry = {
   description: string
   hint: string
   status: string
-  path: string
+  path: RouteLocationRaw
   tone: 'blue' | 'teal' | 'violet' | 'amber'
 }
 
@@ -499,7 +500,7 @@ type DashboardRecommendationItem = {
   title: string
   category: string
   hint: string
-  path: string
+  path: RouteLocationRaw
   tone: 'violet' | 'blue' | 'indigo' | 'green'
 }
 
@@ -555,14 +556,88 @@ const currentUser = ref<UserInfo | null>(storage.getUser())
 
 const weekDays = ['一', '二', '三', '四', '五', '六', '日']
 
-const quickEntries: DashboardQuickEntry[] = [
-  { label: '模拟面试', description: 'AI 全真模拟', path: '/interview?workspace=mock-interview', icon: 'interview', tone: 'blue' },
+const dashboardSeedTopic = computed(() => overview.value.suggestedFocus || overview.value.weakPoints[0]?.categoryName || '')
+
+const buildSeedQuery = (workflow?: string, note?: string) => ({
+  seedTopic: dashboardSeedTopic.value || undefined,
+  seedWorkflow: workflow || undefined,
+  seedNote: note || undefined
+})
+
+const buildSeededPath = (path: string, workflow?: string, note?: string): RouteLocationRaw => ({
+  path,
+  query: buildSeedQuery(workflow, note)
+})
+
+const buildInterviewWorkspaceLink = (
+  workspace: 'mock-interview' | 'job-prep' | 'copilot-prep' | 'copilot-live' | 'recording-review',
+  note?: string
+): RouteLocationRaw => ({
+  path: '/interview',
+  query: {
+    workspace,
+    ...buildSeedQuery(workspace, note)
+  }
+})
+
+const appendDashboardSeedToPath = (path?: string | null): string => {
+  if (!path) return '/dashboard'
+  if (!dashboardSeedTopic.value) return path
+  if (!path.startsWith('/interview') && !path.startsWith('/resume') && !path.startsWith('/applications')) {
+    return path
+  }
+  const hashSplit = path.split('#')
+  const pathWithoutHash = hashSplit[0] || path
+  const hash = hashSplit[1] || ''
+  const pathQuerySplit = pathWithoutHash.split('?')
+  const pathname = pathQuerySplit[0] || pathWithoutHash
+  const queryString = pathQuerySplit[1] || ''
+  const query = new URLSearchParams(queryString)
+  if (!query.get('seedTopic')) {
+    query.set('seedTopic', dashboardSeedTopic.value)
+  }
+  if (pathname === '/interview' && !query.get('seedWorkflow') && query.get('workspace')) {
+    query.set('seedWorkflow', query.get('workspace') || 'interview')
+  }
+  const nextPath = query.toString() ? `${pathname}?${query.toString()}` : pathname
+  return hash ? `${nextPath}#${hash}` : nextPath
+}
+
+const mockInterviewEntryLink = computed<RouteLocationRaw>(() =>
+  buildInterviewWorkspaceLink(
+    'mock-interview',
+    dashboardSeedTopic.value ? `当前从工作台进入，优先验证「${dashboardSeedTopic.value}」是否已经讲稳。` : undefined
+  )
+)
+
+const quickEntries = computed<DashboardQuickEntry[]>(() => [
+  { label: '模拟面试', description: 'AI 全真模拟', path: mockInterviewEntryLink.value, icon: 'interview', tone: 'blue' },
   { label: '知识库', description: '查看推荐资料和个人文档', path: '/knowledge', icon: 'knowledge', tone: 'green' },
-  { label: '简历助手', description: '整理简历与面试提纲', path: '/resume', icon: 'resume', tone: 'violet' },
+  {
+    label: '简历助手',
+    description: '整理简历与面试提纲',
+    path: buildSeededPath(
+      '/resume',
+      'resume',
+      dashboardSeedTopic.value ? `当前从工作台进入，优先把「${dashboardSeedTopic.value}」补进简历表达和面试口径。` : undefined
+    ),
+    icon: 'resume',
+    tone: 'violet'
+  },
   { label: '学习计划', description: '定制学习路径', path: '/study-plan', icon: 'plan', tone: 'cyan' },
-  { label: '投递管理', description: '追踪求职进度', path: '/applications', icon: 'applications', tone: 'indigo' },
+  {
+    label: '投递管理',
+    description: '追踪求职进度',
+    path: buildSeededPath(
+      '/applications',
+      'applications',
+      dashboardSeedTopic.value ? `当前从工作台进入，优先把「${dashboardSeedTopic.value}」带到真实岗位推进里验证。` : undefined
+    ),
+    icon: 'applications',
+    tone: 'indigo'
+  },
   { label: '题库训练', description: '筛题、看答案和练表达', path: '/question', icon: 'question', tone: 'sky' }
-]
+])
 
 const greetingText = computed(() => resolveGreetingLabel())
 const dashboardNextAction = computed(() => overview.value.nextAction)
@@ -590,7 +665,7 @@ const firstVisitGuide = computed<FirstVisitGuideState>(() => {
       title: '上传简历',
       description: '上传简历后，计划、投递和模拟面试会更贴近你的目标岗位。',
       actionLabel: '去上传简历',
-      actionTo: '/resume#resume-upload',
+      actionTo: appendDashboardSeedToPath('/resume#resume-upload'),
       hint: '上传完成后，可以完善计划和岗位信息。'
     }
   }
@@ -609,7 +684,7 @@ const firstVisitGuide = computed<FirstVisitGuideState>(() => {
     title: '记录目标岗位',
     description: '添加一个目标岗位，后续建议会更贴近你的求职方向。',
     actionLabel: '去记录岗位',
-    actionTo: '/applications#application-create',
+    actionTo: appendDashboardSeedToPath('/applications#application-create'),
     hint: '岗位记录完成后，就可以进入标准工作台。'
   }
 })
@@ -654,7 +729,7 @@ const dashboardNextActionDescription = computed(
   () => dashboardNextAction.value?.description || '完成当前任务后，处理其他模块。'
 )
 const dashboardNextActionReason = computed(() => dashboardNextAction.value?.reason || '')
-const dashboardNextActionPath = computed(() => dashboardNextAction.value?.path || '/dashboard')
+const dashboardNextActionPath = computed<string>(() => appendDashboardSeedToPath(dashboardNextAction.value?.path || '/dashboard'))
 const dashboardNextActionPriority = computed(() => dashboardNextAction.value?.priority || 'P1')
 const dashboardAgentLink = computed(() => {
   const contextRefs = ['dashboard:overview', 'analytics:profile', 'study-plan:active']
@@ -687,7 +762,10 @@ const interviewWorkflowEntries = computed<DashboardInterviewWorkflowEntry[]>(() 
       description: '结合岗位信息、简历和投递记录，先补一轮针对性的备面草案。',
       hint: hasApplicationContext ? '当前已有岗位上下文，可直接进入定向准备。' : '还没有投递记录时，也可以先手动填入 JD 做预演。',
       status: hasApplicationContext ? '有岗位上下文' : '可手动开始',
-      path: '/interview?workspace=job-prep',
+      path: buildInterviewWorkspaceLink(
+        'job-prep',
+        dashboardSeedTopic.value ? `当前从工作台进入，优先把「${focusTopic}」压到岗位语境下验证。` : undefined
+      ),
       tone: 'blue'
     },
     {
@@ -696,7 +774,10 @@ const interviewWorkflowEntries = computed<DashboardInterviewWorkflowEntry[]>(() 
       description: '把开场提纲、风险点和追问建议整理成实时阶段可直接消费的准备结果。',
       hint: hasApplicationContext ? '建议先基于目标岗位准备开场和追问。' : '即使没有投递记录，也可以先用当前简历预演。',
       status: hasApplicationContext ? '建议接续 JD 备面' : '可先独立准备',
-      path: '/interview?workspace=copilot-prep',
+      path: buildInterviewWorkspaceLink(
+        'copilot-prep',
+        dashboardSeedTopic.value ? `当前从工作台进入，优先暴露「${focusTopic}」在实时追问中的风险。` : undefined
+      ),
       tone: 'teal'
     },
     {
@@ -705,7 +786,10 @@ const interviewWorkflowEntries = computed<DashboardInterviewWorkflowEntry[]>(() 
       description: '承接 Prep 结果，连接实时阶段并记录事件时间线与面后复盘入口。',
       hint: hasRecentInterview ? '最近已有面试记录，适合把实时阶段纳入正式工作流。' : '建议先完成 Prep，再进入实时阶段。',
       status: hasRecentInterview ? '已有训练上下文' : '先做 Prep',
-      path: '/interview?workspace=copilot-live',
+      path: buildInterviewWorkspaceLink(
+        'copilot-live',
+        dashboardSeedTopic.value ? `当前从工作台进入，重点观察「${focusTopic}」在实时追问里是否已经站稳。` : undefined
+      ),
       tone: 'violet'
     },
     {
@@ -714,7 +798,10 @@ const interviewWorkflowEntries = computed<DashboardInterviewWorkflowEntry[]>(() 
       description: '把真实音频转写、评分并回写成下一轮训练动作和画像证据。',
       hint: hasWeakSignals ? `当前弱项集中在 ${focusTopic}，适合用真实录音补证据。` : '当你需要复盘真实表达状态时，这里会承接整条异步链路。',
       status: hasWeakSignals ? '建议补证据' : '随时可用',
-      path: '/interview?workspace=recording-review',
+      path: buildInterviewWorkspaceLink(
+        'recording-review',
+        dashboardSeedTopic.value ? `当前从工作台进入，优先回听「${focusTopic}」相关表达片段。` : undefined
+      ),
       tone: 'amber'
     }
   ]
@@ -806,6 +893,11 @@ const recentInterviewTags = computed(() => {
   return Array.from(tags).slice(0, 3)
 })
 
+const recentInterviewDetailLink = computed<string>(() => {
+  if (!recentInterviewCard.value?.sessionId) return '/interview?workspace=history'
+  return appendDashboardSeedToPath(`/interview/detail/${recentInterviewCard.value.sessionId}`)
+})
+
 const studyProgressItems = computed<DashboardProgressItem[]>(() => {
   const preferredOrder = ['Java基础', 'JVM', '多线程并发', 'Spring框架', 'MySQL', 'Redis']
   const progressMap = new Map<string, number>()
@@ -881,7 +973,7 @@ const fallbackTasks = computed<StudyPlanTaskItem[]>(() => {
       module: 'interview',
       title: '完成一次模拟面试训练',
       description: '',
-      actionPath: '/interview?workspace=mock-interview',
+      actionPath: appendDashboardSeedToPath('/interview?workspace=mock-interview'),
       estimatedMinutes: 30,
       priority: 'high',
       status: overview.value.recentInterviews.length > 0 ? 'completed' : 'pending'
@@ -893,7 +985,7 @@ const fallbackTasks = computed<StudyPlanTaskItem[]>(() => {
       module: 'applications',
       title: hasApplications ? '跟进一条投递进展' : '建立第一条投递记录',
       description: '',
-      actionPath: '/applications',
+      actionPath: appendDashboardSeedToPath('/applications'),
       estimatedMinutes: 10,
       priority: 'low',
       status: hasApplications ? 'pending' : 'pending'

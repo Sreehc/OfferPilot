@@ -32,6 +32,7 @@
               <h3 class="text-2xl font-semibold text-ink" style="text-wrap: balance">
                 {{ detail.direction }} 方向面试诊断
               </h3>
+              <span v-if="seededFocusLabel" class="detail-pill">{{ seededFocusLabel }}</span>
             </div>
             <div class="mt-2 flex flex-wrap items-center gap-4 text-sm text-secondary">
               <span>{{ detail.mode === 'voice' ? '语音面试' : '文本面试' }}</span>
@@ -41,6 +42,9 @@
               <span v-if="detail.startTime">{{ formatTime(detail.startTime) }}</span>
               <span v-if="detail.endTime">~ {{ formatTime(detail.endTime) }}</span>
             </div>
+            <p v-if="seededWorkspaceSummary" class="mt-3 text-sm leading-7 text-secondary">
+              {{ seededWorkspaceSummary }}
+            </p>
           </div>
           <div class="flex flex-col gap-3 lg:items-end">
             <div class="interview-score-card p-6 text-white">
@@ -265,14 +269,52 @@ const interviewContextLabel = (context?: InterviewDetail['contextSource'] | null
   return '不带简历'
 }
 
+const readSeedQueryValue = (key: 'seedTopic' | 'seedWorkflow' | 'seedNote') => {
+  const value = route.query[key]
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+const seededTopic = computed(() => readSeedQueryValue('seedTopic'))
+const seededWorkflow = computed(() => readSeedQueryValue('seedWorkflow'))
+const seededNote = computed(() => readSeedQueryValue('seedNote'))
+const seededFocusLabel = computed(() => {
+  if (!seededTopic.value) return ''
+  return seededWorkflow.value === 'mock-interview' ? `${seededTopic.value} 定向模拟` : `${seededTopic.value} 定向上下文`
+})
+const seededWorkspaceSummary = computed(() => {
+  if (seededNote.value) return seededNote.value
+  if (!seededTopic.value) return ''
+  return `当前沿着「${seededTopic.value}」上下文查看这场面试，后续复盘、重练和录音复盘会继续保留这个主题。`
+})
+
+const appendSeedQuery = (query: URLSearchParams) => {
+  if (seededTopic.value) {
+    query.set('seedTopic', seededTopic.value)
+  }
+  if (seededWorkflow.value) {
+    query.set('seedWorkflow', seededWorkflow.value)
+  }
+  if (seededNote.value) {
+    query.set('seedNote', seededNote.value)
+  }
+  return query
+}
+
 const sessionId = () => String(route.params.id || '')
-const mockInterviewWorkspaceLink = '/interview?workspace=mock-interview'
+const buildInterviewWorkspaceLink = (workspace: 'mock-interview' | 'recording-review') => {
+  const query = appendSeedQuery(new URLSearchParams({ workspace }))
+  return `/interview?${query.toString()}`
+}
+const mockInterviewWorkspaceLink = computed(() => buildInterviewWorkspaceLink('mock-interview'))
 const interviewResumeId = computed(() => detail.value?.contextSource?.resumeId || '')
 const restartInterviewLink = computed(() => {
-  if (!interviewResumeId.value) return mockInterviewWorkspaceLink
-  return `/interview?workspace=mock-interview&resumeId=${encodeURIComponent(interviewResumeId.value)}`
+  const query = appendSeedQuery(new URLSearchParams({ workspace: 'mock-interview' }))
+  if (interviewResumeId.value) {
+    query.set('resumeId', interviewResumeId.value)
+  }
+  return `/interview?${query.toString()}`
 })
-const interviewRecordingReviewLink = computed(() => '/interview?workspace=recording-review')
+const interviewRecordingReviewLink = computed(() => buildInterviewWorkspaceLink('recording-review'))
 const interviewWrongFocusLink = computed(() => {
   if (!firstWrongRecord.value?.wrongQuestionId) return '/wrong'
   return `/wrong?wrongId=${encodeURIComponent(firstWrongRecord.value.wrongQuestionId)}`
