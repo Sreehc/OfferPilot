@@ -121,7 +121,12 @@
               </div>
 
               <div class="flex shrink-0 flex-wrap gap-2">
-                <RouterLink :to="task.actionPath" class="hard-button-secondary text-sm"> 打开任务 </RouterLink>
+                <RouterLink :to="task.actionPath" class="hard-button-secondary text-sm">
+                  {{ taskOpenLabel(task) }}
+                </RouterLink>
+                <RouterLink :to="buildTaskAgentLink(task)" class="hard-button-secondary text-sm">
+                  {{ taskAgentLabel(task) }}
+                </RouterLink>
                 <el-button
                   :loading="updatingTaskId === task.id"
                   size="large"
@@ -397,6 +402,99 @@ const moduleLabel = (value: string) => {
     default:
       return value
   }
+}
+
+const taskOpenLabel = (task: StudyPlanTaskItem) => {
+  switch (task.module) {
+    case 'recording_review':
+      return '前往录音复盘'
+    case 'interview':
+      return '前往模拟面试'
+    case 'review':
+      return '前往复习'
+    case 'chat':
+      return '前往问答'
+    case 'question':
+      return '前往题库'
+    case 'topic_retrospective':
+      return '前往领域回顾'
+    default:
+      return '打开任务'
+  }
+}
+
+const taskAgentLabel = (task: StudyPlanTaskItem) => {
+  switch (task.module) {
+    case 'recording_review':
+      return '转成训练动作'
+    case 'interview':
+      return '细化面试检验'
+    case 'review':
+      return '刷新下一轮计划'
+    case 'topic_retrospective':
+      return '转成专项训练'
+    default:
+      return '交给 Agent'
+  }
+}
+
+const buildTaskContextRefs = (task: StudyPlanTaskItem, fallbackRefs: string[]) => {
+  if (task.module === 'recording_review') {
+    const match = task.actionPath.match(/recordingReviewSessionId=([^&]+)/)
+    return match?.[1]
+      ? ['study-plan:active', `interview:recording-review:${decodeURIComponent(match[1])}`, 'analytics:profile']
+      : fallbackRefs
+  }
+  if (task.module === 'topic_retrospective') {
+    const match = task.actionPath.match(/topic=([^&]+)/)
+    return match?.[1]
+      ? ['study-plan:active', `analytics:retrospective:topic:${decodeURIComponent(match[1])}`, 'analytics:profile']
+      : fallbackRefs
+  }
+  return fallbackRefs
+}
+
+const buildTaskAgentLink = (task: StudyPlanTaskItem) => {
+  if (task.module === 'recording_review') {
+    const contextRefs = buildTaskContextRefs(task, ['study-plan:active', 'interview:recording-review', 'analytics:profile'])
+    return buildAgentWorkbenchLocation({
+      agentType: 'study_planner',
+      triggerSource: 'recording_review',
+      contextRefs,
+      userPrompt: `围绕计划任务「${task.title}」，把这次录音复盘结果转成下一轮正式训练动作。`
+    })
+  }
+  if (task.module === 'interview') {
+    return buildAgentWorkbenchLocation({
+      agentType: 'interview_review',
+      triggerSource: 'interview',
+      contextRefs: ['study-plan:active', 'interview:latest', 'analytics:profile'],
+      userPrompt: `围绕计划任务「${task.title}」，明确这轮模拟面试的检验重点，并把结果接回训练闭环。`
+    })
+  }
+  if (task.module === 'review') {
+    return buildAgentWorkbenchLocation({
+      agentType: 'study_planner',
+      triggerSource: 'analytics',
+      contextRefs: ['study-plan:active', 'analytics:profile', 'analytics:weak-topics'],
+      userPrompt: `围绕计划任务「${task.title}」，结合当前复习结果刷新下一轮训练安排。`
+    })
+  }
+  if (task.module === 'topic_retrospective') {
+    const contextRefs = buildTaskContextRefs(task, ['study-plan:active', 'analytics:profile', 'analytics:weak-topics'])
+    return buildAgentWorkbenchLocation({
+      agentType: 'study_planner',
+      triggerSource: 'analytics',
+      contextRefs,
+      userPrompt: `围绕计划任务「${task.title}」，把当前领域回顾结果转成下一轮专项训练动作。`
+    })
+  }
+  return buildAgentWorkbenchLocation({
+    agentType: 'study_planner',
+    triggerSource: 'analytics',
+    contextRefs: ['study-plan:active', 'analytics:profile', 'analytics:weak-topics'],
+    userPrompt: `围绕计划任务「${task.title}」，整理这项训练与后续任务之间的衔接动作。`
+  })
 }
 
 const priorityLabel = (value: string) => {
