@@ -85,7 +85,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { fetchTwoFactorStatusApi } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 import type { TwoFactorStatus } from '@/types/api'
@@ -97,6 +98,7 @@ import ProviderSettingsTab from './ProviderSettingsTab.vue'
 import TwoFactorTab from './TwoFactorTab.vue'
 
 const authStore = useAuthStore()
+const route = useRoute()
 const activeTab = ref('account')
 const twoFactorStatus = ref<TwoFactorStatus | null>(null)
 
@@ -178,6 +180,14 @@ const taskItems = computed(() => [
 
 const activeTask = computed(() => taskItems.value.find((item) => item.name === activeTab.value) ?? taskItems.value[0]!)
 
+const syncTabFromRoute = () => {
+  if (typeof route.query.tab !== 'string') return
+  const targetTab = route.query.tab.trim()
+  if (taskItems.value.some((item) => item.name === targetTab)) {
+    activeTab.value = targetTab
+  }
+}
+
 const loadTwoFactorStatus = async () => {
   try {
     const response = await fetchTwoFactorStatusApi()
@@ -197,7 +207,14 @@ const formatDateTime = (value?: string) => {
   }).format(new Date(value))
 }
 
-onMounted(loadTwoFactorStatus)
+onMounted(() => {
+  syncTabFromRoute()
+  void loadTwoFactorStatus()
+})
+
+watch(() => route.query.tab, () => {
+  syncTabFromRoute()
+})
 </script>
 
 <style scoped>

@@ -1547,7 +1547,7 @@ public class AgentRunServiceImpl implements AgentRunService {
             return basePath;
         }
         String providerGateStatus = resolveProviderGateStatus(resolveProviderGates(agentType, snapshot.providerConfigs(), snapshot));
-        return "blocked".equals(providerGateStatus) ? "/settings" : basePath;
+        return "blocked".equals(providerGateStatus) ? "/settings?tab=providers" : basePath;
     }
 
     private java.util.Optional<StudyPlanCurrentVO.StudyPlanTaskVO> firstPendingPlanTask(StudyPlanCurrentVO currentPlan) {

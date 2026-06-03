@@ -814,7 +814,7 @@ class AgentRunServiceImplTest {
                 "继续实时阶段"));
 
         assertEquals("blocked", result.getProviderGateStatus());
-        assertEquals("/settings", result.getNextActionPath());
+        assertEquals("/settings?tab=providers", result.getNextActionPath());
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("补齐") && item.contains("联网搜索")));
     }
 
