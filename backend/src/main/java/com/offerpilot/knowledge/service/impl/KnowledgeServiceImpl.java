@@ -313,6 +313,15 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
         log.info("User {} deleted document {}, title='{}'", userId, docId, doc.getTitle());
     }
 
+    @Override
+    public KnowledgeDocVO detailDoc(Long userId, Long docId) {
+        KnowledgeDoc doc = getRequiredDoc(docId);
+        if ("personal".equalsIgnoreCase(doc.getLibraryScope()) && doc.getUserId() != null && !userId.equals(doc.getUserId())) {
+            throw new BusinessException(ResultCode.FORBIDDEN.getCode(), "只能查看自己上传的文档");
+        }
+        return buildDocVOs(List.of(doc)).get(0);
+    }
+
     @Async
     public void vectorizeChunksAsync(Long docId, List<KnowledgeChunk> chunks, List<String> texts) {
         vectorizeChunks(docId, chunks, texts);

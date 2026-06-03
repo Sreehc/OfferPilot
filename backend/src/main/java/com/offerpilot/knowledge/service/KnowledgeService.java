@@ -40,4 +40,9 @@ public interface KnowledgeService extends IService<KnowledgeDoc> {
      * Delete a user-uploaded document (only owner can delete).
      */
     void deleteUserDoc(Long userId, Long docId);
+
+    /**
+     * Load a document detail that can be safely consumed inside user-facing workflows.
+     */
+    KnowledgeDocVO detailDoc(Long userId, Long docId);
 }

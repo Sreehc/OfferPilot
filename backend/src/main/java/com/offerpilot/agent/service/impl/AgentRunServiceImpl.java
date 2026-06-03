@@ -40,6 +40,8 @@ import com.offerpilot.interview.vo.InterviewDetailVO;
 import com.offerpilot.interview.vo.InterviewHistoryVO;
 import com.offerpilot.interview.vo.JobPrepSessionVO;
 import com.offerpilot.interview.vo.RecordingReviewSessionVO;
+import com.offerpilot.knowledge.service.KnowledgeService;
+import com.offerpilot.knowledge.vo.KnowledgeDocVO;
 import com.offerpilot.plan.dto.StudyPlanGenerateRequest;
 import com.offerpilot.plan.service.PlanService;
 import com.offerpilot.plan.vo.StudyPlanCurrentVO;
@@ -88,6 +90,7 @@ public class AgentRunServiceImpl implements AgentRunService {
     private final UserProviderConfigService userProviderConfigService;
     private final QuestionService questionService;
     private final WrongService wrongService;
+    private final KnowledgeService knowledgeService;
 
     @Override
     @Transactional
@@ -792,6 +795,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         StudyPlanCurrentVO currentPlan = null;
         InterviewDetailVO interviewDetail = null;
         RecordingReviewSessionVO recordingReview = null;
+        KnowledgeDocVO knowledgeDoc = null;
         QuestionVO question = null;
         WrongQuestionVO wrongQuestion = null;
         ResumeFileVO resume = null;
@@ -856,6 +860,11 @@ public class AgentRunServiceImpl implements AgentRunService {
                     () -> interviewRecordingReviewService.detail(userId, recordingReviewId));
         } else if (hasContext(contextRefs, "interview:recording-review")) {
             recordingReview = loadOptional("latest recording review", () -> interviewRecordingReviewService.latest(userId));
+        }
+
+        Long knowledgeDocId = findContextRefId(contextRefs, "knowledge:");
+        if (knowledgeDocId != null) {
+            knowledgeDoc = loadOptional("knowledge doc " + knowledgeDocId, () -> knowledgeService.detailDoc(userId, knowledgeDocId));
         }
 
         Long questionId = findContextRefId(contextRefs, "question:");
@@ -923,6 +932,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                 currentPlan,
                 interviewDetail,
                 recordingReview,
+                knowledgeDoc,
                 question,
                 wrongQuestion,
                 resume,
@@ -977,6 +987,17 @@ public class AgentRunServiceImpl implements AgentRunService {
             int lowScoreCount = countLowScoreRecords(snapshot.interviewDetail());
             if (lowScoreCount > 0) {
                 recommendations.add("最近模拟面试有 " + lowScoreCount + " 道低分题，先把低分题改写成结构化答案。");
+            }
+        }
+        if (snapshot.knowledgeDoc() != null) {
+            KnowledgeDocVO knowledgeDoc = snapshot.knowledgeDoc();
+            recommendations.add("当前资料焦点是《" + defaultText(knowledgeDoc.getTitle(), "当前资料")
+                    + "》，适合先把它拆成可练习的问题或表达提纲。");
+            if (StringUtils.hasText(knowledgeDoc.getSummary())) {
+                recommendations.add("先消化这份资料的核心内容：" + abbreviate(knowledgeDoc.getSummary(), 42));
+            }
+            if ("jd".equalsIgnoreCase(knowledgeDoc.getBusinessType())) {
+                recommendations.add("这份资料属于 JD 方向，下一步优先转成备面问题和项目追问清单。");
             }
         }
         if (snapshot.question() != null) {
@@ -1169,6 +1190,16 @@ public class AgentRunServiceImpl implements AgentRunService {
         if (snapshot.recordingReview() != null) {
             recommendations.add("真实录音已经形成复盘证据，优先把薄弱点转成正式训练动作。");
         }
+        if (snapshot.knowledgeDoc() != null) {
+            KnowledgeDocVO knowledgeDoc = snapshot.knowledgeDoc();
+            if ("jd".equalsIgnoreCase(knowledgeDoc.getBusinessType())) {
+                recommendations.add("这份知识资料已经是岗位背景材料，优先把它接到 JD 备面和会前清单里。");
+            } else if ("resume".equalsIgnoreCase(knowledgeDoc.getBusinessType())) {
+                recommendations.add("这份资料和简历表达直接相关，适合先收紧项目表述再进入模拟面试。");
+            } else {
+                recommendations.add("这份资料已经能提供训练素材，下一步可以转成专项训练或计划任务。");
+            }
+        }
         if (snapshot.question() != null) {
             QuestionVO question = snapshot.question();
             recommendations.add("题库里的「" + defaultText(question.getTitle(), "当前题目")
@@ -1305,11 +1336,15 @@ public class AgentRunServiceImpl implements AgentRunService {
                 snapshot.weakTopicSnapshot() == null ? null : snapshot.weakTopicSnapshot().focusTopicName(),
                 snapshot.currentPlan() == null ? null : snapshot.currentPlan().getFocusDirection(),
                 snapshot.abilityProfile() == null ? null : snapshot.abilityProfile().getSuggestedFocus(),
+                snapshot.knowledgeDoc() == null ? null : firstNonBlank(snapshot.knowledgeDoc().getCategoryName(), snapshot.knowledgeDoc().getTitle()),
                 snapshot.question() == null ? null : firstNonBlank(snapshot.question().getCategoryName(), snapshot.question().getJobDirection()),
                 snapshot.interviewDetail() == null ? null : snapshot.interviewDetail().getDirection(),
                 snapshot.recordingReview() == null ? null : snapshot.recordingReview().getDirection(),
                 snapshot.copilotRealtimeSession() == null ? null : snapshot.copilotRealtimeSession().getJobTitle());
         String targetRole = firstNonBlank(
+                snapshot.knowledgeDoc() != null && "jd".equalsIgnoreCase(snapshot.knowledgeDoc().getBusinessType())
+                        ? snapshot.knowledgeDoc().getTitle()
+                        : null,
                 snapshot.question() == null ? null : snapshot.question().getJobDirection(),
                 snapshot.application() == null ? null : snapshot.application().getJobTitle(),
                 snapshot.applicationBoard() == null || snapshot.applicationBoard().focusApplication() == null
@@ -1322,6 +1357,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                 snapshot.copilotRealtimeSession() == null ? null : snapshot.copilotRealtimeSession().getJobTitle());
         String techStack = firstNonBlank(
                 snapshot.currentPlan() == null ? null : snapshot.currentPlan().getTechStack(),
+                snapshot.knowledgeDoc() == null ? null : abbreviate(snapshot.knowledgeDoc().getSummary(), 48),
                 snapshot.question() == null ? null : joinLimited(questionTags(snapshot.question()), 4, ", "),
                 snapshot.interviewDetail() == null ? null : snapshot.interviewDetail().getTechStack(),
                 snapshot.resume() == null ? null : joinLimited(snapshot.resume().getSkills(), 4, ", "),
@@ -1598,6 +1634,16 @@ public class AgentRunServiceImpl implements AgentRunService {
                 && snapshot.applicationBoard().focusApplication().getId() != null) {
             return "/applications/" + snapshot.applicationBoard().focusApplication().getId();
         }
+        if (snapshot.knowledgeDoc() != null) {
+            String businessType = normalize(snapshot.knowledgeDoc().getBusinessType());
+            if ("jd".equals(businessType)) {
+                return "/interview?workspace=job-prep";
+            }
+            if ("resume".equals(businessType)) {
+                return "/resume";
+            }
+            return "/knowledge";
+        }
         if (snapshot.interviewDetail() != null && snapshot.interviewDetail().getSessionId() != null) {
             return "/interview/detail/" + snapshot.interviewDetail().getSessionId();
         }
@@ -1622,6 +1668,12 @@ public class AgentRunServiceImpl implements AgentRunService {
         }
         if (snapshot.topicDetail() != null && snapshot.topicDetail().getCategoryId() != null) {
             return "/analytics?topic=" + snapshot.topicDetail().getCategoryId();
+        }
+        if (snapshot.knowledgeDoc() != null && snapshot.knowledgeDoc().getCategoryId() != null) {
+            return "/question?categoryId=" + snapshot.knowledgeDoc().getCategoryId();
+        }
+        if (snapshot.knowledgeDoc() != null) {
+            return "/question";
         }
         if (snapshot.weakTopicSnapshot() != null && snapshot.weakTopicSnapshot().focusTopicId() != null) {
             return "/analytics?topic=" + snapshot.weakTopicSnapshot().focusTopicId();
@@ -2485,6 +2537,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                                    DashboardOverviewVO dashboardOverview,
                                    StudyPlanCurrentVO currentPlan,
                                    InterviewDetailVO interviewDetail, RecordingReviewSessionVO recordingReview,
+                                   KnowledgeDocVO knowledgeDoc,
                                    QuestionVO question, WrongQuestionVO wrongQuestion,
                                    ResumeFileVO resume, JobApplicationVO application,
                                    ApplicationBoardSnapshot applicationBoard,

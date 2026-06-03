@@ -181,7 +181,10 @@
                     <RouterLink v-if="canAskWithDocument(doc)" :to="knowledgeChatTarget(doc)" class="hard-button-primary text-sm">
                       去提问
                     </RouterLink>
-                    <span v-else class="detail-pill">{{ unavailableActionHint(doc) }}</span>
+                    <RouterLink :to="knowledgeAgentTarget(doc)" class="hard-button-secondary text-sm">
+                      {{ knowledgeAgentLabel(doc) }}
+                    </RouterLink>
+                    <span v-if="!canAskWithDocument(doc)" class="detail-pill">{{ unavailableActionHint(doc) }}</span>
                   </div>
                 </div>
               </div>
@@ -305,6 +308,7 @@ import {
 import { addFavoriteApi, removeFavoriteApi, fetchFavoriteListApi } from '@/api/favorites'
 import { EMPTY_STATE_COPY, ERROR_COPY, KNOWLEDGE_STATUS_NAMES } from '@/constants/productCopy'
 import type { CategoryItem, KnowledgeDocItem } from '@/types/api'
+import { buildAgentWorkbenchLocation } from '@/utils/agent'
 import { buildKnowledgeChatTarget, canAskWithKnowledgeDocument } from './knowledgeTargets'
 
 const categories = ref<CategoryItem[]>([])
@@ -534,6 +538,37 @@ const unavailableActionHint = (doc: KnowledgeDocItem) => {
 }
 
 const knowledgeChatTarget = (doc: KnowledgeDocItem) => buildKnowledgeChatTarget(doc)
+
+const knowledgeAgentLabel = (doc: KnowledgeDocItem) => {
+  if (doc.businessType === 'jd') return '让 Agent 组织备面'
+  if (doc.businessType === 'resume') return '让 Agent 收紧表达'
+  return '让 Agent 安排训练'
+}
+
+const knowledgeAgentTarget = (doc: KnowledgeDocItem) => {
+  if (doc.businessType === 'jd') {
+    return buildAgentWorkbenchLocation({
+      agentType: 'coordinator',
+      triggerSource: 'manual',
+      contextRefs: [`knowledge:${doc.id}`, 'application:board', 'resume:latest', 'settings:providers'],
+      userPrompt: `围绕资料《${doc.title}》安排 JD 备面、项目追问和下一步训练动作。`
+    })
+  }
+  if (doc.businessType === 'resume') {
+    return buildAgentWorkbenchLocation({
+      agentType: 'resume_coach',
+      triggerSource: 'manual',
+      contextRefs: [`knowledge:${doc.id}`, 'resume:latest', 'application:board'],
+      userPrompt: `围绕资料《${doc.title}》整理简历表达、项目顺序和后续模拟面试前的修改重点。`
+    })
+  }
+  return buildAgentWorkbenchLocation({
+    agentType: 'study_planner',
+    triggerSource: 'manual',
+    contextRefs: [`knowledge:${doc.id}`, 'study-plan:active', 'analytics:profile'],
+    userPrompt: `把资料《${doc.title}》转成下一轮训练动作、题目方向和复习重点。`
+  })
+}
 
 const docType = (fileUrl?: string): 'pdf' | 'text' => {
   if (!fileUrl) return 'text'
