@@ -9,6 +9,8 @@ import com.offerpilot.adaptive.vo.AbilityProfileVO;
 import com.offerpilot.adaptive.vo.CategoryAbilityVO;
 import com.offerpilot.agent.dto.AgentRunCreateRequest;
 import com.offerpilot.agent.entity.AgentRun;
+import com.offerpilot.agent.entity.AgentType;
+import com.offerpilot.agent.entity.TriggerSource;
 import com.offerpilot.agent.mapper.AgentRunMapper;
 import com.offerpilot.agent.service.AgentRunService;
 import com.offerpilot.agent.service.UserProviderConfigService;
@@ -82,11 +84,13 @@ public class AgentRunServiceImpl implements AgentRunService {
     @Override
     @Transactional
     public AgentRunVO createRun(Long userId, AgentRunCreateRequest request) {
+        AgentType agentType = requireAgentType(request.getAgentType());
+        TriggerSource triggerSource = requireTriggerSource(request.getTriggerSource());
         RunBlueprint blueprint = buildBlueprint(userId, request);
         AgentRun run = new AgentRun();
         run.setUserId(userId);
-        run.setAgentType(normalize(request.getAgentType()));
-        run.setTriggerSource(normalize(request.getTriggerSource()));
+        run.setAgentType(agentType.value());
+        run.setTriggerSource(triggerSource.value());
         run.setStatus(blueprint.requiresApproval() ? "pending_approval" : "completed");
         run.setTitle(blueprint.title());
         run.setSummary(blueprint.summary());
@@ -175,7 +179,7 @@ public class AgentRunServiceImpl implements AgentRunService {
     }
 
     private RunBlueprint buildBlueprint(Long userId, AgentRunCreateRequest request) {
-        String agentType = normalize(request.getAgentType());
+        AgentType agentType = requireAgentType(request.getAgentType());
         List<String> contextRefs = request.getContextRefs() == null ? List.of() : request.getContextRefs().stream()
                 .filter(StringUtils::hasText)
                 .map(String::trim)
@@ -184,15 +188,31 @@ public class AgentRunServiceImpl implements AgentRunService {
         ContextSnapshot snapshot = resolveContextSnapshot(userId, contextRefs);
 
         return switch (agentType) {
-            case "study_planner" -> buildStudyPlannerBlueprint(contextRefs, prompt, snapshot);
-            case "job_prep" -> buildJobPrepBlueprint(contextRefs, prompt, snapshot);
-            case "recording_review" -> buildRecordingReviewBlueprint(contextRefs, prompt, snapshot);
-            case "resume_coach" -> buildResumeCoachBlueprint(contextRefs, prompt, snapshot);
-            case "application_strategist" -> buildApplicationStrategistBlueprint(contextRefs, prompt, snapshot);
-            case "interview_review" -> buildInterviewReviewBlueprint(contextRefs, prompt, snapshot);
-            case "realtime_copilot" -> buildRealtimeCopilotBlueprint(contextRefs, prompt, snapshot);
-            default -> buildCoordinatorBlueprint(contextRefs, prompt, snapshot);
+            case STUDY_PLANNER -> buildStudyPlannerBlueprint(contextRefs, prompt, snapshot);
+            case JOB_PREP -> buildJobPrepBlueprint(contextRefs, prompt, snapshot);
+            case RECORDING_REVIEW -> buildRecordingReviewBlueprint(contextRefs, prompt, snapshot);
+            case RESUME_COACH -> buildResumeCoachBlueprint(contextRefs, prompt, snapshot);
+            case APPLICATION_STRATEGIST -> buildApplicationStrategistBlueprint(contextRefs, prompt, snapshot);
+            case INTERVIEW_REVIEW -> buildInterviewReviewBlueprint(contextRefs, prompt, snapshot);
+            case REALTIME_COPILOT -> buildRealtimeCopilotBlueprint(contextRefs, prompt, snapshot);
+            case COORDINATOR -> buildCoordinatorBlueprint(contextRefs, prompt, snapshot);
         };
+    }
+
+    private AgentType requireAgentType(String raw) {
+        AgentType agentType = AgentType.fromValue(raw);
+        if (agentType == null) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "unsupported agentType: " + defaultText(raw, ""));
+        }
+        return agentType;
+    }
+
+    private TriggerSource requireTriggerSource(String raw) {
+        TriggerSource triggerSource = TriggerSource.fromValue(raw);
+        if (triggerSource == null) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "unsupported triggerSource: " + defaultText(raw, ""));
+        }
+        return triggerSource;
     }
 
     private RunBlueprint buildStudyPlannerBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {

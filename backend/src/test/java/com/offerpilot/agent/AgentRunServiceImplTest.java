@@ -2,6 +2,7 @@ package com.offerpilot.agent;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -25,6 +26,7 @@ import com.offerpilot.analytics.vo.ProfileTopicDetailVO;
 import com.offerpilot.analytics.vo.ProfileTopicRetrospectiveVO;
 import com.offerpilot.application.service.JobApplicationService;
 import com.offerpilot.application.vo.JobApplicationVO;
+import com.offerpilot.common.exception.BusinessException;
 import com.offerpilot.dashboard.dto.DashboardOverviewVO;
 import com.offerpilot.dashboard.dto.NextActionVO;
 import com.offerpilot.dashboard.dto.WeakPointVO;
@@ -93,7 +95,7 @@ class AgentRunServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        doAnswer(invocation -> {
+        lenient().doAnswer(invocation -> {
             AgentRun run = invocation.getArgument(0);
             run.setId(1001L);
             run.setUpdateTime(LocalDateTime.of(2026, 6, 2, 10, 0));
@@ -235,6 +237,30 @@ class AgentRunServiceImplTest {
         assertEquals("JVM", payload.get("focusDirection").asText());
         assertEquals("Java后端开发", payload.get("targetRole").asText());
         assertEquals("Spring Boot, Redis", payload.get("techStack").asText());
+    }
+
+    @Test
+    void createRun_rejectsUnsupportedAgentType() {
+        BusinessException ex = assertThrows(BusinessException.class, () -> agentRunService.createRun(1L, request(
+                "unknown_agent",
+                "manual",
+                List.of(),
+                "test")));
+
+        assertEquals(400, ex.getCode());
+        assertTrue(ex.getMessage().contains("unsupported agentType"));
+    }
+
+    @Test
+    void createRun_rejectsUnsupportedTriggerSource() {
+        BusinessException ex = assertThrows(BusinessException.class, () -> agentRunService.createRun(1L, request(
+                "coordinator",
+                "unknown_source",
+                List.of(),
+                "test")));
+
+        assertEquals(400, ex.getCode());
+        assertTrue(ex.getMessage().contains("unsupported triggerSource"));
     }
 
     @Test
