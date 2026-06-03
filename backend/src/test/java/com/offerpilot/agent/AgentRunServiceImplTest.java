@@ -754,6 +754,32 @@ class AgentRunServiceImplTest {
     }
 
     @Test
+    void createRun_realtimeCopilotUsesPostReviewActionPathWhenSessionCompleted() {
+        when(interviewCopilotRealtimeService.detail(1L, 89L)).thenReturn(CopilotRealtimeSessionVO.builder()
+                .id(89L)
+                .company("美团")
+                .jobTitle("资深 Java 工程师")
+                .status("completed")
+                .postInterviewReview(CopilotRealtimeSessionVO.PostInterviewReviewVO.builder()
+                        .summary("美团 / 资深 Java 工程师 的实时阶段已结束，下一步适合直接转入面后复盘。")
+                        .recommendedActions(List.of("先把本轮实时阶段转成面后复盘 run。"))
+                        .nextActionPath("/agent?agentType=interview_review&triggerSource=interview_live&contextRefs=interview:copilot-realtime:89,analytics:profile,study-plan:active")
+                        .build())
+                .build());
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "realtime_copilot",
+                "interview_live",
+                List.of("interview:copilot-realtime:89"),
+                "直接收束到面后复盘"));
+
+        assertTrue(result.getSummary().contains("实时阶段已结束"));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("面后复盘 run")));
+        assertTrue(result.getNextActionPath().contains("agentType=interview_review"));
+        assertTrue(result.getNextActionPath().contains("interview:copilot-realtime:89"));
+    }
+
+    @Test
     void createRun_coordinatorUsesLiveRealtimeContext() {
         when(interviewCopilotRealtimeService.detail(1L, 88L)).thenReturn(CopilotRealtimeSessionVO.builder()
                 .id(88L)
@@ -770,6 +796,28 @@ class AgentRunServiceImplTest {
 
         assertEquals("/interview", result.getNextActionPath());
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("实时 Copilot 当前仍在连接中")));
+    }
+
+    @Test
+    void createRun_coordinatorUsesRealtimePostReviewActionPathWhenAvailable() {
+        when(interviewCopilotRealtimeService.detail(1L, 90L)).thenReturn(CopilotRealtimeSessionVO.builder()
+                .id(90L)
+                .company("字节跳动")
+                .jobTitle("后端开发")
+                .status("completed")
+                .postInterviewReview(CopilotRealtimeSessionVO.PostInterviewReviewVO.builder()
+                        .nextActionPath("/agent?agentType=interview_review&triggerSource=interview_live&contextRefs=interview:copilot-realtime:90,analytics:profile,study-plan:active")
+                        .build())
+                .build());
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "coordinator",
+                "interview_live",
+                List.of("interview:copilot-realtime:90"),
+                "帮我决定下一步"));
+
+        assertTrue(result.getNextActionPath().contains("agentType=interview_review"));
+        assertTrue(result.getNextActionPath().contains("interview:copilot-realtime:90"));
     }
 
     @Test

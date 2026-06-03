@@ -508,6 +508,8 @@ public class AgentRunServiceImpl implements AgentRunService {
     private RunBlueprint buildRealtimeCopilotBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
         String summary;
         List<String> recommendations;
+        String nextActionPath = "/interview";
+        String nextActionAgentType = "realtime_copilot";
         if (snapshot.copilotRealtimeSession() != null) {
             CopilotRealtimeSessionVO realtimeSession = snapshot.copilotRealtimeSession();
             summary = realtimeCopilotSummary(realtimeSession);
@@ -515,6 +517,11 @@ public class AgentRunServiceImpl implements AgentRunService {
                     realtimeCopilotLiveRecommendations(realtimeSession),
                     prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”同步到当前实时 Copilot 会话。") : List.of(),
                     contextRefsText(contextRefs, "实时阶段引用："));
+            String reviewActionPath = realtimeReviewNextActionPath(realtimeSession);
+            if (StringUtils.hasText(reviewActionPath)) {
+                nextActionPath = reviewActionPath;
+                nextActionAgentType = "interview_review";
+            }
         } else if (snapshot.copilotPrepSession() != null) {
             CopilotPrepSessionVO prepSession = snapshot.copilotPrepSession();
             summary = "已根据 " + defaultText(prepSession.getCompany(), "当前岗位") + " "
@@ -551,7 +558,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                         recommendations,
                         providerContextRecommendations("realtime_copilot", snapshot)),
                 List.of("会前准备", "连接实时会话", "面后复盘回写"),
-                resolveRunNextActionPath("/interview", "realtime_copilot", snapshot),
+                resolveRunNextActionPath(nextActionPath, nextActionAgentType, snapshot),
                 false,
                 null,
                 null,
@@ -989,6 +996,13 @@ public class AgentRunServiceImpl implements AgentRunService {
         return recommendations;
     }
 
+    private String realtimeReviewNextActionPath(CopilotRealtimeSessionVO session) {
+        if (session == null || session.getPostInterviewReview() == null) {
+            return null;
+        }
+        return trimToNull(session.getPostInterviewReview().getNextActionPath());
+    }
+
     private List<String> coordinatorRecommendations(ContextSnapshot snapshot) {
         List<String> recommendations = new ArrayList<>();
         if (snapshot.dashboardOverview() != null) {
@@ -1321,7 +1335,8 @@ public class AgentRunServiceImpl implements AgentRunService {
             return "/analytics";
         }
         if (snapshot.copilotRealtimeSession() != null) {
-            return "/interview";
+            String reviewActionPath = realtimeReviewNextActionPath(snapshot.copilotRealtimeSession());
+            return StringUtils.hasText(reviewActionPath) ? reviewActionPath : "/interview";
         }
         if (snapshot.copilotPrepSession() != null) {
             return "/interview";
