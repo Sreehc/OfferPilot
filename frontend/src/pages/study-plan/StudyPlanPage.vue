@@ -61,7 +61,13 @@
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h3 class="text-xl font-semibold text-ink" style="text-wrap: balance">今日任务</h3>
-            <p class="mt-1 text-sm text-secondary">默认显示今日任务，也可以切换查看整轮安排。</p>
+            <p class="mt-1 text-sm text-secondary">
+              {{
+                focusedTask
+                  ? `已定位到任务「${focusedTask.title}」，可以直接继续这条训练动作。`
+                  : '默认显示今日任务，也可以切换查看整轮安排。'
+              }}
+            </p>
           </div>
           <div class="flex flex-wrap gap-2">
             <button
@@ -96,7 +102,13 @@
         </div>
 
         <div v-if="displayedTasks.length" class="mt-5 space-y-3">
-          <article v-for="task in displayedTasks" :key="task.id" class="plan-task-card">
+          <article
+            v-for="task in displayedTasks"
+            :id="`study-plan-task-${task.id}`"
+            :key="task.id"
+            class="plan-task-card"
+            :class="isFocusedTask(task.id) ? 'plan-task-card-focused' : ''"
+          >
             <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-2">
@@ -261,7 +273,8 @@
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { fetchDashboardOverviewApi } from '@/api/dashboard'
 import {
   fetchCurrentStudyPlanApi,
@@ -304,6 +317,7 @@ const planTracks = [
 const overview = ref<DashboardOverview | null>(null)
 const reviewStats = ref<ReviewStats | null>(null)
 const currentPlan = ref<StudyPlan | null>(null)
+const route = useRoute()
 const loading = ref(false)
 const refreshing = ref(false)
 const generatingDuration = ref<number | null>(null)
@@ -314,6 +328,11 @@ const targetRole = ref('Java 后端开发')
 const focusDirection = ref('')
 const techStack = ref('Spring Boot, MySQL, Redis')
 const currentUser = storage.getUser()
+const focusedTaskId = computed(() => {
+  const raw = route.query.taskId
+  if (typeof raw === 'string' && raw.trim()) return raw.trim()
+  return ''
+})
 
 const reviewPending = computed(() => reviewStats.value?.todayPending ?? overview.value?.reviewDebtCount ?? 0)
 const topWeakPoint = computed(
@@ -379,6 +398,10 @@ const displayedTasks = computed(() => {
     }
     return left.dayIndex - right.dayIndex
   })
+})
+const focusedTask = computed(() => {
+  if (!currentPlan.value || !focusedTaskId.value) return null
+  return currentPlan.value.tasks.find((task) => task.id === focusedTaskId.value) ?? null
 })
 
 const defaultTrendHighlights = computed(() => [
@@ -514,6 +537,24 @@ const priorityClass = (value: string) => {
   return 'plan-priority-low'
 }
 
+const isFocusedTask = (taskId: string) => Boolean(focusedTaskId.value) && focusedTaskId.value === taskId
+
+const ensureFocusedTaskVisible = async () => {
+  if (!currentPlan.value || !focusedTaskId.value) return
+  const targetTask = currentPlan.value.tasks.find((task) => task.id === focusedTaskId.value)
+  if (!targetTask) return
+  const visibleInToday = todayTasks.value.some((task) => task.id === focusedTaskId.value)
+  if (!visibleInToday && taskFilter.value !== 'all') {
+    taskFilter.value = 'all'
+  }
+  await nextTick()
+  const element = document.getElementById(`study-plan-task-${focusedTaskId.value}`)
+  if (!element) return
+  window.requestAnimationFrame(() => {
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  })
+}
+
 const formatDateTime = (value?: string) => {
   if (!value) return ''
   return new Date(value).toLocaleString('zh-CN', { hour12: false })
@@ -606,6 +647,10 @@ const handleToggleTask = async (task: StudyPlanTaskItem) => {
 onMounted(() => {
   void loadData()
 })
+
+watch([focusedTaskId, currentPlan], () => {
+  void ensureFocusedTaskVisible()
+})
 </script>
 
 <style scoped>
@@ -693,6 +738,16 @@ onMounted(() => {
   border: 1px solid var(--bc-border-subtle);
   background: var(--bc-surface-muted);
   padding: 1rem 1.05rem;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.plan-task-card-focused {
+  border-color: rgba(var(--bc-accent-rgb), 0.45);
+  box-shadow: 0 0 0 3px rgba(var(--bc-accent-rgb), 0.12);
+  transform: translateY(-1px);
 }
 
 .plan-filter-button {
