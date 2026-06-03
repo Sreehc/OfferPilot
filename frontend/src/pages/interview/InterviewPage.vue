@@ -142,7 +142,7 @@
         </div>
       </section>
 
-      <section class="shell-section-card workspace-shell interview-job-prep-shell">
+      <section ref="jobPrepSectionRef" class="shell-section-card workspace-shell interview-job-prep-shell">
         <div class="workspace-section">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -372,7 +372,7 @@
         </div>
       </section>
 
-      <section class="shell-section-card workspace-shell interview-copilot-prep-shell">
+      <section ref="copilotPrepSectionRef" class="shell-section-card workspace-shell interview-copilot-prep-shell">
         <div class="workspace-section">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -772,7 +772,7 @@
         </div>
       </section>
 
-      <section class="shell-section-card workspace-shell interview-recording-review-shell">
+      <section ref="recordingReviewSectionRef" class="shell-section-card workspace-shell interview-recording-review-shell">
         <div class="workspace-section">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -1458,7 +1458,7 @@
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { fetchApplicationBoardApi } from '@/api/applications'
 import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
@@ -1469,8 +1469,10 @@ import {
   createRecordingReviewApi,
   createJobPrepSessionApi,
   currentQuestionApi,
+  fetchCopilotPrepSessionApi,
   fetchCopilotRealtimeSessionApi,
   fetchInterviewHistoryApi,
+  fetchJobPrepSessionApi,
   fetchRecordingReviewApi,
   fetchVoiceStatusApi,
   interviewDetailApi,
@@ -1559,6 +1561,9 @@ const recordingReviewNotes = ref('')
 const recordingReviewFile = ref<File | null>(null)
 const recordingReviewLoading = ref(false)
 const recordingReviewSession = ref<RecordingReviewSession | null>(null)
+const jobPrepSectionRef = ref<HTMLElement | null>(null)
+const copilotPrepSectionRef = ref<HTMLElement | null>(null)
+const recordingReviewSectionRef = ref<HTMLElement | null>(null)
 const providerConfigs = ref<UserProviderConfigItem[]>([])
 const interviewMode = ref<'text' | 'voice'>('text')
 const voiceAvailable = ref(false)
@@ -1656,6 +1661,18 @@ const toggleQuestion = (questionId: string) => {
   } else {
     expandedQuestions.value.add(questionId)
   }
+}
+
+const scrollToInterviewWorkspace = async (workspace: string) => {
+  await nextTick()
+  const target = workspace === 'job-prep'
+    ? jobPrepSectionRef.value
+    : workspace === 'copilot-prep' || workspace === 'copilot-live'
+      ? copilotPrepSectionRef.value
+      : workspace === 'recording-review'
+        ? recordingReviewSectionRef.value
+        : null
+  target?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 const sessionDirection = computed(() => currentQuestion.value?.direction || detail.value?.direction || direction.value)
@@ -2186,6 +2203,52 @@ const hydrateRealtimeSession = async (sessionId: string) => {
   copilotRealtimeSession.value = response.data
 }
 
+const hydrateInterviewWorkspaceFromRoute = async () => {
+  if (phase.value !== 'idle') return
+
+  const workspace = String(route.query.workspace || '').trim()
+  const jobPrepSessionId = String(route.query.jobPrepSessionId || '').trim()
+  const copilotPrepSessionId = String(route.query.copilotPrepSessionId || '').trim()
+  const copilotRealtimeSessionId = String(route.query.copilotRealtimeSessionId || '').trim()
+  const recordingReviewSessionId = String(route.query.recordingReviewSessionId || '').trim()
+
+  try {
+    if (jobPrepSessionId && jobPrepSession.value?.id !== jobPrepSessionId) {
+      const response = await fetchJobPrepSessionApi(jobPrepSessionId)
+      jobPrepSession.value = response.data
+      syncJobPrepToCopilot()
+    }
+    if (copilotPrepSessionId && copilotPrepSession.value?.id !== copilotPrepSessionId) {
+      const response = await fetchCopilotPrepSessionApi(copilotPrepSessionId)
+      copilotPrepSession.value = response.data
+      if (response.data.jobPrepSessionId) {
+        linkedCopilotJobPrepId.value = response.data.jobPrepSessionId
+      }
+    }
+    if (copilotRealtimeSessionId && copilotRealtimeSession.value?.id !== copilotRealtimeSessionId) {
+      await hydrateRealtimeSession(copilotRealtimeSessionId)
+      const prepSessionId = copilotRealtimeSession.value?.copilotPrepSessionId
+      if (prepSessionId && copilotPrepSession.value?.id !== prepSessionId) {
+        const response = await fetchCopilotPrepSessionApi(prepSessionId)
+        copilotPrepSession.value = response.data
+      }
+    }
+    if (recordingReviewSessionId && recordingReviewSession.value?.id !== recordingReviewSessionId) {
+      const response = await fetchRecordingReviewApi(recordingReviewSessionId)
+      recordingReviewSession.value = response.data
+      if (isRecordingReviewPendingStatus(response.data.status)) {
+        scheduleRecordingReviewPoll(response.data.id)
+      }
+    }
+  } catch {
+    ElMessage.error('无法恢复指定的面试工作区上下文，请稍后重试。')
+  }
+
+  if (workspace) {
+    await scrollToInterviewWorkspace(workspace)
+  }
+}
+
 const handleCreateCopilotRealtimeSession = async () => {
   if (!copilotPrepSession.value) {
     ElMessage.warning('请先生成一份 Copilot Prep。')
@@ -2416,6 +2479,7 @@ onMounted(() => {
   void loadApplications()
   void loadProviderConfigs()
   applyQuestionSeedFromRoute()
+  void hydrateInterviewWorkspaceFromRoute()
 
   // Check voice availability
   void fetchVoiceStatusApi()
@@ -2469,6 +2533,11 @@ watch(selectedJobPrepApplicationId, (applicationId) => {
   if (item.resumeFileId) {
     jobPrepResumeId.value = item.resumeFileId
   }
+})
+
+watch(() => route.fullPath, () => {
+  applyQuestionSeedFromRoute()
+  void hydrateInterviewWorkspaceFromRoute()
 })
 </script>
 

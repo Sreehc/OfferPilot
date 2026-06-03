@@ -859,10 +859,10 @@ const resolveContextRefPath = (contextRef: string) => {
   if (contextRef === 'analytics:profile' || contextRef === 'analytics:weak-topics') return '/analytics'
   if (contextRef === 'study-plan:active') return '/study-plan'
   if (contextRef === 'interview:latest') return '/interview'
-  if (contextRef === 'interview:recording-review') return '/interview'
-  if (contextRef === 'interview:job-prep') return '/interview'
-  if (contextRef === 'interview:copilot-prep') return '/interview'
-  if (contextRef === 'interview:copilot-realtime') return '/interview'
+  if (contextRef === 'interview:recording-review') return '/interview?workspace=recording-review'
+  if (contextRef === 'interview:job-prep') return '/interview?workspace=job-prep'
+  if (contextRef === 'interview:copilot-prep') return '/interview?workspace=copilot-prep'
+  if (contextRef === 'interview:copilot-realtime') return '/interview?workspace=copilot-live'
   if (contextRef === 'resume:latest') return '/resume'
   if (contextRef === 'application:board') return '/applications'
   if (contextRef === 'settings:providers') return '/settings?tab=providers'
@@ -875,10 +875,18 @@ const resolveContextRefPath = (contextRef: string) => {
   if (contextRef.startsWith('interview:session:')) {
     return `/interview/detail/${encodeURIComponent(contextRef.slice('interview:session:'.length))}`
   }
-  if (contextRef.startsWith('interview:recording-review:')) return '/interview'
-  if (contextRef.startsWith('interview:job-prep:')) return '/interview'
-  if (contextRef.startsWith('interview:copilot-prep:')) return '/interview'
-  if (contextRef.startsWith('interview:copilot-realtime:')) return '/interview'
+  if (contextRef.startsWith('interview:recording-review:')) {
+    return `/interview?workspace=recording-review&recordingReviewSessionId=${encodeURIComponent(contextRef.slice('interview:recording-review:'.length))}`
+  }
+  if (contextRef.startsWith('interview:job-prep:')) {
+    return `/interview?workspace=job-prep&jobPrepSessionId=${encodeURIComponent(contextRef.slice('interview:job-prep:'.length))}`
+  }
+  if (contextRef.startsWith('interview:copilot-prep:')) {
+    return `/interview?workspace=copilot-prep&copilotPrepSessionId=${encodeURIComponent(contextRef.slice('interview:copilot-prep:'.length))}`
+  }
+  if (contextRef.startsWith('interview:copilot-realtime:')) {
+    return `/interview?workspace=copilot-live&copilotRealtimeSessionId=${encodeURIComponent(contextRef.slice('interview:copilot-realtime:'.length))}`
+  }
   if (contextRef.startsWith('resume:')) return '/resume'
   if (contextRef.startsWith('application:')) {
     return `/applications/${encodeURIComponent(contextRef.slice('application:'.length))}`
