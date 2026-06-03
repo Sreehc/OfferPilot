@@ -156,6 +156,9 @@ public class AgentRunServiceImpl implements AgentRunService {
         run.setStatus("approved");
         run.setDecisionNote(trimToNull(note));
         run.setExecutionResultJson(writeObject(result, "{}"));
+        if (result != null && StringUtils.hasText(result.nextActionPath())) {
+            run.setNextActionPath(result.nextActionPath());
+        }
         agentRunMapper.updateById(run);
         return buildVo(run);
     }
@@ -648,7 +651,7 @@ public class AgentRunServiceImpl implements AgentRunService {
             case "save_resume_follow_up_draft" -> executeResumeFollowUpDraftAction(userId, run.getApprovalPayloadJson());
             case "save_application_strategy" -> executeApplicationStrategyAction(userId, run.getApprovalPayloadJson());
             case "save_recording_review_action" -> executeRecordingReviewAction(userId, run.getApprovalPayloadJson());
-            default -> new ExecutionResult("已完成审批。");
+            default -> new ExecutionResult("已完成审批。", null, null);
         };
     }
 
@@ -670,15 +673,18 @@ public class AgentRunServiceImpl implements AgentRunService {
         } else {
             result = planService.refresh(userId, currentPlan.getId());
         }
-        return new ExecutionResult("已生成正式学习计划《" + result.getTitle() + "》，可以继续在学习计划页执行。");
+        return new ExecutionResult(
+                "已生成正式学习计划《" + result.getTitle() + "》，可以继续在学习计划页执行。",
+                "前往学习计划",
+                "/study-plan");
     }
 
     private ExecutionResult executeTopicRetrospectiveAction(Long userId, String payloadJson) {
         TopicRetrospectiveActionPayload payload = readObject(payloadJson, TopicRetrospectiveActionPayload.class);
         if (payload == null || payload.categoryId() == null) {
-            return new ExecutionResult("当前缺少领域回顾对象，暂未保存正式训练动作。");
+            return new ExecutionResult("当前缺少领域回顾对象，暂未保存正式训练动作。", null, null);
         }
-        planService.saveTopicRetrospectiveAction(
+        StudyPlanCurrentVO plan = planService.saveTopicRetrospectiveAction(
                 userId,
                 payload.categoryId(),
                 payload.focusDirection(),
@@ -687,13 +693,16 @@ public class AgentRunServiceImpl implements AgentRunService {
                 payload.taskTitle(),
                 payload.taskDescription(),
                 payload.actionPath());
-        return new ExecutionResult("已把这份领域回顾结论写成正式训练任务，可继续在学习计划页执行。");
+        return new ExecutionResult(
+                "已把这份领域回顾结论写成正式训练任务，可继续在学习计划页执行。",
+                "查看训练任务",
+                resolveSavedPlanTaskPath(plan, "topic_retrospective", payload.actionPath(), payload.taskTitle()));
     }
 
     private ExecutionResult executeJobPrepDraftAction(Long userId, String payloadJson) {
         JobPrepDraftPayload payload = readObject(payloadJson, JobPrepDraftPayload.class);
         if (payload == null || (!StringUtils.hasText(payload.jdText()) && payload.applicationId() == null)) {
-            return new ExecutionResult("当前缺少可写入的 JD 备面内容，暂未生成正式草案。");
+            return new ExecutionResult("当前缺少可写入的 JD 备面内容，暂未生成正式草案。", null, null);
         }
         JobPrepSessionCreateRequest request = new JobPrepSessionCreateRequest();
         request.setApplicationId(payload.applicationId());
@@ -703,14 +712,17 @@ public class AgentRunServiceImpl implements AgentRunService {
         request.setJdText(payload.jdText());
         JobPrepSessionVO session = interviewJobPrepService.createSession(userId, request);
         String title = firstNonBlank(session.getJobTitle(), payload.jobTitle(), "当前岗位");
-        return new ExecutionResult("已生成正式 JD 备面草案《" + title + "》，可以继续在面试页查看和消费。");
+        return new ExecutionResult(
+                "已生成正式 JD 备面草案《" + title + "》，可以继续在面试页查看和消费。",
+                "查看 JD 备面草案",
+                "/interview?workspace=job-prep&jobPrepSessionId=" + session.getId());
     }
 
     private ExecutionResult executeCopilotPrepDraftAction(Long userId, String payloadJson) {
         CopilotPrepDraftPayload payload = readObject(payloadJson, CopilotPrepDraftPayload.class);
         if (payload == null || (!StringUtils.hasText(payload.jobTitle()) && payload.applicationId() == null
                 && payload.jobPrepSessionId() == null && payload.resumeId() == null)) {
-            return new ExecutionResult("当前缺少可写入的 Copilot Prep 内容，暂未生成正式草案。");
+            return new ExecutionResult("当前缺少可写入的 Copilot Prep 内容，暂未生成正式草案。", null, null);
         }
         CopilotPrepSessionCreateRequest request = new CopilotPrepSessionCreateRequest();
         request.setApplicationId(payload.applicationId());
@@ -722,13 +734,16 @@ public class AgentRunServiceImpl implements AgentRunService {
         request.setNotes(payload.notes());
         CopilotPrepSessionVO session = interviewCopilotPrepService.createSession(userId, request);
         String title = firstNonBlank(session.getJobTitle(), payload.jobTitle(), "当前岗位");
-        return new ExecutionResult("已生成正式 Copilot Prep 草案《" + title + "》，可以继续在面试页进入实时阶段。");
+        return new ExecutionResult(
+                "已生成正式 Copilot Prep 草案《" + title + "》，可以继续在面试页进入实时阶段。",
+                "查看 Copilot Prep",
+                "/interview?workspace=copilot-prep&copilotPrepSessionId=" + session.getId());
     }
 
     private ExecutionResult executeApplicationStrategyAction(Long userId, String payloadJson) {
         ApplicationStrategyPayload payload = readObject(payloadJson, ApplicationStrategyPayload.class);
         if (payload == null || payload.applicationId() == null) {
-            return new ExecutionResult("当前缺少可写入的投递对象，暂未保存正式策略草案。");
+            return new ExecutionResult("当前缺少可写入的投递对象，暂未保存正式策略草案。", null, null);
         }
         JobApplicationVO application = jobApplicationService.saveStrategyDraft(
                 userId, payload.applicationId(), payload.summary(), payload.recommendations());
@@ -736,27 +751,31 @@ public class AgentRunServiceImpl implements AgentRunService {
                 + defaultText(application.getCompany(), "目标公司")
                 + " / "
                 + defaultText(application.getJobTitle(), "目标岗位")
-                + "」，可继续在投递页执行。");
+                + "」，可继续在投递页执行。",
+                "查看投递详情",
+                "/applications/" + application.getId());
     }
 
     private ExecutionResult executeResumeFollowUpDraftAction(Long userId, String payloadJson) {
         ResumeFollowUpDraftPayload payload = readObject(payloadJson, ResumeFollowUpDraftPayload.class);
         if (payload == null || payload.resumeId() == null) {
-            return new ExecutionResult("当前缺少可写入的简历对象，暂未保存正式追问草稿。");
+            return new ExecutionResult("当前缺少可写入的简历对象，暂未保存正式追问草稿。", null, null);
         }
         ResumeFileVO resume = resumeService.saveFollowUpDraft(
                 userId, payload.resumeId(), payload.summary(), payload.recommendations());
         return new ExecutionResult("已把简历追问草稿写回「"
                 + defaultText(resume.getTitle(), "当前简历")
-                + "」，可继续在简历页整理和消费。");
+                + "」，可继续在简历页整理和消费。",
+                "查看简历草稿",
+                "/resume?resumeId=" + resume.getId());
     }
 
     private ExecutionResult executeRecordingReviewAction(Long userId, String payloadJson) {
         RecordingReviewActionPayload payload = readObject(payloadJson, RecordingReviewActionPayload.class);
         if (payload == null || payload.recordingReviewSessionId() == null) {
-            return new ExecutionResult("当前缺少录音复盘对象，暂未保存正式训练动作。");
+            return new ExecutionResult("当前缺少录音复盘对象，暂未保存正式训练动作。", null, null);
         }
-        planService.saveRecordingReviewAction(
+        StudyPlanCurrentVO plan = planService.saveRecordingReviewAction(
                 userId,
                 payload.recordingReviewSessionId(),
                 payload.focusDirection(),
@@ -765,15 +784,18 @@ public class AgentRunServiceImpl implements AgentRunService {
                 payload.taskTitle(),
                 payload.taskDescription(),
                 payload.actionPath());
-        return new ExecutionResult("已把这次录音复盘结论写成正式训练任务，可继续在学习计划页执行。");
+        return new ExecutionResult(
+                "已把这次录音复盘结论写成正式训练任务，可继续在学习计划页执行。",
+                "查看训练任务",
+                resolveSavedPlanTaskPath(plan, "recording_review", payload.actionPath(), payload.taskTitle()));
     }
 
     private ExecutionResult executeInterviewReviewAction(Long userId, String payloadJson) {
         InterviewReviewActionPayload payload = readObject(payloadJson, InterviewReviewActionPayload.class);
         if (payload == null || (payload.interviewSessionId() == null && payload.copilotRealtimeSessionId() == null)) {
-            return new ExecutionResult("当前缺少面试复盘对象，暂未保存正式训练动作。");
+            return new ExecutionResult("当前缺少面试复盘对象，暂未保存正式训练动作。", null, null);
         }
-        planService.saveInterviewReviewAction(
+        StudyPlanCurrentVO plan = planService.saveInterviewReviewAction(
                 userId,
                 payload.interviewSessionId(),
                 payload.copilotRealtimeSessionId(),
@@ -783,7 +805,10 @@ public class AgentRunServiceImpl implements AgentRunService {
                 payload.taskTitle(),
                 payload.taskDescription(),
                 payload.actionPath());
-        return new ExecutionResult("已把这次面试复盘结论写成正式训练任务，可继续在学习计划页执行。");
+        return new ExecutionResult(
+                "已把这次面试复盘结论写成正式训练任务，可继续在学习计划页执行。",
+                "查看训练任务",
+                resolveSavedPlanTaskPath(plan, "interview_review", payload.actionPath(), payload.taskTitle()));
     }
 
     private ContextSnapshot resolveContextSnapshot(Long userId, List<String> contextRefs) {
@@ -1863,6 +1888,8 @@ public class AgentRunServiceImpl implements AgentRunService {
                 .approvalSummary(run.getApprovalSummary())
                 .decisionNote(run.getDecisionNote())
                 .executionSummary(executionResult == null ? null : executionResult.summary())
+                .executionActionLabel(executionResult == null ? null : executionResult.actionLabel())
+                .executionActionPath(executionResult == null ? null : executionResult.nextActionPath())
                 .approvalStage(resolveApprovalStage(run))
                 .providerGateStatus(providerGateStatus)
                 .providerGateSummary(buildProviderGateSummary(providerGates, providerGateStatus))
@@ -2534,6 +2561,32 @@ public class AgentRunServiceImpl implements AgentRunService {
         return normalize(actual).equals(normalize(expected));
     }
 
+    private String resolveSavedPlanTaskPath(StudyPlanCurrentVO plan, String module, String actionPath, String taskTitle) {
+        if (plan == null || plan.getTasks() == null || plan.getTasks().isEmpty()) {
+            return "/study-plan";
+        }
+        for (StudyPlanCurrentVO.StudyPlanTaskVO task : plan.getTasks()) {
+            if (task == null) {
+                continue;
+            }
+            if (module.equals(normalize(task.getModule()))
+                    && normalize(task.getActionPath()).equals(normalize(actionPath))
+                    && normalize(task.getTitle()).equals(normalize(taskTitle))) {
+                return "/study-plan?taskId=" + task.getId();
+            }
+        }
+        for (StudyPlanCurrentVO.StudyPlanTaskVO task : plan.getTasks()) {
+            if (task == null) {
+                continue;
+            }
+            if (module.equals(normalize(task.getModule()))
+                    && normalize(task.getActionPath()).equals(normalize(actionPath))) {
+                return "/study-plan?taskId=" + task.getId();
+            }
+        }
+        return "/study-plan";
+    }
+
     private record RunBlueprint(String title, String summary, List<String> recommendations, List<String> checkpoints,
                                 String nextActionPath, boolean requiresApproval, String approvalActionType,
                                 String approvalSummary, String approvalPayloadJson) {
@@ -2545,7 +2598,7 @@ public class AgentRunServiceImpl implements AgentRunService {
     private record StudyPlanPayload(Integer durationDays, String focusDirection, String targetRole, String techStack) {
     }
 
-    private record ExecutionResult(String summary) {
+    private record ExecutionResult(String summary, String actionLabel, String nextActionPath) {
     }
 
     private record JobPrepDraftPayload(Long applicationId, Long resumeId, String company, String jobTitle, String jdText) {

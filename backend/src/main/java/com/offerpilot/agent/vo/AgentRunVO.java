@@ -29,6 +29,8 @@ public class AgentRunVO {
     private String approvalSummary;
     private String decisionNote;
     private String executionSummary;
+    private String executionActionLabel;
+    private String executionActionPath;
     private String approvalStage;
     private String providerGateStatus;
     private String providerGateSummary;

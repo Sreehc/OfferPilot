@@ -556,6 +556,8 @@ export interface AgentRun {
   approvalStage?: 'not_required' | 'waiting' | 'approved' | 'rejected' | 'canceled' | 'completed' | string
   decisionNote?: string
   executionSummary?: string
+  executionActionLabel?: string
+  executionActionPath?: string
   providerGateStatus?: 'not_applicable' | 'ready' | 'degraded' | 'blocked' | string
   providerGateSummary?: string
   timeline: AgentRunTimelineItem[]

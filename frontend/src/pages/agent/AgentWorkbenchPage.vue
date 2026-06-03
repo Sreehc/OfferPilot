@@ -247,6 +247,22 @@
             <p class="mt-2 text-sm leading-6 text-primary">{{ selectedRun.approvalSummary }}</p>
           </div>
 
+          <div v-if="selectedRun.executionSummary" class="agent-detail-block">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p class="agent-detail-block__title">执行结果</p>
+                <p class="mt-2 text-sm leading-6 text-primary">{{ selectedRun.executionSummary }}</p>
+              </div>
+              <RouterLink
+                v-if="selectedRun.executionActionPath"
+                :to="selectedRun.executionActionPath"
+                class="hard-button-secondary"
+              >
+                {{ selectedRun.executionActionLabel || '查看结果' }}
+              </RouterLink>
+            </div>
+          </div>
+
           <div v-if="selectedRun.providerGateSummary || selectedRun.providerGates.length" class="agent-detail-block">
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -1047,6 +1063,16 @@ const buildFollowUpActions = (run: AgentRun): FollowUpAction[] => {
 
   if (run.nextActionPath) {
     addAction('next', resolveNextActionLabel(run), run.nextActionPath, describeFollowUpPath(run.nextActionPath), 'primary')
+  }
+
+  if (run.executionActionPath && run.executionActionPath !== run.nextActionPath) {
+    addAction(
+      'execution',
+      run.executionActionLabel || '查看执行结果',
+      run.executionActionPath,
+      describeFollowUpPath(run.executionActionPath),
+      run.nextActionPath ? 'secondary' : 'primary'
+    )
   }
 
   if (run.providerGateStatus === 'blocked' || run.providerGateStatus === 'degraded') {
