@@ -962,7 +962,17 @@ const topicWorkflowActions = computed(() => {
       to: buildInterviewWorkspaceLink('copilot-prep'),
       toneClass: ''
     })
-  } else if ((topicDetail.value.applicationFeedbackCount || 0) === 0) {
+  } else {
+    items.push({
+      key: 'topic-copilot-live',
+      title: '进入实时 Copilot',
+      description: '带着当前 Prep 进入实时阶段，检查这个主题在真实追问里是否已经站稳。',
+      to: buildInterviewWorkspaceLink('copilot-live'),
+      toneClass: ''
+    })
+  }
+
+  if ((topicDetail.value.copilotPrepCount || 0) > 0 && (topicDetail.value.applicationFeedbackCount || 0) === 0) {
     items.push({
       key: 'topic-applications',
       title: '同步到投递推进',
@@ -970,7 +980,7 @@ const topicWorkflowActions = computed(() => {
       to: '/applications',
       toneClass: ''
     })
-  } else if ((topicDetail.value.resumeEvidenceCount || 0) === 0) {
+  } else if ((topicDetail.value.copilotPrepCount || 0) > 0 && (topicDetail.value.resumeEvidenceCount || 0) === 0) {
     items.push({
       key: 'topic-resume',
       title: '补简历表达证据',
