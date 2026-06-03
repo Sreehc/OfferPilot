@@ -1634,6 +1634,12 @@ public class AgentRunServiceImpl implements AgentRunService {
                 && snapshot.applicationBoard().focusApplication().getId() != null) {
             return "/applications/" + snapshot.applicationBoard().focusApplication().getId();
         }
+        if (snapshot.wrongQuestion() != null && snapshot.wrongQuestion().getId() != null) {
+            return "/wrong?wrongId=" + snapshot.wrongQuestion().getId();
+        }
+        if (snapshot.question() != null && snapshot.question().getId() != null) {
+            return "/question?questionId=" + snapshot.question().getId();
+        }
         if (snapshot.knowledgeDoc() != null) {
             String businessType = normalize(snapshot.knowledgeDoc().getBusinessType());
             if ("jd".equals(businessType)) {
@@ -1641,6 +1647,9 @@ public class AgentRunServiceImpl implements AgentRunService {
             }
             if ("resume".equals(businessType)) {
                 return "/resume";
+            }
+            if (snapshot.knowledgeDoc().getId() != null) {
+                return "/knowledge?docId=" + snapshot.knowledgeDoc().getId();
             }
             return "/knowledge";
         }
@@ -1669,10 +1678,19 @@ public class AgentRunServiceImpl implements AgentRunService {
         if (snapshot.topicDetail() != null && snapshot.topicDetail().getCategoryId() != null) {
             return "/analytics?topic=" + snapshot.topicDetail().getCategoryId();
         }
+        if (snapshot.wrongQuestion() != null && snapshot.wrongQuestion().getId() != null) {
+            return "/wrong?wrongId=" + snapshot.wrongQuestion().getId();
+        }
+        if (snapshot.question() != null && snapshot.question().getId() != null) {
+            return "/question?questionId=" + snapshot.question().getId();
+        }
         if (snapshot.knowledgeDoc() != null && snapshot.knowledgeDoc().getCategoryId() != null) {
             return "/question?categoryId=" + snapshot.knowledgeDoc().getCategoryId();
         }
         if (snapshot.knowledgeDoc() != null) {
+            if (snapshot.knowledgeDoc().getId() != null) {
+                return "/knowledge?docId=" + snapshot.knowledgeDoc().getId();
+            }
             return "/question";
         }
         if (snapshot.weakTopicSnapshot() != null && snapshot.weakTopicSnapshot().focusTopicId() != null) {
@@ -2123,6 +2141,21 @@ public class AgentRunServiceImpl implements AgentRunService {
         if (nextActionPath.startsWith("/analytics")) {
             return "前往能力画像";
         }
+        if (nextActionPath.startsWith("/wrong?wrongId=") || nextActionPath.startsWith("/wrong")) {
+            return "前往错题本";
+        }
+        if (nextActionPath.startsWith("/question?questionId=")) {
+            return "前往题目详情";
+        }
+        if (nextActionPath.startsWith("/question")) {
+            return "前往题库训练";
+        }
+        if (nextActionPath.startsWith("/knowledge?docId=")) {
+            return "前往知识资料";
+        }
+        if (nextActionPath.startsWith("/knowledge")) {
+            return "前往知识库";
+        }
         return "前往训练计划";
     }
 
@@ -2138,6 +2171,21 @@ public class AgentRunServiceImpl implements AgentRunService {
         }
         if (nextActionPath.startsWith("/study-plan")) {
             return "前往训练计划";
+        }
+        if (nextActionPath.startsWith("/wrong?wrongId=") || nextActionPath.startsWith("/wrong")) {
+            return "前往错题本";
+        }
+        if (nextActionPath.startsWith("/question?questionId=")) {
+            return "前往题目详情";
+        }
+        if (nextActionPath.startsWith("/question")) {
+            return "前往题库训练";
+        }
+        if (nextActionPath.startsWith("/knowledge?docId=")) {
+            return "前往知识资料";
+        }
+        if (nextActionPath.startsWith("/knowledge")) {
+            return "前往知识库";
         }
         if (nextActionPath.startsWith("/resume")) {
             return "前往简历页";
