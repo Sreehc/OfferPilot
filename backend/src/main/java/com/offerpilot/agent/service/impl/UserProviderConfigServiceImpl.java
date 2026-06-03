@@ -10,6 +10,9 @@ import com.offerpilot.agent.vo.UserProviderConfigItemVO;
 import com.offerpilot.common.api.ResultCode;
 import com.offerpilot.common.exception.BusinessException;
 import com.offerpilot.security.util.SecurityUtils;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -82,7 +85,7 @@ public class UserProviderConfigServiceImpl implements UserProviderConfigService 
                 return created;
             });
             applyRequest(config, request);
-            applyCompleteness(config, definition);
+            refreshCheckState(config, definition, true);
             if (config.getId() == null) {
                 userProviderConfigMapper.insert(config);
             } else {
@@ -105,7 +108,7 @@ public class UserProviderConfigServiceImpl implements UserProviderConfigService 
             if (definition == null) {
                 continue;
             }
-            applyCompleteness(config, definition);
+            refreshCheckState(config, definition, true);
             userProviderConfigMapper.updateById(config);
         }
         return listCurrentUserConfigs();
@@ -142,25 +145,36 @@ public class UserProviderConfigServiceImpl implements UserProviderConfigService 
         }
     }
 
-    private void applyCompleteness(UserProviderConfig config, ScopeDefinition definition) {
+    private void refreshCheckState(UserProviderConfig config, ScopeDefinition definition, boolean runProbe) {
         boolean configured = isConfigured(config, definition);
         config.setLastCheckedAt(LocalDateTime.now());
-        if (configured) {
-            config.setLastCheckStatus(Boolean.TRUE.equals(config.getEnabled()) ? "ready" : "saved");
-            config.setLastCheckMessage(Boolean.TRUE.equals(config.getEnabled())
-                    ? "配置完整，可供对应能力使用。"
-                    : "配置已保存，启用后可供对应能力使用。");
+        if (!configured) {
+            List<String> missingFields = definition.requiredFields().stream()
+                    .filter(field -> isFieldMissing(config, field))
+                    .map(this::fieldLabel)
+                    .toList();
+            config.setLastCheckStatus(Boolean.TRUE.equals(config.getEnabled()) ? "incomplete" : "unknown");
+            config.setLastCheckMessage(missingFields.isEmpty()
+                    ? "当前还没有可用配置。"
+                    : "缺少 " + String.join("、", missingFields) + "。");
             return;
         }
 
-        List<String> missingFields = definition.requiredFields().stream()
-                .filter(field -> isFieldMissing(config, field))
-                .map(this::fieldLabel)
-                .toList();
-        config.setLastCheckStatus(Boolean.TRUE.equals(config.getEnabled()) ? "incomplete" : "unknown");
-        config.setLastCheckMessage(missingFields.isEmpty()
-                ? "当前还没有可用配置。"
-                : "缺少 " + String.join("、", missingFields) + "。");
+        if (!Boolean.TRUE.equals(config.getEnabled())) {
+            config.setLastCheckStatus("saved");
+            config.setLastCheckMessage("配置已保存，启用后可供对应能力使用。");
+            return;
+        }
+
+        if (!runProbe) {
+            config.setLastCheckStatus("ready");
+            config.setLastCheckMessage("配置完整，可供对应能力使用。");
+            return;
+        }
+
+        ProbeResult probe = probeAvailability(config, definition);
+        config.setLastCheckStatus(probe.success() ? "ready" : "failed");
+        config.setLastCheckMessage(probe.message());
     }
 
     private UserProviderConfigItemVO toView(ScopeDefinition definition, UserProviderConfig config) {
@@ -193,6 +207,9 @@ public class UserProviderConfigServiceImpl implements UserProviderConfigService 
     private String resolveStatus(UserProviderConfig config, boolean configured) {
         if (config == null) {
             return "missing";
+        }
+        if (Boolean.TRUE.equals(config.getEnabled()) && configured && "failed".equals(config.getLastCheckStatus())) {
+            return "failed";
         }
         if (Boolean.TRUE.equals(config.getEnabled()) && configured) {
             return "ready";
@@ -264,14 +281,133 @@ public class UserProviderConfigServiceImpl implements UserProviderConfigService 
         return value.trim();
     }
 
+    private ProbeResult probeAvailability(UserProviderConfig config, ScopeDefinition definition) {
+        String scope = normalizeScope(config.getProviderScope());
+        String apiKey = providerSecretCrypto.decrypt(config.getApiKeyCiphertext());
+        return switch (scope) {
+            case "llm", "embedding" -> probeHttpEndpoint(
+                    config.getBaseUrl(),
+                    "/models",
+                    apiKey,
+                    true,
+                    definition.label() + " 探测成功，可正常访问模型目录。");
+            case "asr" -> probeHttpEndpoint(
+                    config.getBaseUrl(),
+                    "/audio/transcriptions",
+                    apiKey,
+                    false,
+                    definition.label() + " 探测成功，转写接口地址可访问。");
+            case "search", "voiceprint" -> probeHttpEndpoint(
+                    config.getBaseUrl(),
+                    "",
+                    apiKey,
+                    false,
+                    definition.label() + " 探测成功，服务地址可访问。");
+            case "oss" -> probeOssEndpoint(config, definition);
+            default -> new ProbeResult(true, "配置完整，可供对应能力使用。");
+        };
+    }
+
+    private ProbeResult probeOssEndpoint(UserProviderConfig config, ScopeDefinition definition) {
+        try {
+            URI endpoint = URI.create(config.getEndpoint());
+            if (!StringUtils.hasText(endpoint.getScheme()) || !StringUtils.hasText(endpoint.getHost())) {
+                return new ProbeResult(false, definition.label() + " Endpoint 不是有效地址，请检查协议和域名。");
+            }
+            return new ProbeResult(true, definition.label() + " 配置完整，已通过 Endpoint 与 Bucket 基础校验。");
+        } catch (Exception ex) {
+            return new ProbeResult(false, definition.label() + " Endpoint 无法解析，请检查地址格式。");
+        }
+    }
+
+    private ProbeResult probeHttpEndpoint(
+            String baseUrl,
+            String probePath,
+            String apiKey,
+            boolean strictSuccessCode,
+            String successMessage
+    ) {
+        String normalizedBaseUrl;
+        try {
+            normalizedBaseUrl = trimBaseUrl(baseUrl);
+            URI.create(normalizedBaseUrl);
+        } catch (Exception ex) {
+            return new ProbeResult(false, "Base URL 无法解析，请检查地址格式。");
+        }
+
+        String targetUrl = normalizedBaseUrl + (StringUtils.hasText(probePath) ? probePath : "");
+        try {
+            int statusCode = executeProbeRequest(targetUrl, apiKey, "HEAD");
+            if (statusCode == 405 || statusCode == 501) {
+                statusCode = executeProbeRequest(targetUrl, apiKey, "GET");
+            }
+            if (statusCode == 401 || statusCode == 403) {
+                return new ProbeResult(false, "服务地址可达，但认证失败，请检查 API Key。");
+            }
+            if (isReachableStatus(statusCode, strictSuccessCode)) {
+                return new ProbeResult(true, successMessage);
+            }
+            if (statusCode >= 500) {
+                return new ProbeResult(false, "服务地址可达，但当前返回 " + statusCode + "，请稍后重试。");
+            }
+            return new ProbeResult(false, "探测返回 HTTP " + statusCode + "，请确认 Base URL 是否指向正确接口。");
+        } catch (Exception ex) {
+            return new ProbeResult(false, "无法连接到配置的服务地址：" + simplifyProbeError(ex));
+        }
+    }
+
+    private int executeProbeRequest(String targetUrl, String apiKey, String method) throws Exception {
+        HttpURLConnection connection = (HttpURLConnection) URI.create(targetUrl).toURL().openConnection();
+        connection.setRequestMethod(method);
+        connection.setConnectTimeout((int) Duration.ofSeconds(5).toMillis());
+        connection.setReadTimeout((int) Duration.ofSeconds(5).toMillis());
+        connection.setRequestProperty("Accept", "application/json");
+        if (StringUtils.hasText(apiKey)) {
+            connection.setRequestProperty("Authorization", "Bearer " + apiKey.trim());
+        }
+        connection.connect();
+        int statusCode = connection.getResponseCode();
+        connection.disconnect();
+        return statusCode;
+    }
+
+    private boolean isReachableStatus(int statusCode, boolean strictSuccessCode) {
+        if (statusCode >= 200 && statusCode < 300) {
+            return true;
+        }
+        if (statusCode == 429) {
+            return true;
+        }
+        if (!strictSuccessCode && (statusCode == 404 || statusCode == 405)) {
+            return true;
+        }
+        return false;
+    }
+
+    private String simplifyProbeError(Exception ex) {
+        String message = ex.getMessage();
+        if (!StringUtils.hasText(message)) {
+            return ex.getClass().getSimpleName();
+        }
+        return message.length() > 120 ? message.substring(0, 120) + "..." : message;
+    }
+
+    private String trimBaseUrl(String baseUrl) {
+        String normalized = trimToNull(baseUrl);
+        if (normalized == null) {
+            return "";
+        }
+        return normalized.endsWith("/") ? normalized.substring(0, normalized.length() - 1) : normalized;
+    }
+
     private static Map<String, ScopeDefinition> createDefinitions() {
         Map<String, ScopeDefinition> definitions = new LinkedHashMap<>();
         register(definitions, new ScopeDefinition("llm", "主模型", "配置通用问答、训练建议和 agent 任务使用的主 LLM。", Set.of("baseUrl", "model", "apiKey")));
         register(definitions, new ScopeDefinition("embedding", "向量模型", "配置知识库、简历、JD 和画像使用的 Embedding 服务。", Set.of("baseUrl", "model", "apiKey")));
-        register(definitions, new ScopeDefinition("asr", "语音识别", "配置录音复盘和实时 Copilot 的语音转写服务。", Set.of("providerName", "apiKey")));
-        register(definitions, new ScopeDefinition("search", "联网搜索", "配置公司研究和岗位背景检索能力。", Set.of("providerName", "apiKey")));
+        register(definitions, new ScopeDefinition("asr", "语音识别", "配置录音复盘和实时 Copilot 的语音转写服务。", Set.of("providerName", "baseUrl", "apiKey")));
+        register(definitions, new ScopeDefinition("search", "联网搜索", "配置公司研究和岗位背景检索能力。", Set.of("providerName", "baseUrl", "apiKey")));
         register(definitions, new ScopeDefinition("oss", "对象存储", "配置长音频、录音文件等大对象上传能力。", Set.of("endpoint", "bucket", "accessKey", "secretKey")));
-        register(definitions, new ScopeDefinition("voiceprint", "声纹识别", "配置实时 Copilot 的说话人识别能力。", Set.of("providerName", "apiKey")));
+        register(definitions, new ScopeDefinition("voiceprint", "声纹识别", "配置实时 Copilot 的说话人识别能力。", Set.of("providerName", "baseUrl", "apiKey")));
         return definitions;
     }
 
@@ -307,5 +443,8 @@ public class UserProviderConfigServiceImpl implements UserProviderConfigService 
         private Set<String> requiredFields() {
             return requiredFields;
         }
+    }
+
+    private record ProbeResult(boolean success, String message) {
     }
 }

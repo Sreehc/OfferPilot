@@ -12,7 +12,9 @@ describe('providerReadiness', () => {
   it('treats missing and incomplete as unavailable provider states', () => {
     expect(isProviderStatusAvailable('missing')).toBe(false)
     expect(isProviderStatusAvailable('incomplete')).toBe(false)
+    expect(isProviderStatusAvailable('failed')).toBe(false)
     expect(isProviderStatusMissing('missing')).toBe(true)
     expect(isProviderStatusMissing('incomplete')).toBe(true)
+    expect(isProviderStatusMissing('failed')).toBe(true)
   })
 })

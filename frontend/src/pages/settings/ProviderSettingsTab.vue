@@ -134,7 +134,7 @@
 
           <div v-if="needsBaseUrl(item.scope)" class="provider-field">
             <label>Base URL</label>
-            <el-input v-model="ensureDraft(item.scope).baseUrl" placeholder="https://api.example.com/v1" />
+            <el-input v-model="ensureDraft(item.scope).baseUrl" :placeholder="baseUrlPlaceholder(item.scope)" />
           </div>
 
           <div v-if="needsModel(item.scope)" class="provider-field">
@@ -521,13 +521,30 @@ const handleCheck = async () => {
 }
 
 const needsProviderName = (scope: ProviderScope) => ['asr', 'search', 'voiceprint'].includes(scope)
-const needsBaseUrl = (scope: ProviderScope) => ['llm', 'embedding'].includes(scope)
+const needsBaseUrl = (scope: ProviderScope) => ['llm', 'embedding', 'asr', 'search', 'voiceprint'].includes(scope)
 const needsModel = (scope: ProviderScope) => ['llm', 'embedding'].includes(scope)
 const needsApiKey = (scope: ProviderScope) => scope !== 'oss'
+
+const baseUrlPlaceholder = (scope: ProviderScope) => {
+  switch (scope) {
+    case 'llm':
+    case 'embedding':
+      return 'https://api.example.com/v1'
+    case 'asr':
+      return 'https://api.example.com/v1'
+    case 'search':
+      return 'https://api.search.example.com'
+    case 'voiceprint':
+      return 'https://api.voiceprint.example.com'
+    default:
+      return 'https://api.example.com'
+  }
+}
 
 const statusLabel = (status: string) => {
   if (status === 'ready') return '已可用'
   if (status === 'saved') return '已保存'
+  if (status === 'failed') return '检测失败'
   if (status === 'incomplete') return '待补齐'
   return '未配置'
 }
@@ -701,6 +718,11 @@ onMounted(loadConfigs)
 .provider-status-badge--incomplete {
   background: rgba(203, 143, 33, 0.14);
   color: #8c6110;
+}
+
+.provider-status-badge--failed {
+  background: rgba(210, 77, 87, 0.14);
+  color: #a33139;
 }
 
 .provider-status-badge--missing {
