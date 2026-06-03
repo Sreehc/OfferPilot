@@ -33,6 +33,10 @@ public class JobPrepSessionVO {
     private List<String> nextActions;
     private String providerStatus;
     private String providerStatusMessage;
+    private String suggestedAgentType;
+    private String suggestedTriggerSource;
+    private String nextActionLabel;
+    private String nextActionPath;
     private List<ProviderReadinessVO> providerReadiness;
     private String summary;
     private LocalDateTime updateTime;

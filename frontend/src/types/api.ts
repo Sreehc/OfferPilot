@@ -401,6 +401,12 @@ export interface JobPrepSession {
   resumeTalkingPoints: string[]
   mockQuestions: string[]
   nextActions: string[]
+  providerStatus?: string
+  providerStatusMessage?: string
+  suggestedAgentType?: string
+  suggestedTriggerSource?: string
+  nextActionLabel?: string
+  nextActionPath?: string
   providerReadiness: CopilotPrepProviderReadiness[]
   summary: string
   updateTime?: string
@@ -430,6 +436,12 @@ export interface CopilotPrepSession {
   liveCues: string[]
   followUpQuestions: string[]
   nextActions: string[]
+  providerStatus?: string
+  providerStatusMessage?: string
+  suggestedAgentType?: string
+  suggestedTriggerSource?: string
+  nextActionLabel?: string
+  nextActionPath?: string
   providerReadiness: CopilotPrepProviderReadiness[]
   updateTime?: string
 }
@@ -502,6 +514,12 @@ export interface RecordingReviewSession {
   strengths: string[]
   weakPoints: string[]
   suggestedActions: string[]
+  providerStatus?: string
+  providerStatusMessage?: string
+  suggestedAgentType?: string
+  suggestedTriggerSource?: string
+  nextActionLabel?: string
+  nextActionPath?: string
   providerReadiness: CopilotPrepProviderReadiness[]
   segments: RecordingReviewSegment[]
   updateTime?: string

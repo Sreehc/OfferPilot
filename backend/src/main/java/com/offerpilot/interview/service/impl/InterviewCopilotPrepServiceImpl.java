@@ -350,9 +350,23 @@ public class InterviewCopilotPrepServiceImpl implements InterviewCopilotPrepServ
                 .nextActions(readList(session.getNextActionsJson()))
                 .providerStatus(resolveProviderStatus(providerReadiness))
                 .providerStatusMessage(buildProviderStatusMessage(providerReadiness))
+                .suggestedAgentType("realtime_copilot")
+                .suggestedTriggerSource("interview_live")
+                .nextActionLabel("继续实时阶段")
+                .nextActionPath(buildRealtimeCopilotAgentPath(session))
                 .providerReadiness(providerReadiness)
                 .updateTime(session.getUpdateTime())
                 .build();
+    }
+
+    private String buildRealtimeCopilotAgentPath(CopilotPrepSession session) {
+        if (session.getId() == null) {
+            return "/agent";
+        }
+        return "/agent?agentType=realtime_copilot"
+                + "&triggerSource=interview_live"
+                + "&contextRefs=interview:copilot-prep:" + session.getId() + ",settings:providers"
+                + "&userPrompt=把这份Copilot%20Prep整理成进入实时阶段前的检查清单。";
     }
 
     private String resolveProviderStatus(List<CopilotPrepSessionVO.ProviderReadinessVO> providerReadiness) {

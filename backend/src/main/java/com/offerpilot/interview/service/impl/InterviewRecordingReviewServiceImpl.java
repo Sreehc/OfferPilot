@@ -140,6 +140,10 @@ public class InterviewRecordingReviewServiceImpl implements InterviewRecordingRe
                 .suggestedActions(readList(session.getSuggestedActionsJson()))
                 .providerStatus(resolveProviderStatus(providerReadiness))
                 .providerStatusMessage(buildProviderStatusMessage(providerReadiness))
+                .suggestedAgentType("recording_review")
+                .suggestedTriggerSource("recording_review")
+                .nextActionLabel("转成训练动作")
+                .nextActionPath(buildRecordingReviewAgentPath(session))
                 .providerReadiness(providerReadiness)
                 .segments(segments.stream()
                         .map(item -> RecordingReviewSessionVO.SegmentVO.builder()
@@ -153,6 +157,16 @@ public class InterviewRecordingReviewServiceImpl implements InterviewRecordingRe
                         .toList())
                 .updateTime(session.getUpdateTime())
                 .build();
+    }
+
+    private String buildRecordingReviewAgentPath(RecordingReviewSession session) {
+        if (session.getId() == null) {
+            return "/agent";
+        }
+        return "/agent?agentType=recording_review"
+                + "&triggerSource=recording_review"
+                + "&contextRefs=interview:recording-review:" + session.getId() + ",analytics:profile,study-plan:active"
+                + "&userPrompt=把这次录音复盘的薄弱点转成下一轮训练动作。";
     }
 
     private String resolveProviderStatus(List<RecordingReviewSessionVO.ProviderReadinessVO> providerReadiness) {

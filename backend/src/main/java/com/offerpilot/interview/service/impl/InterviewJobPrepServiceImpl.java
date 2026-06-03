@@ -401,10 +401,24 @@ public class InterviewJobPrepServiceImpl implements InterviewJobPrepService {
                 .nextActions(readList(session.getNextActionsJson()))
                 .providerStatus(resolveProviderStatus(providerReadiness, false))
                 .providerStatusMessage(buildProviderStatusMessage(providerReadiness, false, "JD 备面"))
+                .suggestedAgentType("realtime_copilot")
+                .suggestedTriggerSource("interview")
+                .nextActionLabel("转成 Copilot Prep")
+                .nextActionPath(buildCopilotPrepAgentPath(session))
                 .providerReadiness(providerReadiness)
                 .summary(session.getSummary())
                 .updateTime(session.getUpdateTime())
                 .build();
+    }
+
+    private String buildCopilotPrepAgentPath(JobPrepSession session) {
+        if (session.getId() == null) {
+            return "/agent";
+        }
+        return "/agent?agentType=realtime_copilot"
+                + "&triggerSource=interview"
+                + "&contextRefs=interview:job-prep:" + session.getId() + ",settings:providers"
+                + "&userPrompt=把这次JD备面结果转成Copilot%20Prep会前草案。";
     }
 
     private String resolveProviderStatus(List<JobPrepSessionVO.ProviderReadinessVO> providerReadiness, boolean requiredOnly) {

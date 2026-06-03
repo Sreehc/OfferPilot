@@ -89,6 +89,10 @@ class InterviewRecordingReviewServiceImplTest {
         assertEquals("missing", result.getProviderReadiness().get(1).getStatus());
         assertEquals("degraded", result.getProviderStatus());
         assertTrue(result.getProviderStatusMessage().contains("对象存储"));
+        assertEquals("recording_review", result.getSuggestedAgentType());
+        assertEquals("recording_review", result.getSuggestedTriggerSource());
+        assertEquals("转成训练动作", result.getNextActionLabel());
+        assertTrue(result.getNextActionPath().contains("interview:recording-review:88"));
         assertTrue(result.getProviderReadiness().get(1).getStatusMessage().contains("长音频上传能力可能受限"));
         verify(recordingReviewAsyncProcessor).processReview(eq(88L), any(byte[].class), eq("audio/webm"));
     }
@@ -117,6 +121,8 @@ class InterviewRecordingReviewServiceImplTest {
         assertEquals("Java 后端", result.getDirection());
         assertEquals("blocked", result.getProviderStatus());
         assertTrue(result.getProviderStatusMessage().contains("关键依赖"));
+        assertEquals("recording_review", result.getSuggestedAgentType());
+        assertTrue(result.getNextActionPath().contains("interview:recording-review:33"));
         assertEquals(1, result.getSegments().size());
         assertEquals("这里是片段转写", result.getSegments().get(0).getTranscriptText());
     }
