@@ -564,7 +564,7 @@ class AgentRunServiceImplTest {
                 "把现场追问整理成下一轮训练动作"));
 
         assertTrue(result.getSummary().contains("实时阶段已结束"));
-        assertEquals("/interview", result.getNextActionPath());
+        assertEquals("/interview?workspace=copilot-live&copilotRealtimeSessionId=45", result.getNextActionPath());
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("面后复盘 run")));
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("实时阶段已经结束")));
         assertTrue(Boolean.TRUE.equals(result.getRequiresApproval()));
@@ -594,7 +594,7 @@ class AgentRunServiceImplTest {
                 "直接消费最近一次实时会话"));
 
         assertTrue(result.getSummary().contains("实时阶段已结束"));
-        assertEquals("/interview", result.getNextActionPath());
+        assertEquals("/interview?workspace=copilot-live&copilotRealtimeSessionId=46", result.getNextActionPath());
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("面后复盘 run")));
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("直接消费最近一次实时会话")));
         assertTrue(Boolean.TRUE.equals(result.getRequiresApproval()));
@@ -787,7 +787,7 @@ class AgentRunServiceImplTest {
                 List.of("interview:copilot-prep:58"),
                 "帮我判断现在先进入实时还是继续准备"));
 
-        assertEquals("/interview", result.getNextActionPath());
+        assertEquals("/interview?workspace=copilot-prep&copilotPrepSessionId=58", result.getNextActionPath());
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("Copilot Prep 已整理完成")));
     }
 
@@ -828,7 +828,7 @@ class AgentRunServiceImplTest {
         assertEquals("degraded", result.getProviderGateStatus());
         assertTrue(result.getProviderGateSummary().contains("关键 provider 已基本就绪"));
         assertTrue(result.getProviderGates().stream().anyMatch(item -> "search".equals(item.getScope()) && "missing".equals(item.getStatus())));
-        assertEquals("/interview", result.getNextActionPath());
+        assertEquals("/interview?workspace=copilot-prep", result.getNextActionPath());
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("联网搜索") && item.contains("降级")));
         assertTrue(result.getTimeline().stream().anyMatch(item -> "request_received".equals(item.getKey())));
         assertTrue(result.getTimeline().stream().anyMatch(item -> "next_action".equals(item.getKey())));
@@ -907,7 +907,7 @@ class AgentRunServiceImplTest {
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("开场提纲")));
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("Kafka")));
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("Copilot Prep 压成可口述")));
-        assertEquals("/interview", result.getNextActionPath());
+        assertEquals("/interview?workspace=copilot-prep&copilotPrepSessionId=58", result.getNextActionPath());
     }
 
     @Test
@@ -958,7 +958,7 @@ class AgentRunServiceImplTest {
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("实时检查清单")));
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("降级模式")));
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("根据现场追问调整回答重点")));
-        assertEquals("/interview", result.getNextActionPath());
+        assertEquals("/interview?workspace=copilot-live&copilotRealtimeSessionId=88", result.getNextActionPath());
     }
 
     @Test
@@ -1003,8 +1003,8 @@ class AgentRunServiceImplTest {
                 List.of("interview:copilot-realtime:88"),
                 "帮我判断当前阶段的下一步"));
 
-        assertEquals("/interview", result.getNextActionPath());
-        assertEquals("前往面试页", result.getNextActionLabel());
+        assertEquals("/interview?workspace=copilot-live&copilotRealtimeSessionId=88", result.getNextActionPath());
+        assertEquals("前往 Copilot", result.getNextActionLabel());
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("实时 Copilot 当前仍在连接中")));
     }
 
@@ -1060,7 +1060,7 @@ class AgentRunServiceImplTest {
                 "准备一面"));
 
         assertEquals("degraded", result.getProviderGateStatus());
-        assertEquals("/interview", result.getNextActionPath());
+        assertEquals("/interview?workspace=job-prep", result.getNextActionPath());
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("联网搜索") && item.contains("降级")));
     }
 
@@ -1424,7 +1424,7 @@ class AgentRunServiceImplTest {
                 org.mockito.ArgumentMatchers.isNull(),
                 org.mockito.ArgumentMatchers.contains("录音复盘专项"),
                 org.mockito.ArgumentMatchers.contains("表达结构"),
-                org.mockito.ArgumentMatchers.eq("/interview?recordingReview=55"));
+                org.mockito.ArgumentMatchers.eq("/interview?workspace=recording-review&recordingReviewSessionId=55"));
         assertEquals("approved", approved.getStatus());
         assertTrue(approved.getExecutionSummary().contains("正式训练任务"));
         assertTrue(approved.getTimeline().stream()

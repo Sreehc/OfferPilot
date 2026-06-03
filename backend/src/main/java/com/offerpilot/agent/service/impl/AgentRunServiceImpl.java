@@ -317,7 +317,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                         recommendations,
                         providerContextRecommendations("job_prep", snapshot)),
                 List.of("整理 JD 缺口", "准备项目表达", "启动模拟或投递动作"),
-                resolveRunNextActionPath("/interview", "job_prep", snapshot),
+                resolveRunNextActionPath(resolveJobPrepWorkspacePath(snapshot), "job_prep", snapshot),
                 true,
                 "save_job_prep_draft",
                 StringUtils.hasText(jobTitle)
@@ -358,7 +358,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                         recommendations,
                         providerContextRecommendations("recording_review", snapshot)),
                 List.of("查看转写片段", "提取薄弱点", "确认是否转成正式训练动作"),
-                resolveRunNextActionPath("/interview", "recording_review", snapshot),
+                resolveRunNextActionPath(resolveRecordingReviewWorkspacePath(snapshot), "recording_review", snapshot),
                 true,
                 "save_recording_review_action",
                 "审批通过后会把这次录音复盘结论保存为正式训练动作，并写入当前学习计划。",
@@ -511,7 +511,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                     copilotRealtimeSession.getPostInterviewReview() == null ? null : copilotRealtimeSession.getPostInterviewReview().getSummary(),
                     "已根据实时 Copilot 阶段整理面后复盘重点和下一轮训练建议。");
             baseRecommendations.addAll(copilotRealtimeRecommendations(copilotRealtimeSession));
-            nextActionPath = "/interview";
+            nextActionPath = resolveCopilotLiveWorkspacePath(snapshot);
         } else {
             summary = "已根据本轮面试结果整理追问重点、低分点和下一轮训练建议。";
             baseRecommendations.add("先处理低分题，再安排一轮同主题模拟。");
@@ -538,7 +538,7 @@ public class AgentRunServiceImpl implements AgentRunService {
     private RunBlueprint buildRealtimeCopilotBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
         String summary;
         List<String> recommendations;
-        String nextActionPath = "/interview";
+        String nextActionPath = resolveCopilotPrepWorkspacePath(snapshot);
         String nextActionAgentType = "realtime_copilot";
         CopilotPrepDraftPayload copilotPrepDraftPayload = resolveCopilotPrepDraftPayload(snapshot, prompt);
         boolean requiresApproval = false;
@@ -548,6 +548,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         if (snapshot.copilotRealtimeSession() != null) {
             CopilotRealtimeSessionVO realtimeSession = snapshot.copilotRealtimeSession();
             summary = realtimeCopilotSummary(realtimeSession);
+            nextActionPath = resolveCopilotLiveWorkspacePath(snapshot);
             recommendations = mergeRecommendations(
                     realtimeCopilotLiveRecommendations(realtimeSession),
                     prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”同步到当前实时 Copilot 会话。") : List.of(),
@@ -574,6 +575,7 @@ public class AgentRunServiceImpl implements AgentRunService {
             JobPrepSessionVO jobPrepSession = snapshot.jobPrepSession();
             summary = "已根据 " + defaultText(jobPrepSession.getCompany(), "当前岗位") + " " + defaultText(jobPrepSession.getJobTitle(), "会前准备")
                     + " 生成会前清单，后续可以继续接实时建议流。";
+            nextActionPath = resolveCopilotPrepWorkspacePath(snapshot);
             recommendations = mergeRecommendations(
                     List.of("先把 JD 备面结果转成开场和追问清单。"),
                     jobPrepSession.getNextActions(),
@@ -1411,7 +1413,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                 studyPlanPayload == null ? null : studyPlanPayload.techStack(),
                 taskTitle,
                 taskDescription,
-                "/interview?recordingReview=" + recordingReview.getId());
+                "/interview?workspace=recording-review&recordingReviewSessionId=" + recordingReview.getId());
     }
 
     private InterviewReviewActionPayload resolveInterviewReviewActionPayload(
@@ -1474,7 +1476,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                     studyPlanPayload == null ? null : studyPlanPayload.techStack(),
                     taskTitle,
                     taskDescription,
-                    "/interview?copilotRealtime=" + session.getId());
+                    "/interview?workspace=copilot-live&copilotRealtimeSessionId=" + session.getId());
         }
         return null;
     }
@@ -1512,17 +1514,20 @@ public class AgentRunServiceImpl implements AgentRunService {
             return snapshot.dashboardOverview().getNextAction().getPath().trim();
         }
         if (snapshot.recordingReview() != null) {
-            return "/interview";
+            return resolveRecordingReviewWorkspacePath(snapshot);
         }
         if (snapshot.topicRetrospective() != null) {
             return "/analytics";
         }
         if (snapshot.copilotRealtimeSession() != null) {
             String reviewActionPath = realtimeReviewNextActionPath(snapshot.copilotRealtimeSession());
-            return StringUtils.hasText(reviewActionPath) ? reviewActionPath : "/interview";
+            return StringUtils.hasText(reviewActionPath) ? reviewActionPath : resolveCopilotLiveWorkspacePath(snapshot);
         }
         if (snapshot.copilotPrepSession() != null) {
-            return "/interview";
+            return resolveCopilotPrepWorkspacePath(snapshot);
+        }
+        if (snapshot.jobPrepSession() != null) {
+            return resolveJobPrepWorkspacePath(snapshot);
         }
         if (snapshot.application() != null && snapshot.application().getId() != null) {
             return "/applications/" + snapshot.application().getId();
@@ -1545,6 +1550,37 @@ public class AgentRunServiceImpl implements AgentRunService {
             return "/analytics";
         }
         return "/dashboard";
+    }
+
+    private String resolveJobPrepWorkspacePath(ContextSnapshot snapshot) {
+        if (snapshot.jobPrepSession() != null && snapshot.jobPrepSession().getId() != null) {
+            return "/interview?workspace=job-prep&jobPrepSessionId=" + snapshot.jobPrepSession().getId();
+        }
+        return "/interview?workspace=job-prep";
+    }
+
+    private String resolveRecordingReviewWorkspacePath(ContextSnapshot snapshot) {
+        if (snapshot.recordingReview() != null && snapshot.recordingReview().getId() != null) {
+            return "/interview?workspace=recording-review&recordingReviewSessionId=" + snapshot.recordingReview().getId();
+        }
+        return "/interview?workspace=recording-review";
+    }
+
+    private String resolveCopilotPrepWorkspacePath(ContextSnapshot snapshot) {
+        if (snapshot.copilotPrepSession() != null && snapshot.copilotPrepSession().getId() != null) {
+            return "/interview?workspace=copilot-prep&copilotPrepSessionId=" + snapshot.copilotPrepSession().getId();
+        }
+        if (snapshot.jobPrepSession() != null && snapshot.jobPrepSession().getId() != null) {
+            return "/interview?workspace=copilot-prep&jobPrepSessionId=" + snapshot.jobPrepSession().getId();
+        }
+        return "/interview?workspace=copilot-prep";
+    }
+
+    private String resolveCopilotLiveWorkspacePath(ContextSnapshot snapshot) {
+        if (snapshot.copilotRealtimeSession() != null && snapshot.copilotRealtimeSession().getId() != null) {
+            return "/interview?workspace=copilot-live&copilotRealtimeSessionId=" + snapshot.copilotRealtimeSession().getId();
+        }
+        return "/interview?workspace=copilot-live";
     }
 
     private String resolveRunNextActionPath(String basePath, String agentType, ContextSnapshot snapshot) {
@@ -1922,6 +1958,16 @@ public class AgentRunServiceImpl implements AgentRunService {
         }
         if (nextActionPath.startsWith("/interview/detail/")) {
             return "前往面试详情";
+        }
+        if (nextActionPath.startsWith("/interview?workspace=job-prep")) {
+            return "前往 JD 备面";
+        }
+        if (nextActionPath.startsWith("/interview?workspace=recording-review")) {
+            return "前往录音复盘";
+        }
+        if (nextActionPath.startsWith("/interview?workspace=copilot-prep")
+                || nextActionPath.startsWith("/interview?workspace=copilot-live")) {
+            return "前往 Copilot";
         }
         if (nextActionPath.startsWith("/interview")) {
             return "前往面试页";
