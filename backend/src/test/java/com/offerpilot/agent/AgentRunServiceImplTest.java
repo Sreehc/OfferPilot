@@ -150,6 +150,7 @@ class AgentRunServiceImplTest {
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("画像分 61")));
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("准备下周一面")));
         assertEquals("/analytics", result.getNextActionPath());
+        assertEquals("前往能力画像", result.getNextActionLabel());
         assertTrue(Boolean.TRUE.equals(result.getRequiresApproval()));
 
         ArgumentCaptor<AgentRun> captor = ArgumentCaptor.forClass(AgentRun.class);
@@ -815,6 +816,7 @@ class AgentRunServiceImplTest {
 
         assertEquals("blocked", result.getProviderGateStatus());
         assertEquals("/settings?tab=providers", result.getNextActionPath());
+        assertEquals("前往 Provider 设置", result.getNextActionLabel());
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("补齐") && item.contains("联网搜索")));
     }
 
@@ -921,6 +923,7 @@ class AgentRunServiceImplTest {
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("面后复盘 run")));
         assertTrue(result.getNextActionPath().contains("agentType=interview_review"));
         assertTrue(result.getNextActionPath().contains("interview:copilot-realtime:89"));
+        assertEquals("发起面后复盘", result.getNextActionLabel());
     }
 
     @Test
@@ -939,6 +942,7 @@ class AgentRunServiceImplTest {
                 "帮我判断当前阶段的下一步"));
 
         assertEquals("/interview", result.getNextActionPath());
+        assertEquals("前往面试页", result.getNextActionLabel());
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("实时 Copilot 当前仍在连接中")));
     }
 

@@ -538,6 +538,7 @@ export interface AgentRun {
   recommendations: string[]
   checkpoints: string[]
   nextActionPath?: string
+  nextActionLabel?: string
   requiresApproval: boolean
   approvalActionType?: string
   approvalSummary?: string

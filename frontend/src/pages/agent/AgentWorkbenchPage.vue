@@ -825,6 +825,9 @@ const resolveTimelineDotClass = (status: string) => {
 const formatDateTime = (value?: string) => (value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '刚刚')
 
 const resolveNextActionLabel = (run: AgentRun) => {
+  if (run.nextActionLabel?.trim()) {
+    return run.nextActionLabel.trim()
+  }
   if (run.providerGateStatus === 'blocked') {
     return '前往 Provider 设置'
   }

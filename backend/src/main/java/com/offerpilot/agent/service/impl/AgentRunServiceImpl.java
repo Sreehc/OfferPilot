@@ -1550,6 +1550,10 @@ public class AgentRunServiceImpl implements AgentRunService {
         return "blocked".equals(providerGateStatus) ? "/settings?tab=providers" : basePath;
     }
 
+    private String resolveRunNextActionLabel(AgentRun run, String providerGateStatus) {
+        return resolveNextActionLabel(run.getAgentType(), run.getNextActionPath(), providerGateStatus);
+    }
+
     private java.util.Optional<StudyPlanCurrentVO.StudyPlanTaskVO> firstPendingPlanTask(StudyPlanCurrentVO currentPlan) {
         return nullSafeList(currentPlan.getTasks()).stream()
                 .filter(task -> !"completed".equals(normalize(task.getStatus())))
@@ -1634,6 +1638,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                 .recommendations(readPayloadArray(payload, "recommendations"))
                 .checkpoints(readPayloadArray(payload, "checkpoints"))
                 .nextActionPath(run.getNextActionPath())
+                .nextActionLabel(resolveRunNextActionLabel(run, providerGateStatus))
                 .requiresApproval(Integer.valueOf(1).equals(run.getRequiresApproval()))
                 .approvalActionType(run.getApprovalActionType())
                 .approvalSummary(run.getApprovalSummary())
@@ -1870,6 +1875,53 @@ public class AgentRunServiceImpl implements AgentRunService {
     private boolean isProviderAvailable(String status) {
         String normalized = normalize(status);
         return "ready".equals(normalized) || "saved".equals(normalized);
+    }
+
+    private String resolveNextActionLabel(String agentType, String nextActionPath, String providerGateStatus) {
+        String normalizedPath = defaultText(nextActionPath, "");
+        if ("/settings?tab=providers".equals(normalizedPath)
+                || ("blocked".equals(normalize(providerGateStatus)) && !StringUtils.hasText(normalizedPath))) {
+            return "前往 Provider 设置";
+        }
+        if (normalizedPath.contains("agentType=interview_review")) {
+            return "发起面后复盘";
+        }
+        return switch (normalize(agentType)) {
+            case "study_planner" -> normalizedPath.startsWith("/analytics") ? "前往能力画像" : "前往训练计划";
+            case "job_prep" -> "前往 JD 备面";
+            case "recording_review" -> "前往录音复盘";
+            case "interview_review" -> normalizedPath.startsWith("/interview/detail/") ? "前往面试详情" : "前往面试复盘";
+            case "resume_coach" -> "前往简历页";
+            case "application_strategist" -> normalizedPath.startsWith("/applications/") ? "前往投递详情" : "前往投递页";
+            case "realtime_copilot" -> "前往 Copilot";
+            case "coordinator" -> coordinatorNextActionLabel(normalizedPath);
+            default -> "前往下一步";
+        };
+    }
+
+    private String coordinatorNextActionLabel(String nextActionPath) {
+        if (nextActionPath.startsWith("/analytics")) {
+            return "前往能力画像";
+        }
+        if (nextActionPath.startsWith("/study-plan")) {
+            return "前往训练计划";
+        }
+        if (nextActionPath.startsWith("/resume")) {
+            return "前往简历页";
+        }
+        if (nextActionPath.startsWith("/applications/")) {
+            return "前往投递详情";
+        }
+        if (nextActionPath.startsWith("/applications")) {
+            return "前往投递页";
+        }
+        if (nextActionPath.startsWith("/interview/detail/")) {
+            return "前往面试详情";
+        }
+        if (nextActionPath.startsWith("/interview")) {
+            return "前往面试页";
+        }
+        return "前往工作台";
     }
 
     private String buildProviderGateSummary(List<AgentRunVO.ProviderGateVO> providerGates, String overallStatus) {

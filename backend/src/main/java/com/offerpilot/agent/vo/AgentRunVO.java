@@ -23,6 +23,7 @@ public class AgentRunVO {
     private List<String> recommendations;
     private List<String> checkpoints;
     private String nextActionPath;
+    private String nextActionLabel;
     private Boolean requiresApproval;
     private String approvalActionType;
     private String approvalSummary;
