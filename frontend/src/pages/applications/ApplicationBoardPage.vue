@@ -453,7 +453,12 @@ const applicationBoardAgentLink = computed(() => {
   })
 })
 const applicationJobPrepLink = computed(() => {
-  if (!currentFocus.value?.id) return '/interview?workspace=job-prep'
+  if (!currentFocus.value?.id) {
+    const query = appendSeedQuery(new URLSearchParams({
+      workspace: 'job-prep'
+    }))
+    return `/interview?${query.toString()}`
+  }
   const query = appendSeedQuery(new URLSearchParams({
     workspace: 'job-prep',
     applicationId: String(currentFocus.value.id)
@@ -464,7 +469,12 @@ const applicationJobPrepLink = computed(() => {
   return `/interview?${query.toString()}`
 })
 const applicationCopilotPrepLink = computed(() => {
-  if (!currentFocus.value?.id) return '/interview?workspace=copilot-prep'
+  if (!currentFocus.value?.id) {
+    const query = appendSeedQuery(new URLSearchParams({
+      workspace: 'copilot-prep'
+    }))
+    return `/interview?${query.toString()}`
+  }
   const query = appendSeedQuery(new URLSearchParams({
     workspace: 'copilot-prep',
     applicationId: String(currentFocus.value.id)

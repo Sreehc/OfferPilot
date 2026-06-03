@@ -171,6 +171,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { PRODUCT_PAGE_NAMES } from '@/constants/productCopy'
 import AppBrandGlyph from '@/components/AppBrandGlyph.vue'
@@ -227,11 +228,37 @@ const primaryGroups: SidebarGroup[] = [
   }
 ]
 
+const seededQuery = computed<Record<string, string>>(() => {
+  const query: Record<string, string> = {}
+  const seedTopic = typeof route.query.seedTopic === 'string' ? route.query.seedTopic.trim() : ''
+  const seedWorkflow = typeof route.query.seedWorkflow === 'string' ? route.query.seedWorkflow.trim() : ''
+  const seedNote = typeof route.query.seedNote === 'string' ? route.query.seedNote.trim() : ''
+  if (seedTopic) {
+    query.seedTopic = seedTopic
+  }
+  if (seedWorkflow) {
+    query.seedWorkflow = seedWorkflow
+  }
+  if (seedNote) {
+    query.seedNote = seedNote
+  }
+  return query
+})
+
+const shouldCarrySeed = (path: string) =>
+  path === '/interview' || path === '/resume' || path === '/applications' || path === '/review'
+
 const routeTarget = (item: SidebarItem) => {
-  if (!item.query && !item.hash) return item.path
+  if (!item.query && !item.hash && (!shouldCarrySeed(item.path) || !Object.keys(seededQuery.value).length)) {
+    return item.path
+  }
+  const query = {
+    ...(shouldCarrySeed(item.path) ? seededQuery.value : {}),
+    ...(item.query || {})
+  }
   return {
     path: item.path,
-    query: item.query,
+    query: Object.keys(query).length ? query : undefined,
     hash: item.hash
   }
 }

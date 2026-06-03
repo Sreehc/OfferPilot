@@ -760,7 +760,12 @@ const resumeCoachAgentLink = computed(() => {
   })
 })
 const resumeInterviewLink = computed(() => {
-  if (!currentResume.value?.id) return '/interview?workspace=mock-interview'
+  if (!currentResume.value?.id) {
+    const query = appendSeedQuery(new URLSearchParams({
+      workspace: 'mock-interview'
+    }))
+    return `/interview?${query.toString()}`
+  }
   const query = appendSeedQuery(new URLSearchParams({
     workspace: 'mock-interview',
     resumeId: String(currentResume.value.id)
@@ -768,7 +773,12 @@ const resumeInterviewLink = computed(() => {
   return `/interview?${query.toString()}`
 })
 const resumeJobPrepLink = computed(() => {
-  if (!currentResume.value?.id) return '/interview?workspace=job-prep'
+  if (!currentResume.value?.id) {
+    const query = appendSeedQuery(new URLSearchParams({
+      workspace: 'job-prep'
+    }))
+    return `/interview?${query.toString()}`
+  }
   const query = appendSeedQuery(new URLSearchParams({
     workspace: 'job-prep',
     resumeId: String(currentResume.value.id)
@@ -776,7 +786,12 @@ const resumeJobPrepLink = computed(() => {
   return `/interview?${query.toString()}`
 })
 const resumeCopilotPrepLink = computed(() => {
-  if (!currentResume.value?.id) return '/interview?workspace=copilot-prep'
+  if (!currentResume.value?.id) {
+    const query = appendSeedQuery(new URLSearchParams({
+      workspace: 'copilot-prep'
+    }))
+    return `/interview?${query.toString()}`
+  }
   const query = appendSeedQuery(new URLSearchParams({
     workspace: 'copilot-prep',
     resumeId: String(currentResume.value.id)

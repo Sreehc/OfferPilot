@@ -6,8 +6,8 @@
         <h3 class="mt-3 text-2xl font-semibold text-ink">回看最近几次模拟面试</h3>
       </div>
       <div class="flex gap-3">
-        <RouterLink class="accent-link touch-link text-sm font-semibold" to="/interview?workspace=history">全部历史</RouterLink>
-        <RouterLink class="accent-link touch-link text-sm font-semibold" to="/interview?workspace=mock-interview">开始下一次模拟面试</RouterLink>
+        <RouterLink class="accent-link touch-link text-sm font-semibold" :to="interviewHistoryLink">全部历史</RouterLink>
+        <RouterLink class="accent-link touch-link text-sm font-semibold" :to="mockInterviewLink">开始下一次模拟面试</RouterLink>
       </div>
     </div>
 
@@ -50,6 +50,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
 import { EMPTY_STATE_COPY } from '@/constants/productCopy'
 import type { RecentInterviewItem } from '@/types/api'
@@ -57,6 +59,38 @@ import type { RecentInterviewItem } from '@/types/api'
 defineProps<{
   interviews: RecentInterviewItem[]
 }>()
+
+const route = useRoute()
+
+const readSeedQueryValue = (key: 'seedTopic' | 'seedWorkflow' | 'seedNote') => {
+  const value = route.query[key]
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+const seededTopic = computed(() => readSeedQueryValue('seedTopic'))
+const seededWorkflow = computed(() => readSeedQueryValue('seedWorkflow'))
+const seededNote = computed(() => readSeedQueryValue('seedNote'))
+
+const buildInterviewLink = (workspace: 'history' | 'mock-interview') => {
+  const query = new URLSearchParams({
+    workspace
+  })
+  if (seededTopic.value) {
+    query.set('seedTopic', seededTopic.value)
+  }
+  if (seededWorkflow.value) {
+    query.set('seedWorkflow', seededWorkflow.value)
+  } else {
+    query.set('seedWorkflow', workspace)
+  }
+  if (seededNote.value) {
+    query.set('seedNote', seededNote.value)
+  }
+  return `/interview?${query.toString()}`
+}
+
+const interviewHistoryLink = computed(() => buildInterviewLink('history'))
+const mockInterviewLink = computed(() => buildInterviewLink('mock-interview'))
 
 const formatScore = (score: number): string => {
   return Number.isInteger(score) ? String(score) : score.toFixed(2)
