@@ -39,6 +39,7 @@ public class AgentRunVO {
     @Builder
     public static class TimelineItemVO {
         private String key;
+        private String stepType;
         private String title;
         private String description;
         private String status;

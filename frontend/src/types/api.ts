@@ -553,6 +553,7 @@ export interface AgentRun {
 
 export interface AgentRunTimelineItem {
   key: string
+  stepType?: 'analyze' | 'retrieve' | 'score' | 'update_profile' | 'schedule_review' | 'prepare_realtime' | 'wait_transcription' | 'wait_approval' | string
   title: string
   description: string
   status: 'completed' | 'waiting' | 'ready' | 'rejected' | 'canceled' | string

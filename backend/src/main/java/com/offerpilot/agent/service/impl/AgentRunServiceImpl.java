@@ -10,6 +10,7 @@ import com.offerpilot.adaptive.vo.CategoryAbilityVO;
 import com.offerpilot.agent.dto.AgentRunCreateRequest;
 import com.offerpilot.agent.entity.AgentRun;
 import com.offerpilot.agent.entity.AgentType;
+import com.offerpilot.agent.entity.StepType;
 import com.offerpilot.agent.entity.TriggerSource;
 import com.offerpilot.agent.mapper.AgentRunMapper;
 import com.offerpilot.agent.service.AgentRunService;
@@ -1665,6 +1666,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         LocalDateTime createTime = run.getCreateTime() == null ? run.getUpdateTime() : run.getCreateTime();
         timeline.add(AgentRunVO.TimelineItemVO.builder()
                 .key("request_received")
+                .stepType(StepType.RETRIEVE.value())
                 .title("任务已创建")
                 .description("已按 " + defaultText(run.getTriggerSource(), "当前来源") + " 发起 "
                         + defaultText(run.getAgentType(), "agent") + " 任务。")
@@ -1673,6 +1675,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                 .build());
         timeline.add(AgentRunVO.TimelineItemVO.builder()
                 .key("analysis_ready")
+                .stepType(resolveAnalysisStepType(run))
                 .title("分析结果已整理")
                 .description(defaultText(run.getSummary(), "当前 run 已生成结构化建议。"))
                 .status("completed")
@@ -1681,6 +1684,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         if (Integer.valueOf(1).equals(run.getRequiresApproval())) {
             timeline.add(AgentRunVO.TimelineItemVO.builder()
                     .key("approval_gate")
+                    .stepType(StepType.WAIT_APPROVAL.value())
                     .title("审批门控")
                     .description(defaultText(run.getApprovalSummary(), "当前写操作需要审批后才能执行。"))
                     .status(resolveApprovalTimelineStatus(run.getStatus()))
@@ -1690,6 +1694,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         if (executionResult != null && StringUtils.hasText(executionResult.summary())) {
             timeline.add(AgentRunVO.TimelineItemVO.builder()
                     .key("execution_result")
+                    .stepType(resolveExecutionStepType(run))
                     .title("结果已执行")
                     .description(executionResult.summary())
                     .status("completed")
@@ -1698,6 +1703,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         } else if ("completed".equals(normalize(run.getStatus()))) {
             timeline.add(AgentRunVO.TimelineItemVO.builder()
                     .key("result_delivered")
+                    .stepType(resolveExecutionStepType(run))
                     .title("结果已交付")
                     .description("当前 run 已完成，可继续进入下一步消费结果。")
                     .status("completed")
@@ -1707,6 +1713,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         if (StringUtils.hasText(run.getNextActionPath())) {
             timeline.add(AgentRunVO.TimelineItemVO.builder()
                     .key("next_action")
+                    .stepType(resolveNextActionStepType(run))
                     .title("下一步动作")
                     .description("建议继续前往 " + run.getNextActionPath() + " 消费结果。")
                     .status("ready")
@@ -1723,6 +1730,40 @@ public class AgentRunServiceImpl implements AgentRunService {
             case "canceled" -> "canceled";
             default -> "completed";
         };
+    }
+
+    private String resolveAnalysisStepType(AgentRun run) {
+        return switch (normalize(run.getAgentType())) {
+            case "recording_review" -> StepType.SCORE.value();
+            case "realtime_copilot" -> StepType.PREPARE_REALTIME.value();
+            default -> StepType.ANALYZE.value();
+        };
+    }
+
+    private String resolveExecutionStepType(AgentRun run) {
+        return switch (normalize(run.getApprovalActionType())) {
+            case "refresh_study_plan",
+                 "save_interview_review_action",
+                 "save_topic_retrospective_action",
+                 "save_recording_review_action" -> StepType.SCHEDULE_REVIEW.value();
+            case "save_copilot_prep_draft" -> StepType.PREPARE_REALTIME.value();
+            default -> StepType.UPDATE_PROFILE.value();
+        };
+    }
+
+    private String resolveNextActionStepType(AgentRun run) {
+        if ("realtime_copilot".equals(normalize(run.getAgentType()))) {
+            return StepType.PREPARE_REALTIME.value();
+        }
+        if ("recording_review".equals(normalize(run.getAgentType()))
+                && "pending_approval".equals(normalize(run.getStatus()))) {
+            return StepType.SCHEDULE_REVIEW.value();
+        }
+        if ("study_planner".equals(normalize(run.getAgentType()))
+                || "interview_review".equals(normalize(run.getAgentType()))) {
+            return StepType.SCHEDULE_REVIEW.value();
+        }
+        return StepType.ANALYZE.value();
     }
 
     private List<AgentRunVO.ProviderGateVO> resolveProviderGates(AgentRun run) {

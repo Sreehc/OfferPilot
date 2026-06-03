@@ -249,7 +249,14 @@
                 </div>
                 <div class="min-w-0 flex-1">
                   <div class="flex flex-wrap items-center justify-between gap-3">
-                    <p class="text-sm font-semibold text-ink">{{ item.title }}</p>
+                    <div class="min-w-0">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <p class="text-sm font-semibold text-ink">{{ item.title }}</p>
+                        <span v-if="item.stepType" class="agent-step-type-pill">
+                          {{ resolveTimelineStepTypeLabel(item.stepType) }}
+                        </span>
+                      </div>
+                    </div>
                     <span class="agent-run-status" :class="resolveTimelineStatusClass(item.status)">
                       {{ resolveTimelineStatusLabel(item.status) }}
                     </span>
@@ -659,6 +666,27 @@ const resolveTimelineStatusClass = (status: string) => {
   }
 }
 
+const resolveTimelineStepTypeLabel = (stepType?: string) => {
+  switch (stepType) {
+    case 'retrieve':
+      return '取上下文'
+    case 'score':
+      return '评分整理'
+    case 'update_profile':
+      return '写回画像'
+    case 'schedule_review':
+      return '训练调度'
+    case 'prepare_realtime':
+      return '实时准备'
+    case 'wait_transcription':
+      return '等待转写'
+    case 'wait_approval':
+      return '等待审批'
+    default:
+      return '分析'
+  }
+}
+
 const resolveTimelineDotClass = (status: string) => {
   switch (status) {
     case 'waiting':
@@ -922,6 +950,19 @@ watch(() => route.fullPath, () => {
 
 .agent-timeline-dot--neutral {
   background: rgba(148, 163, 184, 0.72);
+}
+
+.agent-step-type-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: rgba(var(--bc-accent-rgb), 0.1);
+  color: var(--text-secondary);
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .agent-detail-footer {

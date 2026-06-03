@@ -769,6 +769,12 @@ class AgentRunServiceImplTest {
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("联网搜索") && item.contains("降级")));
         assertTrue(result.getTimeline().stream().anyMatch(item -> "request_received".equals(item.getKey())));
         assertTrue(result.getTimeline().stream().anyMatch(item -> "next_action".equals(item.getKey())));
+        assertTrue(result.getTimeline().stream()
+                .anyMatch(item -> "request_received".equals(item.getKey()) && "retrieve".equals(item.getStepType())));
+        assertTrue(result.getTimeline().stream()
+                .anyMatch(item -> "analysis_ready".equals(item.getKey()) && "prepare_realtime".equals(item.getStepType())));
+        assertTrue(result.getTimeline().stream()
+                .anyMatch(item -> "next_action".equals(item.getKey()) && "prepare_realtime".equals(item.getStepType())));
         assertEquals("not_required", result.getApprovalStage());
     }
 
@@ -1333,6 +1339,10 @@ class AgentRunServiceImplTest {
                 org.mockito.ArgumentMatchers.eq("/interview?recordingReview=55"));
         assertEquals("approved", approved.getStatus());
         assertTrue(approved.getExecutionSummary().contains("正式训练任务"));
+        assertTrue(approved.getTimeline().stream()
+                .anyMatch(item -> "approval_gate".equals(item.getKey()) && "wait_approval".equals(item.getStepType())));
+        assertTrue(approved.getTimeline().stream()
+                .anyMatch(item -> "execution_result".equals(item.getKey()) && "schedule_review".equals(item.getStepType())));
     }
 
     @Test
