@@ -77,8 +77,8 @@
             <RouterLink :to="capability.agentLaunchPath" class="hard-button-primary">
               {{ capability.agentLaunchLabel }}
             </RouterLink>
-            <RouterLink :to="capability.followupPath" class="hard-button-secondary">
-              {{ capability.followupLabel }}
+            <RouterLink :to="capability.reviewRunsPath" class="hard-button-secondary">
+              {{ capability.reviewRunsLabel }}
             </RouterLink>
           </div>
         </article>
@@ -247,6 +247,7 @@ type CapabilityCard = {
   key: string
   label: string
   description: string
+  agentType: string
   providerScopes: ProviderScope[]
   requiredScopes: ProviderScope[]
   status: CapabilityCardStatus
@@ -254,8 +255,8 @@ type CapabilityCard = {
   gaps: string[]
   agentLaunchLabel: string
   agentLaunchPath: string
-  followupLabel: string
-  followupPath: string
+  reviewRunsLabel: string
+  reviewRunsPath: string
 }
 
 const loading = ref(true)
@@ -336,19 +337,20 @@ const buildCapabilityCard = (
   key: string,
   label: string,
   description: string,
+  agentType: string,
   providerScopes: ProviderScope[],
   requiredScopes: ProviderScope[],
   fallbackReadySummary: string,
   degradedSummary: string,
   blockedSummary: string,
   agentLaunchLabel: string,
-  agentLaunchPath: string,
-  followupLabel: string,
-  followupPath: string
+  agentLaunchPath: string
 ): CapabilityCard => {
   const missingRequired = requiredScopes.filter((scope) => !isProviderReadyForCapability(scope))
   const optionalScopes = providerScopes.filter((scope) => !requiredScopes.includes(scope))
   const missingOptional = optionalScopes.filter((scope) => !isProviderReadyForCapability(scope))
+  const reviewRunsPath = buildAgentRunReviewPath(agentType, missingRequired.length ? 'blocked' : missingOptional.length ? 'degraded' : '')
+  const reviewRunsLabel = missingRequired.length || missingOptional.length ? '查看受影响 Run' : '查看相关 Run'
   const gaps = [
     ...missingRequired.map((scope) => `${providerScopeLabel(scope)} 还没就绪，会直接阻断这条能力链路。`),
     ...missingOptional.map((scope) => `${providerScopeLabel(scope)} 未配置，能力可继续但会降级。`)
@@ -359,6 +361,7 @@ const buildCapabilityCard = (
       key,
       label,
       description,
+      agentType,
       providerScopes,
       requiredScopes,
       status: 'missing',
@@ -366,8 +369,8 @@ const buildCapabilityCard = (
       gaps,
       agentLaunchLabel,
       agentLaunchPath,
-      followupLabel,
-      followupPath
+      reviewRunsLabel,
+      reviewRunsPath
     }
   }
   if (missingOptional.length) {
@@ -375,6 +378,7 @@ const buildCapabilityCard = (
       key,
       label,
       description,
+      agentType,
       providerScopes,
       requiredScopes,
       status: 'degraded',
@@ -382,14 +386,15 @@ const buildCapabilityCard = (
       gaps,
       agentLaunchLabel,
       agentLaunchPath,
-      followupLabel,
-      followupPath
+      reviewRunsLabel,
+      reviewRunsPath
     }
   }
   return {
     key,
     label,
     description,
+    agentType,
     providerScopes,
     requiredScopes,
     status: 'ready',
@@ -397,9 +402,18 @@ const buildCapabilityCard = (
     gaps,
     agentLaunchLabel,
     agentLaunchPath,
-    followupLabel,
-    followupPath
+    reviewRunsLabel,
+    reviewRunsPath
   }
+}
+
+const buildAgentRunReviewPath = (agentType: string, providerGateStatus: string) => {
+  const params = new URLSearchParams()
+  params.set('listAgentType', agentType)
+  if (providerGateStatus) {
+    params.set('listProviderGateStatus', providerGateStatus)
+  }
+  return `/agent?${params.toString()}`
 }
 
 const capabilityCards = computed<CapabilityCard[]>(() => [
@@ -407,57 +421,53 @@ const capabilityCards = computed<CapabilityCard[]>(() => [
     'job_prep',
     'JD 备面',
     '围绕岗位 JD、简历和投递上下文生成针对性的备面重点与会前清单。',
+    'job_prep',
     ['llm', 'search'],
     ['llm'],
     '当前 JD 备面链路可完整使用，包括岗位研究和会前重点整理。',
     'JD 备面仍可运行，但公司背景研究和岗位情报会降级。',
     '主模型未就绪，JD 备面当前无法生成有效结果。',
     '发起 JD 备面代理',
-    '/agent?agentType=job_prep&triggerSource=interview&contextRefs=resume:latest,application:board,settings:providers',
-    '进入面试工作区',
-    '/interview'
+    '/agent?agentType=job_prep&triggerSource=interview&contextRefs=resume:latest,application:board,settings:providers'
   ),
   buildCapabilityCard(
     'recording_review',
     '录音复盘',
     '把真实面试录音转成转写、弱点提炼、训练动作和画像回写。',
+    'recording_review',
     ['llm', 'asr', 'oss'],
     ['llm', 'asr'],
     '当前录音复盘链路可完整使用，包括转写、复盘和训练建议。',
     '录音复盘可继续，但长音频存储和上传承载能力会降级。',
     '录音复盘缺少关键依赖，当前无法稳定完成转写和复盘。',
     '发起录音复盘代理',
-    '/agent?agentType=recording_review&triggerSource=recording_review&contextRefs=interview:recording-review,study-plan:active,settings:providers',
-    '进入录音复盘页',
-    '/interview'
+    '/agent?agentType=recording_review&triggerSource=recording_review&contextRefs=interview:recording-review,study-plan:active,settings:providers'
   ),
   buildCapabilityCard(
     'realtime_copilot',
     '实时 Copilot',
     '承接 Copilot Prep、实时追问辅助和面后复盘入口，是最依赖 provider 完整性的链路。',
+    'realtime_copilot',
     ['llm', 'asr', 'search', 'voiceprint'],
     ['llm', 'asr', 'search'],
     '当前实时 Copilot 可完整使用，包括现场转写、背景检索和追问辅助。',
     '实时 Copilot 仍可进入，但说话人区分或部分增强能力会降级。',
     '实时 Copilot 缺少关键依赖，当前不建议进入实时阶段。',
     '发起 Copilot 链路',
-    '/agent?agentType=realtime_copilot&triggerSource=interview&contextRefs=interview:job-prep,settings:providers',
-    '进入面试工作区',
-    '/interview'
+    '/agent?agentType=realtime_copilot&triggerSource=interview&contextRefs=interview:job-prep,settings:providers'
   ),
   buildCapabilityCard(
     'profile_loop',
     '训练画像与长期闭环',
     '支撑训练结果回写、知识检索、画像分析和下一轮训练刷新。',
+    'study_planner',
     ['llm', 'embedding'],
     ['llm'],
     '当前训练画像与长期闭环已具备基础能力，可继续承接训练结果和画像分析。',
     '训练画像可继续，但知识检索和向量召回能力会降级。',
     '主模型未就绪，画像分析和下一轮训练刷新无法稳定生成。',
     '发起训练计划代理',
-    '/agent?agentType=study_planner&triggerSource=analytics&contextRefs=analytics:profile,analytics:weak-topics,settings:providers',
-    '进入能力画像页',
-    '/analytics'
+    '/agent?agentType=study_planner&triggerSource=analytics&contextRefs=analytics:profile,analytics:weak-topics,settings:providers'
   )
 ])
 
