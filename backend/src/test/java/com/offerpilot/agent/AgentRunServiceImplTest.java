@@ -989,6 +989,35 @@ class AgentRunServiceImplTest {
     }
 
     @Test
+    void createRun_jobPrepUsesLatestContextWhenIdMissing() {
+        when(interviewJobPrepService.latest(1L)).thenReturn(JobPrepSessionVO.builder()
+                .id(92L)
+                .applicationId(6L)
+                .resumeFileId(12L)
+                .company("字节跳动")
+                .jobTitle("后端开发")
+                .matchedKeywords(List.of("Java", "Redis"))
+                .focusAreas(List.of("先补 Kafka 和消息可靠性。"))
+                .resumeTalkingPoints(List.of("围绕项目 A 讲缓存优化和稳定性结果。"))
+                .nextActions(List.of("把这次 JD 备面结果转成 3-5 道模拟题。"))
+                .summary("最近一次 JD 备面")
+                .build());
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "job_prep",
+                "manual",
+                List.of("interview:job-prep"),
+                "继续沿最近一次备面结果准备下一场一面"));
+
+        verify(interviewJobPrepService).latest(1L);
+        assertTrue(result.getSummary().contains("字节跳动"));
+        assertTrue(result.getSummary().contains("后端开发"));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("Kafka")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("模拟题")));
+        assertEquals("save_job_prep_draft", result.getApprovalActionType());
+    }
+
+    @Test
     void createRun_recordingReviewUsesLatestContextWhenIdMissing() {
         when(interviewRecordingReviewService.latest(1L)).thenReturn(RecordingReviewSessionVO.builder()
                 .id(77L)

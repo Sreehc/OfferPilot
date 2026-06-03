@@ -102,6 +102,21 @@ public class InterviewJobPrepServiceImpl implements InterviewJobPrepService {
         return buildVo(session, resumeFile == null ? null : resumeFile.getTitle());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public JobPrepSessionVO latest(Long userId) {
+        JobPrepSession session = jobPrepSessionMapper.selectOne(new LambdaQueryWrapper<JobPrepSession>()
+                .eq(JobPrepSession::getUserId, userId)
+                .orderByDesc(JobPrepSession::getUpdateTime)
+                .orderByDesc(JobPrepSession::getId)
+                .last("LIMIT 1"));
+        if (session == null) {
+            return null;
+        }
+        ResumeFile resumeFile = session.getResumeFileId() == null ? null : resumeFileMapper.selectById(session.getResumeFileId());
+        return buildVo(session, resumeFile == null ? null : resumeFile.getTitle());
+    }
+
     private JobApplication resolveApplication(Long userId, Long applicationId) {
         if (applicationId == null) {
             return null;

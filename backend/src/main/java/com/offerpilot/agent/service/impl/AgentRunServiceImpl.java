@@ -740,6 +740,8 @@ public class AgentRunServiceImpl implements AgentRunService {
         Long jobPrepSessionId = findContextRefId(contextRefs, "interview:job-prep:");
         if (jobPrepSessionId != null) {
             jobPrepSession = loadOptional("job prep " + jobPrepSessionId, () -> interviewJobPrepService.detail(userId, jobPrepSessionId));
+        } else if (hasContext(contextRefs, "interview:job-prep")) {
+            jobPrepSession = loadOptional("latest job prep", () -> interviewJobPrepService.latest(userId));
         }
 
         Long copilotRealtimeSessionId = findContextRefId(contextRefs, "interview:copilot-realtime:");

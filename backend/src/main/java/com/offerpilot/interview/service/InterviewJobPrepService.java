@@ -8,4 +8,6 @@ public interface InterviewJobPrepService {
     JobPrepSessionVO createSession(Long userId, JobPrepSessionCreateRequest request);
 
     JobPrepSessionVO detail(Long userId, Long sessionId);
+
+    JobPrepSessionVO latest(Long userId);
 }
