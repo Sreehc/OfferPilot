@@ -25,6 +25,7 @@ public class DashboardOverviewVO {
 
     private NextActionVO nextAction;
     private ApplicationSummary applicationSummary;
+    private List<WorkflowContinuation> workflowContinuations;
 
     @Data
     @Builder
@@ -35,5 +36,16 @@ public class DashboardOverviewVO {
         private BigDecimal averageMatchScore;
         private String topCompany;
         private String actionPath;
+    }
+
+    @Data
+    @Builder
+    public static class WorkflowContinuation {
+        private String key;
+        private String label;
+        private String status;
+        private String description;
+        private String path;
+        private String tone;
     }
 }

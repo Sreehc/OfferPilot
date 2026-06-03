@@ -234,6 +234,39 @@
               </div>
             </section>
 
+            <section class="shell-section-card dashboard-card-panel dashboard-card-panel--compact dashboard-continuation-panel p-4 sm:p-5">
+              <div class="dashboard-section-head">
+                <div>
+                  <h3 class="dashboard-section-title">工作流接续</h3>
+                  <p class="dashboard-section-subtitle">待审批、转写处理中或未完成的会话会优先回到这里。</p>
+                </div>
+                <RouterLink to="/agent" class="accent-link touch-link text-sm font-semibold">查看 Agent</RouterLink>
+              </div>
+
+              <div v-if="workflowContinuations.length" class="dashboard-continuation-grid">
+                <RouterLink
+                  v-for="entry in workflowContinuations"
+                  :key="`${entry.key}-${entry.path}`"
+                  :to="entry.path"
+                  class="dashboard-loop-card dashboard-continuation-card"
+                >
+                  <div class="dashboard-loop-card__head">
+                    <span class="dashboard-loop-card__badge" :class="`dashboard-loop-card__badge--${entry.tone}`">
+                      {{ resolveContinuationStage(entry.key) }}
+                    </span>
+                    <span class="dashboard-loop-card__status">{{ entry.status }}</span>
+                  </div>
+                  <div class="dashboard-loop-card__title">{{ entry.label }}</div>
+                  <div class="dashboard-loop-card__description">{{ entry.description }}</div>
+                </RouterLink>
+              </div>
+              <div v-else class="dashboard-inline-empty dashboard-inline-empty--compact">
+                <div class="dashboard-inline-empty__title">当前没有待接续工作流</div>
+                <p class="dashboard-inline-empty__desc">待审批项、实时 Copilot 会话或录音复盘进度，会在这里统一回流。</p>
+                <RouterLink :to="dashboardAgentLink" class="hard-button-secondary mt-4 inline-flex">让 Agent 安排下一步</RouterLink>
+              </div>
+            </section>
+
             <section class="dashboard-summary-grid">
               <article class="shell-section-card dashboard-card-panel dashboard-card-panel--compact p-4 sm:p-5">
                 <div class="dashboard-section-head">
@@ -422,6 +455,7 @@ import { interviewDetailApi } from '@/api/interview'
 import { fetchCurrentStudyPlanApi } from '@/api/plan'
 import DashboardGuideCard from '@/pages/dashboard/DashboardGuideCard.vue'
 import type {
+  DashboardWorkflowContinuation,
   DashboardOverview,
   InterviewDetail,
   JobApplicationItem,
@@ -457,6 +491,8 @@ type DashboardProgressItem = {
   label: string
   value: number
 }
+
+type DashboardContinuationEntry = DashboardWorkflowContinuation
 
 type DashboardRecommendationItem = {
   type: string
@@ -637,6 +673,7 @@ const dashboardAgentLink = computed(() => {
       : '结合当前工作台状态，整理今天最值得推进的训练与求职动作。'
   })
 })
+const workflowContinuations = computed<DashboardContinuationEntry[]>(() => overview.value.workflowContinuations || [])
 const interviewWorkflowEntries = computed<DashboardInterviewWorkflowEntry[]>(() => {
   const hasRecentInterview = overview.value.recentInterviews.length > 0
   const hasWeakSignals = overview.value.weakPoints.length > 0 || (overview.value.reviewDebtCount ?? 0) > 0
@@ -682,6 +719,23 @@ const interviewWorkflowEntries = computed<DashboardInterviewWorkflowEntry[]>(() 
     }
   ]
 })
+
+const resolveContinuationStage = (key: string) => {
+  switch (key) {
+    case 'agent_approval':
+      return '审批'
+    case 'copilot_realtime':
+      return 'Realtime'
+    case 'recording_review':
+      return '录音复盘'
+    case 'copilot_prep':
+      return 'Prep'
+    case 'job_prep':
+      return 'JD 备面'
+    default:
+      return '接续'
+  }
+}
 const todayFormatted = computed(() =>
   new Intl.DateTimeFormat('zh-CN', {
     month: 'long',
@@ -1422,6 +1476,7 @@ onMounted(() => {
 
 .dashboard-quick-grid,
 .dashboard-loop-grid,
+.dashboard-continuation-grid,
 .dashboard-summary-grid,
 .dashboard-recommend-grid {
   display: grid;
@@ -1438,6 +1493,10 @@ onMounted(() => {
 }
 
 .dashboard-loop-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.dashboard-continuation-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
@@ -1613,6 +1672,10 @@ onMounted(() => {
   color: #446185;
   font-size: 0.74rem;
   line-height: 1.55;
+}
+
+.dashboard-continuation-card {
+  min-height: 132px;
 }
 
 .dashboard-interview-card {
@@ -1813,6 +1876,11 @@ onMounted(() => {
   border-radius: var(--dashboard-card-radius);
   background: var(--dashboard-soft-bg);
   padding: 0.9rem;
+}
+
+.dashboard-inline-empty--compact {
+  min-height: 144px;
+  padding: 1rem;
 }
 
 .dashboard-inline-empty__title {
@@ -2054,7 +2122,8 @@ onMounted(() => {
   }
 
   .dashboard-quick-grid,
-  .dashboard-loop-grid {
+  .dashboard-loop-grid,
+  .dashboard-continuation-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
@@ -2073,7 +2142,8 @@ onMounted(() => {
 @media (max-width: 1100px) {
   .dashboard-summary-grid,
   .dashboard-quick-grid,
-  .dashboard-loop-grid {
+  .dashboard-loop-grid,
+  .dashboard-continuation-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -2105,6 +2175,7 @@ onMounted(() => {
 
   .dashboard-quick-grid,
   .dashboard-loop-grid,
+  .dashboard-continuation-grid,
   .dashboard-summary-grid,
   .dashboard-recommend-grid,
   .dashboard-interview-card__stats {
@@ -2123,18 +2194,22 @@ onMounted(() => {
     order: 3;
   }
 
-  .dashboard-hero {
+  .dashboard-continuation-panel {
     order: 4;
+  }
+
+  .dashboard-hero {
+    order: 5;
     gap: 0.75rem;
     padding: 1rem 1rem 0.92rem;
   }
 
   .dashboard-summary-grid {
-    order: 5;
+    order: 6;
   }
 
   .dashboard-recommend-panel {
-    order: 6;
+    order: 7;
   }
 
   .dashboard-hero__title {

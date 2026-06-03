@@ -149,6 +149,15 @@ export interface NextAction {
   priority: 'P0' | 'P1' | 'P2'
 }
 
+export interface DashboardWorkflowContinuation {
+  key: string
+  label: string
+  status: string
+  description: string
+  path: string
+  tone: 'blue' | 'teal' | 'violet' | 'amber' | string
+}
+
 export interface DashboardOverview {
   learningCount: number
   averageScore: number
@@ -163,6 +172,7 @@ export interface DashboardOverview {
   categoryAbilities?: CategoryAbility[]
   nextAction?: NextAction
   applicationSummary?: ApplicationSummary
+  workflowContinuations?: DashboardWorkflowContinuation[]
 }
 
 export interface CategoryItem {

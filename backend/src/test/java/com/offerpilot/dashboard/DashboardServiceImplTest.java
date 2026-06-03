@@ -17,6 +17,7 @@ import com.baomidou.mybatisplus.core.MybatisMapperBuilderAssistant;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.offerpilot.adaptive.service.AdaptiveService;
 import com.offerpilot.adaptive.vo.AbilityProfileVO;
+import com.offerpilot.agent.mapper.AgentRunMapper;
 import com.offerpilot.application.entity.JobApplication;
 import com.offerpilot.application.mapper.JobApplicationMapper;
 import com.offerpilot.common.config.OfferPilotProperties;
@@ -25,6 +26,10 @@ import com.offerpilot.dashboard.dto.RecentInterviewVO;
 import com.offerpilot.dashboard.dto.WeakPointVO;
 import com.offerpilot.dashboard.mapper.DashboardMetricsMapper;
 import com.offerpilot.dashboard.service.impl.DashboardServiceImpl;
+import com.offerpilot.interview.mapper.CopilotPrepSessionMapper;
+import com.offerpilot.interview.mapper.CopilotRealtimeSessionMapper;
+import com.offerpilot.interview.mapper.JobPrepSessionMapper;
+import com.offerpilot.interview.mapper.RecordingReviewSessionMapper;
 import com.offerpilot.plan.entity.StudyPlan;
 import com.offerpilot.plan.entity.StudyPlanTask;
 import com.offerpilot.plan.mapper.StudyPlanMapper;
@@ -79,6 +84,16 @@ class DashboardServiceImplTest {
     private StudyPlanTaskMapper studyPlanTaskMapper;
     @Mock
     private ResumeFileMapper resumeFileMapper;
+    @Mock
+    private AgentRunMapper agentRunMapper;
+    @Mock
+    private JobPrepSessionMapper jobPrepSessionMapper;
+    @Mock
+    private CopilotPrepSessionMapper copilotPrepSessionMapper;
+    @Mock
+    private CopilotRealtimeSessionMapper copilotRealtimeSessionMapper;
+    @Mock
+    private RecordingReviewSessionMapper recordingReviewSessionMapper;
 
     @InjectMocks
     private DashboardServiceImpl dashboardService;
@@ -123,6 +138,7 @@ class DashboardServiceImplTest {
             assertEquals("/resume#resume-upload", result.getNextAction().getPath());
             assertEquals(0, result.getApplicationSummary().getTotalCount());
             assertEquals("还没有投递记录", result.getApplicationSummary().getTopCompany());
+            assertTrue(result.getWorkflowContinuations().isEmpty());
         }
     }
 

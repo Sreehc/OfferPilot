@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.offerpilot.adaptive.service.AdaptiveService;
 import com.offerpilot.adaptive.vo.AbilityProfileVO;
+import com.offerpilot.agent.entity.AgentRun;
+import com.offerpilot.agent.mapper.AgentRunMapper;
 import com.offerpilot.application.entity.JobApplication;
 import com.offerpilot.application.mapper.JobApplicationMapper;
 import com.offerpilot.common.api.ResultCode;
@@ -15,6 +17,14 @@ import com.offerpilot.dashboard.dto.RecentInterviewVO;
 import com.offerpilot.dashboard.dto.WeakPointVO;
 import com.offerpilot.dashboard.mapper.DashboardMetricsMapper;
 import com.offerpilot.dashboard.service.DashboardService;
+import com.offerpilot.interview.entity.CopilotPrepSession;
+import com.offerpilot.interview.entity.CopilotRealtimeSession;
+import com.offerpilot.interview.entity.JobPrepSession;
+import com.offerpilot.interview.entity.RecordingReviewSession;
+import com.offerpilot.interview.mapper.CopilotPrepSessionMapper;
+import com.offerpilot.interview.mapper.CopilotRealtimeSessionMapper;
+import com.offerpilot.interview.mapper.JobPrepSessionMapper;
+import com.offerpilot.interview.mapper.RecordingReviewSessionMapper;
 import com.offerpilot.plan.entity.StudyPlan;
 import com.offerpilot.plan.entity.StudyPlanTask;
 import com.offerpilot.plan.mapper.StudyPlanMapper;
@@ -27,6 +37,7 @@ import com.offerpilot.wrong.mapper.ReviewLogMapper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -34,6 +45,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Slf4j
 @Service
@@ -52,6 +64,11 @@ public class DashboardServiceImpl implements DashboardService {
     private final StudyPlanMapper studyPlanMapper;
     private final StudyPlanTaskMapper studyPlanTaskMapper;
     private final ResumeFileMapper resumeFileMapper;
+    private final AgentRunMapper agentRunMapper;
+    private final JobPrepSessionMapper jobPrepSessionMapper;
+    private final CopilotPrepSessionMapper copilotPrepSessionMapper;
+    private final CopilotRealtimeSessionMapper copilotRealtimeSessionMapper;
+    private final RecordingReviewSessionMapper recordingReviewSessionMapper;
 
     @Override
     public DashboardOverviewVO overview() {
@@ -93,6 +110,7 @@ public class DashboardServiceImpl implements DashboardService {
                 .studyStreak(resolveStudyStreak(userId))
                 .nextAction(resolveNextAction(activePlan, todayPlanTasks, applications, latestResume))
                 .applicationSummary(loadApplicationSummary(applications))
+                .workflowContinuations(buildWorkflowContinuations(userId))
                 .build();
 
         try {
@@ -258,6 +276,234 @@ public class DashboardServiceImpl implements DashboardService {
                 .reason("当前基础资料和计划都已具备，下一步应回到表达检验。")
                 .priority("P2")
                 .build();
+    }
+
+    private List<DashboardOverviewVO.WorkflowContinuation> buildWorkflowContinuations(Long userId) {
+        List<DashboardOverviewVO.WorkflowContinuation> items = new ArrayList<>();
+
+        AgentRun waitingApprovalRun = loadLatestPendingApprovalRun(userId);
+        long pendingApprovalCount = countPendingApprovalRuns(userId);
+        if (waitingApprovalRun != null && pendingApprovalCount > 0) {
+            items.add(DashboardOverviewVO.WorkflowContinuation.builder()
+                    .key("agent_approval")
+                    .label("处理待审批 Agent")
+                    .status("待审批 " + pendingApprovalCount + " 项")
+                    .description(firstNonBlank(
+                            waitingApprovalRun.getApprovalSummary(),
+                            waitingApprovalRun.getSummary(),
+                            "当前有待确认的写操作结果，处理后才能正式写回训练、简历或面试链路。"))
+                    .path("/agent?runId=" + waitingApprovalRun.getId()
+                            + "&listStatus=pending_approval&listApprovalStage=waiting")
+                    .tone("amber")
+                    .build());
+        }
+
+        CopilotRealtimeSession realtimeSession = loadLatestCopilotRealtimeSession(userId);
+        if (realtimeSession != null && !"completed".equalsIgnoreCase(realtimeSession.getStatus())) {
+            items.add(DashboardOverviewVO.WorkflowContinuation.builder()
+                    .key("copilot_realtime")
+                    .label(resolveRealtimeContinuationLabel(realtimeSession.getStatus()))
+                    .status(resolveRealtimeContinuationStatus(realtimeSession.getStatus()))
+                    .description(firstNonBlank(
+                            realtimeSession.getLatestEventSummary(),
+                            buildRealtimeDescription(realtimeSession),
+                            "最近一次实时 Copilot 会话仍可继续，可直接回到实时阶段或恢复连接。"))
+                    .path("/interview?workspace=copilot-live&copilotRealtimeSessionId=" + realtimeSession.getId())
+                    .tone("violet")
+                    .build());
+        }
+
+        RecordingReviewSession recordingReview = loadLatestRecordingReviewSession(userId);
+        if (recordingReview != null && isRecordingContinuationEligible(recordingReview.getStatus())) {
+            items.add(DashboardOverviewVO.WorkflowContinuation.builder()
+                    .key("recording_review")
+                    .label(resolveRecordingContinuationLabel(recordingReview.getStatus()))
+                    .status(resolveRecordingContinuationStatus(recordingReview.getStatus()))
+                    .description(firstNonBlank(
+                            recordingReview.getSummary(),
+                            recordingReview.getStatusMessage(),
+                            buildRecordingDescription(recordingReview),
+                            "最近一次录音复盘可继续查看转写、弱点和训练建议。"))
+                    .path("/interview?workspace=recording-review&recordingReviewSessionId=" + recordingReview.getId())
+                    .tone("amber")
+                    .build());
+        }
+
+        CopilotPrepSession prepSession = loadLatestCopilotPrepSession(userId);
+        if (prepSession != null) {
+            items.add(DashboardOverviewVO.WorkflowContinuation.builder()
+                    .key("copilot_prep")
+                    .label("继续 Copilot Prep")
+                    .status("会前草案可继续")
+                    .description(firstNonBlank(
+                            prepSession.getSummary(),
+                            buildPrepDescription(prepSession),
+                            "最近一次 Copilot Prep 已生成，可以继续整理开场和追问清单。"))
+                    .path("/interview?workspace=copilot-prep&copilotPrepSessionId=" + prepSession.getId())
+                    .tone("teal")
+                    .build());
+        }
+
+        JobPrepSession jobPrepSession = loadLatestJobPrepSession(userId);
+        if (jobPrepSession != null) {
+            items.add(DashboardOverviewVO.WorkflowContinuation.builder()
+                    .key("job_prep")
+                    .label("继续 JD 备面")
+                    .status("结果可继续消费")
+                    .description(firstNonBlank(
+                            jobPrepSession.getSummary(),
+                            buildJobPrepDescription(jobPrepSession),
+                            "最近一次 JD 备面结果仍可继续补充和带入后续 Prep。"))
+                    .path("/interview?workspace=job-prep&jobPrepSessionId=" + jobPrepSession.getId())
+                    .tone("blue")
+                    .build());
+        }
+
+        return items.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        DashboardOverviewVO.WorkflowContinuation::getPath,
+                        item -> item,
+                        (left, right) -> left,
+                        java.util.LinkedHashMap::new))
+                .values()
+                .stream()
+                .limit(4)
+                .toList();
+    }
+
+    private AgentRun loadLatestPendingApprovalRun(Long userId) {
+        return agentRunMapper.selectOne(new LambdaQueryWrapper<AgentRun>()
+                .eq(AgentRun::getUserId, userId)
+                .eq(AgentRun::getStatus, "pending_approval")
+                .orderByDesc(AgentRun::getUpdateTime)
+                .last("LIMIT 1"));
+    }
+
+    private long countPendingApprovalRuns(Long userId) {
+        return defaultLong(agentRunMapper.selectCount(new LambdaQueryWrapper<AgentRun>()
+                .eq(AgentRun::getUserId, userId)
+                .eq(AgentRun::getStatus, "pending_approval")));
+    }
+
+    private JobPrepSession loadLatestJobPrepSession(Long userId) {
+        return jobPrepSessionMapper.selectOne(new LambdaQueryWrapper<JobPrepSession>()
+                .eq(JobPrepSession::getUserId, userId)
+                .orderByDesc(JobPrepSession::getUpdateTime)
+                .last("LIMIT 1"));
+    }
+
+    private CopilotPrepSession loadLatestCopilotPrepSession(Long userId) {
+        return copilotPrepSessionMapper.selectOne(new LambdaQueryWrapper<CopilotPrepSession>()
+                .eq(CopilotPrepSession::getUserId, userId)
+                .orderByDesc(CopilotPrepSession::getUpdateTime)
+                .last("LIMIT 1"));
+    }
+
+    private CopilotRealtimeSession loadLatestCopilotRealtimeSession(Long userId) {
+        return copilotRealtimeSessionMapper.selectOne(new LambdaQueryWrapper<CopilotRealtimeSession>()
+                .eq(CopilotRealtimeSession::getUserId, userId)
+                .orderByDesc(CopilotRealtimeSession::getUpdateTime)
+                .last("LIMIT 1"));
+    }
+
+    private RecordingReviewSession loadLatestRecordingReviewSession(Long userId) {
+        return recordingReviewSessionMapper.selectOne(new LambdaQueryWrapper<RecordingReviewSession>()
+                .eq(RecordingReviewSession::getUserId, userId)
+                .orderByDesc(RecordingReviewSession::getUpdateTime)
+                .last("LIMIT 1"));
+    }
+
+    private boolean isRecordingContinuationEligible(String status) {
+        return "processing".equalsIgnoreCase(status)
+                || "ready".equalsIgnoreCase(status)
+                || "failed".equalsIgnoreCase(status);
+    }
+
+    private String resolveRealtimeContinuationLabel(String status) {
+        return switch (normalize(status)) {
+            case "live" -> "继续实时 Copilot";
+            case "disconnected" -> "恢复实时 Copilot";
+            case "awaiting_connection" -> "进入实时 Copilot";
+            default -> "查看实时 Copilot";
+        };
+    }
+
+    private String resolveRealtimeContinuationStatus(String status) {
+        return switch (normalize(status)) {
+            case "live" -> "实时已连接";
+            case "disconnected" -> "连接已中断";
+            case "awaiting_connection" -> "待建立连接";
+            default -> "可继续";
+        };
+    }
+
+    private String resolveRecordingContinuationLabel(String status) {
+        return switch (normalize(status)) {
+            case "processing" -> "查看录音复盘进度";
+            case "failed" -> "重试录音复盘";
+            default -> "消费录音复盘结果";
+        };
+    }
+
+    private String resolveRecordingContinuationStatus(String status) {
+        return switch (normalize(status)) {
+            case "processing" -> "转写处理中";
+            case "failed" -> "处理失败";
+            default -> "已完成";
+        };
+    }
+
+    private String buildRealtimeDescription(CopilotRealtimeSession session) {
+        return firstNonBlank(
+                joinParts(session.getCompany(), session.getJobTitle()),
+                "最近一次实时 Copilot 会话",
+                "最近一次实时 Copilot 会话");
+    }
+
+    private String buildRecordingDescription(RecordingReviewSession session) {
+        return firstNonBlank(
+                joinParts(session.getDirection(), session.getJobRole()),
+                "最近一次录音复盘",
+                "最近一次录音复盘");
+    }
+
+    private String buildPrepDescription(CopilotPrepSession session) {
+        return firstNonBlank(
+                joinParts(session.getCompany(), session.getJobTitle()),
+                "最近一次 Copilot Prep",
+                "最近一次 Copilot Prep");
+    }
+
+    private String buildJobPrepDescription(JobPrepSession session) {
+        return firstNonBlank(
+                joinParts(session.getCompany(), session.getJobTitle()),
+                "最近一次 JD 备面",
+                "最近一次 JD 备面");
+    }
+
+    private String joinParts(String left, String right) {
+        String first = StringUtils.hasText(left) ? left.trim() : "";
+        String second = StringUtils.hasText(right) ? right.trim() : "";
+        if (!first.isEmpty() && !second.isEmpty()) {
+            return first + " / " + second;
+        }
+        return !first.isEmpty() ? first : second;
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return "";
+        }
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value.trim();
+            }
+        }
+        return "";
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.trim().toLowerCase();
     }
 
     private int resolveStudyStreak(Long userId) {
