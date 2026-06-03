@@ -24,6 +24,9 @@
             <div class="review-launch__actions">
               <span class="detail-pill">待复习 {{ stats?.todayPending ?? reviewData?.totalPending ?? 0 }}</span>
               <span class="detail-pill">逾期 {{ stats?.overdueCount ?? reviewData?.overdueCount ?? 0 }}</span>
+              <RouterLink :to="reviewPlannerAgentLink" class="hard-button-secondary">
+                刷新下一轮计划
+              </RouterLink>
               <button type="button" class="hard-button-primary" :disabled="!reviewItems.length" @click="startReview">
                 {{ reviewItems.length ? '开始今日复习' : '今天没有待复习项' }}
               </button>
@@ -60,6 +63,7 @@
             </div>
             <div class="flex flex-wrap items-center gap-2">
               <span class="detail-pill">连续 {{ stats?.currentStreak ?? reviewData?.currentStreak ?? 0 }} 天</span>
+              <RouterLink to="/interview?workspace=recording-review" class="hard-button-secondary">去录音复盘</RouterLink>
               <RouterLink to="/wrong" class="hard-button-secondary">查看错题本</RouterLink>
             </div>
           </div>
@@ -93,6 +97,8 @@
           <EmptyState icon="review" :title="emptyStateTitle" :description="emptyStateDescription">
             <template #action>
               <div class="flex justify-center gap-3">
+                <RouterLink :to="reviewPlannerAgentLink" class="hard-button-primary">刷新学习计划</RouterLink>
+                <RouterLink to="/interview?workspace=mock-interview" class="hard-button-secondary">去模拟面试</RouterLink>
                 <RouterLink to="/wrong" class="hard-button-primary">去错题本</RouterLink>
                 <RouterLink to="/knowledge" class="hard-button-secondary">去知识库</RouterLink>
               </div>
@@ -224,6 +230,8 @@
           <template #action>
             <div class="flex justify-center gap-3">
               <button type="button" class="hard-button-secondary" @click="resetSession">返回任务总览</button>
+              <RouterLink :to="reviewPlannerAgentLink" class="hard-button-secondary">转成下一轮计划</RouterLink>
+              <RouterLink to="/interview?workspace=recording-review" class="hard-button-secondary">去录音复盘</RouterLink>
               <RouterLink to="/wrong" class="hard-button-primary">回到错题本</RouterLink>
             </div>
           </template>
@@ -241,6 +249,7 @@ import EmptyState from '@/components/EmptyState.vue'
 import { ERROR_COPY } from '@/constants/productCopy'
 import { fetchReviewStatsApi, fetchReviewTodayApi, submitReviewRateApi } from '@/api/review'
 import type { ReviewContentType, ReviewStats, ReviewTodayData, UnifiedReviewItem } from '@/types/api'
+import { buildAgentWorkbenchLocation } from '@/utils/agent'
 
 const loading = ref(true)
 const submitting = ref(false)
@@ -258,6 +267,16 @@ let touchStartTime = 0
 
 const reviewItems = computed(() => reviewData.value?.items ?? [])
 const currentReviewItem = computed(() => reviewItems.value[currentIndex.value] ?? null)
+const reviewPlannerAgentLink = computed(() =>
+  buildAgentWorkbenchLocation({
+    agentType: 'study_planner',
+    triggerSource: 'analytics',
+    contextRefs: ['study-plan:active', 'analytics:profile', 'analytics:weak-topics'],
+    userPrompt: reviewItems.value.length
+      ? `今天还有 ${reviewItems.value.length} 项错题复习待处理，请结合这些复习信号刷新下一轮训练计划。`
+      : '今天的错题复习已经处理完，请结合长期画像和复习结果刷新下一轮训练计划。'
+  })
+)
 
 const heroTitle = computed(() => {
   if (!reviewItems.value.length) {
