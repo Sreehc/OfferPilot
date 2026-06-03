@@ -309,6 +309,8 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .abilityScore(categoryAbility.getAbilityScore())
                 .interviewCount(categoryAbility.getInterviewCount())
                 .recordingReviewCount(categoryAbility.getRecordingReviewCount())
+                .jobPrepCount(categoryAbility.getJobPrepCount())
+                .copilotPrepCount(categoryAbility.getCopilotPrepCount())
                 .wrongCount(categoryAbility.getWrongCount())
                 .weak(Boolean.TRUE.equals(categoryAbility.getIsWeak()))
                 .recommendedDifficulty(categoryAbility.getRecommendedDifficulty())
@@ -404,6 +406,10 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         if (detail.getRecordingReviewCount() != null && detail.getRecordingReviewCount() > 0) {
             signals.add("另外已经沉淀 " + detail.getRecordingReviewCount() + " 次相关真实录音复盘证据。");
         }
+        if (safeInt(detail.getJobPrepCount()) > 0 || safeInt(detail.getCopilotPrepCount()) > 0) {
+            signals.add("同时已有 " + safeInt(detail.getJobPrepCount()) + " 次 JD 备面、"
+                    + safeInt(detail.getCopilotPrepCount()) + " 次 Copilot Prep 证据写回长期画像。");
+        }
         if (!detail.getRecentScores().isEmpty()) {
             double latest = detail.getRecentScores().get(detail.getRecentScores().size() - 1).getScore();
             double first = detail.getRecentScores().get(0).getScore();
@@ -428,6 +434,10 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 && detail.getAbilityScore() < 70) {
             risks.add("当前还缺真实录音复盘证据，表达层问题可能还没被完整暴露。");
         }
+        if (safeInt(detail.getJobPrepCount()) == 0 && safeInt(detail.getCopilotPrepCount()) == 0
+                && detail.getAbilityScore() < 75) {
+            risks.add("当前还缺岗位化 Prep 证据，主题能力还没完整映射到真实 JD 和实战场景。");
+        }
         if (detail.getAbilityScore() < 65) {
             risks.add("画像分仍处在较低区间，继续追问时容易暴露原理或案例深度不够。");
         }
@@ -440,13 +450,19 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     private List<String> buildRetrospectiveActions(ProfileTopicDetailVO detail, LearningInsightsVO insights) {
         LinkedHashSet<String> actions = new LinkedHashSet<>();
         actions.add("先围绕「" + detail.getCategoryName() + "」安排 1 轮专项题库或知识库追问，收紧核心口径。");
-        actions.add("从建议动作里挑 1 个点，补成 90 秒口语答案，再用一场模拟面试验证。");
-        if (detail.getDueCount() > 0) {
-            actions.add("优先清理到期待复盘的题和片段，避免旧薄弱点继续堆积。");
-        }
         if (detail.getRecordingReviewCount() == null || detail.getRecordingReviewCount() == 0) {
             actions.add("补 1 次真实录音复盘，把表达层薄弱点正式写回画像。");
         }
+        if (safeInt(detail.getJobPrepCount()) == 0) {
+            actions.add("补 1 次 JD 定向备面，把这个主题压到目标岗位语境下重新收紧。");
+        }
+        if (safeInt(detail.getCopilotPrepCount()) == 0) {
+            actions.add("在下一次正式面试前补 1 次 Copilot Prep，提前暴露实时追问风险。");
+        }
+        if (detail.getDueCount() > 0) {
+            actions.add("优先清理到期待复盘的题和片段，避免旧薄弱点继续堆积。");
+        }
+        actions.add("从建议动作里挑 1 个点，补成 90 秒口语答案，再用一场模拟面试验证。");
         if (insights.getApplicationActiveCount() != null && insights.getApplicationActiveCount() > 0) {
             actions.add("把这块领域的表达同步到下一批投递和 JD 备面里，不要只停留在训练页。");
         }
@@ -481,6 +497,11 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         } else {
             suggestions.add("当前还缺真实录音复盘证据，建议补 1 次录音回听验证表达层问题。");
         }
+        if (safeInt(categoryAbility.getJobPrepCount()) > 0 || safeInt(categoryAbility.getCopilotPrepCount()) > 0) {
+            suggestions.add("把已有 JD 备面和 Copilot Prep 里的岗位化表达直接带进下一轮模拟，不要重新起草。");
+        } else {
+            suggestions.add("当前还没把这个主题压到真实岗位语境，建议补 1 次 JD 备面或 Copilot Prep。");
+        }
         if (recentScores.size() >= 2) {
             Double last = recentScores.get(recentScores.size() - 1).getScore();
             Double previous = recentScores.get(recentScores.size() - 2).getScore();
@@ -502,6 +523,10 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         String recordingText = categoryAbility.getRecordingReviewCount() != null && categoryAbility.getRecordingReviewCount() > 0
                 ? "，已经累积 " + categoryAbility.getRecordingReviewCount() + " 次真实录音复盘证据"
                 : "，但还缺真实录音复盘证据";
+        String prepText = safeInt(categoryAbility.getJobPrepCount()) > 0 || safeInt(categoryAbility.getCopilotPrepCount()) > 0
+                ? "，并且已有 " + safeInt(categoryAbility.getJobPrepCount()) + " 次 JD 备面、"
+                + safeInt(categoryAbility.getCopilotPrepCount()) + " 次 Copilot Prep 证据"
+                : "，当前还没沉淀岗位化 Prep 证据";
         String trendText = "";
         if (recentScores.size() >= 2) {
             Double first = recentScores.get(0).getScore();
@@ -515,7 +540,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
             case "forming" -> "，当前画像仍在形成中";
             default -> "";
         };
-        return "主题「" + categoryAbility.getCategoryName() + "」" + abilityText + reviewText + recordingText + trendText + evidenceText + "。";
+        return "主题「" + categoryAbility.getCategoryName() + "」" + abilityText + reviewText + recordingText + prepText + trendText + evidenceText + "。";
     }
 
     private String resolveTopicEvidenceStatus(CategoryAbilityVO categoryAbility,
@@ -523,6 +548,8 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                                               List<ProfileTopicDetailVO.WeeklyTopicScore> recentScores) {
         int evidenceUnits = safeInt(categoryAbility.getInterviewCount())
                 + safeInt(categoryAbility.getRecordingReviewCount())
+                + safeInt(categoryAbility.getJobPrepCount())
+                + safeInt(categoryAbility.getCopilotPrepCount())
                 + (safeInt(categoryAbility.getWrongCount()) > 0 ? 1 : 0)
                 + (safeInt(categoryMastery.getDueCount()) > 0 ? 1 : 0);
         if (evidenceUnits <= 1 && recentScores.size() <= 1) {
@@ -540,16 +567,22 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                                              String evidenceStatus) {
         int interviews = safeInt(categoryAbility.getInterviewCount());
         int recordingReviews = safeInt(categoryAbility.getRecordingReviewCount());
+        int jobPrepCount = safeInt(categoryAbility.getJobPrepCount());
+        int copilotPrepCount = safeInt(categoryAbility.getCopilotPrepCount());
         int wrongCount = safeInt(categoryAbility.getWrongCount());
         int dueCount = safeInt(categoryMastery.getDueCount());
         return switch (evidenceStatus) {
             case "insufficient" -> "当前只沉淀了少量训练证据："
                     + interviews + " 场模拟面试、"
                     + recordingReviews + " 次录音复盘、"
+                    + jobPrepCount + " 次 JD 备面、"
+                    + copilotPrepCount + " 次 Copilot Prep、"
                     + wrongCount + " 道相关错题。建议先补 1-2 次同主题训练。";
             case "forming" -> "当前领域画像还在形成中，已沉淀 "
                     + interviews + " 场模拟面试、"
                     + recordingReviews + " 次录音复盘、"
+                    + jobPrepCount + " 次 JD 备面、"
+                    + copilotPrepCount + " 次 Copilot Prep、"
                     + wrongCount + " 道相关错题"
                     + (dueCount > 0 ? "，以及 " + dueCount + " 个待复盘点" : "")
                     + "。";

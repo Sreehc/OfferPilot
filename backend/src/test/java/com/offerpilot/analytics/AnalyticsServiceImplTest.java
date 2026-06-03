@@ -295,6 +295,8 @@ class AnalyticsServiceImplTest {
                         .abilityScore(63.0)
                         .interviewCount(2)
                         .recordingReviewCount(1)
+                        .jobPrepCount(1)
+                        .copilotPrepCount(1)
                         .wrongCount(1)
                         .isWeak(false)
                         .recommendedDifficulty("medium")
@@ -350,11 +352,16 @@ class AnalyticsServiceImplTest {
         ProfileTopicDetailVO detail = analyticsService.getProfileTopicDetail(1L, 7L);
 
         assertEquals(1, detail.getRecordingReviewCount());
+        assertEquals(1, detail.getJobPrepCount());
+        assertEquals(1, detail.getCopilotPrepCount());
         assertEquals("ready", detail.getEvidenceStatus());
         assertEquals(Boolean.TRUE, detail.getRetrospectiveReady());
         assertTrue(detail.getSummary().contains("真实录音复盘证据"));
+        assertTrue(detail.getSummary().contains("Copilot Prep"));
         assertTrue(detail.getFocusRecommendations().stream()
                 .anyMatch(item -> item.contains("真实录音复盘里暴露的表达问题")));
+        assertTrue(detail.getFocusRecommendations().stream()
+                .anyMatch(item -> item.contains("岗位化表达")));
     }
 
     @Test
@@ -369,6 +376,8 @@ class AnalyticsServiceImplTest {
                         .abilityScore(58.0)
                         .interviewCount(1)
                         .recordingReviewCount(0)
+                        .jobPrepCount(0)
+                        .copilotPrepCount(0)
                         .wrongCount(2)
                         .isWeak(true)
                         .recommendedDifficulty("easy")
@@ -427,5 +436,9 @@ class AnalyticsServiceImplTest {
                 .anyMatch(item -> item.contains("缺真实录音复盘证据")));
         assertTrue(retrospective.getNextActions().stream()
                 .anyMatch(item -> item.contains("补 1 次真实录音复盘")));
+        assertTrue(retrospective.getRiskSignals().stream()
+                .anyMatch(item -> item.contains("缺岗位化 Prep 证据")));
+        assertTrue(retrospective.getNextActions().stream()
+                .anyMatch(item -> item.contains("JD 定向备面") || item.contains("Copilot Prep")));
     }
 }
