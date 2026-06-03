@@ -908,8 +908,12 @@ const resolveContextRefPath = (contextRef: string) => {
   if (contextRef === 'application:board') return '/applications'
   if (contextRef === 'settings:providers') return '/settings?tab=providers'
   if (contextRef.startsWith('knowledge:')) return '/knowledge'
-  if (contextRef.startsWith('question:')) return '/question'
-  if (contextRef.startsWith('wrong:')) return '/wrong'
+  if (contextRef.startsWith('question:')) {
+    return `/question?questionId=${encodeURIComponent(contextRef.slice('question:'.length))}`
+  }
+  if (contextRef.startsWith('wrong:')) {
+    return `/wrong?wrongId=${encodeURIComponent(contextRef.slice('wrong:'.length))}`
+  }
   if (contextRef.startsWith('analytics:topic:')) {
     return `/analytics?topic=${encodeURIComponent(contextRef.slice('analytics:topic:'.length))}`
   }

@@ -268,10 +268,10 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchCategoriesApi } from '@/api/category'
-import { fetchQuestionsApi } from '@/api/question'
+import { fetchQuestionDetailApi, fetchQuestionsApi } from '@/api/question'
 import { addFavoriteApi, removeFavoriteApi, fetchFavoriteListApi } from '@/api/favorites'
 import { ERROR_COPY } from '@/constants/productCopy'
 import type { CategoryItem, QuestionItem } from '@/types/api'
@@ -279,6 +279,7 @@ import { buildAgentWorkbenchLocation } from '@/utils/agent'
 import { buildQuestionChatTarget, buildQuestionInterviewTarget, questionTagList } from './questionTargets'
 
 const route = useRoute()
+const router = useRouter()
 const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = 12
@@ -334,6 +335,7 @@ const loadQuestions = async () => {
     questions.value = data.records
     total.value = data.total
     totalPages.value = data.totalPages
+    await hydrateQuestionFromRoute()
   } catch {
     questions.value = []
     total.value = 0
@@ -399,6 +401,7 @@ const answerPreview = (answer?: string, max = 180) => {
 const openDetail = (question: QuestionItem) => {
   selectedQuestion.value = question
   detailVisible.value = true
+  void syncQuestionRoute(question.id)
 }
 
 const questionChatTarget = (question: QuestionItem) => buildQuestionChatTarget(question)
@@ -411,6 +414,51 @@ const questionStudyPlannerTarget = (question: QuestionItem) => buildAgentWorkben
   contextRefs: [`question:${question.id}`, 'study-plan:active', 'analytics:profile'],
   userPrompt: `围绕题库题「${question.title}」整理下一轮训练动作，优先补完整表达、常见误区和复习顺序。`
 })
+
+const readRouteQuestionId = () => {
+  const raw = String(route.query.questionId || '').trim()
+  const value = Number(raw)
+  return Number.isFinite(value) && value > 0 ? value : null
+}
+
+const syncQuestionRoute = async (questionId?: number | null) => {
+  const nextId = questionId && questionId > 0 ? String(questionId) : ''
+  const currentId = String(route.query.questionId || '').trim()
+  if (nextId === currentId) return
+  await router.replace({
+    query: {
+      ...route.query,
+      questionId: nextId || undefined
+    }
+  })
+}
+
+const hydrateQuestionFromRoute = async () => {
+  const questionId = readRouteQuestionId()
+  if (!questionId) {
+    if (!detailVisible.value) {
+      selectedQuestion.value = null
+    }
+    return
+  }
+  if (selectedQuestion.value?.id === questionId && detailVisible.value) {
+    return
+  }
+  const currentQuestion = questions.value.find((item) => item.id === questionId)
+  if (currentQuestion) {
+    selectedQuestion.value = currentQuestion
+    detailVisible.value = true
+    return
+  }
+  try {
+    const { data } = await fetchQuestionDetailApi(questionId)
+    selectedQuestion.value = data
+    detailVisible.value = true
+  } catch {
+    selectedQuestion.value = null
+    detailVisible.value = false
+  }
+}
 
 const applyRouteFilters = () => {
   const categoryId = Number(route.query.categoryId)
@@ -463,13 +511,32 @@ onMounted(() => {
 })
 
 watch(
-  () => route.fullPath,
+  () => [
+    route.query.categoryId,
+    route.query.difficulty,
+    route.query.keyword,
+    route.query.jobDirection,
+    route.query.tag
+  ],
   () => {
     applyRouteFilters()
     currentPage.value = 1
     void loadQuestions()
   }
 )
+
+watch(
+  () => route.query.questionId,
+  () => {
+    void hydrateQuestionFromRoute()
+  }
+)
+
+watch(detailVisible, (visible) => {
+  if (visible) return
+  selectedQuestion.value = null
+  void syncQuestionRoute(null)
+})
 </script>
 
 <style scoped>

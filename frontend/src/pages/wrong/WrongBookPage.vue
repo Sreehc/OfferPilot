@@ -211,6 +211,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
 import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
 import {
@@ -223,6 +224,8 @@ import {
 import type { WrongQuestionItem } from '@/types/api'
 import { buildAgentWorkbenchLocation } from '@/utils/agent'
 
+const route = useRoute()
+const router = useRouter()
 const loading = ref(true)
 const detailLoading = ref(false)
 const deleting = ref(false)
@@ -300,6 +303,24 @@ const formatEaseFactor = (value?: number) => {
   return typeof value === 'number' ? value.toFixed(2) : '2.50'
 }
 
+const readRouteWrongId = () => {
+  const raw = String(route.query.wrongId || '').trim()
+  const value = Number(raw)
+  return Number.isFinite(value) && value > 0 ? value : null
+}
+
+const syncWrongRoute = async (wrongId?: number | null) => {
+  const nextId = wrongId && wrongId > 0 ? String(wrongId) : ''
+  const currentId = String(route.query.wrongId || '').trim()
+  if (nextId === currentId) return
+  await router.replace({
+    query: {
+      ...route.query,
+      wrongId: nextId || undefined
+    }
+  })
+}
+
 const loadList = async () => {
   loading.value = true
   try {
@@ -311,6 +332,12 @@ const loadList = async () => {
     if (wrongItems.value.length === 0) {
       selectedWrongId.value = null
       selectedWrong.value = null
+      return
+    }
+
+    const routeWrongId = readRouteWrongId()
+    if (routeWrongId) {
+      selectedWrongId.value = routeWrongId
       return
     }
 
@@ -345,6 +372,7 @@ const loadDetail = async (id: number) => {
 const handleSelect = (id: number) => {
   if (selectedWrongId.value === id) return
   selectedWrongId.value = id
+  void syncWrongRoute(id)
 }
 
 const handlePageChange = (page: number) => {
@@ -374,6 +402,7 @@ const handleDelete = async () => {
     ElMessage.success('错题已删除')
     selectedWrongId.value = null
     selectedWrong.value = null
+    await syncWrongRoute(null)
     await loadList()
   } catch {
     ElMessage.error(ERROR_COPY.wrongDeleteFailed)
@@ -408,6 +437,17 @@ watch(selectedWrongId, (id) => {
   if (!id) return
   void loadDetail(id)
 })
+
+watch(
+  () => route.query.wrongId,
+  (value) => {
+    const wrongId = String(value || '').trim()
+    if (!wrongId) return
+    const numericId = Number(wrongId)
+    if (!Number.isFinite(numericId) || numericId <= 0 || selectedWrongId.value === numericId) return
+    selectedWrongId.value = numericId
+  }
+)
 
 onMounted(() => {
   void loadList()
