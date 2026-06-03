@@ -52,6 +52,26 @@
               {{ abilityProfile.suggestedFocus ? `当前建议先收紧 ${abilityProfile.suggestedFocus}。` : '目前没有明确的单一薄弱主题。' }}
             </p>
           </article>
+          <article class="profile-action-panel">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <p class="profile-action-panel__label">闭环动作</p>
+                <p class="mt-1 text-sm text-secondary">把长期画像直接落到下一轮训练、备面和复盘动作。</p>
+              </div>
+            </div>
+            <div class="mt-4 space-y-3">
+              <RouterLink
+                v-for="item in profileWorkflowActions"
+                :key="item.key"
+                :to="item.to"
+                class="profile-action-card"
+                :class="item.toneClass"
+              >
+                <p class="text-sm font-semibold text-ink">{{ item.title }}</p>
+                <p class="mt-2 text-xs leading-5 text-secondary">{{ item.description }}</p>
+              </RouterLink>
+            </div>
+          </article>
         </div>
 
         <div class="profile-detail-shell">
@@ -142,6 +162,27 @@
                   <p class="topic-detail-stat__label">稳定率</p>
                   <p class="topic-detail-stat__value">{{ Math.round(topicDetail.masteryRate || 0) }}%</p>
                 </article>
+              </div>
+
+              <div class="mt-5">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-semibold text-ink">快速动作</p>
+                    <p class="mt-1 text-sm text-secondary">针对当前领域证据缺口，直接跳到下一步训练或面试工作区。</p>
+                  </div>
+                </div>
+                <div class="topic-action-grid mt-3">
+                  <RouterLink
+                    v-for="item in topicWorkflowActions"
+                    :key="item.key"
+                    :to="item.to"
+                    class="topic-action-card"
+                    :class="item.toneClass"
+                  >
+                    <p class="text-sm font-semibold text-ink">{{ item.title }}</p>
+                    <p class="mt-2 text-xs leading-5 text-secondary">{{ item.description }}</p>
+                  </RouterLink>
+                </div>
               </div>
 
               <div class="mt-5 grid gap-3 xl:grid-cols-[minmax(0,1fr)_300px]">
@@ -244,6 +285,19 @@
                       <li v-for="item in topicRetrospective.nextActions" :key="item">{{ item }}</li>
                     </ul>
                   </article>
+                </div>
+
+                <div class="topic-action-grid mt-5">
+                  <RouterLink
+                    v-for="item in retrospectiveWorkflowActions"
+                    :key="item.key"
+                    :to="item.to"
+                    class="topic-action-card"
+                    :class="item.toneClass"
+                  >
+                    <p class="text-sm font-semibold text-ink">{{ item.title }}</p>
+                    <p class="mt-2 text-xs leading-5 text-secondary">{{ item.description }}</p>
+                  </RouterLink>
                 </div>
               </div>
             </div>
@@ -539,6 +593,7 @@ import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import type { RouteLocationRaw } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
 import { EMPTY_STATE_COPY } from '@/constants/productCopy'
 import { useTheme } from '@/composables/useTheme'
@@ -748,6 +803,19 @@ const topicEvidenceTitle = computed(() => {
   if (topicDetail.value?.evidenceStatus === 'forming') return '当前领域画像正在形成中'
   return '当前领域证据还不够完整'
 })
+const buildInterviewWorkspaceLink = (workspace: string, extraQuery?: Record<string, string | undefined>): RouteLocationRaw => ({
+  path: '/interview',
+  query: {
+    workspace,
+    ...(extraQuery || {})
+  }
+})
+
+const buildTopicQuestionSeed = (topicName: string) => ({
+  sourceQuestionTitle: `${topicName} 定向模拟`,
+  sourceQuestionDirection: topicName
+})
+
 const analyticsAgentLink = computed(() =>
   buildAgentWorkbenchLocation({
     agentType: 'study_planner',
@@ -758,6 +826,55 @@ const analyticsAgentLink = computed(() =>
       : '根据当前训练画像刷新下一轮训练动作。'
   })
 )
+const profileWorkflowActions = computed(() => {
+  const items: Array<{
+    key: string
+    title: string
+    description: string
+    to: RouteLocationRaw
+    toneClass: string
+  }> = [
+    {
+      key: 'refresh-plan',
+      title: '刷新下一轮训练动作',
+      description: abilityProfile.value.suggestedFocus
+        ? `围绕 ${abilityProfile.value.suggestedFocus} 把画像信号整理成正式计划。`
+        : '根据当前画像、复盘债务和已有计划状态刷新下一轮动作。',
+      to: analyticsAgentLink.value,
+      toneClass: 'profile-action-card--accent'
+    }
+  ]
+
+  if (abilityProfile.value.suggestedFocus) {
+    items.push({
+      key: 'mock-interview',
+      title: '发起专项模拟',
+      description: `直接带着 ${abilityProfile.value.suggestedFocus} 回到模拟面试，验证它是否已经转成稳定表达。`,
+      to: buildInterviewWorkspaceLink('mock-interview', buildTopicQuestionSeed(abilityProfile.value.suggestedFocus)),
+      toneClass: ''
+    })
+  }
+
+  if ((abilityProfile.value.recordingReviewCount || 0) === 0 || abilityProfile.value.evidenceStatus !== 'ready') {
+    items.push({
+      key: 'recording-review',
+      title: '补一次录音复盘',
+      description: '把真实表达问题写回画像，而不是只看题库和模拟面试分数。',
+      to: buildInterviewWorkspaceLink('recording-review'),
+      toneClass: 'profile-action-card--warn'
+    })
+  }
+
+  items.push({
+    key: 'job-prep',
+    title: '转到 JD 备面',
+    description: '把当前薄弱主题压到岗位语境下，再决定接下来的模拟和投递动作。',
+    to: buildInterviewWorkspaceLink('job-prep'),
+    toneClass: ''
+  })
+
+  return items.slice(0, 4)
+})
 const topicPlannerAgentLink = computed(() => {
   if (!topicDetail.value?.categoryId) {
     return analyticsAgentLink.value
@@ -791,6 +908,114 @@ const topicRetrospectivePlannerAgentLink = computed(() => {
     ],
     userPrompt: `把 ${topicRetrospective.value.categoryName} 的领域回顾结论转成下一轮正式训练动作。`
   })
+})
+const topicWorkflowActions = computed(() => {
+  if (!topicDetail.value) return profileWorkflowActions.value
+
+  const topicName = topicDetail.value.categoryName
+  const items: Array<{
+    key: string
+    title: string
+    description: string
+    to: RouteLocationRaw
+    toneClass: string
+  }> = [
+    {
+      key: 'topic-plan',
+      title: '按领域刷新计划',
+      description: `把 ${topicName} 的画像、趋势和待复盘点整理成下一轮正式训练动作。`,
+      to: topicPlannerAgentLink.value,
+      toneClass: 'topic-action-card--accent'
+    },
+    {
+      key: 'topic-mock',
+      title: '发起同主题模拟',
+      description: '用一轮定向模拟检查这个主题是否已经能稳定讲出来。',
+      to: buildInterviewWorkspaceLink('mock-interview', buildTopicQuestionSeed(topicName)),
+      toneClass: ''
+    }
+  ]
+
+  if ((topicDetail.value.recordingReviewCount || 0) === 0 || (topicDetail.value.abilityScore || 0) < 70) {
+    items.push({
+      key: 'topic-recording',
+      title: '补录音复盘',
+      description: '当前仍缺真实表达证据，先用录音复盘把问题暴露完整。',
+      to: buildInterviewWorkspaceLink('recording-review'),
+      toneClass: 'topic-action-card--warn'
+    })
+  }
+
+  if ((topicDetail.value.jobPrepCount || 0) === 0) {
+    items.push({
+      key: 'topic-job-prep',
+      title: '转到 JD 备面',
+      description: '把这个主题压到真实岗位 JD 和简历语境里重新校准。',
+      to: buildInterviewWorkspaceLink('job-prep'),
+      toneClass: ''
+    })
+  } else if ((topicDetail.value.copilotPrepCount || 0) === 0) {
+    items.push({
+      key: 'topic-copilot-prep',
+      title: '补 Copilot Prep',
+      description: '在正式面试前先做一次会前 Prep，提前暴露实时追问风险。',
+      to: buildInterviewWorkspaceLink('copilot-prep'),
+      toneClass: ''
+    })
+  } else if ((topicDetail.value.applicationFeedbackCount || 0) === 0) {
+    items.push({
+      key: 'topic-applications',
+      title: '同步到投递推进',
+      description: '把这个主题带到真实岗位推进中验证，而不是只停留在训练页。',
+      to: '/applications',
+      toneClass: ''
+    })
+  } else if ((topicDetail.value.resumeEvidenceCount || 0) === 0) {
+    items.push({
+      key: 'topic-resume',
+      title: '补简历表达证据',
+      description: '把这个主题写进项目表达和自我介绍，形成可复用面试口径。',
+      to: '/resume',
+      toneClass: ''
+    })
+  }
+
+  return items.slice(0, 4)
+})
+const retrospectiveWorkflowActions = computed(() => {
+  if (!topicRetrospective.value) return topicWorkflowActions.value
+
+  const topicName = topicRetrospective.value.categoryName
+  return [
+    {
+      key: 'retro-plan',
+      title: '按回顾刷新计划',
+      description: `把 ${topicName} 的领域回顾结论落成正式计划和训练动作。`,
+      to: topicRetrospectivePlannerAgentLink.value,
+      toneClass: 'topic-action-card--accent'
+    },
+    {
+      key: 'retro-mock',
+      title: '回到专项模拟',
+      description: '先用一轮定向模拟验证这份回顾提到的薄弱点是否被修正。',
+      to: buildInterviewWorkspaceLink('mock-interview', buildTopicQuestionSeed(topicName)),
+      toneClass: ''
+    },
+    {
+      key: 'retro-recording',
+      title: '写回录音复盘',
+      description: '如果这块领域仍不稳定，补一次真实录音复盘，把表达问题写回长期画像。',
+      to: buildInterviewWorkspaceLink('recording-review'),
+      toneClass: 'topic-action-card--warn'
+    },
+    {
+      key: 'retro-job-prep',
+      title: '带到 JD 备面',
+      description: '把这块领域直接放进下一轮岗位备面和实战语境里验证。',
+      to: buildInterviewWorkspaceLink('job-prep'),
+      toneClass: ''
+    }
+  ]
 })
 
 const summarySignals = computed(() => [
@@ -1348,6 +1573,59 @@ watch(() => route.query.topic, () => {
     var(--panel-bg);
 }
 
+.profile-action-panel {
+  border-radius: calc(var(--radius-md) - 2px);
+  border: 1px solid var(--bc-border-subtle);
+  background:
+    linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.06), transparent 62%),
+    var(--panel-bg);
+  padding: 18px;
+}
+
+.profile-action-panel__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--bc-ink-tertiary);
+}
+
+.profile-action-card,
+.topic-action-card {
+  display: block;
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--panel-bg);
+  padding: 14px 15px;
+  text-decoration: none;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.profile-action-card:hover,
+.topic-action-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(var(--bc-accent-rgb), 0.28);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+.profile-action-card--accent,
+.topic-action-card--accent {
+  background:
+    linear-gradient(180deg, rgba(var(--bc-cyan-rgb), 0.09), transparent 58%),
+    var(--panel-bg);
+}
+
+.profile-action-card--warn,
+.topic-action-card--warn {
+  background:
+    linear-gradient(180deg, rgba(var(--bc-coral-rgb), 0.08), transparent 58%),
+    var(--panel-bg);
+  border-color: rgba(var(--bc-coral-rgb), 0.24);
+}
+
 .profile-summary-card__label {
   font-size: 0.72rem;
   font-weight: 700;
@@ -1476,6 +1754,17 @@ watch(() => route.query.topic, () => {
   border: 1px solid var(--bc-border-subtle);
   background: var(--panel-muted);
   padding: 16px;
+}
+
+.topic-action-grid {
+  display: grid;
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .topic-action-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .topic-detail-panel__title {
