@@ -794,6 +794,46 @@ class AgentRunServiceImplTest {
     }
 
     @Test
+    void approveRun_persistsApplicationStrategyFromApplicationBoardFocus() {
+        when(jobApplicationService.board(1L)).thenReturn(List.of(
+                JobApplicationVO.builder()
+                        .id(14L)
+                        .company("小红书")
+                        .jobTitle("后端工程师")
+                        .status("interview")
+                        .matchScore(new BigDecimal("83"))
+                        .missingKeywords(List.of("Redis", "Kafka"))
+                        .nextStepSuggestion("下周一面前先补缓存一致性和 MQ 场景。")
+                        .reviewSuggestion("把上一轮面试反馈同步到项目追问清单。")
+                        .build(),
+                JobApplicationVO.builder()
+                        .id(3L)
+                        .company("携程")
+                        .jobTitle("Java 开发")
+                        .status("saved")
+                        .matchScore(new BigDecimal("90"))
+                        .build()));
+        when(jobApplicationService.saveStrategyDraft(any(), any(), any(), any())).thenReturn(JobApplicationVO.builder()
+                .id(14L)
+                .company("小红书")
+                .jobTitle("后端工程师")
+                .build());
+
+        AgentRunVO created = agentRunService.createRun(1L, request(
+                "application_strategist",
+                "applications",
+                List.of("application:board"),
+                "优先推进最接近一面的岗位"));
+
+        AgentRunVO approved = agentRunService.approveRun(1L, Long.valueOf(String.valueOf(created.getId())), null);
+
+        verify(jobApplicationService).saveStrategyDraft(any(), org.mockito.ArgumentMatchers.eq(14L), any(), any());
+        assertEquals("approved", approved.getStatus());
+        assertTrue(approved.getExecutionSummary().contains("投递策略草案"));
+        assertTrue(approved.getExecutionSummary().contains("小红书"));
+    }
+
+    @Test
     void approveRun_persistsResumeFollowUpDraftViaDomainService() {
         when(jobApplicationService.detail(1L, 6L)).thenReturn(JobApplicationVO.builder()
                 .id(6L)

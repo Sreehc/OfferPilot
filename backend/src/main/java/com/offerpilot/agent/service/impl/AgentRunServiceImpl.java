@@ -399,6 +399,9 @@ public class AgentRunServiceImpl implements AgentRunService {
     private RunBlueprint buildApplicationStrategistBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
         JobApplicationVO application = snapshot.application();
         ApplicationBoardSnapshot applicationBoard = snapshot.applicationBoard();
+        JobApplicationVO focusApplication = application != null
+                ? application
+                : applicationBoard == null ? null : applicationBoard.focusApplication();
         String summary;
         List<String> recommendations;
         String nextActionPath = "/applications";
@@ -416,8 +419,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                     prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”同步到投递推进排序。") : List.of(),
                     contextRefsText(contextRefs, "本次参考的岗位或反馈："));
             nextActionPath = "/applications/" + application.getId();
-        } else if (applicationBoard != null && applicationBoard.focusApplication() != null) {
-            JobApplicationVO focusApplication = applicationBoard.focusApplication();
+        } else if (focusApplication != null) {
             summary = "已根据当前投递看板整理下一步推进建议。当前共有 "
                     + defaultInt(applicationBoard.totalCount())
                     + " 条岗位记录，进行中 "
@@ -451,9 +453,11 @@ public class AgentRunServiceImpl implements AgentRunService {
                 "save_application_strategy",
                 application != null
                         ? "审批通过后会把 " + defaultText(application.getJobTitle(), "当前岗位") + " 的投递推进建议确认为正式策略草案。"
-                        : "审批通过后会把这次投递推进建议确认为正式策略草案。",
+                        : focusApplication != null
+                                ? "审批通过后会把 " + defaultText(focusApplication.getJobTitle(), "当前焦点岗位") + " 的投递推进建议确认为正式策略草案。"
+                                : "审批通过后会把这次投递推进建议确认为正式策略草案。",
                 writeObject(new ApplicationStrategyPayload(
-                        application == null ? null : application.getId(),
+                        focusApplication == null ? null : focusApplication.getId(),
                         summary,
                         recommendations), "{}"));
     }
