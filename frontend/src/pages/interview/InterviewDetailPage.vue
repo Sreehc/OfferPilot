@@ -21,7 +21,7 @@
     <section v-else-if="!detail" class="shell-section-card p-8 text-center">
       <p class="text-lg font-semibold text-ink">面试记录未找到</p>
       <p class="mt-3 text-sm leading-7 text-secondary">这次面试记录暂时无法查看。请返回模拟面试重试。</p>
-      <RouterLink to="/interview" class="hard-button-primary mt-4 inline-flex">返回模拟面试</RouterLink>
+      <RouterLink :to="mockInterviewWorkspaceLink" class="hard-button-primary mt-4 inline-flex">返回模拟面试</RouterLink>
     </section>
 
     <template v-else>
@@ -52,6 +52,12 @@
             <div class="flex flex-wrap gap-3">
               <RouterLink :to="interviewReviewAgentLink" class="hard-button-secondary inline-flex items-center justify-center px-4">
                 交给 Agent 复盘
+              </RouterLink>
+              <RouterLink :to="interviewPlanRefreshLink" class="hard-button-secondary inline-flex items-center justify-center px-4">
+                按这场面试刷新计划
+              </RouterLink>
+              <RouterLink :to="interviewRecordingReviewLink" class="hard-button-secondary inline-flex items-center justify-center px-4">
+                去录音复盘
               </RouterLink>
               <RouterLink to="/wrong" class="hard-button-secondary inline-flex items-center justify-center px-4">
                 查看错题本
@@ -193,11 +199,11 @@
       </section>
 
       <section class="flex gap-3">
-        <RouterLink to="/interview" class="hard-button-secondary flex-1 text-center">
-          模拟面试
+        <RouterLink :to="mockInterviewWorkspaceLink" class="hard-button-secondary flex-1 text-center">
+          返回模拟面试
         </RouterLink>
-        <RouterLink to="/interview" class="hard-button-primary flex-1 text-center">
-          开始新一场
+        <RouterLink :to="restartInterviewLink" class="hard-button-primary flex-1 text-center">
+          再做一场同方向模拟
         </RouterLink>
       </section>
     </template>
@@ -257,6 +263,13 @@ const interviewContextLabel = (context?: InterviewDetail['contextSource'] | null
 }
 
 const sessionId = () => String(route.params.id || '')
+const mockInterviewWorkspaceLink = '/interview?workspace=mock-interview'
+const interviewResumeId = computed(() => detail.value?.contextSource?.resumeId || '')
+const restartInterviewLink = computed(() => {
+  if (!interviewResumeId.value) return mockInterviewWorkspaceLink
+  return `/interview?workspace=mock-interview&resumeId=${encodeURIComponent(interviewResumeId.value)}`
+})
+const interviewRecordingReviewLink = computed(() => '/interview?workspace=recording-review')
 const interviewReviewAgentLink = computed(() => {
   const id = sessionId()
   const contextRefs = ['analytics:profile']
@@ -275,6 +288,23 @@ const interviewReviewAgentLink = computed(() => {
     userPrompt: detail.value?.direction
       ? `基于这次 ${detail.value.direction} 面试记录，总结薄弱点并安排下一轮训练。`
       : '基于这次模拟面试记录，总结薄弱点并安排下一轮训练。'
+  })
+})
+const interviewPlanRefreshLink = computed(() => {
+  const id = sessionId()
+  const contextRefs = ['analytics:profile', 'study-plan:active']
+  if (id) {
+    contextRefs.unshift(`interview:session:${id}`)
+  } else {
+    contextRefs.unshift('interview:latest')
+  }
+  return buildAgentWorkbenchLocation({
+    agentType: 'study_planner',
+    triggerSource: 'interview',
+    contextRefs,
+    userPrompt: detail.value?.direction
+      ? `把这次 ${detail.value.direction} 面试暴露的问题刷新进下一轮训练计划。`
+      : '把这次模拟面试暴露的问题刷新进下一轮训练计划。'
   })
 })
 
