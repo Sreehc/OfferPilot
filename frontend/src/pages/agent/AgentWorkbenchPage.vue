@@ -348,6 +348,36 @@
             <p class="mt-2 text-sm leading-6 text-primary">{{ selectedRun.executionSummary }}</p>
           </div>
 
+          <div v-if="selectedRunFollowUpActions.length" class="agent-detail-block">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p class="agent-detail-block__title">结果消费</p>
+                <p class="mt-2 text-sm leading-6 text-secondary">
+                  把这次 run 的结果继续送回训练、画像、面试或材料页面，而不是只停在工作台里。
+                </p>
+              </div>
+            </div>
+            <div class="mt-4 grid gap-3 md:grid-cols-2">
+              <RouterLink
+                v-for="action in selectedRunFollowUpActions"
+                :key="action.key"
+                :to="action.to"
+                class="agent-follow-up-card"
+                :class="action.tone === 'primary' ? 'agent-follow-up-card--primary' : 'agent-follow-up-card--secondary'"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-semibold text-ink">{{ action.label }}</p>
+                    <p class="mt-2 text-sm leading-6 text-secondary">{{ action.description }}</p>
+                  </div>
+                  <span class="agent-run-status" :class="action.tone === 'primary' ? 'agent-run-status--ready' : 'agent-run-status--neutral'">
+                    {{ action.tone === 'primary' ? '主动作' : '补充动作' }}
+                  </span>
+                </div>
+              </RouterLink>
+            </div>
+          </div>
+
           <div v-if="selectedRun.decisionNote" class="agent-detail-block">
             <p class="agent-detail-block__title">处理备注</p>
             <p class="mt-2 text-sm leading-6 text-primary">{{ selectedRun.decisionNote }}</p>
@@ -410,7 +440,7 @@
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import { onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   approveAgentRunApi,
@@ -436,6 +466,14 @@ type QuickStart = {
   triggerSource: string
   contextRefs: string[]
   userPrompt: string
+}
+
+type FollowUpAction = {
+  key: string
+  label: string
+  to: string
+  description: string
+  tone: 'primary' | 'secondary'
 }
 
 const agentOptions = [
@@ -938,6 +976,105 @@ const resolveApprovalCalloutClass = (status: string) => {
   }
 }
 
+const describeFollowUpPath = (path: string) => {
+  if (path.startsWith('/analytics?topic=') && path.includes('retrospective=1')) {
+    return '回到领域回顾页，确认风险信号和下一轮专项训练动作是否已经收口。'
+  }
+  if (path.startsWith('/analytics?topic=')) {
+    return '回到主题画像页，继续核对当前薄弱点和相关证据。'
+  }
+  if (path.startsWith('/analytics')) {
+    return '回到能力画像页，确认这次 run 的结论是否已接入长期画像。'
+  }
+  if (path.startsWith('/study-plan')) {
+    return '回到学习计划页，把这次 run 产生的训练动作继续推进到日常任务。'
+  }
+  if (path.startsWith('/interview?workspace=job-prep')) {
+    return '回到 JD 备面工作区，继续收束岗位拆解、项目表达和追问准备。'
+  }
+  if (path.startsWith('/interview?workspace=copilot-prep')) {
+    return '回到 Copilot Prep，把这次 run 的结果承接成进入实时阶段前的会前清单。'
+  }
+  if (path.startsWith('/interview?workspace=copilot-live')) {
+    return '回到实时 Copilot 工作区，继续推进实时阶段或面后复盘。'
+  }
+  if (path.startsWith('/interview?workspace=recording-review')) {
+    return '回到录音复盘工作区，继续查看转写、薄弱点和后续训练建议。'
+  }
+  if (path.startsWith('/interview?workspace=mock-interview') || path === '/interview') {
+    return '回到模拟面试页，把当前建议转成新的表达检验或练习场景。'
+  }
+  if (path.startsWith('/interview/detail/')) {
+    return '回到具体面试详情页，核对这次 run 针对的复盘上下文。'
+  }
+  if (path.startsWith('/resume')) {
+    return '回到简历页，把这次 run 里的材料建议继续落成正式版本。'
+  }
+  if (path.startsWith('/applications/')) {
+    return '回到这条岗位详情页，继续推进状态、反馈和备面动作。'
+  }
+  if (path.startsWith('/applications')) {
+    return '回到投递页，把这次 run 的推进策略带回真实岗位链路。'
+  }
+  if (path.startsWith('/settings?tab=providers')) {
+    return '先补齐 Provider 依赖，再重新发起或恢复这条 agent 链路。'
+  }
+  return '继续把这次 run 的结果送回对应业务页面，形成真正闭环。'
+}
+
+const buildFollowUpActions = (run: AgentRun): FollowUpAction[] => {
+  const actions: FollowUpAction[] = []
+  const seen = new Set<string>()
+  const addAction = (key: string, label: string, to: string | null, description: string, tone: 'primary' | 'secondary') => {
+    if (!to || seen.has(to)) return
+    seen.add(to)
+    actions.push({ key, label, to, description, tone })
+  }
+
+  if (run.nextActionPath) {
+    addAction('next', resolveNextActionLabel(run), run.nextActionPath, describeFollowUpPath(run.nextActionPath), 'primary')
+  }
+
+  if (run.providerGateStatus === 'blocked' || run.providerGateStatus === 'degraded') {
+    addAction(
+      'providers',
+      '前往 Provider 设置',
+      '/settings?tab=providers',
+      '先检查模型、ASR、搜索或存储依赖，避免下一次 run 继续卡在依赖层。',
+      run.nextActionPath ? 'secondary' : 'primary'
+    )
+  }
+
+  for (const contextRef of run.contextRefs) {
+    const path = resolveContextRefPath(contextRef)
+    if (!path || path === run.nextActionPath) continue
+    if (
+      contextRef.startsWith('analytics:') ||
+      contextRef.startsWith('study-plan:') ||
+      contextRef.startsWith('interview:') ||
+      contextRef.startsWith('resume:') ||
+      contextRef.startsWith('application:')
+    ) {
+      addAction(
+        `context:${contextRef}`,
+        `回到${resolveContextRefLabel(contextRef)}`,
+        path,
+        describeFollowUpPath(path),
+        'secondary'
+      )
+    }
+    if (actions.length >= 4) break
+  }
+
+  if (!actions.length) {
+    addAction('fallback-plan', '前往学习计划', '/study-plan', '把这次 run 的结果整理成后续训练动作。', 'primary')
+  }
+
+  return actions.slice(0, 4)
+}
+
+const selectedRunFollowUpActions = computed(() => (selectedRun.value ? buildFollowUpActions(selectedRun.value) : []))
+
 const resolveProviderGateLabel = (status?: string) => {
   switch (status) {
     case 'blocked':
@@ -1288,6 +1425,35 @@ watch(() => route.fullPath, () => {
   border: 1px dashed rgba(var(--bc-accent-rgb), 0.28);
   background: rgba(var(--bc-accent-rgb), 0.05);
   padding: 14px;
+}
+
+.agent-follow-up-card {
+  border-radius: calc(var(--radius-md) - 6px);
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--panel-muted);
+  padding: 14px;
+  text-decoration: none;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.agent-follow-up-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(var(--bc-accent-rgb), 0.24);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+}
+
+.agent-follow-up-card--primary {
+  background:
+    radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.08), transparent 36%),
+    var(--panel-bg);
+}
+
+.agent-follow-up-card--secondary {
+  background: var(--panel-muted);
 }
 
 .agent-context-pill {
