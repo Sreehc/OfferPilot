@@ -228,14 +228,17 @@
           <div v-if="selectedRun.contextRefs.length" class="agent-detail-block">
             <p class="agent-detail-block__title">上下文引用</p>
             <div class="mt-3 flex flex-wrap gap-2">
-              <span
+              <component
                 v-for="item in selectedRun.contextRefs"
                 :key="item"
+                :is="resolveContextRefPath(item) ? 'RouterLink' : 'span'"
+                :to="resolveContextRefPath(item) || undefined"
                 class="agent-context-pill"
+                :class="{ 'agent-context-pill--link': Boolean(resolveContextRefPath(item)) }"
                 :title="item"
               >
                 {{ resolveContextRefLabel(item) }}
-              </span>
+              </component>
             </div>
           </div>
 
@@ -382,6 +385,9 @@
                 @click="handleDecision('cancel')"
               >
                 取消 Run
+              </el-button>
+              <el-button class="action-button" @click="prefillFromRun(selectedRun)">
+                重新预填发起
               </el-button>
               <RouterLink v-if="selectedRun.nextActionPath" :to="selectedRun.nextActionPath" class="hard-button-primary">
                 {{ resolveNextActionLabel(selectedRun) }}
@@ -658,6 +664,26 @@ const applyQuickStart = (item: QuickStart) => {
   form.userPrompt = item.userPrompt
 }
 
+const prefillFromRun = async (run: AgentRun) => {
+  form.agentType = run.agentType
+  form.triggerSource = run.triggerSource
+  form.contextRefs = [...run.contextRefs]
+  form.streamMode = run.streamMode || 'sync'
+  form.userPrompt = run.userPrompt || ''
+  await router.replace({
+    query: {
+      ...buildRouteQuery({ runId: run.id }),
+      agentType: run.agentType,
+      triggerSource: run.triggerSource,
+      contextRefs: run.contextRefs,
+      streamMode: run.streamMode || 'sync',
+      ...(run.userPrompt ? { userPrompt: run.userPrompt } : {})
+    }
+  })
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+  ElMessage.success('已把当前 Run 结果载入为新的发起草稿。')
+}
+
 const buildRunListQuery = (): AgentRunListQuery | undefined => {
   const query: AgentRunListQuery = {}
   if (filters.agentType) query.agentType = filters.agentType
@@ -826,6 +852,38 @@ const resolveContextRefLabel = (contextRef: string) => {
   if (contextRef.startsWith('resume:')) return `简历 #${contextRef.slice('resume:'.length)}`
   if (contextRef.startsWith('application:')) return `岗位投递 #${contextRef.slice('application:'.length)}`
   return contextRef
+}
+
+const resolveContextRefPath = (contextRef: string) => {
+  if (contextRef === 'dashboard:overview') return '/dashboard'
+  if (contextRef === 'analytics:profile' || contextRef === 'analytics:weak-topics') return '/analytics'
+  if (contextRef === 'study-plan:active') return '/study-plan'
+  if (contextRef === 'interview:latest') return '/interview'
+  if (contextRef === 'interview:recording-review') return '/interview'
+  if (contextRef === 'interview:job-prep') return '/interview'
+  if (contextRef === 'interview:copilot-prep') return '/interview'
+  if (contextRef === 'interview:copilot-realtime') return '/interview'
+  if (contextRef === 'resume:latest') return '/resume'
+  if (contextRef === 'application:board') return '/applications'
+  if (contextRef === 'settings:providers') return '/settings?tab=providers'
+  if (contextRef.startsWith('analytics:topic:')) {
+    return `/analytics?topic=${encodeURIComponent(contextRef.slice('analytics:topic:'.length))}`
+  }
+  if (contextRef.startsWith('analytics:retrospective:topic:')) {
+    return `/analytics?topic=${encodeURIComponent(contextRef.slice('analytics:retrospective:topic:'.length))}`
+  }
+  if (contextRef.startsWith('interview:session:')) {
+    return `/interview/detail/${encodeURIComponent(contextRef.slice('interview:session:'.length))}`
+  }
+  if (contextRef.startsWith('interview:recording-review:')) return '/interview'
+  if (contextRef.startsWith('interview:job-prep:')) return '/interview'
+  if (contextRef.startsWith('interview:copilot-prep:')) return '/interview'
+  if (contextRef.startsWith('interview:copilot-realtime:')) return '/interview'
+  if (contextRef.startsWith('resume:')) return '/resume'
+  if (contextRef.startsWith('application:')) {
+    return `/applications/${encodeURIComponent(contextRef.slice('application:'.length))}`
+  }
+  return null
 }
 
 const resolveApprovalTitle = (run: AgentRun) => {
@@ -1222,6 +1280,17 @@ watch(() => route.fullPath, () => {
   font-size: 0.74rem;
   font-weight: 700;
   color: var(--bc-ink);
+}
+
+.agent-context-pill--link {
+  text-decoration: none;
+  transition: border-color 180ms ease, background-color 180ms ease, color 180ms ease;
+}
+
+.agent-context-pill--link:hover {
+  border-color: rgba(var(--bc-accent-rgb), 0.32);
+  background: rgba(var(--bc-accent-rgb), 0.14);
+  color: var(--bc-accent-strong);
 }
 
 .agent-detail-list {

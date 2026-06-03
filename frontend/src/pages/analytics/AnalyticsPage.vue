@@ -538,6 +538,7 @@
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
 import { EMPTY_STATE_COPY } from '@/constants/productCopy'
 import { useTheme } from '@/composables/useTheme'
@@ -560,6 +561,9 @@ import type {
   ProfileTopicDetail,
   ProfileTopicRetrospective
 } from '@/types/api'
+
+const route = useRoute()
+const router = useRouter()
 
 const weekOptions = [
   { label: '4 周', value: 4 },
@@ -827,15 +831,35 @@ const changeWeeks = (w: number) => {
   void loadTrend()
 }
 
+const syncTopicQuery = async (topicId?: string | null) => {
+  const nextTopic = topicId?.trim() || ''
+  const currentTopic = typeof route.query.topic === 'string' ? route.query.topic.trim() : ''
+  if (nextTopic === currentTopic) return
+  await router.replace({
+    query: {
+      ...route.query,
+      ...(nextTopic ? { topic: nextTopic } : { topic: undefined })
+    }
+  })
+}
+
 const openTopicDetail = async (topicId: number) => {
   topicDetailLoading.value = true
   topicRetrospective.value = null
   try {
     const response = await fetchAnalyticsTopicProfileApi(String(topicId))
     topicDetail.value = response.data
+    await syncTopicQuery(response.data.categoryId)
   } finally {
     topicDetailLoading.value = false
   }
+}
+
+const applyTopicFromRoute = async () => {
+  const topicQuery = typeof route.query.topic === 'string' ? route.query.topic.trim() : ''
+  if (!topicQuery) return
+  if (topicDetail.value?.categoryId === topicQuery) return
+  await openTopicDetail(Number(topicQuery))
 }
 
 const retrospectiveStageLabel = (stage?: string) => {
@@ -1226,6 +1250,7 @@ const handleResize = () => {
 onMounted(() => {
   void loadTrend()
   void loadEfficiency()
+  void applyTopicFromRoute()
   window.addEventListener('resize', handleResize)
 })
 
@@ -1252,6 +1277,10 @@ watch(theme, () => {
     renderEFChart()
     renderFRChart()
   })
+})
+
+watch(() => route.query.topic, () => {
+  void applyTopicFromRoute()
 })
 </script>
 
