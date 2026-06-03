@@ -43,11 +43,16 @@ import com.offerpilot.interview.vo.RecordingReviewSessionVO;
 import com.offerpilot.plan.dto.StudyPlanGenerateRequest;
 import com.offerpilot.plan.service.PlanService;
 import com.offerpilot.plan.vo.StudyPlanCurrentVO;
+import com.offerpilot.question.service.QuestionService;
+import com.offerpilot.question.vo.QuestionVO;
 import com.offerpilot.resume.service.ResumeService;
 import com.offerpilot.resume.vo.ResumeFileVO;
+import com.offerpilot.wrong.service.WrongService;
+import com.offerpilot.wrong.vo.WrongQuestionVO;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -81,6 +86,8 @@ public class AgentRunServiceImpl implements AgentRunService {
     private final ResumeService resumeService;
     private final JobApplicationService jobApplicationService;
     private final UserProviderConfigService userProviderConfigService;
+    private final QuestionService questionService;
+    private final WrongService wrongService;
 
     @Override
     @Transactional
@@ -785,6 +792,8 @@ public class AgentRunServiceImpl implements AgentRunService {
         StudyPlanCurrentVO currentPlan = null;
         InterviewDetailVO interviewDetail = null;
         RecordingReviewSessionVO recordingReview = null;
+        QuestionVO question = null;
+        WrongQuestionVO wrongQuestion = null;
         ResumeFileVO resume = null;
         JobApplicationVO application = null;
         ApplicationBoardSnapshot applicationBoard = null;
@@ -849,6 +858,16 @@ public class AgentRunServiceImpl implements AgentRunService {
             recordingReview = loadOptional("latest recording review", () -> interviewRecordingReviewService.latest(userId));
         }
 
+        Long questionId = findContextRefId(contextRefs, "question:");
+        if (questionId != null) {
+            question = loadOptional("question " + questionId, () -> questionService.getQuestionDetail(questionId));
+        }
+
+        Long wrongQuestionId = findContextRefId(contextRefs, "wrong:");
+        if (wrongQuestionId != null) {
+            wrongQuestion = loadOptional("wrong question " + wrongQuestionId, () -> wrongService.detail(userId, wrongQuestionId));
+        }
+
         Long jobPrepSessionId = findContextRefId(contextRefs, "interview:job-prep:");
         if (jobPrepSessionId != null) {
             jobPrepSession = loadOptional("job prep " + jobPrepSessionId, () -> interviewJobPrepService.detail(userId, jobPrepSessionId));
@@ -904,6 +923,8 @@ public class AgentRunServiceImpl implements AgentRunService {
                 currentPlan,
                 interviewDetail,
                 recordingReview,
+                question,
+                wrongQuestion,
                 resume,
                 application,
                 applicationBoard,
@@ -956,6 +977,25 @@ public class AgentRunServiceImpl implements AgentRunService {
             int lowScoreCount = countLowScoreRecords(snapshot.interviewDetail());
             if (lowScoreCount > 0) {
                 recommendations.add("最近模拟面试有 " + lowScoreCount + " 道低分题，先把低分题改写成结构化答案。");
+            }
+        }
+        if (snapshot.question() != null) {
+            QuestionVO question = snapshot.question();
+            recommendations.add("当前题库焦点题是「" + defaultText(question.getTitle(), "当前题目")
+                    + "」，适合把它改写成一段完整口语答案。");
+            if (StringUtils.hasText(question.getFollowUpSuggestions())) {
+                recommendations.add("这道题的训练提醒：" + abbreviate(question.getFollowUpSuggestions(), 40));
+            }
+            if (StringUtils.hasText(question.getCommonMistakes())) {
+                recommendations.add("回答时先避开这个常见问题：" + abbreviate(question.getCommonMistakes(), 36));
+            }
+        }
+        if (snapshot.wrongQuestion() != null) {
+            WrongQuestionVO wrongQuestion = snapshot.wrongQuestion();
+            recommendations.add("当前错题「" + defaultText(wrongQuestion.getTitle(), "这道题")
+                    + "」还没有彻底稳定，建议优先安排一次针对性复述。");
+            if (StringUtils.hasText(wrongQuestion.getErrorReason())) {
+                recommendations.add("先处理这道错题的卡点：" + abbreviate(wrongQuestion.getErrorReason(), 40));
             }
         }
         if (snapshot.recordingReview() != null && !nullSafeList(snapshot.recordingReview().getWeakPoints()).isEmpty()) {
@@ -1129,6 +1169,16 @@ public class AgentRunServiceImpl implements AgentRunService {
         if (snapshot.recordingReview() != null) {
             recommendations.add("真实录音已经形成复盘证据，优先把薄弱点转成正式训练动作。");
         }
+        if (snapshot.question() != null) {
+            QuestionVO question = snapshot.question();
+            recommendations.add("题库里的「" + defaultText(question.getTitle(), "当前题目")
+                    + "」已经指向具体训练对象，适合直接转成专项练习或表达检验。");
+        }
+        if (snapshot.wrongQuestion() != null) {
+            WrongQuestionVO wrongQuestion = snapshot.wrongQuestion();
+            recommendations.add("错题「" + defaultText(wrongQuestion.getTitle(), "当前错题")
+                    + "」已经暴露复习缺口，优先把它接回下一轮训练计划。");
+        }
         if (snapshot.copilotRealtimeSession() != null) {
             recommendations.add(realtimeCoordinatorHint(snapshot.copilotRealtimeSession()));
         }
@@ -1255,10 +1305,12 @@ public class AgentRunServiceImpl implements AgentRunService {
                 snapshot.weakTopicSnapshot() == null ? null : snapshot.weakTopicSnapshot().focusTopicName(),
                 snapshot.currentPlan() == null ? null : snapshot.currentPlan().getFocusDirection(),
                 snapshot.abilityProfile() == null ? null : snapshot.abilityProfile().getSuggestedFocus(),
+                snapshot.question() == null ? null : firstNonBlank(snapshot.question().getCategoryName(), snapshot.question().getJobDirection()),
                 snapshot.interviewDetail() == null ? null : snapshot.interviewDetail().getDirection(),
                 snapshot.recordingReview() == null ? null : snapshot.recordingReview().getDirection(),
                 snapshot.copilotRealtimeSession() == null ? null : snapshot.copilotRealtimeSession().getJobTitle());
         String targetRole = firstNonBlank(
+                snapshot.question() == null ? null : snapshot.question().getJobDirection(),
                 snapshot.application() == null ? null : snapshot.application().getJobTitle(),
                 snapshot.applicationBoard() == null || snapshot.applicationBoard().focusApplication() == null
                         ? null
@@ -1270,6 +1322,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                 snapshot.copilotRealtimeSession() == null ? null : snapshot.copilotRealtimeSession().getJobTitle());
         String techStack = firstNonBlank(
                 snapshot.currentPlan() == null ? null : snapshot.currentPlan().getTechStack(),
+                snapshot.question() == null ? null : joinLimited(questionTags(snapshot.question()), 4, ", "),
                 snapshot.interviewDetail() == null ? null : snapshot.interviewDetail().getTechStack(),
                 snapshot.resume() == null ? null : joinLimited(snapshot.resume().getSkills(), 4, ", "),
                 snapshot.application() == null ? null : joinLimited(snapshot.application().getJdKeywords(), 4, ", "),
@@ -1288,6 +1341,16 @@ public class AgentRunServiceImpl implements AgentRunService {
             return List.of();
         }
         return nullSafeList(session.getPostInterviewReview().getRecommendedActions());
+    }
+
+    private List<String> questionTags(QuestionVO question) {
+        if (question == null || !StringUtils.hasText(question.getTags())) {
+            return List.of();
+        }
+        return Arrays.stream(question.getTags().split("[,\\n]"))
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .toList();
     }
 
     private JobPrepDraftPayload resolveJobPrepDraftPayload(ContextSnapshot snapshot) {
@@ -2422,6 +2485,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                                    DashboardOverviewVO dashboardOverview,
                                    StudyPlanCurrentVO currentPlan,
                                    InterviewDetailVO interviewDetail, RecordingReviewSessionVO recordingReview,
+                                   QuestionVO question, WrongQuestionVO wrongQuestion,
                                    ResumeFileVO resume, JobApplicationVO application,
                                    ApplicationBoardSnapshot applicationBoard,
                                    JobPrepSessionVO jobPrepSession,

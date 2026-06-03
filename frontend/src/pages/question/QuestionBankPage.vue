@@ -237,8 +237,14 @@
 
             <div class="question-next-step mt-4">
               <RouterLink
-                :to="questionChatTarget(selectedQuestion)"
+                :to="questionStudyPlannerTarget(selectedQuestion)"
                 class="hard-button-primary text-sm"
+              >
+                交给 Agent 安排训练
+              </RouterLink>
+              <RouterLink
+                :to="questionChatTarget(selectedQuestion)"
+                class="hard-button-secondary text-sm"
               >
                 去问答页追问
               </RouterLink>
@@ -269,6 +275,7 @@ import { fetchQuestionsApi } from '@/api/question'
 import { addFavoriteApi, removeFavoriteApi, fetchFavoriteListApi } from '@/api/favorites'
 import { ERROR_COPY } from '@/constants/productCopy'
 import type { CategoryItem, QuestionItem } from '@/types/api'
+import { buildAgentWorkbenchLocation } from '@/utils/agent'
 import { buildQuestionChatTarget, buildQuestionInterviewTarget, questionTagList } from './questionTargets'
 
 const route = useRoute()
@@ -397,6 +404,13 @@ const openDetail = (question: QuestionItem) => {
 const questionChatTarget = (question: QuestionItem) => buildQuestionChatTarget(question)
 
 const questionInterviewTarget = (question: QuestionItem) => buildQuestionInterviewTarget(question)
+
+const questionStudyPlannerTarget = (question: QuestionItem) => buildAgentWorkbenchLocation({
+  agentType: 'study_planner',
+  triggerSource: 'manual',
+  contextRefs: [`question:${question.id}`, 'study-plan:active', 'analytics:profile'],
+  userPrompt: `围绕题库题「${question.title}」整理下一轮训练动作，优先补完整表达、常见误区和复习顺序。`
+})
 
 const applyRouteFilters = () => {
   const categoryId = Number(route.query.categoryId)

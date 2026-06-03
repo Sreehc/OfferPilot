@@ -116,6 +116,18 @@
             </span>
           </div>
 
+          <div class="mt-5 flex flex-wrap gap-3">
+            <RouterLink :to="wrongPlanRefreshLink" class="hard-button-primary">
+              按这道错题刷新计划
+            </RouterLink>
+            <RouterLink :to="wrongAgentLink" class="hard-button-secondary">
+              交给 Agent 细化训练
+            </RouterLink>
+            <RouterLink v-if="wrongInterviewLink" :to="wrongInterviewLink" class="hard-button-secondary">
+              去模拟面试
+            </RouterLink>
+          </div>
+
           <div class="wrong-book-metrics mt-6">
             <article class="wrong-book-metric">
               <span>复盘系数</span>
@@ -209,6 +221,7 @@ import {
   updateMasteryApi
 } from '@/api/wrong'
 import type { WrongQuestionItem } from '@/types/api'
+import { buildAgentWorkbenchLocation } from '@/utils/agent'
 
 const loading = ref(true)
 const detailLoading = ref(false)
@@ -231,6 +244,40 @@ const masteryOptions: Array<{ value: WrongQuestionItem['masteryLevel']; label: s
 
 const pendingCount = computed(() => wrongItems.value.filter((item) => item.masteryLevel !== 'mastered').length)
 const masteredCount = computed(() => wrongItems.value.filter((item) => item.masteryLevel === 'mastered').length)
+const wrongPlanRefreshLink = computed(() => {
+  if (!selectedWrong.value) return buildAgentWorkbenchLocation({
+    agentType: 'study_planner',
+    triggerSource: 'manual',
+    contextRefs: ['study-plan:active', 'analytics:profile'],
+    userPrompt: '结合当前错题和训练画像，刷新下一轮训练计划。'
+  })
+  return buildAgentWorkbenchLocation({
+    agentType: 'study_planner',
+    triggerSource: 'manual',
+    contextRefs: [`wrong:${selectedWrong.value.id}`, 'study-plan:active', 'analytics:profile'],
+    userPrompt: `围绕错题「${selectedWrong.value.title}」刷新下一轮训练计划，优先处理这道题的错误原因和表达缺口。`
+  })
+})
+const wrongAgentLink = computed(() => {
+  if (!selectedWrong.value) return '/agent'
+  return buildAgentWorkbenchLocation({
+    agentType: 'coordinator',
+    triggerSource: 'manual',
+    contextRefs: [`wrong:${selectedWrong.value.id}`, 'analytics:profile', 'study-plan:active'],
+    userPrompt: `围绕错题「${selectedWrong.value.title}」安排下一步训练动作，并判断是先复习、模拟面试还是录音复盘。`
+  })
+})
+const wrongInterviewLink = computed(() => {
+  if (!selectedWrong.value?.questionId) return null
+  return {
+    path: '/interview',
+    query: {
+      workspace: 'mock-interview',
+      sourceQuestionId: String(selectedWrong.value.questionId),
+      sourceQuestionTitle: selectedWrong.value.title
+    }
+  }
+})
 
 const masteryLabel = (level: string) => {
   if (level === 'mastered') return '已掌握'

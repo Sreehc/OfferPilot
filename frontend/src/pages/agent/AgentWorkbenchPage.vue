@@ -872,6 +872,8 @@ const resolveContextRefLabel = (contextRef: string) => {
   if (contextRef === 'resume:latest') return '最新简历'
   if (contextRef === 'application:board') return '投递看板'
   if (contextRef === 'settings:providers') return 'Provider 配置'
+  if (contextRef.startsWith('question:')) return `题库题目 #${contextRef.slice('question:'.length)}`
+  if (contextRef.startsWith('wrong:')) return `错题 #${contextRef.slice('wrong:'.length)}`
   if (contextRef.startsWith('analytics:topic:')) return `主题详情 #${contextRef.slice('analytics:topic:'.length)}`
   if (contextRef.startsWith('analytics:retrospective:topic:')) {
     return `领域回顾 #${contextRef.slice('analytics:retrospective:topic:'.length)}`
@@ -904,6 +906,8 @@ const resolveContextRefPath = (contextRef: string) => {
   if (contextRef === 'resume:latest') return '/resume'
   if (contextRef === 'application:board') return '/applications'
   if (contextRef === 'settings:providers') return '/settings?tab=providers'
+  if (contextRef.startsWith('question:')) return '/question'
+  if (contextRef.startsWith('wrong:')) return '/wrong'
   if (contextRef.startsWith('analytics:topic:')) {
     return `/analytics?topic=${encodeURIComponent(contextRef.slice('analytics:topic:'.length))}`
   }
