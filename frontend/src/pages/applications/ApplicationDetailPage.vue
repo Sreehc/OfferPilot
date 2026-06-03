@@ -31,6 +31,12 @@
 
             <div class="mt-6 flex flex-wrap gap-3">
               <button type="button" class="hard-button-primary" @click="scrollToStatus">更新这条投递</button>
+              <RouterLink :to="applicationJobPrepLink" class="hard-button-secondary">
+                去 JD 备面
+              </RouterLink>
+              <RouterLink :to="applicationCopilotPrepLink" class="hard-button-secondary">
+                去 Copilot Prep
+              </RouterLink>
               <RouterLink :to="applicationAgentLink" class="hard-button-secondary">
                 交给 Agent 推进
               </RouterLink>
@@ -70,6 +76,12 @@
           </div>
 
           <div class="flex shrink-0 flex-wrap gap-3">
+            <RouterLink :to="applicationJobPrepLink" class="hard-button-secondary">
+              结合当前岗位备面
+            </RouterLink>
+            <RouterLink :to="applicationMockInterviewLink" class="hard-button-secondary">
+              去模拟面试
+            </RouterLink>
             <button type="button" class="hard-button-secondary" @click="scrollToTimeline">查看时间线</button>
           </div>
         </div>
@@ -348,6 +360,17 @@ const eventTypeLabel = (value: string) => {
 
 const formatDateTime = (value?: string) => (value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '刚刚')
 const applicationId = () => String(route.params.id || '')
+const buildInterviewWorkspaceLink = (workspace: 'job-prep' | 'copilot-prep' | 'mock-interview') => {
+  const query = new URLSearchParams({ workspace })
+  const id = applicationId()
+  if (id) {
+    query.set('applicationId', id)
+  }
+  if (detail.value?.resumeFileId) {
+    query.set('resumeId', String(detail.value.resumeFileId))
+  }
+  return `/interview?${query.toString()}`
+}
 const applicationAgentLink = computed(() => {
   const id = applicationId()
   const contextRefs = ['analytics:profile', 'resume:latest']
@@ -365,6 +388,9 @@ const applicationAgentLink = computed(() => {
       : '结合当前投递进展、JD 分析和历史反馈，整理下一步推进策略。'
   })
 })
+const applicationJobPrepLink = computed(() => buildInterviewWorkspaceLink('job-prep'))
+const applicationCopilotPrepLink = computed(() => buildInterviewWorkspaceLink('copilot-prep'))
+const applicationMockInterviewLink = computed(() => buildInterviewWorkspaceLink('mock-interview'))
 
 const loadData = async () => {
   const id = applicationId()
