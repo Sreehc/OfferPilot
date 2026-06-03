@@ -1688,7 +1688,12 @@ const scrollToInterviewWorkspace = async (workspace: string) => {
 
 const syncInterviewWorkspaceRoute = async (
   workspace: 'job-prep' | 'copilot-prep' | 'copilot-live' | 'recording-review' | 'mock-interview' | 'history',
-  sessionId?: string
+  refs: {
+    jobPrepSessionId?: string
+    copilotPrepSessionId?: string
+    copilotRealtimeSessionId?: string
+    recordingReviewSessionId?: string
+  } = {}
 ) => {
   const nextQuery = { ...route.query } as Record<string, unknown>
   delete nextQuery.jobPrep
@@ -1700,10 +1705,10 @@ const syncInterviewWorkspaceRoute = async (
   delete nextQuery.recordingReview
   delete nextQuery.recordingReviewSessionId
   nextQuery.workspace = workspace
-  if (workspace === 'job-prep' && sessionId) nextQuery.jobPrepSessionId = sessionId
-  if (workspace === 'copilot-prep' && sessionId) nextQuery.copilotPrepSessionId = sessionId
-  if (workspace === 'copilot-live' && sessionId) nextQuery.copilotRealtimeSessionId = sessionId
-  if (workspace === 'recording-review' && sessionId) nextQuery.recordingReviewSessionId = sessionId
+  if (refs.jobPrepSessionId) nextQuery.jobPrepSessionId = refs.jobPrepSessionId
+  if (refs.copilotPrepSessionId) nextQuery.copilotPrepSessionId = refs.copilotPrepSessionId
+  if (refs.copilotRealtimeSessionId) nextQuery.copilotRealtimeSessionId = refs.copilotRealtimeSessionId
+  if (refs.recordingReviewSessionId) nextQuery.recordingReviewSessionId = refs.recordingReviewSessionId
 
   const currentQuery = route.query as Record<string, unknown>
   const currentWorkspace = String(currentQuery.workspace || '').trim()
@@ -1714,10 +1719,10 @@ const syncInterviewWorkspaceRoute = async (
 
   const isSameRoute =
     currentWorkspace === workspace &&
-    currentJobPrepSessionId === (workspace === 'job-prep' ? sessionId || '' : '') &&
-    currentCopilotPrepSessionId === (workspace === 'copilot-prep' ? sessionId || '' : '') &&
-    currentCopilotRealtimeSessionId === (workspace === 'copilot-live' ? sessionId || '' : '') &&
-    currentRecordingReviewSessionId === (workspace === 'recording-review' ? sessionId || '' : '')
+    currentJobPrepSessionId === (refs.jobPrepSessionId || '') &&
+    currentCopilotPrepSessionId === (refs.copilotPrepSessionId || '') &&
+    currentCopilotRealtimeSessionId === (refs.copilotRealtimeSessionId || '') &&
+    currentRecordingReviewSessionId === (refs.recordingReviewSessionId || '')
 
   if (isSameRoute) {
     return
@@ -2176,7 +2181,7 @@ const handleGenerateJobPrep = async () => {
       jdText: jobPrepJdText.value.trim() || undefined
     })
     jobPrepSession.value = response.data
-    await syncInterviewWorkspaceRoute('job-prep', response.data.id)
+    await syncInterviewWorkspaceRoute('job-prep', { jobPrepSessionId: response.data.id })
     ElMessage.success('JD 备面结果已生成。')
   } catch (error: any) {
     ElMessage.error(error?.message || 'JD 备面生成失败，请检查 JD 或简历后重试。')
@@ -2232,7 +2237,7 @@ const handleGenerateCopilotPrep = async (useJobPrep = false) => {
       notes: copilotPrepNotes.value.trim() || undefined
     })
     copilotPrepSession.value = response.data
-    await syncInterviewWorkspaceRoute('copilot-prep', response.data.id)
+    await syncInterviewWorkspaceRoute('copilot-prep', { copilotPrepSessionId: response.data.id })
     ElMessage.success('Copilot Prep 已生成。')
   } catch (error: any) {
     ElMessage.error(error?.message || 'Copilot Prep 生成失败，请检查当前上下文后重试。')
@@ -2248,23 +2253,25 @@ const hydrateRealtimeSession = async (sessionId: string) => {
 
 const hydrateLatestJobPrepSession = async () => {
   const response = await fetchLatestJobPrepSessionApi()
-  if (!response.data) return
+  if (!response.data) return false
   jobPrepSession.value = response.data
   syncJobPrepToCopilot()
+  return true
 }
 
 const hydrateLatestCopilotPrepSession = async () => {
   const response = await fetchLatestCopilotPrepSessionApi()
-  if (!response.data) return
+  if (!response.data) return false
   copilotPrepSession.value = response.data
   if (response.data.jobPrepSessionId) {
     linkedCopilotJobPrepId.value = response.data.jobPrepSessionId
   }
+  return true
 }
 
 const hydrateLatestCopilotRealtimeSession = async () => {
   const response = await fetchLatestCopilotRealtimeSessionApi()
-  if (!response.data) return
+  if (!response.data) return false
   copilotRealtimeSession.value = response.data
   const prepSessionId = response.data.copilotPrepSessionId
   if (prepSessionId && copilotPrepSession.value?.id !== prepSessionId) {
@@ -2274,15 +2281,17 @@ const hydrateLatestCopilotRealtimeSession = async () => {
       linkedCopilotJobPrepId.value = prepResponse.data.jobPrepSessionId
     }
   }
+  return true
 }
 
 const hydrateLatestRecordingReviewSession = async () => {
   const response = await fetchLatestRecordingReviewApi()
-  if (!response.data) return
+  if (!response.data) return false
   recordingReviewSession.value = response.data
   if (isRecordingReviewPendingStatus(response.data.status)) {
     scheduleRecordingReviewPoll(response.data.id)
   }
+  return true
 }
 
 const resolveInterviewWorkspaceRouteState = () => {
@@ -2335,7 +2344,7 @@ const hydrateInterviewWorkspaceFromRoute = async () => {
       jobPrepSession.value = response.data
       syncJobPrepToCopilot()
       if (workspace === 'job-prep') {
-        await syncInterviewWorkspaceRoute('job-prep', response.data.id)
+        await syncInterviewWorkspaceRoute('job-prep', { jobPrepSessionId: response.data.id })
       }
     } else if (workspace === 'job-prep' && !jobPrepSessionId && !jobPrepSession.value) {
       await hydrateLatestJobPrepSession()
@@ -2347,10 +2356,13 @@ const hydrateInterviewWorkspaceFromRoute = async () => {
         linkedCopilotJobPrepId.value = response.data.jobPrepSessionId
       }
       if (workspace === 'copilot-prep') {
-        await syncInterviewWorkspaceRoute('copilot-prep', response.data.id)
+        await syncInterviewWorkspaceRoute('copilot-prep', { copilotPrepSessionId: response.data.id })
       }
     } else if (workspace === 'copilot-prep' && !hasCopilotPrepSeedContext && !copilotPrepSession.value) {
-      await hydrateLatestCopilotPrepSession()
+      const hasLatestPrep = await hydrateLatestCopilotPrepSession()
+      if (!hasLatestPrep) {
+        await hydrateLatestJobPrepSession()
+      }
     }
     if (copilotRealtimeSessionId && copilotRealtimeSession.value?.id !== copilotRealtimeSessionId) {
       await hydrateRealtimeSession(copilotRealtimeSessionId)
@@ -2358,12 +2370,21 @@ const hydrateInterviewWorkspaceFromRoute = async () => {
       if (prepSessionId && copilotPrepSession.value?.id !== prepSessionId) {
         const response = await fetchCopilotPrepSessionApi(prepSessionId)
         copilotPrepSession.value = response.data
+        if (response.data.jobPrepSessionId) {
+          linkedCopilotJobPrepId.value = response.data.jobPrepSessionId
+        }
       }
       if (copilotRealtimeSession.value?.id) {
-        await syncInterviewWorkspaceRoute('copilot-live', copilotRealtimeSession.value.id)
+        await syncInterviewWorkspaceRoute('copilot-live', { copilotRealtimeSessionId: copilotRealtimeSession.value.id })
       }
     } else if (workspace === 'copilot-live' && !hasCopilotRealtimeSeedContext && !copilotRealtimeSession.value) {
-      await hydrateLatestCopilotRealtimeSession()
+      const hasLatestRealtime = await hydrateLatestCopilotRealtimeSession()
+      if (!hasLatestRealtime) {
+        const hasLatestPrep = await hydrateLatestCopilotPrepSession()
+        if (!hasLatestPrep) {
+          await hydrateLatestJobPrepSession()
+        }
+      }
     }
     if (recordingReviewSessionId && recordingReviewSession.value?.id !== recordingReviewSessionId) {
       const response = await fetchRecordingReviewApi(recordingReviewSessionId)
@@ -2372,7 +2393,7 @@ const hydrateInterviewWorkspaceFromRoute = async () => {
         scheduleRecordingReviewPoll(response.data.id)
       }
       if (workspace === 'recording-review') {
-        await syncInterviewWorkspaceRoute('recording-review', response.data.id)
+        await syncInterviewWorkspaceRoute('recording-review', { recordingReviewSessionId: response.data.id })
       }
     } else if (workspace === 'recording-review' && !recordingReviewSessionId && !recordingReviewSession.value) {
       await hydrateLatestRecordingReviewSession()
@@ -2381,17 +2402,23 @@ const hydrateInterviewWorkspaceFromRoute = async () => {
     ElMessage.error('无法恢复指定的面试工作区上下文，请稍后重试。')
   }
 
-  if (workspace === 'job-prep' && hasJobPrepSeedContext && jobPrepSession.value?.id) {
-    await syncInterviewWorkspaceRoute('job-prep', jobPrepSession.value.id)
+  if (workspace === 'job-prep' && jobPrepSession.value?.id) {
+    await syncInterviewWorkspaceRoute('job-prep', { jobPrepSessionId: jobPrepSession.value.id })
   }
   if (workspace === 'copilot-prep' && copilotPrepSession.value?.id) {
-    await syncInterviewWorkspaceRoute('copilot-prep', copilotPrepSession.value.id)
+    await syncInterviewWorkspaceRoute('copilot-prep', { copilotPrepSessionId: copilotPrepSession.value.id })
+  } else if (workspace === 'copilot-prep' && jobPrepSession.value?.id) {
+    await syncInterviewWorkspaceRoute('copilot-prep', { jobPrepSessionId: jobPrepSession.value.id })
   }
   if (workspace === 'copilot-live' && copilotRealtimeSession.value?.id) {
-    await syncInterviewWorkspaceRoute('copilot-live', copilotRealtimeSession.value.id)
+    await syncInterviewWorkspaceRoute('copilot-live', { copilotRealtimeSessionId: copilotRealtimeSession.value.id })
+  } else if (workspace === 'copilot-live' && copilotPrepSession.value?.id) {
+    await syncInterviewWorkspaceRoute('copilot-live', { copilotPrepSessionId: copilotPrepSession.value.id })
+  } else if (workspace === 'copilot-live' && jobPrepSession.value?.id) {
+    await syncInterviewWorkspaceRoute('copilot-live', { jobPrepSessionId: jobPrepSession.value.id })
   }
   if (workspace === 'recording-review' && recordingReviewSession.value?.id) {
-    await syncInterviewWorkspaceRoute('recording-review', recordingReviewSession.value.id)
+    await syncInterviewWorkspaceRoute('recording-review', { recordingReviewSessionId: recordingReviewSession.value.id })
   }
 
   if (workspace) {
@@ -2412,7 +2439,7 @@ const handleCreateCopilotRealtimeSession = async () => {
     })
     copilotRealtimeSession.value = response.data
     copilotRealtimeSocketState.value = 'idle'
-    await syncInterviewWorkspaceRoute('copilot-live', response.data.id)
+    await syncInterviewWorkspaceRoute('copilot-live', { copilotRealtimeSessionId: response.data.id })
     ElMessage.success('实时 Copilot 会话已创建。')
   } catch (error: any) {
     ElMessage.error(error?.message || '实时会话创建失败，请稍后重试。')
@@ -2530,7 +2557,7 @@ const handleCreateRecordingReview = async () => {
       audioFile: recordingReviewFile.value
     })
     recordingReviewSession.value = response.data
-    await syncInterviewWorkspaceRoute('recording-review', response.data.id)
+    await syncInterviewWorkspaceRoute('recording-review', { recordingReviewSessionId: response.data.id })
     if (isRecordingReviewPendingStatus(response.data.status)) {
       scheduleRecordingReviewPoll(response.data.id)
       ElMessage.success('录音已上传，正在后台转写。')
