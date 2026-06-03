@@ -175,6 +175,11 @@
                     {{ item.label }} · {{ item.statusMessage }}
                   </span>
                 </div>
+                <div class="mt-4">
+                  <RouterLink :to="providerSettingsPath" class="hard-button-secondary inline-flex text-sm">
+                    去补 Provider 配置
+                  </RouterLink>
+                </div>
               </div>
 
               <div>
@@ -399,6 +404,11 @@
                   <span v-for="item in missingCopilotProviders" :key="item.scope" class="detail-pill">
                     {{ item.label }} · {{ item.statusMessage }}
                   </span>
+                </div>
+                <div class="mt-4">
+                  <RouterLink :to="providerSettingsPath" class="hard-button-secondary inline-flex text-sm">
+                    去补 Provider 配置
+                  </RouterLink>
                 </div>
               </div>
 
@@ -648,6 +658,11 @@
                           {{ item.label }} · {{ item.statusMessage }}
                         </span>
                       </div>
+                      <div class="mt-4">
+                        <RouterLink :to="providerSettingsPath" class="hard-button-secondary inline-flex text-sm">
+                          去补 Provider 配置
+                        </RouterLink>
+                      </div>
                     </div>
 
                     <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr),minmax(0,1.2fr)]">
@@ -791,6 +806,11 @@
                     {{ item.label }} · {{ item.statusMessage }}
                   </span>
                 </div>
+                <div class="mt-4">
+                  <RouterLink :to="providerSettingsPath" class="hard-button-secondary inline-flex text-sm">
+                    去补 Provider 配置
+                  </RouterLink>
+                </div>
               </div>
 
               <div v-else-if="degradedRecordingReviewProviders.length" class="copilot-prep-provider-alert">
@@ -802,6 +822,11 @@
                   <span v-for="item in degradedRecordingReviewProviders" :key="item.scope" class="detail-pill">
                     {{ item.label }} · {{ item.statusMessage }}
                   </span>
+                </div>
+                <div class="mt-4">
+                  <RouterLink :to="providerSettingsPath" class="hard-button-secondary inline-flex text-sm">
+                    去补 Provider 配置
+                  </RouterLink>
                 </div>
               </div>
 
@@ -1760,6 +1785,7 @@ const countdownPercent = computed(() => {
   return Math.max(0, Math.round((countdown.value / total) * 100))
 })
 const countdownUrgent = computed(() => countdown.value <= 30)
+const providerSettingsPath = '/settings?tab=providers'
 const copilotRealtimeConnectionLabel = computed(() => {
   if (copilotRealtimeSocketState.value === 'connecting') return '连接中'
   if (copilotRealtimeSocketState.value === 'connected') return '已连接'
