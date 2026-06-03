@@ -27,6 +27,24 @@
           :description="abilityProfile.evidenceSummary || '先完成几轮题库、复盘或模拟面试，这里会开始沉淀长期趋势。'"
           compact
         />
+        <article class="profile-action-panel mt-4">
+          <div>
+            <p class="profile-action-panel__label">画像补证</p>
+            <p class="mt-1 text-sm text-secondary">先补足真实训练和表达证据，再回来查看长期画像、领域详情和回顾。</p>
+          </div>
+          <div class="mt-4 space-y-3">
+            <RouterLink
+              v-for="item in profileEmptyStateActions"
+              :key="item.key"
+              :to="item.to"
+              class="profile-action-card"
+              :class="item.toneClass"
+            >
+              <p class="text-sm font-semibold text-ink">{{ item.title }}</p>
+              <p class="mt-2 text-xs leading-5 text-secondary">{{ item.description }}</p>
+            </RouterLink>
+          </div>
+        </article>
       </div>
       <div v-else-if="!abilityProfile.categoryAbilities.length" class="mt-5">
         <EmptyState
@@ -35,6 +53,24 @@
           description="当前画像已生成，但还没有可展示的主题详情。继续补几轮训练后再回来查看。"
           compact
         />
+        <article class="profile-action-panel mt-4">
+          <div>
+            <p class="profile-action-panel__label">继续沉淀画像</p>
+            <p class="mt-1 text-sm text-secondary">当前还没有稳定到可拆分主题详情，先继续补训练和真实表达证据。</p>
+          </div>
+          <div class="mt-4 space-y-3">
+            <RouterLink
+              v-for="item in profileEmptyStateActions"
+              :key="`empty-${item.key}`"
+              :to="item.to"
+              class="profile-action-card"
+              :class="item.toneClass"
+            >
+              <p class="text-sm font-semibold text-ink">{{ item.title }}</p>
+              <p class="mt-2 text-xs leading-5 text-secondary">{{ item.description }}</p>
+            </RouterLink>
+          </div>
+        </article>
       </div>
       <div v-else class="mt-5 grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
         <div class="profile-summary-shell">
@@ -826,6 +862,41 @@ const analyticsAgentLink = computed(() =>
       : '根据当前训练画像刷新下一轮训练动作。'
   })
 )
+const profileEmptyStateActions = computed(() => {
+  const focusTopic = abilityProfile.value.suggestedFocus || '当前重点方向'
+  return [
+    {
+      key: 'question-training',
+      title: '先补一轮题库训练',
+      description: `围绕 ${focusTopic} 先补基础训练证据，再回来观察画像是否开始成形。`,
+      to: '/question',
+      toneClass: 'profile-action-card--accent'
+    },
+    {
+      key: 'mock-interview',
+      title: '去模拟面试',
+      description: '先做一轮表达检验，把问题暴露出来，画像才有可追踪的长期证据。',
+      to: abilityProfile.value.suggestedFocus
+        ? buildInterviewWorkspaceLink('mock-interview', buildTopicQuestionSeed(abilityProfile.value.suggestedFocus))
+        : buildInterviewWorkspaceLink('mock-interview'),
+      toneClass: ''
+    },
+    {
+      key: 'recording-review',
+      title: '补录音复盘',
+      description: '用真实口语表达和转写结果给画像补证，而不是只停留在题目结果。',
+      to: buildInterviewWorkspaceLink('recording-review'),
+      toneClass: 'profile-action-card--warn'
+    },
+    {
+      key: 'job-prep',
+      title: '转到 JD 备面',
+      description: '把当前岗位目标、简历和表达问题压到真实 JD 语境里验证。',
+      to: buildInterviewWorkspaceLink('job-prep'),
+      toneClass: ''
+    }
+  ]
+})
 const profileWorkflowActions = computed(() => {
   const items: Array<{
     key: string
