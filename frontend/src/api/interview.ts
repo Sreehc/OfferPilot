@@ -109,6 +109,10 @@ export const fetchJobPrepSessionApi = (sessionId: string) => {
   return request<JobPrepSession>({ url: `/interview/job-prep/sessions/${sessionId}`, method: 'get' })
 }
 
+export const fetchLatestJobPrepSessionApi = () => {
+  return request<JobPrepSession | null>({ url: '/interview/job-prep/sessions/latest', method: 'get' })
+}
+
 export const createCopilotPrepSessionApi = (payload: CopilotPrepSessionCreatePayload) => {
   return request<CopilotPrepSession>({ url: '/interview/copilot/prep-sessions', method: 'post', data: payload })
 }
@@ -117,12 +121,20 @@ export const fetchCopilotPrepSessionApi = (sessionId: string) => {
   return request<CopilotPrepSession>({ url: `/interview/copilot/prep-sessions/${sessionId}`, method: 'get' })
 }
 
+export const fetchLatestCopilotPrepSessionApi = () => {
+  return request<CopilotPrepSession | null>({ url: '/interview/copilot/prep-sessions/latest', method: 'get' })
+}
+
 export const createCopilotRealtimeSessionApi = (payload: CopilotRealtimeSessionCreatePayload) => {
   return request<CopilotRealtimeSession>({ url: '/interview/copilot/realtime-sessions', method: 'post', data: payload })
 }
 
 export const fetchCopilotRealtimeSessionApi = (sessionId: string) => {
   return request<CopilotRealtimeSession>({ url: `/interview/copilot/realtime-sessions/${sessionId}`, method: 'get' })
+}
+
+export const fetchLatestCopilotRealtimeSessionApi = () => {
+  return request<CopilotRealtimeSession | null>({ url: '/interview/copilot/realtime-sessions/latest', method: 'get' })
 }
 
 export const buildCopilotRealtimeWebSocketUrl = (sessionId: string) => {
@@ -152,6 +164,10 @@ export const createRecordingReviewApi = (payload: RecordingReviewCreatePayload) 
 
 export const fetchRecordingReviewApi = (sessionId: string) => {
   return request<RecordingReviewSession>({ url: `/interview/recording-reviews/${sessionId}`, method: 'get' })
+}
+
+export const fetchLatestRecordingReviewApi = () => {
+  return request<RecordingReviewSession | null>({ url: '/interview/recording-reviews/latest', method: 'get' })
 }
 
 // ── Voice Interview APIs ──────────────────────────

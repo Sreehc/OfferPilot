@@ -1469,6 +1469,10 @@ import {
   createRecordingReviewApi,
   createJobPrepSessionApi,
   currentQuestionApi,
+  fetchLatestCopilotPrepSessionApi,
+  fetchLatestCopilotRealtimeSessionApi,
+  fetchLatestJobPrepSessionApi,
+  fetchLatestRecordingReviewApi,
   fetchCopilotPrepSessionApi,
   fetchCopilotRealtimeSessionApi,
   fetchInterviewHistoryApi,
@@ -2209,6 +2213,45 @@ const hydrateRealtimeSession = async (sessionId: string) => {
   copilotRealtimeSession.value = response.data
 }
 
+const hydrateLatestJobPrepSession = async () => {
+  const response = await fetchLatestJobPrepSessionApi()
+  if (!response.data) return
+  jobPrepSession.value = response.data
+  syncJobPrepToCopilot()
+}
+
+const hydrateLatestCopilotPrepSession = async () => {
+  const response = await fetchLatestCopilotPrepSessionApi()
+  if (!response.data) return
+  copilotPrepSession.value = response.data
+  if (response.data.jobPrepSessionId) {
+    linkedCopilotJobPrepId.value = response.data.jobPrepSessionId
+  }
+}
+
+const hydrateLatestCopilotRealtimeSession = async () => {
+  const response = await fetchLatestCopilotRealtimeSessionApi()
+  if (!response.data) return
+  copilotRealtimeSession.value = response.data
+  const prepSessionId = response.data.copilotPrepSessionId
+  if (prepSessionId && copilotPrepSession.value?.id !== prepSessionId) {
+    const prepResponse = await fetchCopilotPrepSessionApi(prepSessionId)
+    copilotPrepSession.value = prepResponse.data
+    if (prepResponse.data.jobPrepSessionId) {
+      linkedCopilotJobPrepId.value = prepResponse.data.jobPrepSessionId
+    }
+  }
+}
+
+const hydrateLatestRecordingReviewSession = async () => {
+  const response = await fetchLatestRecordingReviewApi()
+  if (!response.data) return
+  recordingReviewSession.value = response.data
+  if (isRecordingReviewPendingStatus(response.data.status)) {
+    scheduleRecordingReviewPoll(response.data.id)
+  }
+}
+
 const resolveInterviewWorkspaceRouteState = () => {
   const workspaceQuery = String(route.query.workspace || '').trim()
   const jobPrepSessionId = String(route.query.jobPrepSessionId || route.query.jobPrep || '').trim()
@@ -2254,6 +2297,8 @@ const hydrateInterviewWorkspaceFromRoute = async () => {
       const response = await fetchJobPrepSessionApi(jobPrepSessionId)
       jobPrepSession.value = response.data
       syncJobPrepToCopilot()
+    } else if (workspace === 'job-prep' && !jobPrepSessionId && !jobPrepSession.value) {
+      await hydrateLatestJobPrepSession()
     }
     if (copilotPrepSessionId && copilotPrepSession.value?.id !== copilotPrepSessionId) {
       const response = await fetchCopilotPrepSessionApi(copilotPrepSessionId)
@@ -2261,6 +2306,8 @@ const hydrateInterviewWorkspaceFromRoute = async () => {
       if (response.data.jobPrepSessionId) {
         linkedCopilotJobPrepId.value = response.data.jobPrepSessionId
       }
+    } else if (workspace === 'copilot-prep' && !copilotPrepSessionId && !copilotPrepSession.value) {
+      await hydrateLatestCopilotPrepSession()
     }
     if (copilotRealtimeSessionId && copilotRealtimeSession.value?.id !== copilotRealtimeSessionId) {
       await hydrateRealtimeSession(copilotRealtimeSessionId)
@@ -2269,6 +2316,8 @@ const hydrateInterviewWorkspaceFromRoute = async () => {
         const response = await fetchCopilotPrepSessionApi(prepSessionId)
         copilotPrepSession.value = response.data
       }
+    } else if (workspace === 'copilot-live' && !copilotRealtimeSessionId && !copilotRealtimeSession.value) {
+      await hydrateLatestCopilotRealtimeSession()
     }
     if (recordingReviewSessionId && recordingReviewSession.value?.id !== recordingReviewSessionId) {
       const response = await fetchRecordingReviewApi(recordingReviewSessionId)
@@ -2276,6 +2325,8 @@ const hydrateInterviewWorkspaceFromRoute = async () => {
       if (isRecordingReviewPendingStatus(response.data.status)) {
         scheduleRecordingReviewPoll(response.data.id)
       }
+    } else if (workspace === 'recording-review' && !recordingReviewSessionId && !recordingReviewSession.value) {
+      await hydrateLatestRecordingReviewSession()
     }
   } catch {
     ElMessage.error('无法恢复指定的面试工作区上下文，请稍后重试。')
