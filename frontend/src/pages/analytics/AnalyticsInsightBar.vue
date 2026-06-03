@@ -23,6 +23,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
 import type { LearningInsights } from '@/types/api'
 
 const props = defineProps<{ data: LearningInsights }>()
@@ -32,10 +33,18 @@ type Insight = {
   icon: string
   title: string
   description: string
-  to: string
+  to: RouteLocationRaw
   toneClass: string
   iconClass: string
 }
+
+const buildSeededProductLink = (path: string, workflow: 'applications' | 'resume', note: string): RouteLocationRaw => ({
+  path,
+  query: {
+    seedWorkflow: workflow,
+    seedNote: note
+  }
+})
 
 const insights = computed<Insight[]>(() => {
   const list: Insight[] = []
@@ -71,7 +80,7 @@ const insights = computed<Insight[]>(() => {
       icon: '◎',
       title: '投递进展',
       description: d.applicationStatus,
-      to: '/applications',
+      to: buildSeededProductLink('/applications', 'applications', d.applicationStatus),
       toneClass: 'insight-card--info',
       iconClass: 'insight-icon--info'
     })
@@ -83,7 +92,7 @@ const insights = computed<Insight[]>(() => {
       icon: '◆',
       title: '简历准备',
       description: d.resumeReadinessStatus,
-      to: '/resume',
+      to: buildSeededProductLink('/resume', 'resume', d.resumeReadinessStatus),
       toneClass: 'insight-card--info',
       iconClass: 'insight-icon--info'
     })

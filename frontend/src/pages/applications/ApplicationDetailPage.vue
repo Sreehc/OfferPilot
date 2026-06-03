@@ -12,7 +12,7 @@
     <section v-if="!detail" class="shell-section-card p-8 text-center">
       <p class="text-lg font-semibold text-ink">投递记录未找到</p>
       <p class="mt-3 text-sm leading-7 text-secondary">这条投递记录暂时无法查看。请返回投递管理重试。</p>
-      <RouterLink to="/applications" class="hard-button-primary mt-4 inline-flex">返回看板</RouterLink>
+      <RouterLink :to="applicationBoardLink" class="hard-button-primary mt-4 inline-flex">返回看板</RouterLink>
     </section>
 
     <template v-else>
@@ -23,10 +23,11 @@
               <span class="hard-chip">{{ statusLabel(detail.status) }}</span>
               <span class="detail-pill">{{ detail.company }}</span>
               <span class="detail-pill">{{ detail.city || '城市待补充' }}</span>
+              <span v-if="seededFocusLabel" class="detail-pill">{{ seededFocusLabel }}</span>
             </div>
             <h2 class="mt-5 text-3xl font-semibold tracking-[-0.04em] text-ink">{{ detail.jobTitle }}</h2>
             <p class="mt-4 max-w-3xl text-sm leading-7 text-secondary">
-              {{ detail.nextStepSuggestion || detail.reviewSuggestion || detail.analysisSummary }}
+              {{ seededWorkspaceSummary || detail.nextStepSuggestion || detail.reviewSuggestion || detail.analysisSummary }}
             </p>
 
             <div class="mt-6 flex flex-wrap gap-3">
@@ -85,6 +86,12 @@
             <button type="button" class="hard-button-secondary" @click="scrollToTimeline">查看时间线</button>
           </div>
         </div>
+
+        <article v-if="seededFocusCard" class="surface-card mt-5 p-4">
+          <div class="text-xs font-semibold uppercase tracking-[0.22em] text-tertiary">当前进入上下文</div>
+          <h4 class="mt-2 text-lg font-semibold text-ink">{{ seededFocusCard.title }}</h4>
+          <p class="mt-2 text-sm leading-7 text-secondary">{{ seededFocusCard.description }}</p>
+        </article>
 
         <div class="mt-5 grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
           <div class="space-y-4">
@@ -341,6 +348,52 @@ const eventForm = reactive({
   feedbackTagsText: ''
 })
 
+const readSeedQueryValue = (key: 'seedTopic' | 'seedWorkflow' | 'seedNote') => {
+  const value = route.query[key]
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+const seededTopic = computed(() => readSeedQueryValue('seedTopic'))
+const seededWorkflow = computed(() => readSeedQueryValue('seedWorkflow'))
+const seededNote = computed(() => readSeedQueryValue('seedNote'))
+
+const seededFocusLabel = computed(() => {
+  if (!seededTopic.value) return ''
+  return seededWorkflow.value === 'applications' ? `${seededTopic.value} 投递验证` : `${seededTopic.value} 定向上下文`
+})
+
+const seededWorkspaceSummary = computed(() => {
+  if (seededNote.value) return seededNote.value
+  if (!seededTopic.value) return ''
+  return `当前从其他工作区带入「${seededTopic.value}」上下文，优先把它压到真实岗位推进、备面和反馈验证里。`
+})
+
+const seededFocusCard = computed(() => {
+  if (!seededTopic.value && !seededNote.value) return null
+  return {
+    title: seededTopic.value ? `围绕 ${seededTopic.value} 推进这条岗位` : '沿着当前上下文继续推进岗位动作',
+    description: seededWorkspaceSummary.value || '优先把当前薄弱点落到这条岗位的备面、反馈和后续动作里。'
+  }
+})
+
+const appendSeedQuery = (query: URLSearchParams) => {
+  if (seededTopic.value) {
+    query.set('seedTopic', seededTopic.value)
+  }
+  if (seededWorkflow.value) {
+    query.set('seedWorkflow', seededWorkflow.value)
+  }
+  if (seededNote.value) {
+    query.set('seedNote', seededNote.value)
+  }
+  return query
+}
+
+const applicationBoardLink = computed(() => {
+  const query = appendSeedQuery(new URLSearchParams())
+  return query.toString() ? `/applications?${query.toString()}` : '/applications'
+})
+
 const statusLabel = (value: string) => statusOptions.find((item) => item.value === value)?.label || value
 
 const eventTypeLabel = (value: string) => {
@@ -361,7 +414,7 @@ const eventTypeLabel = (value: string) => {
 const formatDateTime = (value?: string) => (value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '刚刚')
 const applicationId = () => String(route.params.id || '')
 const buildInterviewWorkspaceLink = (workspace: 'job-prep' | 'copilot-prep' | 'mock-interview') => {
-  const query = new URLSearchParams({ workspace })
+  const query = appendSeedQuery(new URLSearchParams({ workspace }))
   const id = applicationId()
   if (id) {
     query.set('applicationId', id)
@@ -384,8 +437,12 @@ const applicationAgentLink = computed(() => {
     triggerSource: 'applications',
     contextRefs,
     userPrompt: detail.value?.jobTitle
-      ? `围绕 ${detail.value.company} 的 ${detail.value.jobTitle} 岗位，整理下一步推进策略。`
-      : '结合当前投递进展、JD 分析和历史反馈，整理下一步推进策略。'
+      ? seededTopic.value
+        ? `围绕 ${detail.value.company} 的 ${detail.value.jobTitle} 岗位，重点验证「${seededTopic.value}」，整理下一步推进策略。`
+        : `围绕 ${detail.value.company} 的 ${detail.value.jobTitle} 岗位，整理下一步推进策略。`
+      : seededTopic.value
+        ? `结合当前投递进展、JD 分析和历史反馈，重点围绕「${seededTopic.value}」整理下一步推进策略。`
+        : '结合当前投递进展、JD 分析和历史反馈，整理下一步推进策略。'
   })
 })
 const applicationJobPrepLink = computed(() => buildInterviewWorkspaceLink('job-prep'))
