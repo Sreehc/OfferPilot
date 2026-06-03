@@ -133,7 +133,7 @@
               </div>
 
               <div class="flex shrink-0 flex-wrap gap-2">
-                <RouterLink :to="task.actionPath" class="hard-button-secondary text-sm">
+                <RouterLink :to="buildTaskActionPath(task)" class="hard-button-secondary text-sm">
                   {{ taskOpenLabel(task) }}
                 </RouterLink>
                 <RouterLink :to="buildTaskAgentLink(task)" class="hard-button-secondary text-sm">
@@ -274,7 +274,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, type LocationQueryRaw, type RouteLocationRaw } from 'vue-router'
 import { fetchDashboardOverviewApi } from '@/api/dashboard'
 import {
   fetchCurrentStudyPlanApi,
@@ -333,6 +333,73 @@ const focusedTaskId = computed(() => {
   if (typeof raw === 'string' && raw.trim()) return raw.trim()
   return ''
 })
+const readSeedQueryValue = (key: 'seedTopic' | 'seedWorkflow' | 'seedNote') => {
+  const value = route.query[key]
+  return typeof value === 'string' ? value.trim() : ''
+}
+const seededTopic = computed(() => readSeedQueryValue('seedTopic'))
+const seededWorkflow = computed(() => readSeedQueryValue('seedWorkflow'))
+const seededNote = computed(() => readSeedQueryValue('seedNote'))
+
+const appendSeedToPath = (path: string | null | undefined): string => {
+  if (!path) return '/study-plan'
+  if (!seededTopic.value && !seededWorkflow.value && !seededNote.value) return path
+  if (
+    !path.startsWith('/interview') &&
+    !path.startsWith('/resume') &&
+    !path.startsWith('/applications') &&
+    !path.startsWith('/agent') &&
+    !path.startsWith('/analytics') &&
+    !path.startsWith('/wrong') &&
+    !path.startsWith('/question') &&
+    !path.startsWith('/chat') &&
+    !path.startsWith('/knowledge') &&
+    !path.startsWith('/review') &&
+    !path.startsWith('/study-plan')
+  ) {
+    return path
+  }
+  const [rawPathWithoutHash, rawHash] = path.split('#')
+  const pathWithoutHash = rawPathWithoutHash || ''
+  const hash = rawHash || ''
+  const [rawPathname, rawQuery] = pathWithoutHash.split('?')
+  const pathname = rawPathname || ''
+  const query = new URLSearchParams(rawQuery)
+  if (seededTopic.value && !query.get('seedTopic') && pathname !== '/analytics') {
+    query.set('seedTopic', seededTopic.value)
+  }
+  if (seededWorkflow.value && !query.get('seedWorkflow') && pathname !== '/analytics') {
+    query.set('seedWorkflow', seededWorkflow.value)
+  }
+  if (seededNote.value && !query.get('seedNote') && pathname !== '/analytics') {
+    query.set('seedNote', seededNote.value)
+  }
+  const nextPath = query.toString() ? `${pathname}?${query.toString()}` : pathname
+  return hash ? `${nextPath}#${hash}` : nextPath
+}
+
+const buildSeededAgentWorkbenchLocation = (
+  prefill: Parameters<typeof buildAgentWorkbenchLocation>[0]
+): RouteLocationRaw => {
+  const location = buildAgentWorkbenchLocation(prefill) as {
+    path: string
+    query?: LocationQueryRaw
+  }
+  const query: LocationQueryRaw = location.query ? { ...location.query } : {}
+  if (seededTopic.value) {
+    query.seedTopic = seededTopic.value
+  }
+  if (seededWorkflow.value) {
+    query.seedWorkflow = seededWorkflow.value
+  }
+  if (seededNote.value) {
+    query.seedNote = seededNote.value
+  }
+  return {
+    path: location.path,
+    query
+  }
+}
 
 const reviewPending = computed(() => reviewStats.value?.todayPending ?? overview.value?.reviewDebtCount ?? 0)
 const topWeakPoint = computed(
@@ -364,7 +431,7 @@ const planStateLabel = computed(() => {
   return '今日可执行'
 })
 const primaryActionPath = computed(() => {
-  return getStudyPlanPrimaryActionPath(overview.value, currentPlan.value, nextTask.value)
+  return appendSeedToPath(getStudyPlanPrimaryActionPath(overview.value, currentPlan.value, nextTask.value))
 })
 const primaryActionLabel = computed(() => {
   return getStudyPlanPrimaryActionLabel(overview.value, currentPlan.value, nextTask.value, moduleLabel)
@@ -377,7 +444,7 @@ const studyPlanAgentLink = computed(() => {
   if (overview.value?.applicationSummary?.activeCount) {
     contextRefs.push('application:board')
   }
-  return buildAgentWorkbenchLocation({
+  return buildSeededAgentWorkbenchLocation({
     agentType: 'study_planner',
     triggerSource: 'analytics',
     contextRefs,
@@ -480,7 +547,7 @@ const buildTaskContextRefs = (task: StudyPlanTaskItem, fallbackRefs: string[]) =
 const buildTaskAgentLink = (task: StudyPlanTaskItem) => {
   if (task.module === 'recording_review') {
     const contextRefs = buildTaskContextRefs(task, ['study-plan:active', 'interview:recording-review', 'analytics:profile'])
-    return buildAgentWorkbenchLocation({
+    return buildSeededAgentWorkbenchLocation({
       agentType: 'study_planner',
       triggerSource: 'recording_review',
       contextRefs,
@@ -488,7 +555,7 @@ const buildTaskAgentLink = (task: StudyPlanTaskItem) => {
     })
   }
   if (task.module === 'interview') {
-    return buildAgentWorkbenchLocation({
+    return buildSeededAgentWorkbenchLocation({
       agentType: 'interview_review',
       triggerSource: 'interview',
       contextRefs: ['study-plan:active', 'interview:latest', 'analytics:profile'],
@@ -496,7 +563,7 @@ const buildTaskAgentLink = (task: StudyPlanTaskItem) => {
     })
   }
   if (task.module === 'review') {
-    return buildAgentWorkbenchLocation({
+    return buildSeededAgentWorkbenchLocation({
       agentType: 'study_planner',
       triggerSource: 'analytics',
       contextRefs: ['study-plan:active', 'analytics:profile', 'analytics:weak-topics'],
@@ -505,14 +572,14 @@ const buildTaskAgentLink = (task: StudyPlanTaskItem) => {
   }
   if (task.module === 'topic_retrospective') {
     const contextRefs = buildTaskContextRefs(task, ['study-plan:active', 'analytics:profile', 'analytics:weak-topics'])
-    return buildAgentWorkbenchLocation({
+    return buildSeededAgentWorkbenchLocation({
       agentType: 'study_planner',
       triggerSource: 'analytics',
       contextRefs,
       userPrompt: `围绕计划任务「${task.title}」，把当前领域回顾结果转成下一轮专项训练动作。`
     })
   }
-  return buildAgentWorkbenchLocation({
+  return buildSeededAgentWorkbenchLocation({
     agentType: 'study_planner',
     triggerSource: 'analytics',
     contextRefs: ['study-plan:active', 'analytics:profile', 'analytics:weak-topics'],
@@ -647,6 +714,8 @@ const handleToggleTask = async (task: StudyPlanTaskItem) => {
 onMounted(() => {
   void loadData()
 })
+
+const buildTaskActionPath = (task: StudyPlanTaskItem) => appendSeedToPath(task.actionPath)
 
 watch([focusedTaskId, currentPlan], () => {
   void ensureFocusedTaskVisible()
