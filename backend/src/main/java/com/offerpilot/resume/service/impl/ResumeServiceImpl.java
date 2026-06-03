@@ -14,13 +14,18 @@ import com.offerpilot.knowledge.service.DocumentParserService;
 import com.offerpilot.resume.dto.ResumeUpdateRequest;
 import com.offerpilot.resume.entity.ResumeFile;
 import com.offerpilot.resume.entity.ResumeProject;
+import com.offerpilot.resume.entity.ResumeVersion;
 import com.offerpilot.resume.mapper.ResumeFileMapper;
 import com.offerpilot.resume.mapper.ResumeProjectMapper;
+import com.offerpilot.resume.mapper.ResumeVersionMapper;
 import com.offerpilot.resume.service.ResumeService;
 import com.offerpilot.resume.vo.ResumeFileVO;
 import com.offerpilot.resume.vo.ResumeInterviewResumeVO;
 import com.offerpilot.resume.vo.ResumeProjectQuestionVO;
 import com.offerpilot.resume.vo.ResumeProjectVO;
+import com.offerpilot.resume.vo.ResumeScoreVO;
+import com.offerpilot.resume.vo.ResumeSuggestionVO;
+import com.offerpilot.resume.vo.ResumeVersionVO;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -60,6 +65,7 @@ public class ResumeServiceImpl implements ResumeService {
 
     private final ResumeFileMapper resumeFileMapper;
     private final ResumeProjectMapper resumeProjectMapper;
+    private final ResumeVersionMapper resumeVersionMapper;
     private final FileStorageService fileStorageService;
     private final UploadPolicyService uploadPolicyService;
     private final DocumentParserService documentParserService;
@@ -191,6 +197,8 @@ public class ResumeServiceImpl implements ResumeService {
     @Transactional
     public ResumeFileVO update(Long userId, Long resumeId, ResumeUpdateRequest request) {
         ResumeFile file = getOwnedResume(userId, resumeId);
+        // Save version snapshot before updating
+        saveVersionSnapshot(file, userId, buildChangeSummary(file, request));
         List<ParsedProject> parsedProjects = buildProjectsFromRequest(request.getProjects(), file.getTitle(), splitCommaValue(request.getSkills(), file.getSkills()));
         file.setTitle(firstNonBlank(request.getTitle(), file.getTitle()));
         file.setSummary(firstNonBlank(request.getSummary(), file.getSummary(), buildSummary(List.of(file.getTitle()), parsedProjects, splitCommaValue(request.getSkills(), file.getSkills()), file.getTitle())));
@@ -214,6 +222,8 @@ public class ResumeServiceImpl implements ResumeService {
     @Transactional
     public ResumeFileVO saveFollowUpDraft(Long userId, Long resumeId, String summary, List<String> recommendations) {
         ResumeFile file = getOwnedResume(userId, resumeId);
+        saveVersionSnapshot(file, userId, "保存 Agent 简历追问草稿");
+
         List<String> normalizedRecommendations = nullSafeRecommendations(recommendations);
         List<ResumeProject> projects = resumeProjectMapper.selectList(new LambdaQueryWrapper<ResumeProject>()
                 .eq(ResumeProject::getResumeFileId, file.getId())
@@ -229,6 +239,231 @@ public class ResumeServiceImpl implements ResumeService {
 
         mergeProjectFollowUpDrafts(projects, normalizedRecommendations);
         return buildDetail(file, loadProjects(file.getId()));
+    }
+
+    @Override
+    public ResumeScoreVO score(Long userId, Long resumeId) {
+        ResumeFile file = getOwnedResume(userId, resumeId);
+        List<ResumeProjectVO> projects = loadProjects(resumeId);
+        List<ResumeSuggestionVO> suggestions = new ArrayList<>();
+
+        int completenessScore = computeCompletenessScore(file, projects, suggestions);
+        int keywordCoverage = computeKeywordCoverage(file, projects, suggestions);
+        int atsCompatibility = computeAtsCompatibility(file, projects, suggestions);
+        int overallScore = (int) Math.round(completenessScore * 0.4 + keywordCoverage * 0.3 + atsCompatibility * 0.3);
+
+        return ResumeScoreVO.builder()
+                .overallScore(Math.min(overallScore, 100))
+                .completenessScore(completenessScore)
+                .keywordCoverage(keywordCoverage)
+                .atsCompatibility(atsCompatibility)
+                .suggestions(suggestions)
+                .build();
+    }
+
+    private int computeCompletenessScore(ResumeFile file, List<ResumeProjectVO> projects, List<ResumeSuggestionVO> suggestions) {
+        int score = 0;
+        if (isNotBlank(file.getSummary())) {
+            score += 8;
+            if (file.getSummary().length() > 50) score += 4;
+        } else {
+            suggestions.add(ResumeSuggestionVO.builder().field("summary").severity("critical").message("简历摘要为空，建议用 2-3 句话概括你的方向和亮点").build());
+        }
+        List<String> skills = splitComma(file.getSkills());
+        if (!skills.isEmpty()) {
+            score += 8;
+            if (skills.size() >= 3) score += 0; // already counted
+        } else {
+            suggestions.add(ResumeSuggestionVO.builder().field("skills").severity("warn").message("技能标签为空，建议补充核心技术栈").build());
+        }
+        if (isNotBlank(file.getEducation())) {
+            score += 6;
+        } else {
+            suggestions.add(ResumeSuggestionVO.builder().field("education").severity("warn").message("教育信息为空，建议补充学校、专业和学历").build());
+        }
+        if (isNotBlank(file.getSelfIntro())) {
+            score += 8;
+            if (file.getSelfIntro().length() > 100) score += 6;
+        } else {
+            suggestions.add(ResumeSuggestionVO.builder().field("selfIntro").severity("info").message("面试开场为空，建议补充一段自我介绍").build());
+        }
+        if (!projects.isEmpty()) {
+            score += 6;
+            if (projects.size() >= 2) score += 4;
+        } else {
+            suggestions.add(ResumeSuggestionVO.builder().field("projects").severity("critical").message("没有项目经历，建议至少补充 1 个项目").build());
+        }
+        return Math.min(score, 100);
+    }
+
+    private int computeKeywordCoverage(ResumeFile file, List<ResumeProjectVO> projects, List<ResumeSuggestionVO> suggestions) {
+        List<String> skills = splitComma(file.getSkills());
+        if (skills.isEmpty()) return 0;
+        Set<String> skillSet = skills.stream().map(s -> s.toLowerCase(Locale.ROOT)).collect(Collectors.toSet());
+        int total = skillSet.size();
+        int matched = 0;
+        for (ResumeProjectVO project : projects) {
+            if (project.getTechStack() == null) continue;
+            String techLower = project.getTechStack().toLowerCase(Locale.ROOT);
+            for (String skill : skillSet) {
+                if (techLower.contains(skill)) matched++;
+            }
+        }
+        int coverage = total > 0 ? (int) Math.round((double) Math.min(matched, total) / total * 100) : 0;
+        if (coverage < 60) {
+            suggestions.add(ResumeSuggestionVO.builder().field("skills").severity("warn").message("部分技能标签未在项目经历中体现，建议在项目描述中覆盖更多技术栈关键词").build());
+        }
+        return coverage;
+    }
+
+    private int computeAtsCompatibility(ResumeFile file, List<ResumeProjectVO> projects, List<ResumeSuggestionVO> suggestions) {
+        int score = 0;
+        if (isNotBlank(file.getTitle())) {
+            score += 15;
+        } else {
+            suggestions.add(ResumeSuggestionVO.builder().field("title").severity("warn").message("简历标题为空，建议补充职位方向").build());
+        }
+        boolean allHaveAchievement = true;
+        boolean allHaveResponsibility = true;
+        for (ResumeProjectVO project : projects) {
+            if (!isNotBlank(project.getAchievement())) allHaveAchievement = false;
+            if (!isNotBlank(project.getResponsibility())) allHaveResponsibility = false;
+        }
+        if (!projects.isEmpty()) {
+            if (allHaveAchievement) score += 40;
+            else suggestions.add(ResumeSuggestionVO.builder().field("projects").severity("warn").message("部分项目缺少量化成果，建议补充性能、效率或业务数据").build());
+            if (allHaveResponsibility) score += 30;
+            else suggestions.add(ResumeSuggestionVO.builder().field("projects").severity("info").message("部分项目缺少职责描述，建议讲清你做了什么").build());
+            if (isNotBlank(file.getSkills())) score += 15;
+        }
+        return Math.min(score, 100);
+    }
+
+    @Override
+    public List<ResumeVersionVO> listVersions(Long userId, Long resumeId) {
+        getOwnedResume(userId, resumeId);
+        List<ResumeVersion> versions = resumeVersionMapper.selectList(
+                new LambdaQueryWrapper<ResumeVersion>()
+                        .eq(ResumeVersion::getResumeFileId, resumeId)
+                        .eq(ResumeVersion::getUserId, userId)
+                        .orderByDesc(ResumeVersion::getVersion));
+        return versions.stream().map(v -> ResumeVersionVO.builder()
+                .id(v.getId())
+                .resumeFileId(v.getResumeFileId())
+                .version(v.getVersion())
+                .changeSummary(v.getChangeSummary())
+                .createTime(v.getCreateTime())
+                .build()).toList();
+    }
+
+    @Override
+    @Transactional
+    public ResumeFileVO restoreVersion(Long userId, Long versionId) {
+        ResumeVersion version = resumeVersionMapper.selectById(versionId);
+        if (version == null || !version.getUserId().equals(userId)) {
+            throw new BusinessException(ResultCode.NOT_FOUND.getCode(), "version not found");
+        }
+        ResumeFile file = getOwnedResume(userId, version.getResumeFileId());
+        // Parse snapshot and restore
+        try {
+            Map<String, Object> snapshot = objectMapper.readValue(version.getSnapshotJson(), new TypeReference<>() {});
+            file.setTitle((String) snapshot.getOrDefault("title", file.getTitle()));
+            file.setSummary((String) snapshot.getOrDefault("summary", file.getSummary()));
+            file.setSkills((String) snapshot.getOrDefault("skills", file.getSkills()));
+            file.setEducation((String) snapshot.getOrDefault("education", file.getEducation()));
+            file.setSelfIntro((String) snapshot.getOrDefault("selfIntro", file.getSelfIntro()));
+            resumeFileMapper.updateById(file);
+
+            // Restore projects
+            @SuppressWarnings("unchecked")
+            List<Map<String, String>> projectSnapshots = (List<Map<String, String>>) snapshot.getOrDefault("projects", List.of());
+            resumeProjectMapper.delete(new LambdaQueryWrapper<ResumeProject>()
+                    .eq(ResumeProject::getResumeFileId, file.getId()));
+            int order = 1;
+            for (Map<String, String> ps : projectSnapshots) {
+                ResumeProject project = new ResumeProject();
+                project.setResumeFileId(file.getId());
+                project.setUserId(userId);
+                project.setProjectName(ps.getOrDefault("projectName", ""));
+                project.setRoleName(ps.getOrDefault("roleName", ""));
+                project.setTechStack(ps.getOrDefault("techStack", ""));
+                project.setResponsibility(ps.getOrDefault("responsibility", ""));
+                project.setAchievement(ps.getOrDefault("achievement", ""));
+                project.setProjectSummary(ps.getOrDefault("projectSummary", ""));
+                project.setSortOrder(order++);
+                resumeProjectMapper.insert(project);
+            }
+        } catch (JsonProcessingException e) {
+            throw new BusinessException(ResultCode.SERVER_ERROR.getCode(), "failed to restore version snapshot");
+        }
+        return buildDetail(file, loadProjects(file.getId()));
+    }
+
+    private void saveVersionSnapshot(ResumeFile file, Long userId, String changeSummary) {
+        try {
+            Map<String, Object> snapshot = new java.util.LinkedHashMap<>();
+            snapshot.put("title", file.getTitle());
+            snapshot.put("summary", file.getSummary());
+            snapshot.put("skills", file.getSkills());
+            snapshot.put("education", file.getEducation());
+            snapshot.put("selfIntro", file.getSelfIntro());
+            List<ResumeProject> projects = resumeProjectMapper.selectList(
+                    new LambdaQueryWrapper<ResumeProject>()
+                            .eq(ResumeProject::getResumeFileId, file.getId())
+                            .orderByAsc(ResumeProject::getSortOrder));
+            List<Map<String, String>> projectSnapshots = projects.stream().map(p -> {
+                Map<String, String> m = new java.util.LinkedHashMap<>();
+                m.put("projectName", p.getProjectName());
+                m.put("roleName", p.getRoleName());
+                m.put("techStack", p.getTechStack());
+                m.put("responsibility", p.getResponsibility());
+                m.put("achievement", p.getAchievement());
+                m.put("projectSummary", p.getProjectSummary());
+                return m;
+            }).toList();
+            snapshot.put("projects", projectSnapshots);
+
+            // Determine next version number
+            Long maxVersion = resumeVersionMapper.selectCount(
+                    new LambdaQueryWrapper<ResumeVersion>()
+                            .eq(ResumeVersion::getResumeFileId, file.getId()));
+            ResumeVersion version = new ResumeVersion();
+            version.setResumeFileId(file.getId());
+            version.setUserId(userId);
+            version.setVersion(maxVersion.intValue() + 1);
+            version.setSnapshotJson(objectMapper.writeValueAsString(snapshot));
+            version.setChangeSummary(changeSummary);
+            resumeVersionMapper.insert(version);
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to save resume version snapshot", e);
+        }
+    }
+
+    private String buildChangeSummary(ResumeFile file, ResumeUpdateRequest request) {
+        List<String> changes = new ArrayList<>();
+        if (request.getTitle() != null && !request.getTitle().equals(file.getTitle())) changes.add("修正标题");
+        if (request.getSummary() != null && !request.getSummary().equals(file.getSummary())) changes.add("修正摘要");
+        if (request.getSkills() != null) changes.add("更新技能标签");
+        if (request.getEducation() != null && !request.getEducation().equals(file.getEducation())) changes.add("修正教育信息");
+        if (request.getSelfIntro() != null && !request.getSelfIntro().equals(file.getSelfIntro())) changes.add("修正面试开场");
+        if (request.getProjects() != null) changes.add("更新项目经历");
+        return changes.isEmpty() ? "简历内容更新" : String.join("，", changes);
+    }
+
+    private boolean isNotBlank(String s) {
+        return s != null && !s.isBlank();
+    }
+
+    private List<String> nullSafeRecommendations(List<String> recommendations) {
+        if (recommendations == null) {
+            return List.of();
+        }
+        return recommendations.stream()
+                .filter(StringUtils::hasText)
+                .map(String::trim)
+                .distinct()
+                .limit(6)
+                .toList();
     }
 
     private ResumeFile getOwnedResume(Long userId, Long resumeId) {
@@ -700,18 +935,6 @@ public class ResumeServiceImpl implements ResumeService {
             }
         }
         return "";
-    }
-
-    private List<String> nullSafeRecommendations(List<String> recommendations) {
-        if (recommendations == null) {
-            return List.of();
-        }
-        return recommendations.stream()
-                .filter(StringUtils::hasText)
-                .map(String::trim)
-                .distinct()
-                .limit(6)
-                .toList();
     }
 
     private List<ResumeProjectQuestionVO> parseQuestions(String raw) {

@@ -35,7 +35,7 @@
 
         <div class="mt-4 max-w-md">
           <p class="mt-3 text-sm leading-7 text-secondary">
-            先把账号和邮箱准备好，后面整理简历、上传资料和恢复账号都会更顺手。
+            注册后可以保存训练记录，并用于找回账号。
           </p>
         </div>
 
@@ -48,7 +48,7 @@
             <p class="section-kicker">
               注册
             </p>
-            <h1 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">
+            <h1 class="auth-panel-title mt-4 text-3xl font-semibold text-ink">
               填好信息后开始使用
             </h1>
             <p class="mt-3 text-sm leading-7 text-secondary">
@@ -148,7 +148,7 @@
                 已有账号？
                 <RouterLink
                   to="/login"
-                  class="accent-link font-semibold"
+                  class="accent-link touch-link font-semibold"
                 >返回登录</RouterLink>
               </span>
             </div>
@@ -228,7 +228,7 @@ const handleRegister = async () => {
   clearAnnouncement()
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) {
-    await announce('请先补全注册信息后再继续。')
+    await announce('请补全注册信息。')
     await focusFirstInvalidField()
     return
   }
@@ -244,7 +244,7 @@ const handleRegister = async () => {
     ElMessage.success('注册成功，已自动登录')
     await router.push('/dashboard')
   } catch (error: any) {
-    await announce(error?.message || '账号还没创建成功，请检查注册信息后再试。')
+    await announce(error?.message || '注册失败，请检查信息后重试。')
   } finally {
     loading.value = false
   }

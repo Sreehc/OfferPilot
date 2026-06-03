@@ -8,6 +8,8 @@ import com.offerpilot.resume.service.ResumeService;
 import com.offerpilot.resume.vo.ResumeFileVO;
 import com.offerpilot.resume.vo.ResumeInterviewResumeVO;
 import com.offerpilot.resume.vo.ResumeProjectVO;
+import com.offerpilot.resume.vo.ResumeScoreVO;
+import com.offerpilot.resume.vo.ResumeVersionVO;
 import com.offerpilot.security.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -88,6 +90,24 @@ public class ResumeController {
     @GetMapping("/{resumeId}/interview-resume")
     public Result<ResumeInterviewResumeVO> interviewResume(@Parameter(description = "简历 ID") @PathVariable Long resumeId) {
         return Result.success(resumeService.interviewResume(currentUserId(), resumeId));
+    }
+
+    @Operation(summary = "简历评分")
+    @GetMapping("/{resumeId}/score")
+    public Result<ResumeScoreVO> score(@Parameter(description = "简历 ID") @PathVariable Long resumeId) {
+        return Result.success(resumeService.score(currentUserId(), resumeId));
+    }
+
+    @Operation(summary = "简历版本历史")
+    @GetMapping("/{resumeId}/versions")
+    public Result<List<ResumeVersionVO>> versions(@Parameter(description = "简历 ID") @PathVariable Long resumeId) {
+        return Result.success(resumeService.listVersions(currentUserId(), resumeId));
+    }
+
+    @Operation(summary = "回滚到指定版本")
+    @PostMapping("/versions/{versionId}/restore")
+    public Result<ResumeFileVO> restoreVersion(@Parameter(description = "版本 ID") @PathVariable Long versionId) {
+        return Result.success(resumeService.restoreVersion(currentUserId(), versionId));
     }
 
     private Long currentUserId() {

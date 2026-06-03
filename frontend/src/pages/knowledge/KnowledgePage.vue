@@ -8,7 +8,7 @@
                 <h1 class="workspace-title">知识库</h1>
                 <span class="detail-pill">{{ activeTabLabel }}</span>
               </div>
-              <p class="workspace-summary">先看哪类资料，再上传新文档；优先处理可提问和处理中这两类内容。</p>
+              <p class="workspace-summary">按资料类型浏览内容，上传新文档，并查看处理状态。</p>
             </div>
             <div class="knowledge-table-head__tools">
               <div class="mode-switch mode-switch-compact">
@@ -161,7 +161,7 @@
               <div class="knowledge-row__body">
                 <div class="knowledge-row__summary">
                   <p class="text-sm leading-7 text-secondary">
-                    {{ doc.summary || '这份资料的摘要还在整理中，先看标题和标签判断是否要继续处理。' }}
+                    {{ doc.summary || '这份资料的摘要仍在生成。可以查看标题和标签。' }}
                   </p>
                   <div class="mt-3 flex flex-wrap gap-2 text-xs text-secondary">
                     <span class="detail-pill">{{ availabilityLabel(doc) }}</span>
@@ -410,7 +410,7 @@ const handleUpload = async (options: { file: File }) => {
   uploading.value = true
   try {
     await uploadKnowledgeDocApi(options.file, filters.categoryId)
-    ElMessage.success('文档已上传，处理完成后就可以继续提问了')
+    ElMessage.success('文档已上传。处理完成后即可提问。')
     activeTab.value = 'my'
     currentPage.value = 1
     await loadDocs()
@@ -518,17 +518,17 @@ const availabilityLabel = (doc: KnowledgeDocItem) => {
 }
 
 const availabilityHint = (doc: KnowledgeDocItem) => {
-  if (doc.status === 'indexed') return '可以直接进入问答，继续围绕这份资料追问。'
-  if (doc.parseStatus === 'failed') return '这份资料处理失败，修复后才能继续提问。'
-  if (doc.indexStatus === 'failed') return '这份资料索引失败，修复后才能继续提问。'
-  if (doc.parseStatus !== 'parsed') return '资料处理完成后，就可以继续提问。'
-  return '索引完成后，这份资料就能继续提问。'
+  if (doc.status === 'indexed') return '这份资料已可用于问答。'
+  if (doc.parseStatus === 'failed') return '这份资料处理失败，修复后可提问。'
+  if (doc.indexStatus === 'failed') return '这份资料索引失败，修复后可提问。'
+  if (doc.parseStatus !== 'parsed') return '资料处理完成后即可提问。'
+  return '索引完成后即可提问。'
 }
 
 const canAskWithDocument = (doc: KnowledgeDocItem) => canAskWithKnowledgeDocument(doc)
 
 const unavailableActionHint = (doc: KnowledgeDocItem) => {
-  if (doc.parseStatus === 'failed' || doc.indexStatus === 'failed') return '修复后再提问'
+  if (doc.parseStatus === 'failed' || doc.indexStatus === 'failed') return '修复后可提问'
   if (doc.parseStatus !== 'parsed') return '处理完成后可提问'
   return '索引完成后可提问'
 }
@@ -567,7 +567,7 @@ const toggleFavorite = async (doc: KnowledgeDocItem) => {
       ElMessage.success('已收藏')
     }
   } catch {
-    ElMessage.error('收藏状态还没更新成功，请稍后再试')
+    ElMessage.error('收藏状态更新失败，请稍后重试。')
   }
 }
 
@@ -1129,14 +1129,17 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   border: none;
   border-radius: 999px;
   background: transparent;
   color: var(--bc-ink-secondary);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .favorites-toggle:hover {

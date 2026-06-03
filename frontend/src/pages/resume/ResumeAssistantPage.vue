@@ -14,8 +14,8 @@
           <p class="workspace-summary">
             {{
               !currentResume
-                ? '先上传一份简历，再决定是继续修正、导出提纲还是去模拟面试。'
-                : `${stateTitle}，先处理当前最关键的修改项。`
+                ? '上传简历后，你可以修改内容、导出提纲或进入模拟面试。'
+                : `${stateTitle}，处理待修改的重点内容。`
             }}
           </p>
         </div>
@@ -33,7 +33,7 @@
             修正简历内容
           </button>
           <button v-else-if="!isEditing" type="button" class="hard-button-primary" @click="startEditing">
-            继续整理这份简历
+            修改这份简历
           </button>
           <button v-else type="button" class="hard-button-primary" :disabled="saving" @click="handleSave">
             保存当前修改
@@ -70,11 +70,11 @@
         <article class="resume-metric-card">
           <span>{{ currentResume ? '当前状态' : '主目标' }}</span>
           <strong>{{
-            currentResume ? parseStatusLabel(currentResume.parseStatus, currentResume.userFixStatus) : '先上传一份简历'
+            currentResume ? parseStatusLabel(currentResume.parseStatus, currentResume.userFixStatus) : '上传简历'
           }}</strong>
         </article>
         <article class="resume-metric-card">
-          <span>{{ currentResume ? '下一步' : '当前入口' }}</span>
+          <span>{{ currentResume ? '下一步' : '当前操作' }}</span>
           <strong>{{ nextActionText }}</strong>
         </article>
         <article class="resume-metric-card">
@@ -91,7 +91,7 @@
             <div class="flex items-center justify-between gap-3">
               <div>
                 <h3 class="text-xl font-semibold tracking-[-0.03em] text-ink">上传与选择简历</h3>
-                <p class="mt-2 text-sm text-secondary">先选一份简历，再继续整理项目表达、开场和提纲。</p>
+                <p class="mt-2 text-sm text-secondary">选择一份简历后，可以整理项目表达、开场和提纲。</p>
               </div>
             </div>
 
@@ -108,7 +108,7 @@
               </div>
             </el-upload>
 
-            <p v-if="uploading" class="mt-3 text-sm text-secondary">正在整理简历内容，请稍候...</p>
+            <p v-if="uploading" class="mt-3 text-sm text-secondary">正在处理简历内容，请稍候...</p>
           </section>
 
           <section class="resume-side-panel__section">
@@ -202,8 +202,8 @@
         <article v-if="currentResume" class="shell-section-card p-5 sm:p-6">
           <div class="flex items-start justify-between gap-4">
             <div>
-              <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">先修当前简历内容</h3>
-              <p class="mt-2 text-sm leading-7 text-secondary">先把摘要、技能和教育信息校对一遍，再继续整理项目和开场。</p>
+              <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">修改简历内容</h3>
+              <p class="mt-2 text-sm leading-7 text-secondary">完善摘要、技能和教育信息后，补充项目和开场内容。</p>
             </div>
             <button v-if="!isEditing" type="button" class="hard-button-secondary" @click="startEditing">
               修正简历内容
@@ -508,7 +508,7 @@
             <div>
               <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">5. 导出面试简历</h3>
               <p class="mt-2 text-sm leading-7 text-secondary">
-                先看这份提纲是不是顺手，再决定去模拟面试还是回到上一步继续修正。
+                检查这份提纲是否顺手，然后决定修改内容还是开始面试练习。
               </p>
             </div>
             <div class="flex flex-wrap gap-2">
@@ -521,9 +521,9 @@
           <div class="mt-4 rounded-2xl border border-accent/20 bg-accent/5 p-4">
             <p class="text-sm leading-7 text-primary">
               <strong>面试使用提示：</strong>
-              先用开场白讲清方向和亮点，再按项目展开顺序逐个项目说职责、取舍和结果。
-              遇到追问时，先确认问题再组织答案，不需要一口气讲完。
-              如果某个项目追问答不上来，回到简历助手继续修正内容后再练习。
+              开场说明方向和亮点，按项目顺序介绍职责、取舍和结果。
+              遇到追问时，确认问题后组织答案，不需要一口气讲完。
+              如果某个项目回答不顺，可以回到简历助手完善内容。
             </p>
           </div>
 
@@ -659,9 +659,9 @@ const flattenedRisks = computed(() => {
 })
 
 const stateChip = computed(() => {
-  if (!currentResume.value) return '先上传简历'
+  if (!currentResume.value) return '上传简历'
   if (currentResume.value.parseStatus === 'failed') return '修正简历内容'
-  if (isEditing.value) return '继续整理简历'
+  if (isEditing.value) return '修改简历内容'
   return '检查项目追问'
 })
 
@@ -706,7 +706,7 @@ const workflowSteps = computed(() => {
       id: 'upload',
       index: '01',
       title: '上传简历',
-      description: '先锁定一份要继续整理的简历。',
+      description: '选定一份要整理的简历。',
       status: hasResume ? 'done' : 'pending',
       statusText: hasResume ? '已上传' : '待开始'
     },
@@ -724,7 +724,7 @@ const workflowSteps = computed(() => {
       title: '检查项目追问',
       description: '确保每个项目都能讲职责、取舍和结果。',
       status: hasProjects ? 'done' : hasResume ? 'active' : 'pending',
-      statusText: hasProjects ? '可继续' : hasResume ? '待补充' : '待开始'
+      statusText: hasProjects ? '可查看' : hasResume ? '待补充' : '待开始'
     },
     {
       id: 'intro',
@@ -738,7 +738,7 @@ const workflowSteps = computed(() => {
       id: 'resume',
       index: '05',
       title: '导出面试提纲',
-      description: '确认项目展开顺序后再去模拟面试。',
+      description: '确认项目展开顺序后，去模拟面试。',
       status: hasInterviewResume ? 'done' : hasIntro ? 'active' : 'pending',
       statusText: hasInterviewResume ? '可导出' : hasIntro ? '待确认' : '待开始'
     }
@@ -1080,7 +1080,10 @@ onMounted(() => {
   border: 1px solid var(--bc-border-subtle);
   background: var(--bc-surface-muted);
   padding: 0.95rem 1rem;
-  transition: all 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .resume-list-card:hover,

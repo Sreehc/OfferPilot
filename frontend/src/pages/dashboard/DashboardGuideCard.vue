@@ -10,7 +10,7 @@
     <div class="relative flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
       <div class="max-w-3xl">
         <p class="section-kicker">{{ eyebrow }}</p>
-        <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink sm:text-3xl">{{ title }}</h3>
+        <h3 class="mt-3 text-2xl font-semibold text-ink sm:text-3xl" style="text-wrap: balance">{{ title }}</h3>
         <p class="mt-3 text-sm leading-7 text-secondary">{{ description }}</p>
         <p v-if="hint" class="mt-2 text-xs font-semibold uppercase tracking-[0.16em] text-tertiary">{{ hint }}</p>
       </div>

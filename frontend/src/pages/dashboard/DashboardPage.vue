@@ -20,7 +20,7 @@
         <div v-if="showFirstVisitGuide" class="dashboard-home__first-visit">
           <section class="dashboard-home__welcome">
             <h1 class="dashboard-home__welcome-title">{{ greetingText }} 👋</h1>
-            <p class="dashboard-home__welcome-kicker">先把第一步做完，再逐步打开完整工作台。</p>
+            <p class="dashboard-home__welcome-kicker">从这里开始你的求职训练。</p>
           </section>
 
           <DashboardGuideCard
@@ -60,7 +60,7 @@
           <div class="dashboard-home__content">
             <section class="dashboard-home__welcome">
               <h1 class="dashboard-home__welcome-title">{{ greetingText }} 👋</h1>
-              <p class="dashboard-home__welcome-kicker">先推进今天最重要的一步。</p>
+              <p class="dashboard-home__welcome-kicker">今天重点完成这一项。</p>
             </section>
 
             <section class="dashboard-hero">
@@ -80,7 +80,7 @@
                 </div>
 
                 <div class="dashboard-hero__signals">
-                  <span class="dashboard-hero__signal">优先级 {{ dashboardNextActionPriority }}</span>
+                  <span class="dashboard-hero__signal">任务等级 {{ dashboardNextActionPriority }}</span>
                   <span class="dashboard-hero__signal">连续 {{ overview.studyStreak ?? 0 }} 天训练</span>
                   <span class="dashboard-hero__signal">待巩固 {{ overview.reviewDebtCount ?? 0 }} 项</span>
                   <span class="dashboard-hero__signal">进行中 {{ overview.applicationSummary?.activeCount ?? 0 }} 条</span>
@@ -100,7 +100,7 @@
               </div>
             </section>
 
-            <section class="shell-section-card dashboard-card-panel dashboard-card-panel--compact p-4 sm:p-5">
+            <section class="shell-section-card dashboard-card-panel dashboard-card-panel--compact dashboard-quick-panel p-4 sm:p-5">
               <div class="dashboard-section-head">
                 <div>
                   <h3 class="dashboard-section-title">快速入口</h3>
@@ -212,7 +212,7 @@
                   <div>
                     <h3 class="dashboard-section-title">最近模拟面试</h3>
                   </div>
-                  <RouterLink to="/interview" class="accent-link text-sm font-semibold">查看全部</RouterLink>
+                  <RouterLink to="/interview" class="accent-link touch-link text-sm font-semibold">查看全部</RouterLink>
                 </div>
 
                 <template v-if="recentInterviewCard">
@@ -248,7 +248,7 @@
                     <div class="dashboard-interview-card__footer">
                       <RouterLink
                         :to="`/interview/detail/${recentInterviewCard.sessionId}`"
-                        class="dashboard-interview-card__detail-link"
+                        class="dashboard-interview-card__detail-link touch-link"
                       >
                         查看详细分析
                         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9">
@@ -271,7 +271,7 @@
                   <div>
                     <h3 class="dashboard-section-title">学习进度</h3>
                   </div>
-                  <RouterLink to="/study-plan" class="accent-link text-sm font-semibold">查看全部</RouterLink>
+                  <RouterLink to="/study-plan" class="accent-link touch-link text-sm font-semibold">查看全部</RouterLink>
                 </div>
 
                 <div class="dashboard-progress-list">
@@ -370,7 +370,7 @@
                 </article>
               </div>
 
-              <RouterLink to="/study-plan" class="accent-link mt-4 inline-flex text-sm font-semibold">
+              <RouterLink to="/study-plan" class="accent-link touch-link mt-4 inline-flex text-sm font-semibold">
                 查看完整计划
               </RouterLink>
             </section>
@@ -513,30 +513,30 @@ const firstVisitGuide = computed<FirstVisitGuideState>(() => {
   if (!hasResume.value) {
     return {
       eyebrow: '首次使用',
-      title: '先上传一份简历',
-      description: '先把简历放进系统，后面的计划、投递和模拟面试才有明确上下文。',
+      title: '上传简历',
+      description: '上传简历后，计划、投递和模拟面试会更贴近你的目标岗位。',
       actionLabel: '去上传简历',
       actionTo: '/resume#resume-upload',
-      hint: '完成上传后，首页会自动切到下一步。'
+      hint: '上传完成后，可以完善计划和岗位信息。'
     }
   }
   if (!hasPlan.value) {
     return {
       eyebrow: '首次使用',
-      title: '先生成你的第一轮计划',
-      description: '把接下来几天的训练节奏先排好，再开始做题、问答和模拟面试。',
+      title: '生成学习计划',
+      description: '生成一份学习计划，明确接下来几天的训练安排。',
       actionLabel: '去生成计划',
       actionTo: '/study-plan#plan-builder',
-      hint: '生成成功后，会自动进入投递准备。'
+      hint: '计划生成后，可以开始准备岗位信息。'
     }
   }
   return {
     eyebrow: '首次使用',
-    title: '先记录第一条岗位',
-    description: '先放进一条真实岗位，后续的简历调整、问答和面试才会更贴近目标。',
+    title: '记录目标岗位',
+    description: '添加一个目标岗位，后续建议会更贴近你的求职方向。',
     actionLabel: '去记录岗位',
     actionTo: '/applications#application-create',
-    hint: '录入第一条岗位后，首页会切回标准工作台。'
+    hint: '岗位记录完成后，就可以进入标准工作台。'
   }
 })
 
@@ -547,37 +547,37 @@ const firstVisitSteps = computed<FirstVisitStep[]>(() => [
     title: '上传简历',
     description: '让后续训练和求职动作有基础资料。',
     state: hasResume.value ? 'done' : 'active',
-    stateLabel: hasResume.value ? '已完成' : '当前步骤'
+    stateLabel: hasResume.value ? '已完成' : '进行中'
   },
   {
     key: 'plan',
     index: '02',
     title: '生成计划',
-    description: '把题库、问答和面试训练排成连续动作。',
+    description: '把题库、问答和模拟面试安排到同一条训练主线上。',
     state: hasPlan.value ? 'done' : hasResume.value ? 'active' : 'pending',
-    stateLabel: hasPlan.value ? '已完成' : hasResume.value ? '下一步' : '待开始'
+    stateLabel: hasPlan.value ? '已完成' : hasResume.value ? '待完成' : '待开始'
   },
   {
     key: 'applications',
     index: '03',
     title: '记录岗位',
-    description: '先接入一条真实岗位，后面的优化建议才更有目标。',
+    description: '补充一个目标岗位，让后续建议更贴近你的求职方向。',
     state: hasApplications.value ? 'done' : hasPlan.value ? 'active' : 'pending',
-    stateLabel: hasApplications.value ? '已完成' : hasPlan.value ? '下一步' : '待开始'
+    stateLabel: hasApplications.value ? '已完成' : hasPlan.value ? '待完成' : '待开始'
   },
   {
     key: 'workbench',
     index: '04',
     title: '进入工作台',
-    description: '完成前三步后，再进入标准首页继续推进主任务。',
+    description: '完成前面三步后，这里会显示日常训练工作台。',
     state: showFirstVisitGuide.value ? 'pending' : 'done',
-    stateLabel: showFirstVisitGuide.value ? '待解锁' : '已进入'
+    stateLabel: showFirstVisitGuide.value ? '未开启' : '已进入'
   }
 ])
 
-const dashboardNextActionTitle = computed(() => dashboardNextAction.value?.title || '继续今天的训练')
+const dashboardNextActionTitle = computed(() => dashboardNextAction.value?.title || '查看今日训练')
 const dashboardNextActionDescription = computed(
-  () => dashboardNextAction.value?.description || '先推进当前最关键的一步，再回来看其他模块。'
+  () => dashboardNextAction.value?.description || '完成当前任务后，处理其他模块。'
 )
 const dashboardNextActionReason = computed(() => dashboardNextAction.value?.reason || '')
 const dashboardNextActionPath = computed(() => dashboardNextAction.value?.path || '/dashboard')
@@ -811,7 +811,7 @@ const recommendations = computed<DashboardRecommendationItem[]>(() => {
         type: '推荐题目',
         title: item.title,
         category: [item.categoryName, difficultyLabel(item.difficulty)].filter(Boolean).join(' · ') || '面试题',
-        hint: item.reason || '建议先做一轮热身',
+        hint: item.reason || '适合作为今天的热身题目',
         path: `/question?${query.toString()}`,
         tone: recommendationTone(index)
       }
@@ -825,7 +825,7 @@ const recommendations = computed<DashboardRecommendationItem[]>(() => {
       type: '面试题',
       title: topWeak.includes('JVM') ? '深入理解 JVM 内存模型' : 'Java 中 == 和 equals 的区别',
       category: topWeak.includes('JVM') ? 'JVM' : 'Java基础',
-      hint: '建议先做一轮热身',
+      hint: '适合作为今天的热身题目',
       path: '/question',
       tone: 'violet'
     },
@@ -1146,8 +1146,9 @@ onMounted(() => {
   color: #152b4b;
   font-size: 1.46rem;
   font-weight: 800;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
   line-height: 1.12;
+  text-wrap: balance;
 }
 
 .dashboard-card-panel {
@@ -1170,7 +1171,7 @@ onMounted(() => {
   border-radius: var(--dashboard-card-radius);
   background:
     radial-gradient(circle at 14% 18%, rgba(255, 255, 255, 0.18), transparent 22%),
-    linear-gradient(135deg, #3f67ff 0%, #4d79ff 46%, #72a6ff 100%);
+    linear-gradient(135deg, #3f67ff 0%, #4d79ff 42%, #4a90b8 100%);
   padding: 1.2rem 1.35rem;
   box-shadow: 0 12px 26px rgba(63, 103, 255, 0.14);
 }
@@ -1199,8 +1200,9 @@ onMounted(() => {
   color: #fff;
   font-size: clamp(1.58rem, 2.3vw, 2.12rem);
   font-weight: 800;
-  letter-spacing: -0.05em;
+  letter-spacing: 0;
   line-height: 1.04;
+  text-wrap: balance;
 }
 
 .dashboard-hero__description {
@@ -1209,6 +1211,7 @@ onMounted(() => {
   color: rgba(255, 255, 255, 0.9);
   font-size: 0.86rem;
   line-height: 1.55;
+  text-wrap: pretty;
 }
 
 .dashboard-hero__reason {
@@ -1217,6 +1220,7 @@ onMounted(() => {
   color: rgba(255, 255, 255, 0.72);
   font-size: 0.74rem;
   line-height: 1.5;
+  text-wrap: pretty;
 }
 
 .dashboard-hero__actions {
@@ -1250,6 +1254,7 @@ onMounted(() => {
   font-size: 0.74rem;
   font-weight: 600;
   padding: 0.36rem 0.64rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .dashboard-hero__visual {
@@ -1321,7 +1326,8 @@ onMounted(() => {
   color: #162b4a;
   font-size: 0.96rem;
   font-weight: 800;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
+  text-wrap: balance;
 }
 
 .dashboard-quick-grid,
@@ -1516,7 +1522,8 @@ onMounted(() => {
   color: #1b2f4c;
   font-size: 1.08rem;
   font-weight: 800;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 .dashboard-interview-card__stat span {
@@ -1740,7 +1747,8 @@ onMounted(() => {
   color: #3d69ff;
   font-size: 1.02rem;
   font-weight: 800;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
@@ -1916,6 +1924,14 @@ onMounted(() => {
     flex-wrap: wrap;
   }
 
+  .dashboard-home__content {
+    gap: calc(var(--dashboard-layout-gap) * 0.72);
+  }
+
+  .dashboard-home__welcome {
+    order: 1;
+  }
+
   .dashboard-quick-grid,
   .dashboard-summary-grid,
   .dashboard-recommend-grid,
@@ -1924,7 +1940,61 @@ onMounted(() => {
   }
 
   .dashboard-home__welcome-title {
-    font-size: 1.7rem;
+    font-size: 1.56rem;
+  }
+
+  .dashboard-quick-panel {
+    order: 2;
+  }
+
+  .dashboard-hero {
+    order: 3;
+    gap: 0.75rem;
+    padding: 1rem 1rem 0.92rem;
+  }
+
+  .dashboard-summary-grid {
+    order: 4;
+  }
+
+  .dashboard-recommend-panel {
+    order: 5;
+  }
+
+  .dashboard-hero__title {
+    margin-top: 0.42rem;
+    font-size: 1.34rem;
+    line-height: 1.12;
+  }
+
+  .dashboard-hero__description {
+    margin-top: 0.4rem;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  .dashboard-hero__reason {
+    margin-top: 0.35rem;
+    font-size: 0.72rem;
+  }
+
+  .dashboard-hero__signals {
+    margin-top: 0.6rem;
+    gap: 0.5rem;
+  }
+
+  .dashboard-hero__signal:nth-child(n + 3) {
+    display: none;
+  }
+
+  .dashboard-hero__visual {
+    display: none;
+  }
+
+  .dashboard-card-panel,
+  .dashboard-plan-card,
+  .dashboard-donut-card {
+    box-shadow: 0 5px 12px rgba(30, 48, 90, 0.025);
   }
 }
 </style>

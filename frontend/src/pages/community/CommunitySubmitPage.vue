@@ -8,6 +8,9 @@
     </button>
 
     <section class="shell-section-card p-5 sm:p-6">
+      <div v-if="loading" class="pb-5 text-sm text-tertiary">
+        正在加载帖子内容...
+      </div>
       <el-form ref="formRef" :model="form" :rules="formRules" label-position="top" @submit.prevent>
         <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div class="space-y-5">
@@ -39,14 +42,14 @@
                 :rows="14"
                 maxlength="10000"
                 resize="none"
-                placeholder="写清问题和已尝试内容"
+                placeholder="描述问题，并补充你已经尝试过的内容"
               />
             </el-form-item>
           </div>
 
           <aside class="compose-side space-y-4">
             <article class="compose-note">
-              <p class="text-sm font-semibold text-ink">写清问题和已尝试内容</p>
+              <p class="text-sm font-semibold text-ink">描述问题，并补充已尝试内容</p>
             </article>
           </aside>
         </div>
@@ -62,10 +65,10 @@
           <button
             type="button"
             class="hard-button-primary"
-            :disabled="!canSubmit || submitting"
+            :disabled="loading || !canSubmit || submitting"
             @click="handleSubmit"
           >
-            {{ submitting ? '提交中...' : '发布问题' }}
+            {{ submitting ? '提交中...' : submitButtonText }}
           </button>
         </div>
       </el-form>
@@ -74,12 +77,15 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import { computed, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { createCommunityQuestionApi } from '@/api/community'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { createCommunityQuestionApi, fetchCommunityQuestionDetailApi, updateCommunityQuestionApi } from '@/api/community'
+import { ERROR_COPY } from '@/constants/productCopy'
 import { useFormRules } from '@/composables/useFormRules'
 
+const route = useRoute()
 const router = useRouter()
 const formRef = ref<FormInstance>()
 const { presets } = useFormRules()
@@ -90,6 +96,15 @@ const form = reactive({
 })
 
 const submitting = ref(false)
+const loading = ref(false)
+const editingQuestionId = computed(() => {
+  const id = Number(route.query.id)
+  return Number.isFinite(id) && id > 0 ? id : null
+})
+const submitButtonText = computed(() => {
+  if (submitting.value) return '提交中...'
+  return editingQuestionId.value ? '保存修改' : '发布问题'
+})
 
 const formRules: FormRules<typeof form> = {
   title: presets.title,
@@ -98,21 +113,53 @@ const formRules: FormRules<typeof form> = {
 
 const canSubmit = computed(() => form.title.trim().length > 0 && form.content.trim().length > 0)
 
+async function loadEditingQuestion() {
+  if (!editingQuestionId.value) return
+  loading.value = true
+  try {
+    const { data } = await fetchCommunityQuestionDetailApi(editingQuestionId.value)
+    form.title = data.title || ''
+    form.content = data.content || ''
+  } catch {
+    ElMessage.error(ERROR_COPY.communityQuestionEditLoadFailed)
+    await router.push('/community')
+  } finally {
+    loading.value = false
+  }
+}
+
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
 
   submitting.value = true
   try {
+    if (editingQuestionId.value) {
+      await updateCommunityQuestionApi({
+        id: editingQuestionId.value,
+        title: form.title.trim(),
+        content: form.content.trim()
+      })
+      ElMessage.success('帖子已更新')
+      await router.push(`/community/question/${editingQuestionId.value}`)
+      return
+    }
+
     const { data } = await createCommunityQuestionApi({
       title: form.title.trim(),
       content: form.content.trim(),
     })
     await router.push(`/community/question/${data}`)
+  } catch {
+    ElMessage.error(ERROR_COPY.communityQuestionSaveFailed)
   } finally {
     submitting.value = false
   }
 }
+
+onMounted(() => {
+  void loadEditingQuestion()
+})
 </script>
 
 <style scoped>

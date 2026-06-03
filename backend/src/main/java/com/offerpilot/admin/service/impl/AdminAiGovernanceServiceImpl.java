@@ -261,7 +261,7 @@ public class AdminAiGovernanceServiceImpl implements AdminAiGovernanceService {
                 .group(AiSystemConfigKeys.GROUP_LLM)
                 .key(AiSystemConfigKeys.LLM_ENABLED)
                 .displayName("LLM 调用开关")
-                .description("控制问答、面试评分、卡片生成等 LLM 能力是否启用。")
+                .description("控制问答、面试评分等 LLM 能力是否启用。")
                 .valueType("boolean")
                 .runtimeDefault(String.valueOf(llmProperties.isEnabled()))
                 .build());
@@ -326,7 +326,6 @@ public class AdminAiGovernanceServiceImpl implements AdminAiGovernanceService {
         definitions.put(AiSystemConfigKeys.PROMPT_REFERENCE_CONSTRAINT, promptDefinition(AiSystemConfigKeys.PROMPT_REFERENCE_CONSTRAINT, "引用约束 Prompt", "控制 RAG 命中引用后的回答约束。", PromptTemplateDefaults.REFERENCE_CONSTRAINT));
         definitions.put(AiSystemConfigKeys.PROMPT_INTERVIEW_SCORE, promptDefinition(AiSystemConfigKeys.PROMPT_INTERVIEW_SCORE, "面试评分 Prompt", "控制模拟面试评分、JSON 输出与弱项标签生成。", PromptTemplateDefaults.INTERVIEW_SCORE));
         definitions.put(AiSystemConfigKeys.PROMPT_FOLLOW_UP, promptDefinition(AiSystemConfigKeys.PROMPT_FOLLOW_UP, "追问 Prompt", "控制后续追问生成策略。", PromptTemplateDefaults.FOLLOW_UP));
-        definitions.put(AiSystemConfigKeys.PROMPT_KNOWLEDGE_CARD, promptDefinition(AiSystemConfigKeys.PROMPT_KNOWLEDGE_CARD, "卡片生成 Prompt", "控制知识卡片结构化输出格式。", PromptTemplateDefaults.KNOWLEDGE_CARD));
         return definitions;
     }
 

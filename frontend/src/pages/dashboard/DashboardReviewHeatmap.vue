@@ -3,7 +3,7 @@
     <div class="flex items-end justify-between">
       <div>
         <p class="section-kicker">复习日历</p>
-        <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">{{ streak }} 天连续打卡</h3>
+        <h3 class="mt-3 text-2xl font-semibold text-ink" style="text-wrap: balance">{{ streak }} 天连续打卡</h3>
         <p class="mt-2 text-sm leading-6" style="color: var(--bc-ink-secondary)">
           {{ todayPending > 0 ? `今日还有 ${todayPending} 道待复习` : '今日复习已完成' }}
         </p>

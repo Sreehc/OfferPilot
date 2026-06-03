@@ -28,10 +28,6 @@ public class InterviewDetailVO {
     private Integer questionCount;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-    private Boolean cardsGenerated;
-    private Integer generatedCardCount;
-    private String interviewDeckId;
-    private String interviewDeckTitle;
     private List<InterviewRecordVO> records;
 
     @Data
@@ -49,11 +45,6 @@ public class InterviewDetailVO {
         private List<String> weakPointTags;
         private String reviewSummary;
         private Boolean isLowScore;
-        private String recommendedCardFront;
-        private String recommendedCardBack;
-        private String recommendedCardExplanation;
-        private String recommendedCardFollowUp;
-        private String generatedCardId;
 
         /** Voice-specific: STT transcript (may differ from userAnswer if edited). */
         private String voiceTranscript;

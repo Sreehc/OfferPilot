@@ -7,7 +7,6 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.offerpilot.ai.service.EmbeddingGateway;
 import com.offerpilot.category.entity.Category;
 import com.offerpilot.category.service.CategoryService;
-import com.offerpilot.cards.service.KnowledgeCardService;
 import com.offerpilot.common.api.ResultCode;
 import com.offerpilot.common.storage.FileStorageService;
 import com.offerpilot.common.storage.StorageDirectory;
@@ -22,10 +21,6 @@ import com.offerpilot.knowledge.entity.KnowledgeChunk;
 import com.offerpilot.knowledge.entity.KnowledgeDoc;
 import com.offerpilot.knowledge.mapper.KnowledgeChunkMapper;
 import com.offerpilot.knowledge.mapper.KnowledgeDocMapper;
-import com.offerpilot.cards.entity.KnowledgeCard;
-import com.offerpilot.cards.entity.KnowledgeCardTask;
-import com.offerpilot.cards.mapper.KnowledgeCardMapper;
-import com.offerpilot.cards.mapper.KnowledgeCardTaskMapper;
 import com.offerpilot.knowledge.service.DocumentParserService;
 import com.offerpilot.knowledge.service.KnowledgeRetrievalService;
 import com.offerpilot.knowledge.service.KnowledgeService;
@@ -73,9 +68,6 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
     private final EmbeddingGateway embeddingGateway;
     private final VectorStoreService vectorStoreService;
     private final DocumentParserService documentParserService;
-    private final KnowledgeCardService knowledgeCardService;
-    private final KnowledgeCardTaskMapper knowledgeCardTaskMapper;
-    private final KnowledgeCardMapper knowledgeCardMapper;
     private final FileStorageService fileStorageService;
     private final UploadPolicyService uploadPolicyService;
 
@@ -313,7 +305,6 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
         if (!userId.equals(doc.getUserId())) {
             throw new BusinessException(ResultCode.FORBIDDEN.getCode(), "只能删除自己上传的文档");
         }
-        knowledgeCardService.invalidateByDocId(docId, "来源文档已删除");
         // Remove chunks from vector store and DB
         vectorStoreService.removeByDocId(docId);
         knowledgeChunkMapper.delete(new LambdaQueryWrapper<KnowledgeChunk>()
@@ -348,30 +339,9 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
                                 .in(KnowledgeChunk::getDocId, docs.stream().map(KnowledgeDoc::getId).toList()))
                 .stream()
                 .collect(Collectors.groupingBy(KnowledgeChunk::getDocId, Collectors.counting()));
-        Map<Long, KnowledgeCardTask> deckMap = knowledgeCardTaskMapper.selectList(
-                        new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<KnowledgeCardTask>()
-                                .in(KnowledgeCardTask::getDocId, docs.stream().map(KnowledgeDoc::getId).toList())
-                                .eq(KnowledgeCardTask::getSourceType, "knowledge_doc")
-                                .ne(KnowledgeCardTask::getStatus, "invalid")
-                                .orderByDesc(KnowledgeCardTask::getUpdateTime))
-                .stream()
-                .collect(Collectors.toMap(KnowledgeCardTask::getDocId, Function.identity(), (left, right) -> left));
-        Map<Long, List<KnowledgeCard>> cardsByTaskId = deckMap.isEmpty()
-                ? Map.of()
-                : knowledgeCardMapper.selectList(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<KnowledgeCard>()
-                                .in(KnowledgeCard::getTaskId, deckMap.values().stream().map(KnowledgeCardTask::getId).toList()))
-                        .stream()
-                        .collect(Collectors.groupingBy(KnowledgeCard::getTaskId));
         return docs.stream()
                 .map(doc -> {
                     Category category = categoryMap.get(doc.getCategoryId());
-                    KnowledgeCardTask deck = deckMap.get(doc.getId());
-                    List<KnowledgeCard> cards = deck == null ? List.of() : cardsByTaskId.getOrDefault(deck.getId(), List.of());
-                    String cardTypes = cards.stream()
-                            .map(KnowledgeCard::getCardType)
-                            .filter(StringUtils::hasText)
-                            .distinct()
-                            .collect(Collectors.joining(","));
                     return KnowledgeDocVO.builder()
                             .id(doc.getId())
                             .title(doc.getTitle())
@@ -387,11 +357,6 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
                             .status(doc.getStatus())
                             .summary(doc.getSummary())
                             .chunkCount(chunkCountMap.getOrDefault(doc.getId(), 0L).intValue())
-                            .cardDeckId(deck == null ? null : deck.getId())
-                            .cardDeckTitle(deck == null ? null : deck.getDeckTitle())
-                            .cardCount(cards.size())
-                            .cardGeneratedAt(deck == null ? null : deck.getUpdateTime())
-                            .cardTypes(StringUtils.hasText(cardTypes) ? cardTypes : null)
                             .updateTime(doc.getUpdateTime())
                             .build();
                 })

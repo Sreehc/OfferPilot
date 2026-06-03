@@ -34,108 +34,108 @@ export const KNOWLEDGE_STATUS_NAMES = {
 
 export const EMPTY_STATE_COPY = {
   analyticsTrend: {
-    title: '先推进一条主线任务',
-    description: '先安排计划、上传简历或记录投递，再回来查看准备趋势。'
+    title: '还没有趋势数据',
+    description: '完成计划、简历或投递相关操作后，这里会显示准备趋势。'
   },
   analyticsReviewIntensity: {
-    title: '先完成今天的错题复盘',
-    description: '先完成今天的错题复盘，再回来查看复盘节奏变化。'
+    title: '还没有复盘强度数据',
+    description: '完成今天的错题复盘后，这里会显示复盘强度变化。'
   },
   analyticsReviewStability: {
-    title: '先连续做几次错题复盘',
-    description: '先连续完成几次复盘，再回来查看稳定性变化。'
+    title: '还没有复盘稳定性数据',
+    description: '连续完成几次复盘后，这里会显示稳定性变化。'
   },
   analyticsCategoryMastery: {
-    title: '先开始处理错题',
-    description: '先完成题目复盘，再回来查看各分类的掌握进度。'
+    title: '还没有分类掌握度',
+    description: '完成题目复盘后，这里会显示各分类的掌握进度。'
   },
   analyticsMasteryDistribution: {
-    title: '先完成一轮错题复盘',
-    description: '先完成一轮错题复盘，再回来查看题目的当前状态分布。'
+    title: '还没有错题分布数据',
+    description: '完成一轮错题复盘后，这里会显示当前状态分布。'
   },
   analyticsInterviewTrend: {
-    title: '先完成一轮模拟面试',
-    description: '先完成一轮模拟面试，再回来查看分类趋势变化。'
+    title: '还没有面试趋势数据',
+    description: '完成几次模拟面试后，这里会显示分类趋势变化。'
   },
   leaderboard: {
     title: '还没有贡献排名',
-    description: '先参与一次社区回答，再回来查看贡献排名。'
+    description: '参与一次社区回答后，这里会显示你的贡献排名。'
   },
   communityBoard: {
     title: '这个版块还没有帖子',
-    description: '换个版块看看，或先发起一个问题，把这块讨论带起来。'
+    description: '换个版块看看，或发起一个新问题。'
   },
   communityReplies: {
     title: '还没有回复',
-    description: '先写下第一条回复，把这次讨论继续往前推进。'
+    description: '写下第一条回复，参与这次讨论。'
   },
   knowledgeRecommended: {
     title: '还没有可用推荐资料',
-    description: '先切到“我的文档”上传一份资料，或调整筛选范围继续找能继续提问的内容。'
+    description: '你可以切到“我的文档”上传资料，或调整筛选范围。'
   },
   knowledgePersonal: {
     title: '上传你的第一份学习资料',
-    description: '上传一份资料，处理完成后就能继续提问。'
+    description: '上传资料后，处理完成即可提问。'
   },
   favorites: {
     title: '还没有收藏内容',
-    description: '先去知识库、题库或社区标记几条重点内容，再回来集中回看。'
+    description: '去知识库、题库或社区添加几条收藏。'
   },
   favoriteGroups: {
     title: '还没有收藏分组',
-    description: '先新建一个分组，把同一轮复习要看的内容收在一起。'
+    description: '新建一个分组，把相关内容整理到一起。'
   },
   wrongBook: {
     title: '还没有错题记录',
-    description: '先做一轮题库训练或模拟面试，再回来集中复习低分题和易错题。'
+    description: '完成题库训练或模拟面试后，这里会显示低分题和易错题。'
   },
   interviewHistory: {
     title: '还没有已完成的模拟面试',
-    description: '先开始一轮，再回来查看分数、表现和时间线。'
+    description: '开始一轮模拟面试后，这里会显示分数、表现和时间线。'
   },
   dashboardRecentInterview: {
     title: '还没有最近面试摘要',
-    description: '先完成一轮模拟面试，再回来查看最近一次训练的摘要和薄弱点。'
+    description: '完成一轮模拟面试后，这里会显示最近一次训练的摘要和薄弱点。'
   },
   dashboardInterviews: {
     title: '还没有最近面试记录',
-    description: '先完成一轮模拟面试，再回来查看最近几次训练的分数、方向和完成时间。'
+    description: '完成模拟面试后，这里会显示最近几次训练的分数和完成时间。'
   },
   dashboardInterviewTrend: {
     title: '还没有可回看的面试分数',
-    description: '先完成一轮模拟面试，再回来对比最近几次训练的分数变化。'
+    description: '完成几次模拟面试后，这里会显示分数变化。'
   },
   dashboardWeakPoints: {
     title: '还没有分类掌握度',
-    description: '先做题并完成一轮复习，再回来查看哪类内容最该优先补齐。'
+    description: '完成做题和复习后，这里会显示需要补齐的分类。'
   },
   dashboardApplicationDonut: {
-    title: '先记录一条投递',
-    description: '记录后就能在这里查看每个阶段的分布变化。'
+    title: '还没有投递记录',
+    description: '记录目标岗位后，这里会显示各阶段的分布变化。'
   },
   resumeLibrary: {
     title: '还没有简历',
-    description: '先上传一份，再回来整理项目、提纲和面试表达。'
+    description: '上传一份简历后，就可以开始整理项目、提纲和面试表达。'
   },
   resumeWorkspace: {
-    title: '上传简历后，这里会按顺序带你往下走',
-    description: '接下来先检查简历内容，再整理项目追问，最后确认开场和面试提纲。'
+    title: '上传简历后，这里会显示整理内容',
+    description: '你可以检查简历内容、整理项目追问，并确认开场和面试提纲。'
   },
   wrongDetailSelection: {
-    title: '先选一道错题开始复盘',
-    description: '点击左侧任意题目后，这里会显示标准答案、错误原因和下一次复习安排。'
+    title: '选择一道错题查看详情',
+    description: '点击左侧题目后，这里会显示标准答案、错误原因和下一次复习安排。'
   },
   applicationDetailKeywords: {
     title: '还没有明显命中词',
-    description: '先补一轮 JD 关键词或刷新分析结果，再回来看这条岗位的匹配点。'
+    description: '补充 JD 关键词或刷新分析结果后，这里会显示岗位匹配点。'
   },
   applicationDetailTimeline: {
     title: '还没有过程记录',
-    description: '先补一条当前状态或面试反馈，再回来串起整条时间线。'
+    description: '补充当前状态或面试反馈后，这里会显示完整时间线。'
   },
   applicationBoardFocus: {
     title: '还没有可推进的岗位',
-    description: '先记录一条岗位，再回来查看下一步该跟进什么。'
+    description: '记录目标岗位后，这里会显示下一步建议。'
   },
   deviceManage: {
     title: '还没有其他登录设备',
@@ -143,93 +143,93 @@ export const EMPTY_STATE_COPY = {
   },
   adminOverviewTrend: {
     title: '还没有趋势数据',
-    description: '先积累一段时间的用户变化，再回来查看新增和活跃走势。'
+    description: '积累一段时间的数据后，这里会显示新增和活跃走势。'
   },
   adminQuestionList: {
     title: '还没有题目',
-    description: '先新增一条或导入题库，再回来查看筛选结果。'
+    description: '新增题目或导入题库后，这里会显示筛选结果。'
   },
   adminSystemConfigHistory: {
     title: '还没有变更记录',
-    description: '先更新一项配置，再回来查看修改历史。'
+    description: '更新配置后，这里会显示修改历史。'
   },
   adminKnowledgeDocs: {
     title: '还没有文档',
-    description: '先导入一份资料，再回来处理解析、索引和检索验证。'
+    description: '导入资料后，这里可以处理解析、索引和检索验证。'
   }
 } as const
 
 export const ERROR_COPY = {
-  applicationStatusUpdateFailed: '当前阶段还没更新成功，请检查填写内容后再试。',
-  applicationEventCreateFailed: '这条反馈还没记录成功，请补全信息后再试。',
-  applicationAnalysisRefreshFailed: 'JD 分析还没刷新成功，请稍后再试。',
-  chatAnswerFailed: '这次回答还没生成成功，请换个问法或稍后再试。',
-  chatSessionLoadFailed: '这段会话还没加载出来，请重新点一次，或换一段会话继续查看。',
-  chatSessionDeleteFailed: '这段会话还没删除成功，请稍后再试。',
-  chatSubmitFailed: '这次提问没有发送成功，请检查网络后再试。',
-  communityQuestionLoadFailed: '帖子内容还没加载出来，请稍后再试；如果还是不行，先回到社区列表重新进入。',
-  communityQuestionEditLoadFailed: '要编辑的帖子内容还没加载出来，请先回到社区列表重新进入。',
-  communityQuestionSaveFailed: '这次发帖还没提交成功，请检查标题和内容后再试。',
-  dashboardCoreLoadFailed: '首页核心数据还没加载出来，请刷新页面后再试。',
-  interviewHistoryLoadFailed: '最近的面试记录还没加载出来，请稍后再试。',
-  interviewDetailLoadFailed: '这次面试记录还没加载出来，请回到面试列表换一条记录，或稍后再试。',
-  interviewNextQuestionLoadFailed: '下一题还没拿到，请稍后再试。',
-  interviewSummaryLoadFailed: '这次面试总结还没加载出来，请稍后再试。',
-  notificationLoadFailed: '通知列表还没加载出来，请稍后再试。',
-  notificationMarkAllReadFailed: '通知还没全部设为已读，请稍后再试。',
-  favoritesLoadFailed: '收藏列表还没加载出来，请刷新或调整筛选后再试。',
-  favoriteRemoveFailed: '这条收藏还没取消成功，请稍后再试。',
-  favoriteBatchRemoveFailed: '这批收藏还没取消成功，请稍后再试。',
-  favoriteTagCreateFailed: '收藏分组还没创建成功，请换个名字后再试。',
-  favoriteTagDeleteFailed: '这个分组还没删除成功，请稍后再试。',
+  applicationStatusUpdateFailed: '当前阶段更新失败，请检查填写内容后重试。',
+  applicationEventCreateFailed: '反馈记录失败，请补全信息后重试。',
+  applicationAnalysisRefreshFailed: 'JD 分析刷新失败，请稍后重试。',
+  chatAnswerFailed: '这次回答生成失败，请换个问法后重试。',
+  chatSessionLoadFailed: '无法加载这段会话，请重试或切换到其他会话。',
+  chatSessionDeleteFailed: '会话删除失败，请稍后重试。',
+  chatSubmitFailed: '这次提问发送失败，请检查网络后重试。',
+  communityQuestionLoadFailed: '帖子内容加载失败，请稍后重试；如果仍有问题，请回到社区列表重新进入。',
+  communityQuestionEditLoadFailed: '无法加载要编辑的帖子内容，请回到社区列表后重试。',
+  communityQuestionSaveFailed: '发帖失败，请检查标题和内容后重试。',
+  dashboardCoreLoadFailed: '无法加载首页数据，请刷新页面后重试。',
+  interviewHistoryLoadFailed: '无法加载最近的面试记录，请稍后重试。',
+  interviewDetailLoadFailed: '无法加载这次面试记录，请稍后重试或切换到其他记录。',
+  interviewNextQuestionLoadFailed: '无法加载下一题，请稍后重试。',
+  interviewSummaryLoadFailed: '无法加载这次面试总结，请稍后重试。',
+  notificationLoadFailed: '无法加载通知列表，请稍后重试。',
+  notificationMarkAllReadFailed: '全部已读设置失败，请稍后重试。',
+  favoritesLoadFailed: '无法加载收藏列表，请刷新或调整筛选后重试。',
+  favoriteRemoveFailed: '取消收藏失败，请稍后重试。',
+  favoriteBatchRemoveFailed: '批量取消收藏失败，请稍后重试。',
+  favoriteTagCreateFailed: '收藏分组创建失败，请换个名字后重试。',
+  favoriteTagDeleteFailed: '分组删除失败，请稍后重试。',
   knowledgeListLoadFailed: '资料列表暂时没加载出来，请切换范围或稍后重试。',
-  knowledgeUploadFailed: '这份资料还没上传成功，请检查文件格式、大小后再试。',
-  knowledgeDeleteFailed: '这份文档还没删除成功，请稍后再试。',
-  questionListLoadFailed: '题库列表还没加载出来，请调整筛选条件后再试。',
-  questionFavoriteToggleFailed: '收藏状态没有更新成功，请稍后再试。',
-  reviewTodayLoadFailed: '今天的复习任务还没加载出来，请刷新页面或稍后再试。',
-  reviewSubmitFailed: '这次复习结果还没保存成功，请再点一次当前评级。',
-  resumeWorkspaceLoadFailed: '简历助手还没加载出来，请刷新页面后再试。',
-  resumeSaveFailed: '简历修改还没保存成功，请检查内容后再试。',
-  resumeRetryParseFailed: '这份简历还没重新识别成功，请稍后再试。',
-  resumeUploadFailed: '简历还没上传成功，请检查文件格式后再试。',
-  resumeRestoreVersionFailed: '这个版本还没回滚成功，请稍后再试。',
-  resumeOutlineCopyFailed: '面试提纲还没复制成功，请稍后再试。',
-  wrongListLoadFailed: '错题列表还没加载出来，请刷新页面或稍后再试。',
-  wrongDetailLoadFailed: '这道错题的详情还没加载出来，请换一题，或稍后再试。',
-  wrongMasteryUpdateFailed: '掌握状态还没更新成功，请重新点一次当前目标状态。',
-  wrongDeleteFailed: '这道错题还没删除成功，请稍后再试。',
-  wrongExportFailed: '错题本还没导出成功，请稍后再试。',
-  deviceLoadFailed: '登录设备还没加载出来，请刷新后再试。',
-  deviceRevokeFailed: '这台设备暂时没有撤销成功，请稍后再试。',
-  deviceRevokeAllFailed: '其他设备暂时没有全部撤销成功，请稍后再试。',
-  adminContentLoadFailed: '待审核内容还没加载出来，请刷新列表后再试。',
-  adminContentApproveFailed: '这条内容还没审核通过，请稍后再试。',
-  adminContentRejectFailed: '这条内容还没拒绝成功，请稍后再试。',
-  adminOverviewLoadFailed: '后台概览数据还没加载出来，请刷新页面后再试。',
-  adminUsersLoadFailed: '用户列表还没加载出来，请刷新或调整筛选后再试。',
-  adminUserSaveFailed: '这位用户的信息还没更新成功，请稍后再试。',
-  adminUserBanFailed: '这位用户还没封禁成功，请稍后再试。',
-  adminUserUnbanFailed: '这位用户还没解封成功，请稍后再试。',
-  adminUserDetailLoadFailed: '这位用户的详情还没加载出来，请稍后再试。',
-  adminCategorySaveFailed: '分类还没保存成功，请检查名称和类型后再试。',
-  adminCategoryDeleteFailed: '这个分类还没删除成功，请稍后再试。',
-  adminQuestionSaveFailed: '题目还没保存成功，请检查标题和分类后再试。',
-  adminQuestionDeleteFailed: '这道题还没删除成功，请稍后再试。',
-  adminQuestionImportFailed: '题库还没导入成功，请检查文件格式后再试。',
-  adminSystemConfigLoadFailed: '系统配置还没加载出来，请刷新后再试。',
-  adminSystemConfigSaveFailed: '这项配置还没保存成功，请检查改动后再试。',
-  adminInterviewGovernanceLoadFailed: '面试治理数据还没加载出来，请刷新列表后再试。',
-  adminLoginLogLoadFailed: '登录日志还没加载出来，请刷新或调整筛选后再试。',
-  adminQuestionLoadFailed: '题库列表还没加载出来，请刷新或调整筛选后再试。',
-  adminKnowledgeLoadFailed: '文档列表还没加载出来，请刷新或调整筛选后再试。',
-  adminKnowledgeSearchFailed: '检索结果还没拿到，请换个问题或稍后再试。',
-  adminKnowledgeImportFailed: '这份资料还没导入成功，请稍后再试。',
-  adminKnowledgeRechunkFailed: '这份文档还没重新切分成功，请稍后再试。',
-  adminKnowledgeReindexFailed: '这份文档的索引还没重建成功，请稍后再试。',
-  adminKnowledgeBatchRechunkFailed: '这批文档还没重新切分成功，请稍后再试。',
-  adminKnowledgeBatchReindexFailed: '这批索引还没重建成功，请稍后再试。',
-  adminQuestionExportFailed: '题库还没导出成功，请稍后再试。',
-  adminUserExportFailed: '用户列表还没导出成功，请稍后再试。',
-  adminAiLogLoadFailed: 'AI 调用日志还没加载出来，请刷新或调整筛选后再试。'
+  knowledgeUploadFailed: '资料上传失败，请检查文件格式和大小后重试。',
+  knowledgeDeleteFailed: '文档删除失败，请稍后重试。',
+  questionListLoadFailed: '无法加载题库列表，请调整筛选条件后重试。',
+  questionFavoriteToggleFailed: '收藏状态更新失败，请稍后重试。',
+  reviewTodayLoadFailed: '无法加载今天的复习任务，请刷新页面或稍后重试。',
+  reviewSubmitFailed: '这次复习结果保存失败，请重新选择评级。',
+  resumeWorkspaceLoadFailed: '无法加载简历助手，请刷新页面后重试。',
+  resumeSaveFailed: '简历修改保存失败，请检查内容后重试。',
+  resumeRetryParseFailed: '简历重新识别失败，请稍后重试。',
+  resumeUploadFailed: '简历上传失败，请检查文件格式后重试。',
+  resumeRestoreVersionFailed: '版本回滚失败，请稍后重试。',
+  resumeOutlineCopyFailed: '面试提纲复制失败，请稍后重试。',
+  wrongListLoadFailed: '无法加载错题列表，请刷新页面或稍后重试。',
+  wrongDetailLoadFailed: '无法加载这道错题的详情，请切换题目或稍后重试。',
+  wrongMasteryUpdateFailed: '掌握状态更新失败，请重新选择目标状态。',
+  wrongDeleteFailed: '错题删除失败，请稍后重试。',
+  wrongExportFailed: '错题本导出失败，请稍后重试。',
+  deviceLoadFailed: '无法加载登录设备，请刷新后重试。',
+  deviceRevokeFailed: '设备撤销失败，请稍后重试。',
+  deviceRevokeAllFailed: '批量撤销设备失败，请稍后重试。',
+  adminContentLoadFailed: '无法加载待审核内容，请刷新列表后重试。',
+  adminContentApproveFailed: '审核通过失败，请稍后重试。',
+  adminContentRejectFailed: '拒绝操作失败，请稍后重试。',
+  adminOverviewLoadFailed: '无法加载后台概览数据，请刷新页面后重试。',
+  adminUsersLoadFailed: '无法加载用户列表，请刷新或调整筛选后重试。',
+  adminUserSaveFailed: '用户信息更新失败，请稍后重试。',
+  adminUserBanFailed: '封禁用户失败，请稍后重试。',
+  adminUserUnbanFailed: '解封用户失败，请稍后重试。',
+  adminUserDetailLoadFailed: '无法加载用户详情，请稍后重试。',
+  adminCategorySaveFailed: '分类保存失败，请检查名称和类型后重试。',
+  adminCategoryDeleteFailed: '分类删除失败，请稍后重试。',
+  adminQuestionSaveFailed: '题目保存失败，请检查标题和分类后重试。',
+  adminQuestionDeleteFailed: '题目删除失败，请稍后重试。',
+  adminQuestionImportFailed: '题库导入失败，请检查文件格式后重试。',
+  adminSystemConfigLoadFailed: '无法加载系统配置，请刷新后重试。',
+  adminSystemConfigSaveFailed: '配置保存失败，请检查改动后重试。',
+  adminInterviewGovernanceLoadFailed: '无法加载面试治理数据，请刷新列表后重试。',
+  adminLoginLogLoadFailed: '无法加载登录日志，请刷新或调整筛选后重试。',
+  adminQuestionLoadFailed: '无法加载题库列表，请刷新或调整筛选后重试。',
+  adminKnowledgeLoadFailed: '无法加载文档列表，请刷新或调整筛选后重试。',
+  adminKnowledgeSearchFailed: '检索失败，请换个问题或稍后重试。',
+  adminKnowledgeImportFailed: '资料导入失败，请稍后重试。',
+  adminKnowledgeRechunkFailed: '文档重新切分失败，请稍后重试。',
+  adminKnowledgeReindexFailed: '索引重建失败，请稍后重试。',
+  adminKnowledgeBatchRechunkFailed: '批量重新切分失败，请稍后重试。',
+  adminKnowledgeBatchReindexFailed: '批量重建索引失败，请稍后重试。',
+  adminQuestionExportFailed: '题库导出失败，请稍后重试。',
+  adminUserExportFailed: '用户列表导出失败，请稍后重试。',
+  adminAiLogLoadFailed: '无法加载 AI 调用日志，请刷新或调整筛选后重试。'
 } as const

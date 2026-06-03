@@ -143,12 +143,12 @@ const avatarInitial = computed(() => (authStore.user?.nickname || authStore.user
 const emailStatusTitle = computed(() => (authStore.user?.emailVerified ? '邮箱已验证' : authStore.user?.email ? '邮箱待验证' : '当前未填写邮箱'))
 const emailStatusDescription = computed(() => {
   if (!authStore.user?.email) {
-    return '先补一个常用邮箱，后面找回密码和接收验证码都会更方便。'
+    return '建议填写常用邮箱，方便找回密码和接收验证码。'
   }
   if (authStore.user.emailVerified) {
     return '这个邮箱已经可以用来接收验证码和恢复账号。'
   }
-  return '建议先完成验证，后面找回密码时会更省事。'
+  return '建议完成邮箱验证，方便后续找回密码。'
 })
 
 const handleSendVerificationCode = async () => {
@@ -167,7 +167,7 @@ const handleSendVerificationCode = async () => {
 
 const handleVerifyEmail = async () => {
   if (!verificationCode.value.trim()) {
-    verificationMessage.value = '请先输入邮箱验证码。'
+    verificationMessage.value = '请输入邮箱验证码。'
     verificationHint.value = '验证码通常会发到你已填写的邮箱里。'
     ElMessage.warning('请输入验证码')
     await nextTick()

@@ -3,11 +3,11 @@
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
         <p class="section-kicker">最近面试</p>
-        <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">回看最近几次模拟面试</h3>
+        <h3 class="mt-3 text-2xl font-semibold text-ink">回看最近几次模拟面试</h3>
       </div>
       <div class="flex gap-3">
-        <RouterLink class="accent-link text-sm font-semibold" to="/interview">全部历史</RouterLink>
-        <RouterLink class="accent-link text-sm font-semibold" to="/interview">开始下一次模拟面试</RouterLink>
+        <RouterLink class="accent-link touch-link text-sm font-semibold" to="/interview">全部历史</RouterLink>
+        <RouterLink class="accent-link touch-link text-sm font-semibold" to="/interview">开始下一次模拟面试</RouterLink>
       </div>
     </div>
 
@@ -26,7 +26,7 @@
             <div class="mt-2 text-lg font-semibold text-ink">{{ interviewTitle(interview) }}</div>
           </div>
           <div class="text-right">
-            <div class="text-3xl font-semibold tracking-[-0.03em] text-ink">
+            <div class="text-3xl font-semibold text-ink" style="font-variant-numeric: tabular-nums">
               {{ formatScore(interview.totalScore) }}
             </div>
             <div class="mt-1 text-xs uppercase tracking-[0.22em]" style="color: var(--bc-ink-secondary)">

@@ -24,5 +24,4 @@ public final class AiSystemConfigKeys {
     public static final String PROMPT_REFERENCE_CONSTRAINT = "prompt.reference-constraint";
     public static final String PROMPT_INTERVIEW_SCORE = "prompt.interview-score";
     public static final String PROMPT_FOLLOW_UP = "prompt.follow-up";
-    public static final String PROMPT_KNOWLEDGE_CARD = "prompt.knowledge-card";
 }

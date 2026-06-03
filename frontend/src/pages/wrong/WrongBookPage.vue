@@ -45,14 +45,14 @@
         <div class="wrong-book-section-head">
           <div>
             <h3 class="workspace-section-title">错题列表</h3>
-            <p class="workspace-section-summary">默认按复习优先级排序。</p>
+            <p class="workspace-section-summary">默认按复习顺序排序。</p>
           </div>
           <span class="detail-pill">{{ total }} 题</span>
         </div>
 
         <div v-if="loading" class="py-16 text-center">
           <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-          <p class="mt-4 text-sm text-secondary">正在读取错题列表和复习优先级...</p>
+          <p class="mt-4 text-sm text-secondary">正在加载错题列表...</p>
         </div>
 
         <div v-else-if="wrongItems.length === 0" class="mt-6">
@@ -102,7 +102,7 @@
       <aside class="wrong-book-detail">
         <div v-if="detailLoading" class="py-16 text-center">
           <div class="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-          <p class="mt-4 text-sm text-secondary">正在读取这道错题的答案、错误原因和复习记录...</p>
+          <p class="mt-4 text-sm text-secondary">正在加载题目详情...</p>
         </div>
 
         <template v-else-if="selectedWrong">
@@ -162,21 +162,21 @@
           <div class="wrong-book-detail__section">
             <div class="wrong-book-detail__label">下次复习时间</div>
             <p class="text-sm leading-7 text-primary">
-              {{ selectedWrong.nextReviewDate ? formatDate(selectedWrong.nextReviewDate) : '这道题还没排到下一次复习，先完成一轮复盘记录。' }}
+              {{ selectedWrong.nextReviewDate ? formatDate(selectedWrong.nextReviewDate) : '这道题暂时还没有下一次复习时间。完成复盘后会更新安排。' }}
             </p>
           </div>
 
           <div class="wrong-book-detail__section">
             <div class="wrong-book-detail__label">标准答案</div>
             <p class="whitespace-pre-wrap text-sm leading-7 text-primary">
-              {{ selectedWrong.standardAnswer || '这道题的标准答案还没整理出来，先结合题目和错误原因补一版自己的回答。' }}
+              {{ selectedWrong.standardAnswer || '这道题暂时没有标准答案。可以结合题目和错误原因整理自己的回答。' }}
             </p>
           </div>
 
           <div class="wrong-book-detail__section">
             <div class="wrong-book-detail__label">错误原因</div>
             <p class="whitespace-pre-wrap text-sm leading-7 text-primary">
-              {{ selectedWrong.errorReason || '这道题还没补错误原因，先回忆卡住的位置，再补一条复盘记录。' }}
+              {{ selectedWrong.errorReason || '这道题暂时没有错误原因。可以回忆卡住的位置并补充复盘。' }}
             </p>
           </div>
         </template>

@@ -5,7 +5,7 @@
         <div class="chat-toolbar__head">
           <div class="min-w-0">
             <h1 class="chat-toolbar__title">问答</h1>
-            <p class="chat-toolbar__summary">直接问，或带上资料、简历和项目上下文。</p>
+            <p class="chat-toolbar__summary">直接提问，或结合资料、简历和项目内容。</p>
           </div>
           <div class="flex flex-wrap gap-3">
             <button type="button" class="session-toggle" @click="toggleSessionPanel">
@@ -593,11 +593,11 @@ const draftContextSource = computed<ContextSource | null>(() => {
       projectName: project?.projectName,
       summary: project
         ? seededQuestionSummary.value ||
-          `当前会优先围绕项目「${project.projectName}」回答，并检索${knowledgeScopeLabel(knowledgeScope.value)}。`
+          `当前问题会结合项目「${project.projectName}」，并参考${knowledgeScopeLabel(knowledgeScope.value)}。`
         : resume
           ? seededQuestionSummary.value ||
-            `当前会优先结合简历《${resume.title}》回答，并检索${knowledgeScopeLabel(knowledgeScope.value)}。`
-          : seededQuestionSummary.value || '选择一份简历，可选锁定某个项目。'
+            `当前问题会结合简历《${resume.title}》，并参考${knowledgeScopeLabel(knowledgeScope.value)}。`
+          : seededQuestionSummary.value || '选择一份简历，也可以进一步指定项目。'
     }
   }
   if (chatPath.value === 'knowledge') {
@@ -610,14 +610,14 @@ const draftContextSource = computed<ContextSource | null>(() => {
       summary:
         seededQuestionSummary.value ||
         (sourceDocTitle.value
-          ? `当前会优先围绕资料《${sourceDocTitle.value}》回答，并检索${knowledgeScopeLabel(knowledgeScope.value)}。`
-          : `当前会优先基于${knowledgeScopeLabel(knowledgeScope.value)}里的资料回答。`)
+          ? `当前问题会围绕资料《${sourceDocTitle.value}》展开，并参考${knowledgeScopeLabel(knowledgeScope.value)}。`
+          : `当前问题会参考${knowledgeScopeLabel(knowledgeScope.value)}。`)
     }
   }
   return {
     type: 'general',
     label: '直接提问',
-    summary: seededQuestionSummary.value || '当前不会绑定资料、简历或项目，适合直接追问原理、场景和表达。'
+    summary: seededQuestionSummary.value || '当前不会绑定资料、简历或项目。适合直接提问原理、场景和表达问题。'
   }
 })
 
@@ -626,10 +626,10 @@ const activeContextSummary = computed(() => activeContextSource.value?.summary |
 const draftContextSummary = computed(() => draftContextSource.value?.summary || '')
 const composerContextHint = computed(() => {
   if (chatPath.value === 'project') {
-    return selectedProjectId.value ? '会优先结合当前项目来回答' : '会优先结合当前简历来回答'
+    return selectedProjectId.value ? '回答会结合当前项目' : '回答会结合当前简历'
   }
   if (chatPath.value === 'knowledge') {
-    return `会优先检索${knowledgeScopeLabel(knowledgeScope.value)}`
+    return `会参考${knowledgeScopeLabel(knowledgeScope.value)}`
   }
   return '不绑定额外上下文'
 })
@@ -638,12 +638,12 @@ const sessionEmptyState = computed(() => {
   if (sessions.value.length) {
     return {
       title: '当前筛选下没有会话',
-      description: '换个关键词，或切回“全部”继续找之前的提问记录。'
+      description: '换个关键词，或切回“全部”查看其他会话。'
     }
   }
   return {
-    title: '先开始第一段问答',
-    description: '发起一轮新提问后，会话会保存在这里，方便你继续追问。'
+    title: '开始新对话',
+    description: '发起新问题后，会话会显示在这里。'
   }
 })
 
@@ -651,32 +651,32 @@ const conversationEmptyState = computed(() => {
   if (sourceDocTitle.value) {
     return {
       title: '围绕这份资料开始提问',
-      description: `当前会优先围绕《${sourceDocTitle.value}》检索和回答。先问一个具体问题，再继续追问细节。`
+      description: `问题会围绕《${sourceDocTitle.value}》展开。问一个具体问题，然后补充细节。`
     }
   }
   if (sourceQuestionTitle.value) {
     return {
-      title: '围绕这道题继续追问',
-      description: `当前会优先围绕「${sourceQuestionTitle.value}」补答案结构、常见追问和表达方式。`
+      title: '围绕这道题追问',
+      description: `围绕「${sourceQuestionTitle.value}」追问，补充答案结构和表达方式。`
     }
   }
   if (chatPath.value === 'project') {
     return {
       title: '结合简历开始提问',
       description: selectedProjectId.value
-        ? '当前会优先结合你选中的项目来回答。先问一题项目追问，再继续补细节。'
-        : '先选一份简历或项目，再问一个具体问题，把经历整理成更能说出口的答案。'
+        ? '回答会结合你选中的项目。问一个具体问题，然后补充细节。'
+        : '选择一份简历或项目后，问一个具体问题，把经历整理成更容易表达的答案。'
     }
   }
   if (chatPath.value === 'knowledge') {
     return {
       title: '带资料开始提问',
-      description: `当前会优先检索${knowledgeScopeLabel(knowledgeScope.value)}。先问一个具体知识点，再继续追问场景和表达。`
+      description: `问题会参考${knowledgeScopeLabel(knowledgeScope.value)}。问一个具体知识点，然后追问场景和表达。`
     }
   }
   return {
     title: '开始提问',
-    description: '先问一个具体问题，再根据回答继续追问原理、场景或表达方式。'
+    description: '输入一个具体问题，然后根据回答展开细节。'
   }
 })
 
@@ -892,8 +892,8 @@ const applyQuestionSeedFromRoute = () => {
   const contextParam = String(route.query.context || '').trim()
   if (questionParam) {
     seededQuestionSummary.value = contextParam
-      ? `当前围绕项目「${contextParam}」的追问进行单独练习。`
-      : '当前围绕简历追问进行单独练习。'
+      ? `当前问题会围绕项目「${contextParam}」展开。`
+      : '当前问题会结合简历内容展开。'
     prompt.value = contextParam
       ? `我在项目「${contextParam}」中遇到了这个追问：「${questionParam}」，请帮我组织一个结构清晰、有亮点的回答，并给出常见追问和注意事项。`
       : `请帮我回答这个面试追问：「${questionParam}」，给出结构清晰、有亮点的回答。`
@@ -906,7 +906,7 @@ const applyQuestionSeedFromRoute = () => {
     if (scopedKnowledge === 'system' || scopedKnowledge === 'personal' || scopedKnowledge === 'all') {
       knowledgeScope.value = scopedKnowledge as ChatKnowledgeScope
     }
-    seededQuestionSummary.value = `当前会优先围绕资料《${sourceDocTitle.value}》继续提问。`
+    seededQuestionSummary.value = `当前问题会围绕资料《${sourceDocTitle.value}》展开。`
     if (chatPath.value === 'general') {
       applyChatPath('knowledge')
     }
@@ -918,9 +918,9 @@ const applyQuestionSeedFromRoute = () => {
     .map((item) => String(item || '').trim())
     .filter(Boolean)
   seededQuestionSummary.value = meta.length
-    ? `当前会优先围绕题目「${sourceQuestionTitle.value}」继续提问，重点参考${meta.join(' / ')}。`
-    : `当前会优先围绕题目「${sourceQuestionTitle.value}」继续提问。`
-  prompt.value = `围绕题目「${sourceQuestionTitle.value}」继续追问，帮我补充答案结构、常见追问和更好的表达方式。`
+    ? `当前问题会围绕题目「${sourceQuestionTitle.value}」展开，重点参考${meta.join(' / ')}。`
+    : `当前问题会围绕题目「${sourceQuestionTitle.value}」展开。`
+  prompt.value = `围绕题目「${sourceQuestionTitle.value}」追问，帮我补充答案结构、常见追问和更好的表达方式。`
   if (chatPath.value === 'general') {
     applyChatPath('knowledge')
   }
@@ -1209,7 +1209,7 @@ const runChat = async (userMessage: string) => {
     await loadSessions()
   } catch (error: any) {
     if (error.name === 'AbortError') {
-      pushErrorMessage('回答已停止。你可以继续提问，或重新发送上一条问题。')
+      pushErrorMessage('回答已停止。你可以重新提问，或重新发送上一条问题。')
     } else {
       ElMessage.error(ERROR_COPY.chatSubmitFailed)
       pushErrorMessage()
@@ -1726,7 +1726,12 @@ watch(
   border-radius: 999px;
   font-size: 12px;
   line-height: 1;
-  transition: all 160ms var(--ease-hard);
+  transition:
+    color 160ms var(--ease-hard),
+    background-color 160ms var(--ease-hard),
+    border-color 160ms var(--ease-hard),
+    box-shadow 160ms var(--ease-hard),
+    transform 160ms var(--ease-hard);
 }
 
 .mode-toggle__item {
@@ -1794,7 +1799,11 @@ watch(
   color: var(--text-secondary);
   font-size: 11px;
   line-height: 1;
-  transition: all 160ms var(--ease-hard);
+  transition:
+    color 160ms var(--ease-hard),
+    background-color 160ms var(--ease-hard),
+    border-color 160ms var(--ease-hard),
+    box-shadow 160ms var(--ease-hard);
 }
 
 .session-filter-active {
@@ -1880,7 +1889,10 @@ watch(
   padding: 0.2rem 0.42rem;
   color: var(--text-tertiary);
   font-size: 10px;
-  transition: all 160ms var(--ease-hard);
+  transition:
+    color 160ms var(--ease-hard),
+    background-color 160ms var(--ease-hard),
+    transform 160ms var(--ease-hard);
 }
 
 .session-pill__delete:hover {
@@ -1948,7 +1960,11 @@ watch(
   padding: 0.7rem 1rem;
   color: var(--text-primary);
   font-size: 13px;
-  transition: all 160ms var(--ease-hard);
+  transition:
+    color 160ms var(--ease-hard),
+    background-color 160ms var(--ease-hard),
+    border-color 160ms var(--ease-hard),
+    box-shadow 160ms var(--ease-hard);
 }
 
 .prompt-chip:hover {

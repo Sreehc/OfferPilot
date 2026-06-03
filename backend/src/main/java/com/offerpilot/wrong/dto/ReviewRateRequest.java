@@ -9,7 +9,7 @@ import lombok.Data;
 public class ReviewRateRequest {
 
     /**
-     * Review item content type: knowledge_card | wrong_card | interview_card.
+     * Review item content type: wrong_card.
      * Old wrong-question callers may omit this field.
      */
     private String contentType;

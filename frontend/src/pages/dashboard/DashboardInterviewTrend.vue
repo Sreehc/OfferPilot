@@ -6,7 +6,7 @@
     <div v-if="loading" class="mt-4 flex h-[260px] items-center justify-center">
       <div class="text-center">
         <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-        <p class="mt-3 text-sm text-secondary">正在整理最近的面试成绩...</p>
+        <p class="mt-3 text-sm text-secondary">正在加载最近的面试成绩...</p>
       </div>
     </div>
 

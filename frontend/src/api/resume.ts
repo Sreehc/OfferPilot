@@ -1,5 +1,5 @@
 import { request } from '@/utils/http'
-import type { EditableInterviewResume, ResumeFileDetail, ResumeProjectItem, ResumeSummaryItem } from '@/types/api'
+import type { EditableInterviewResume, ResumeFileDetail, ResumeProjectItem, ResumeScoreVO, ResumeSummaryItem, ResumeVersionVO } from '@/types/api'
 
 export interface ResumeProjectUpdatePayload {
   id?: string
@@ -62,4 +62,16 @@ export const fetchInterviewResumeApi = (resumeId: string) => {
 
 export const retryResumeParseApi = (resumeId: string) => {
   return request<ResumeFileDetail>({ url: `/resume/${resumeId}/retry-parse`, method: 'post' })
+}
+
+export const fetchResumeScoreApi = (resumeId: string) => {
+  return request<ResumeScoreVO>({ url: `/resume/${resumeId}/score`, method: 'get' })
+}
+
+export const fetchResumeVersionsApi = (resumeId: string) => {
+  return request<ResumeVersionVO[]>({ url: `/resume/${resumeId}/versions`, method: 'get' })
+}
+
+export const restoreResumeVersionApi = (versionId: string) => {
+  return request<ResumeFileDetail>({ url: `/resume/versions/${versionId}/restore`, method: 'post' })
 }

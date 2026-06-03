@@ -132,19 +132,31 @@ const isActive = (path?: string) => {
 .mobile-nav-shell__item {
   display: flex;
   min-width: 0;
-  min-height: 3.4rem;
+  min-height: 3.65rem;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0.22rem;
   border-radius: 1rem;
-  padding: 0.35rem 0.15rem;
-  transition: all var(--motion-fast) var(--ease-hard);
+  border: 1px solid transparent;
+  padding: 0.38rem 0.18rem;
+  transition:
+    color var(--motion-fast) var(--ease-hard),
+    background-color var(--motion-fast) var(--ease-hard),
+    border-color var(--motion-fast) var(--ease-hard),
+    box-shadow var(--motion-fast) var(--ease-hard),
+    transform var(--motion-fast) var(--ease-hard);
 }
 
 .mobile-nav-shell__item-active {
-  background: rgba(var(--bc-accent-rgb), 0.12);
+  background: linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.16), rgba(var(--bc-accent-rgb), 0.08));
+  border-color: rgba(var(--bc-accent-rgb), 0.16);
   color: var(--bc-ink);
+  box-shadow: 0 10px 22px rgba(var(--bc-accent-rgb), 0.12);
+}
+
+.mobile-nav-shell__item-active .mobile-nav-shell__icon {
+  transform: translateY(-1px);
 }
 
 .mobile-nav-shell__icon {

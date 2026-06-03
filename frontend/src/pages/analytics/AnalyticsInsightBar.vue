@@ -96,7 +96,7 @@ const insights = computed<Insight[]>(() => {
         key: 'score-drop',
         icon: '▼',
         title: '本周面试分下降',
-        description: `平均分 ${Math.round(d.thisWeekAvgScore)}，比上周低 ${Math.abs(Math.round(diff))} 分。建议先补弱项，再做一轮模拟面试。`,
+        description: `平均分 ${Math.round(d.thisWeekAvgScore)}，比上周低 ${Math.abs(Math.round(diff))} 分。建议补弱项，并安排一次模拟面试。`,
         to: '/question',
         toneClass: 'insight-card--warn',
         iconClass: 'insight-icon--warn'
@@ -119,7 +119,7 @@ const insights = computed<Insight[]>(() => {
       key: 'debt-high',
       icon: '!',
       title: '错题积压偏高',
-      description: '先清理到期错题，再补新训练，节奏会更稳。',
+      description: '处理到期错题后，安排新训练，节奏会更稳定。',
       to: '/review',
       toneClass: 'insight-card--warn',
       iconClass: 'insight-icon--warn'
@@ -131,7 +131,7 @@ const insights = computed<Insight[]>(() => {
       key: 'streak',
       icon: '✓',
       title: '训练节奏稳定',
-      description: `本周已完成 ${d.thisWeekInterviewCount} 场模拟面试，继续保持这条节奏。`,
+      description: `本周已完成 ${d.thisWeekInterviewCount} 场模拟面试，保持当前训练节奏。`,
       to: '/interview',
       toneClass: 'insight-card--good',
       iconClass: 'insight-icon--good'
@@ -143,7 +143,7 @@ const insights = computed<Insight[]>(() => {
       key: 'mastery-slow',
       icon: '△',
       title: '掌握进度放缓',
-      description: '减少新题，优先把已有错题复盘到位。',
+      description: '减少新题，集中完成已有错题的复盘。',
       to: '/review',
       toneClass: 'insight-card--info',
       iconClass: 'insight-icon--info'

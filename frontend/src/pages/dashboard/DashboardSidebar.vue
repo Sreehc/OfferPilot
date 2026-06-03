@@ -297,7 +297,7 @@ const isGroupActive = (group: SidebarGroup) => group.items.some((item) => isRout
   color: #142746;
   font-size: 19px;
   font-weight: 800;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
 }
 
 .dashboard-sidebar__brand-subtitle {

@@ -8,7 +8,7 @@
     </button>
 
     <section v-if="loading" class="shell-section-card px-8 py-16 text-center text-tertiary">
-      正在加载问题内容...
+      正在加载帖子内容...
     </section>
 
     <template v-else-if="question">
@@ -173,7 +173,7 @@
             ref="answerInputRef"
             v-model="answerContent"
             rows="6"
-            placeholder="写下你的回复"
+            placeholder="输入你的回复"
             class="answer-textarea"
           ></textarea>
 

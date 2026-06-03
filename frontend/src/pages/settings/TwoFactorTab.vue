@@ -2,7 +2,7 @@
   <div class="space-y-4">
     <div v-if="loading" class="flex items-center justify-center py-8">
       <el-icon class="is-loading text-slate-400" :size="24"><i class="el-icon-loading" /></el-icon>
-      <span class="ml-3 text-sm text-slate-400">正在读取两步验证状态...</span>
+      <span class="ml-3 text-sm text-slate-400">正在加载两步验证状态...</span>
     </div>
 
     <template v-else>
@@ -48,7 +48,7 @@
           <div class="shell-section-card flex flex-wrap items-center justify-between gap-3 p-4">
             <div>
               <div class="text-sm font-semibold text-ink">当前还没开启两步验证</div>
-              <p class="mt-1 text-xs leading-5 text-secondary">先给常用账号补上这一层保护，后面异地登录时会更容易拦住异常风险。</p>
+              <p class="mt-1 text-xs leading-5 text-secondary">为常用账号启用两步验证，可降低异常登录风险。</p>
             </div>
             <el-button type="primary" size="large" class="action-button" @click="showSetup = true">
               现在启用
@@ -83,7 +83,7 @@ const loadStatus = async () => {
     const response = await fetchTwoFactorStatusApi()
     status.value = response.data
   } catch {
-    ElMessage.error('两步验证状态还没加载出来，请稍后刷新。')
+    ElMessage.error('无法加载两步验证状态，请稍后刷新。')
   } finally {
     loading.value = false
   }
@@ -101,7 +101,7 @@ const handleDisable = async () => {
     disableCode.value = ''
     await loadStatus()
   } catch {
-    ElMessage.error('验证码还没核对成功，请检查当前验证码后再试。')
+    ElMessage.error('验证码校验失败，请检查后重试。')
   } finally {
     disabling.value = false
   }

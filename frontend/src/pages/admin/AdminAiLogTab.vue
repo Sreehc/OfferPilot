@@ -10,7 +10,7 @@
         <article class="data-slab p-4">
           <div class="text-[11px] font-semibold uppercase tracking-[0.2em] text-tertiary">失败请求</div>
           <div class="mt-3 text-3xl font-semibold text-ink">{{ summary?.failedCalls ?? 0 }}</div>
-          <p class="mt-2 text-sm text-secondary">优先筛选失败请求排查问题。</p>
+          <p class="mt-2 text-sm text-secondary">建议筛选失败请求排查问题。</p>
         </article>
         <article class="data-slab p-4">
           <div class="text-[11px] font-semibold uppercase tracking-[0.2em] text-tertiary">累计 Token</div>

@@ -26,7 +26,7 @@
           <el-button :loading="loading" type="primary" class="action-button" @click="emit('load')">刷新列表</el-button>
           <el-button class="hard-button-secondary" @click="emit('filterReset')">重置筛选</el-button>
           <el-button class="hard-button-secondary" @click="toggleEditor">
-            {{ editorOpen ? '收起编辑区' : form.id ? '继续编辑' : '新增题目' }}
+            {{ editorOpen ? '收起编辑区' : form.id ? '编辑题目' : '新增题目' }}
           </el-button>
           <el-upload :show-file-list="false" :before-upload="handleImport" accept=".xlsx,.xls">
             <el-button :loading="importing" type="success" plain class="w-full">批量导入</el-button>

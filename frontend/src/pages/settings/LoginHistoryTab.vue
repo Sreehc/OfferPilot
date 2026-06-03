@@ -82,7 +82,7 @@ const loadLogs = async () => {
     total.value = response.data.total
     totalPages.value = response.data.totalPages
   } catch {
-    ElMessage.error('登录记录还没加载出来，请刷新后再试。')
+    ElMessage.error('无法加载登录记录，请刷新后重试。')
   } finally {
     loading.value = false
   }

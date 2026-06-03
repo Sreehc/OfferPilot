@@ -1,7 +1,7 @@
 <template>
   <article class="shell-section-card p-6">
     <p class="section-kicker">分类掌握度</p>
-    <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">优先补齐的记忆分类</h3>
+    <h3 class="mt-3 text-2xl font-semibold text-ink" style="text-wrap: balance">需要补齐的记忆分类</h3>
 
     <div v-if="items.length" class="mt-6 space-y-4">
       <div ref="chartRef" class="mx-auto h-[280px] w-full"></div>
@@ -15,7 +15,7 @@
               </div>
             </div>
             <div class="text-right">
-              <div class="text-2xl font-semibold tracking-[-0.03em] text-accent">
+              <div class="text-2xl font-semibold text-accent" style="font-variant-numeric: tabular-nums">
                 {{ Math.round(item.masteryRate) }}%
               </div>
               <div class="text-xs" style="color: var(--bc-ink-secondary)">掌握率</div>

@@ -35,7 +35,7 @@
 
         <div class="mt-4 max-w-md">
           <p class="mt-3 text-sm leading-7 text-secondary">
-            输入邮箱、验证码和新密码，完成后就能回到登录页继续使用。
+            输入邮箱、验证码和新密码后即可重置密码。
           </p>
         </div>
 
@@ -47,11 +47,11 @@
           <p class="section-kicker">
             密码恢复
           </p>
-          <h1 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">
+          <h1 class="auth-panel-title mt-4 text-3xl font-semibold text-ink">
             获取验证码，重置密码
           </h1>
           <p class="mt-3 text-sm leading-7 text-secondary">
-            如果你现在收不到邮件，可以先确认邮箱是否填写正确。
+            如果暂时没有收到邮件，请确认邮箱地址是否正确。
           </p>
         </div>
 
@@ -161,7 +161,7 @@
             <div class="auth-links">
               <RouterLink
                 to="/login"
-                class="accent-link text-sm font-semibold"
+                class="accent-link touch-link text-sm font-semibold"
               >
                 返回登录
               </RouterLink>
@@ -236,7 +236,7 @@ const handleSendCode = async () => {
   clearAnnouncement()
   const valid = await formRef.value?.validateField('email').catch(() => false)
   if (valid === false) {
-    await announce('请先输入可接收邮件的邮箱地址。')
+    await announce('请输入可接收邮件的邮箱地址。')
     await focusFirstInvalidField()
     return
   }
@@ -250,7 +250,7 @@ const handleSendCode = async () => {
     clearAnnouncement()
     ElMessage.success('验证码发送结果已更新')
   } catch (error: any) {
-    await announce(error?.message || '验证码还没发送成功，请检查邮箱地址后再试。')
+    await announce(error?.message || '验证码发送失败，请检查邮箱地址后重试。')
   } finally {
     sending.value = false
   }
@@ -260,7 +260,7 @@ const handleResetPassword = async () => {
   clearAnnouncement()
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) {
-    await announce('请先补全邮箱、验证码和新密码。')
+    await announce('请补全邮箱、验证码和新密码。')
     await focusFirstInvalidField()
     return
   }
@@ -276,7 +276,7 @@ const handleResetPassword = async () => {
     ElMessage.success('密码已重置，请重新登录')
     await router.push('/login')
   } catch (error: any) {
-    await announce(error?.message || '密码还没重置成功，请核对验证码和新密码后再试。')
+    await announce(error?.message || '密码重置失败，请核对验证码和新密码后重试。')
     await nextTick()
     codeInputRef.value?.focus?.()
   } finally {

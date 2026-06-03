@@ -31,7 +31,7 @@
         <div class="flex items-start justify-between gap-4">
           <div>
             <p class="section-kicker">验证</p>
-            <h2 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">输入验证码继续</h2>
+            <h2 class="auth-panel-title mt-4 text-3xl font-semibold text-ink">输入验证码完成登录</h2>
             <p class="mt-3 text-sm leading-7 text-secondary">
               {{ useRecovery ? '请输入恢复码完成登录。' : '请输入身份验证器里的 6 位验证码。' }}
             </p>
@@ -57,16 +57,16 @@
               class="action-button !min-h-12 w-full"
               @click="handleVerify"
             >
-              {{ loading ? '验证中...' : '验证并继续' }}
+              {{ loading ? '验证中...' : '完成验证' }}
             </el-button>
           </div>
         </el-form>
 
         <div class="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm">
-          <button class="accent-link font-semibold" @click="toggleMode">
+          <button class="accent-link touch-link font-semibold" @click="toggleMode">
             {{ useRecovery ? '改用验证码' : '改用恢复码' }}
           </button>
-          <RouterLink class="accent-link font-semibold" to="/login">返回登录</RouterLink>
+          <RouterLink class="accent-link touch-link font-semibold" to="/login">返回登录</RouterLink>
         </div>
       </section>
     </div>
@@ -147,8 +147,9 @@ const handleVerify = async () => {
   font-family: theme('fontFamily.display');
   font-size: clamp(2.2rem, 3.3vw, 3.7rem);
   line-height: 0.98;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
   color: var(--bc-ink);
+  text-wrap: balance;
 }
 
 </style>

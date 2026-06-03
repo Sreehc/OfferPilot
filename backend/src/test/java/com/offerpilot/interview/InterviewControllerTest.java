@@ -22,6 +22,7 @@ import com.offerpilot.interview.vo.RecordingReviewSessionVO;
 import com.offerpilot.security.model.LoginUser;
 import com.offerpilot.user.entity.User;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -78,6 +79,11 @@ class InterviewControllerTest {
         user.setStatus(1);
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(new LoginUser(user), null, List.of()));
+    }
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test

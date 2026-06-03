@@ -20,7 +20,7 @@ describe('studyPlanActions', () => {
       nextAction: {
         key: 'complete_today_plan',
         title: '完成今天计划',
-        description: '先把今天的计划任务做完',
+        description: '完成今天的计划任务',
         path: '/study-plan',
         reason: 'today_plan_pending',
         priority: 'P0'
@@ -33,7 +33,7 @@ describe('studyPlanActions', () => {
 
   it('falls back to plan builder when no plan exists', () => {
     expect(getStudyPlanPrimaryActionPath(null, null, null)).toBe('/study-plan#plan-builder')
-    expect(getStudyPlanPrimaryActionLabel(null, null, null, moduleLabel)).toBe('开始生成计划')
+    expect(getStudyPlanPrimaryActionLabel(null, null, null, moduleLabel)).toBe('生成学习计划')
   })
 
   it('uses next task when plan exists without a global nextAction', () => {
@@ -71,7 +71,7 @@ describe('studyPlanActions', () => {
     } satisfies StudyPlanTaskItem
 
     expect(getStudyPlanPrimaryActionPath(null, plan, task)).toBe('/chat?sourceQuestionTitle=JVM')
-    expect(getStudyPlanPrimaryActionLabel(null, plan, task, moduleLabel)).toBe('先做 问答')
+    expect(getStudyPlanPrimaryActionLabel(null, plan, task, moduleLabel)).toBe('打开问答任务')
   })
 
   it('shows progress label when today focus is completed', () => {

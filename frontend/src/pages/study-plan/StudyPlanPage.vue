@@ -4,7 +4,7 @@
       <div class="workspace-head__top">
         <div class="workspace-head__main">
           <div class="flex flex-wrap gap-2">
-            <span class="hard-chip">{{ currentPlan ? planStateLabel : '先生成一份计划' }}</span>
+            <span class="hard-chip">{{ currentPlan ? planStateLabel : '生成学习计划' }}</span>
             <span v-if="currentPlan" class="detail-pill">Day {{ currentPlan.currentDay }}</span>
             <span v-if="currentPlan" class="detail-pill">{{ currentPlan.todayTaskCount }} 个今日任务</span>
             <span v-else class="detail-pill">{{ reviewPending }} 个待复习项</span>
@@ -15,7 +15,7 @@
             {{
               primaryNextAction?.description ||
               (currentPlan
-                ? `${todayTitle}，先把今天这 ${currentPlan.todayTaskCount} 项做完。`
+                ? `${todayTitle}，今天共有 ${currentPlan.todayTaskCount} 项任务。`
                 : '填好目标岗位和方向，直接生成今天要执行的训练清单。')
             }}
           </p>
@@ -24,6 +24,9 @@
         <div class="workspace-actions">
           <RouterLink :to="primaryActionPath" class="hard-button-primary">
             {{ primaryActionLabel }}
+          </RouterLink>
+          <RouterLink :to="studyPlanAgentLink" class="hard-button-secondary">
+            交给 Agent 刷新
           </RouterLink>
           <button
             v-if="currentPlan"
@@ -57,8 +60,8 @@
       <article class="shell-section-card p-5 sm:p-6">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 class="text-xl font-semibold tracking-[-0.03em] text-ink">今天先做这些</h3>
-            <p class="mt-1 text-sm text-secondary">默认展示今天的任务；需要时再切到整轮安排。</p>
+            <h3 class="text-xl font-semibold text-ink" style="text-wrap: balance">今日任务</h3>
+            <p class="mt-1 text-sm text-secondary">默认显示今日任务，也可以切换查看整轮安排。</p>
           </div>
           <div class="flex flex-wrap gap-2">
             <button
@@ -82,7 +85,7 @@
 
         <div class="mt-5 h-2 overflow-hidden rounded-full bg-[var(--panel-muted)]">
           <div
-            class="h-full rounded-full bg-accent transition-all duration-500"
+            class="h-full rounded-full bg-accent transition-[width] duration-500"
             :style="{ width: `${currentPlan.progressRate || 0}%` }"
           ></div>
         </div>
@@ -141,12 +144,15 @@
 
       <article class="shell-section-card p-5 sm:p-6 plan-side-card">
         <section>
-          <h3 class="text-xl font-semibold tracking-[-0.03em] text-ink">
-            {{ currentPlan.planReasonSummary?.title || '这轮安排为什么先练这些' }}
+          <h3 class="text-xl font-semibold text-ink" style="text-wrap: balance">
+            {{ currentPlan.planReasonSummary?.title || '本轮安排说明' }}
           </h3>
           <p class="mt-3 text-sm leading-7 text-secondary">
             {{ currentPlan.planReasonSummary?.summary || currentPlan.reviewSuggestion }}
           </p>
+          <RouterLink :to="studyPlanAgentLink" class="hard-button-secondary mt-4 inline-flex text-sm">
+            转成下一轮动作
+          </RouterLink>
           <div class="mt-4 flex flex-wrap gap-2">
             <span
               v-for="signal in currentPlan.planReasonSummary?.signals || []"
@@ -159,11 +165,11 @@
         </section>
 
         <section class="plan-side-card__section">
-          <h4 class="text-lg font-semibold tracking-[-0.03em] text-ink">
+          <h4 class="text-lg font-semibold text-ink" style="text-wrap: balance">
             {{ currentPlan.trendSummary?.title || '执行节奏' }}
           </h4>
           <p class="mt-2 text-sm leading-7 text-secondary">
-            {{ currentPlan.trendSummary?.summary || '完成今天的任务后，计划会自动同步到首页和分析页。' }}
+            {{ currentPlan.trendSummary?.summary || '完成今天的任务后，进度会同步到首页和分析页。' }}
           </p>
           <div class="mt-4 space-y-3">
             <div
@@ -182,8 +188,8 @@
       <article class="shell-section-card p-5 sm:p-6">
         <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div class="max-w-2xl">
-            <h3 class="text-xl font-semibold tracking-[-0.03em] text-ink">先定这轮训练目标</h3>
-            <p class="mt-2 text-sm text-secondary">填好岗位和方向后，每天的任务会自动安排好。</p>
+            <h3 class="text-xl font-semibold text-ink" style="text-wrap: balance">设置训练目标</h3>
+            <p class="mt-2 text-sm text-secondary">填写岗位和方向后，即可生成每日训练任务。</p>
           </div>
         </div>
 
@@ -229,7 +235,7 @@
             <span class="plan-track-card__badge">{{ plan.label }}</span>
             <span class="text-xs uppercase tracking-[0.22em] text-tertiary">{{ plan.days }} 天</span>
           </div>
-          <h4 class="mt-4 text-2xl font-semibold tracking-[-0.03em] text-ink">{{ plan.title }}</h4>
+          <h4 class="mt-4 text-2xl font-semibold text-ink">{{ plan.title }}</h4>
           <p class="mt-3 text-sm leading-7 text-secondary">{{ plan.description }}</p>
           <ul class="mt-5 space-y-3 text-sm leading-7 text-secondary">
             <li v-for="item in plan.points" :key="item" class="plan-bullet">{{ item }}</li>
@@ -260,6 +266,7 @@ import {
 } from '@/api/plan'
 import { fetchReviewStatsApi } from '@/api/review'
 import type { DashboardOverview, ReviewStats, StudyPlan, StudyPlanTaskItem } from '@/types/api'
+import { buildAgentWorkbenchLocation } from '@/utils/agent'
 import { markGuideSeenForCriticalAction } from '@/utils/guide'
 import { storage } from '@/utils/storage'
 import { getStudyPlanPrimaryActionLabel, getStudyPlanPrimaryActionPath } from './studyPlanActions'
@@ -269,7 +276,7 @@ const planTracks = [
   {
     days: 7,
     label: '7 天冲刺',
-    title: '先补最急的短板',
+    title: '补最急的短板',
     description: '适合短期面试前快速拉齐高频题、表达和面试检验。',
     points: ['高频题专项刷题', '问答压缩口径', '至少 2 次模拟面试']
   },
@@ -324,7 +331,7 @@ const nextTask = computed(
     null
 )
 
-const todayTitle = computed(() => currentPlan.value?.todayFocusSummary?.title || '今天先完成计划里的任务')
+const todayTitle = computed(() => currentPlan.value?.todayFocusSummary?.title || '今天完成计划里的任务')
 const planStateLabel = computed(() => {
   if (primaryNextAction.value?.key === 'generate_plan') return '待生成'
   if (primaryNextAction.value?.key === 'complete_today_plan') return '今日可执行'
@@ -337,6 +344,23 @@ const primaryActionPath = computed(() => {
 })
 const primaryActionLabel = computed(() => {
   return getStudyPlanPrimaryActionLabel(overview.value, currentPlan.value, nextTask.value, moduleLabel)
+})
+const studyPlanAgentLink = computed(() => {
+  const contextRefs = ['study-plan:active', 'analytics:profile', 'analytics:weak-topics']
+  if (overview.value?.recentInterviews?.length) {
+    contextRefs.push('interview:latest')
+  }
+  if (overview.value?.applicationSummary?.activeCount) {
+    contextRefs.push('application:board')
+  }
+  return buildAgentWorkbenchLocation({
+    agentType: 'study_planner',
+    triggerSource: 'analytics',
+    contextRefs,
+    userPrompt: currentPlan.value?.title
+      ? `围绕当前学习计划“${currentPlan.value.title}”刷新下一轮训练动作和优先级。`
+      : `围绕目标岗位 ${targetRole.value || 'Java 后端开发'}，生成一轮新的训练动作与计划建议。`
+  })
 })
 
 const displayedTasks = computed(() => {
@@ -368,6 +392,8 @@ const moduleLabel = (value: string) => {
       return '复习'
     case 'interview':
       return '面试'
+    case 'recording_review':
+      return '录音复盘'
     default:
       return value
   }
@@ -419,7 +445,7 @@ const loadData = async () => {
   try {
     await Promise.all([loadSignals(), loadCurrentPlan()])
   } catch {
-    ElMessage.error('学习计划还没加载出来，请刷新页面后再试。')
+    ElMessage.error('无法加载学习计划，请刷新页面后重试。')
   } finally {
     loading.value = false
   }
@@ -441,7 +467,7 @@ const handleGenerate = async (durationDays: number) => {
     markGuideSeenForCriticalAction(currentUser?.id)
     ElMessage.success(`已生成 ${durationDays} 天学习计划`)
   } catch {
-    ElMessage.error('这轮学习计划还没生成成功，请检查岗位和方向后再试。')
+    ElMessage.error('学习计划生成失败，请检查岗位和方向后重试。')
   } finally {
     generatingDuration.value = null
   }
@@ -458,7 +484,7 @@ const handleRefresh = async () => {
     await loadSignals()
     ElMessage.success('已按最新训练信号刷新计划')
   } catch {
-    ElMessage.error('今日计划还没刷新成功，请稍后再试。')
+    ElMessage.error('今日计划刷新失败，请稍后重试。')
   } finally {
     refreshing.value = false
   }
@@ -473,7 +499,7 @@ const handleToggleTask = async (task: StudyPlanTaskItem) => {
     currentPlan.value = response.data
     await loadSignals()
   } catch {
-    ElMessage.error('任务状态还没更新成功，请重新点一次当前操作。')
+    ElMessage.error('任务状态更新失败，请重试。')
   } finally {
     updatingTaskId.value = null
   }
@@ -579,7 +605,11 @@ onMounted(() => {
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--bc-ink-secondary);
-  transition: all 0.2s ease;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .plan-filter-button:hover {

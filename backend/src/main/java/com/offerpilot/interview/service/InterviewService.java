@@ -1,7 +1,6 @@
 package com.offerpilot.interview.service;
 
 import com.offerpilot.common.dto.PageResult;
-import com.offerpilot.cards.vo.TodayCardsTaskVO;
 import com.offerpilot.interview.dto.InterviewAnswerRequest;
 import com.offerpilot.interview.dto.InterviewStartRequest;
 import com.offerpilot.interview.vo.InterviewAnswerVO;
@@ -23,8 +22,4 @@ public interface InterviewService {
     PageResult<InterviewHistoryVO> history(Long userId, String direction, int pageNum, int pageSize);
 
     List<InterviewHistoryVO> trendData(Long userId, int limit);
-
-    InterviewDetailVO generateCards(Long userId, Long sessionId);
-
-    TodayCardsTaskVO activateCards(Long userId, Long sessionId);
 }

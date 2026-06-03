@@ -33,6 +33,35 @@ CREATE TABLE IF NOT EXISTS user (
 );
 
 -- ============================================================
+-- 用户级 Provider 配置表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS user_provider_config (
+    id BIGINT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    provider_scope VARCHAR(32) NOT NULL COMMENT 'llm / embedding / asr / search / oss / voiceprint',
+    provider_name VARCHAR(64) DEFAULT NULL,
+    enabled TINYINT(1) NOT NULL DEFAULT 0,
+    base_url VARCHAR(255) DEFAULT NULL,
+    model VARCHAR(128) DEFAULT NULL,
+    api_key_ciphertext TEXT DEFAULT NULL,
+    access_key_ciphertext TEXT DEFAULT NULL,
+    secret_key_ciphertext TEXT DEFAULT NULL,
+    endpoint VARCHAR(255) DEFAULT NULL,
+    bucket VARCHAR(128) DEFAULT NULL,
+    region_name VARCHAR(128) DEFAULT NULL,
+    dimensions INT DEFAULT NULL,
+    extra_config_json JSON DEFAULT NULL,
+    last_check_status VARCHAR(32) DEFAULT NULL COMMENT 'unknown / ready / incomplete / invalid',
+    last_check_message VARCHAR(255) DEFAULT NULL,
+    last_checked_at DATETIME DEFAULT NULL,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_user_provider_scope (user_id, provider_scope),
+    KEY idx_user_provider_user_id (user_id),
+    KEY idx_user_provider_scope (provider_scope)
+);
+
+-- ============================================================
 -- 分类表
 -- ============================================================
 CREATE TABLE IF NOT EXISTS category (
@@ -719,3 +748,48 @@ CREATE TABLE IF NOT EXISTS login_log (
     KEY idx_login_log_user (user_id),
     KEY idx_login_log_time (create_time)
 );
+
+-- ============================================================
+-- 收藏表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS favorite (
+    id BIGINT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    target_type VARCHAR(32) NOT NULL COMMENT '收藏目标类型: knowledge / question / community',
+    target_id BIGINT NOT NULL COMMENT '收藏目标 ID',
+    tag_id BIGINT DEFAULT NULL COMMENT '自定义分组 ID，可为空',
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_favorite_user (user_id),
+    INDEX idx_favorite_user_type (user_id, target_type),
+    UNIQUE KEY uk_favorite_user_target (user_id, target_type, target_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 收藏分组表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS favorite_tag (
+    id BIGINT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    name VARCHAR(64) NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_favorite_tag_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 简历版本历史表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS resume_version (
+    id BIGINT PRIMARY KEY,
+    resume_file_id BIGINT NOT NULL COMMENT '关联 resume_file.id',
+    user_id BIGINT NOT NULL,
+    version INT NOT NULL DEFAULT 1,
+    snapshot_json TEXT COMMENT '该版本快照 JSON',
+    change_summary VARCHAR(512) DEFAULT NULL COMMENT '变更摘要',
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_resume_version_file (resume_file_id),
+    INDEX idx_resume_version_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

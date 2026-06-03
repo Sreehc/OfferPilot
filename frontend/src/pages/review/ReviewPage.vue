@@ -2,7 +2,7 @@
   <div class="repair-workbench space-y-5">
     <section v-if="loading" class="shell-section-card p-8 text-center">
       <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-      <p class="mt-4 text-sm text-slate-500">正在整理今天到期和逾期的复习任务...</p>
+      <p class="mt-4 text-sm text-slate-500">正在加载今天的复习任务...</p>
     </section>
 
     <template v-else>
@@ -119,7 +119,7 @@
 
             <div class="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-[var(--panel-muted)]">
               <div
-                class="h-full rounded-full bg-accent transition-all duration-300"
+                class="h-full rounded-full bg-accent transition-[width] duration-300"
                 :style="{ width: `${((currentIndex + 1) / Math.max(reviewItems.length, 1)) * 100}%` }"
               ></div>
             </div>
@@ -138,7 +138,7 @@
             <div class="flashcard">
               <div class="flashcard-front memory-card p-5 sm:p-8">
                 <div class="flex items-center justify-between gap-4">
-                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-secondary">先回忆问题</div>
+                  <div class="text-xs font-semibold uppercase tracking-[0.2em] text-secondary">回忆问题</div>
                   <span class="hard-chip">{{ masteryLabel(currentReviewItem.masteryLevel) }}</span>
                 </div>
                 <div class="mt-6 flex flex-wrap items-center gap-2">
@@ -153,7 +153,7 @@
               <div class="flashcard-back memory-card p-5 sm:p-8">
                 <div class="text-xs font-semibold uppercase tracking-[0.2em] text-secondary">标准答案</div>
                 <p class="mt-4 whitespace-pre-wrap text-sm leading-7 text-primary">
-                  {{ currentReviewItem.answer || '这道题的标准答案还没整理出来，先结合题目和之前错误原因补一轮复盘。' }}
+                  {{ currentReviewItem.answer || '这道题暂时没有标准答案。可以结合题目和错误原因复盘。' }}
                 </p>
                 <div
                   v-if="currentReviewItem.explanation"
@@ -177,7 +177,7 @@
               v-for="btn in ratingButtons"
               :key="btn.rating"
               type="button"
-              class="rating-button flex flex-col items-center gap-1 p-3 text-sm font-semibold transition-all"
+              class="rating-button flex flex-col items-center gap-1 p-3 text-sm font-semibold transition-[background-color,color,border-color,box-shadow,transform] duration-150"
               :class="btn.class"
               :disabled="submitting"
               @click="handleRate(btn.rating)"
@@ -263,14 +263,14 @@ const heroTitle = computed(() => {
   if (!reviewItems.value.length) {
     return '今天没有待复习错题'
   }
-  return `今天先复习这 ${reviewItems.value.length} 项`
+  return `今天需要复习 ${reviewItems.value.length} 项`
 })
 
 const heroSummary = computed(() => {
   if (!reviewItems.value.length) {
-    return '可以回到错题本继续补题，或者做一轮新的训练。'
+    return '可以回到错题本补题，或开始新的训练。'
   }
-  return '先清掉今天到期和逾期的内容，再回到正常训练节奏。'
+  return '处理今天到期和逾期的内容。'
 })
 
 const selectedFilterLabel = computed(() => '错题本')
@@ -287,7 +287,7 @@ const emptyStateTitle = computed(() => {
 })
 
 const emptyStateDescription = computed(() => {
-  return '可以回到错题本补低分题，或做一轮新的模拟面试，继续给明天积累复习内容。'
+  return '可以回到错题本补低分题，或开始新的模拟面试，为后续复习积累内容。'
 })
 
 const masteryLabel = (level: string) => {
@@ -437,8 +437,9 @@ onMounted(() => {
   color: var(--bc-ink);
   font-size: 28px;
   font-weight: 700;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
   line-height: 1.1;
+  text-wrap: balance;
 }
 
 .module-topbar__center {
@@ -555,7 +556,8 @@ onMounted(() => {
   color: var(--bc-ink);
   font-size: 1.1rem;
   font-weight: 780;
-  letter-spacing: -0.05em;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 .review-launch__actions {

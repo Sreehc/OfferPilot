@@ -199,7 +199,13 @@ public class CommunityServiceImpl implements CommunityService {
         Long userId = SecurityUtils.getCurrentUserId();
         CommunityAnswer answer = answerMapper.selectById(id);
         if (answer == null) throw new BusinessException(ResultCode.NOT_FOUND.getCode(), "回答不存在");
-        if (!answer.getUserId().equals(userId)) throw new BusinessException(ResultCode.FORBIDDEN.getCode(), "只能删除自己的回答");
+
+        CommunityQuestion question = questionMapper.selectById(answer.getQuestionId());
+        boolean isAnswerAuthor = answer.getUserId().equals(userId);
+        boolean isQuestionAuthor = question != null && question.getUserId().equals(userId);
+        if (!isAnswerAuthor && !isQuestionAuthor) {
+            throw new BusinessException(ResultCode.FORBIDDEN.getCode(), "只能删除自己的回答或自己帖子下的回答");
+        }
 
         answerMapper.deleteById(id);
         questionMapper.update(null, new LambdaUpdateWrapper<CommunityQuestion>()

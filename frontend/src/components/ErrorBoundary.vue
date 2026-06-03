@@ -8,7 +8,7 @@
       </div>
       <h2 class="mt-5 text-2xl font-semibold tracking-[-0.03em] text-ink">页面出现了错误</h2>
       <p class="mt-3 text-sm leading-7 text-secondary">
-        抱歉，渲染过程中发生了异常。你可以尝试刷新页面，或者返回首页。
+        抱歉，页面出了点问题。你可以尝试刷新页面，或者返回首页。
       </p>
       <div class="mt-6 flex justify-center gap-3">
         <button type="button" class="hard-button-primary" @click="handleReload">刷新页面</button>

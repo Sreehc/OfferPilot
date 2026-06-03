@@ -27,7 +27,4 @@ public class InterviewHistoryVO {
     private Integer questionCount;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-    private Boolean cardsGenerated;
-    private Integer generatedCardCount;
-    private String interviewDeckId;
 }

@@ -29,7 +29,7 @@
             aria-hidden="true"
           />
           <p class="section-kicker">
-            继续你的求职训练
+            回到你的求职训练
           </p>
         </div>
 
@@ -39,7 +39,7 @@
           </p>
         </div>
 
-        <div class="auth-side-note">账号会继续保留训练记录，忘记密码时也能走邮箱重置。</div>
+        <div class="auth-side-note">训练记录会跟随当前账号保存，忘记密码时可通过邮箱重置。</div>
       </section>
 
       <section class="shell-section-card auth-form-panel order-1 p-6 sm:p-8 md:p-10 xl:order-2">
@@ -48,8 +48,8 @@
             <p class="section-kicker">
               登录
             </p>
-            <h1 class="mt-4 text-3xl font-semibold tracking-[-0.04em] text-ink">
-              输入账号继续今天的训练
+            <h1 class="auth-panel-title mt-4 text-3xl font-semibold text-ink">
+              登录后进入今天的训练
             </h1>
             <p class="mt-3 text-sm leading-7 text-secondary">
               输入用户名和密码，若忘记密码可走邮箱验证码重置。
@@ -159,13 +159,13 @@
               <span class="text-sm text-secondary">
                 还没有账号？
                 <RouterLink
-                  class="accent-link font-semibold"
+                  class="accent-link touch-link font-semibold"
                   to="/register"
                 >立即注册</RouterLink>
               </span>
               <RouterLink
                 to="/forgot-password"
-                class="accent-link text-sm font-semibold"
+                class="accent-link touch-link text-sm font-semibold"
               >
                 忘记密码
               </RouterLink>
@@ -264,13 +264,13 @@ const handleLogin = async () => {
   clearAnnouncement()
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) {
-    await announce('请先补全用户名和密码后再继续。')
+    await announce('请输入用户名和密码。')
     await focusFirstInvalidField()
     return
   }
 
   if (showCaptcha.value && !form.captchaCode.trim()) {
-    await announce('请输入验证码后再继续登录。')
+    await announce('请输入验证码。')
     ElMessage.warning('请输入验证码')
     await focusCaptchaField()
     return
@@ -307,7 +307,7 @@ const handleLogin = async () => {
     if (failCount.value >= 3) {
       await refreshCaptcha()
     }
-    const message = error?.message || '登录还没成功，请检查账号、密码后再试。'
+    const message = error?.message || '登录失败，请检查账号和密码后重试。'
     await announce(message)
     ElMessage.error(message)
   } finally {

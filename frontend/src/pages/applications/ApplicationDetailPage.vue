@@ -11,7 +11,7 @@
 
     <section v-if="!detail" class="shell-section-card p-8 text-center">
       <p class="text-lg font-semibold text-ink">投递记录未找到</p>
-      <p class="mt-3 text-sm leading-7 text-secondary">这条记录可能已删除或还没同步成功。先回到投递管理检查其他机会，或补一条新的进展记录。</p>
+      <p class="mt-3 text-sm leading-7 text-secondary">这条投递记录暂时无法查看。请返回投递管理重试。</p>
       <RouterLink to="/applications" class="hard-button-primary mt-4 inline-flex">返回看板</RouterLink>
     </section>
 
@@ -30,7 +30,7 @@
             </p>
 
             <div class="mt-6 flex flex-wrap gap-3">
-              <button type="button" class="hard-button-primary" @click="scrollToStatus">继续推进这条投递</button>
+              <button type="button" class="hard-button-primary" @click="scrollToStatus">更新这条投递</button>
               <RouterLink :to="applicationAgentLink" class="hard-button-secondary">
                 交给 Agent 推进
               </RouterLink>
@@ -63,9 +63,9 @@
               <span class="detail-pill">{{ statusLabel(detail.status) }}</span>
               <span class="detail-pill">下一节点 {{ detail.nextStepDate || '待安排' }}</span>
             </div>
-            <h3 class="mt-5 text-2xl font-semibold tracking-[-0.03em] text-ink">先推进这条岗位的下一步</h3>
+            <h3 class="mt-5 text-2xl font-semibold tracking-[-0.03em] text-ink">处理这条岗位的下一步</h3>
             <p class="mt-3 text-sm leading-7 text-secondary">
-              {{ detail.nextStepSuggestion || '先更新当前阶段，再把下一轮准备重点补齐。' }}
+              {{ detail.nextStepSuggestion || '更新当前阶段后，补充下一轮的准备重点。' }}
             </p>
           </div>
 
@@ -78,7 +78,7 @@
           <div class="space-y-4">
             <div class="surface-card p-4">
               <div class="text-xs font-semibold uppercase tracking-[0.22em] text-tertiary">当前建议</div>
-              <p class="mt-2 text-sm leading-7 text-secondary">{{ detail.nextStepSuggestion || '先推进当前阶段' }}</p>
+              <p class="mt-2 text-sm leading-7 text-secondary">{{ detail.nextStepSuggestion || '更新当前阶段信息。' }}</p>
             </div>
 
             <div class="surface-card p-4">
@@ -115,7 +115,7 @@
               <div>
                 <h4 class="text-xl font-semibold tracking-[-0.03em] text-ink">更新推进阶段</h4>
                 <p class="mt-2 text-sm leading-7 text-secondary">
-                  先把阶段、下一节点和当前说明补齐，再决定是否记录更细的反馈。
+                  补充阶段、下一节点和当前说明后，记录更细的反馈。
                 </p>
               </div>
               <el-button :loading="refreshingAnalysis" size="large" class="hard-button-secondary" @click="handleRefreshAnalysis">
@@ -162,7 +162,7 @@
             <div>
               <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">回看时间线</h3>
               <p class="mt-2 text-sm leading-7 text-secondary">
-                先确认这条岗位经历过什么，再补新的反馈或阶段变化。
+                确认这条岗位的历史进展后，补充新的反馈或阶段变化。
               </p>
             </div>
           </div>
@@ -215,7 +215,7 @@
             </div>
             <h3 class="mt-4 text-2xl font-semibold tracking-[-0.03em] text-ink">补一条反馈记录</h3>
             <p class="mt-2 text-sm leading-7 text-secondary">
-              只有当前阶段和下一步已经明确后，再把面试、作业和复盘补进时间线。
+              在当前阶段和下一步明确后，把面试、作业和复盘补进时间线。
             </p>
 
             <div class="mt-5 space-y-4">

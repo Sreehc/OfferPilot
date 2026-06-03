@@ -52,7 +52,7 @@
           <article class="surface-muted p-4">
             <div class="text-xs uppercase tracking-[0.18em] text-tertiary">解析失败</div>
             <div class="mt-2 text-2xl font-semibold text-ink">{{ failedParseDocs.length }}</div>
-            <p class="mt-2 text-sm text-secondary">优先重试当前列表里的解析失败文档。</p>
+            <p class="mt-2 text-sm text-secondary">建议重试当前列表里的解析失败文档。</p>
           </article>
           <article class="surface-muted p-4">
             <div class="text-xs uppercase tracking-[0.18em] text-tertiary">索引失败</div>
@@ -113,7 +113,7 @@
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 class="admin-section-title">查看文档并执行治理</h3>
-            <p class="mt-2 text-sm text-secondary">优先看失败状态，再决定重试解析还是重建索引。</p>
+            <p class="mt-2 text-sm text-secondary">查看失败状态后，选择重试解析或重建索引。</p>
           </div>
           <div class="text-sm text-slate-500">共 {{ total }} 份文档</div>
         </div>
@@ -144,7 +144,7 @@
         </div>
 
         <div v-else class="mt-4 rounded-2xl bg-[var(--panel-muted)] px-4 py-5 text-sm text-secondary">
-          这次还没有找到相关结果，换个问题或补一份资料后再试。
+          这次没有找到相关结果。换个问题，或补一份资料后重试。
         </div>
       </section>
 
@@ -319,10 +319,10 @@ const statusLabel = (status?: string) => {
 }
 
 const recoveryLabel = (doc: KnowledgeDocItem) => {
-  if (doc.parseStatus === 'failed') return '先重试解析'
-  if (doc.indexStatus === 'failed') return '先重建索引'
+  if (doc.parseStatus === 'failed') return '重试解析'
+  if (doc.indexStatus === 'failed') return '重建索引'
   if (doc.indexStatus === 'indexed') return '可直接使用'
-  return '继续处理'
+  return '处理中'
 }
 </script>
 

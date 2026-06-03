@@ -15,12 +15,12 @@
 
     <section v-if="loading" class="shell-section-card p-8 text-center">
       <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-      <p class="mt-4 text-sm text-secondary">正在读取这次面试的题目、分数和复盘建议...</p>
+      <p class="mt-4 text-sm text-secondary">正在加载这次面试记录...</p>
     </section>
 
     <section v-else-if="!detail" class="shell-section-card p-8 text-center">
       <p class="text-lg font-semibold text-ink">面试记录未找到</p>
-      <p class="mt-3 text-sm leading-7 text-secondary">这次记录可能还没生成成功。先回到模拟面试开始新一轮，或检查其他历史记录。</p>
+      <p class="mt-3 text-sm leading-7 text-secondary">这次面试记录暂时无法查看。请返回模拟面试重试。</p>
       <RouterLink to="/interview" class="hard-button-primary mt-4 inline-flex">返回模拟面试</RouterLink>
     </section>
 
@@ -29,7 +29,7 @@
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div class="mt-3 flex flex-wrap items-center gap-3">
-              <h3 class="text-2xl font-semibold tracking-[-0.03em] text-ink">
+              <h3 class="text-2xl font-semibold text-ink" style="text-wrap: balance">
                 {{ detail.direction }} 方向面试诊断
               </h3>
             </div>
@@ -45,7 +45,7 @@
           <div class="flex flex-col gap-3 lg:items-end">
             <div class="interview-score-card p-6 text-white">
               <div class="text-xs uppercase tracking-[0.24em] text-white/60">总分</div>
-              <div class="mt-2 text-5xl font-semibold tracking-[-0.03em]">
+              <div class="mt-2 text-5xl font-semibold" style="font-variant-numeric: tabular-nums">
                 {{ formatScore(detail.totalScore) }}
               </div>
             </div>
@@ -105,7 +105,8 @@
             </div>
           </div>
           <span
-            class="text-2xl font-semibold tracking-[-0.03em]"
+            class="text-2xl font-semibold"
+            style="font-variant-numeric: tabular-nums"
             :class="record.score >= 60 ? 'text-accent' : 'text-red-500'"
           >
             {{ formatScore(record.score) }}
@@ -114,7 +115,7 @@
 
         <div class="surface-muted mx-6 mt-4 rounded-lg p-4">
           <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">本题点评</div>
-          <p class="mt-1 text-sm leading-6 text-primary">{{ record.comment || '这道题的点评还没生成出来，先对照分数和标准答案补一轮复盘。' }}</p>
+          <p class="mt-1 text-sm leading-6 text-primary">{{ record.comment || '这道题暂时没有点评。可以对照分数和标准答案复盘。' }}</p>
         </div>
 
         <div v-if="record.scoreBreakdown?.length" class="mx-6 mt-4 grid gap-3 md:grid-cols-3">
@@ -124,7 +125,7 @@
             class="surface-card p-4"
           >
             <div class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">{{ item.dimension }}</div>
-            <div class="mt-2 text-3xl font-semibold tracking-[-0.03em] text-ink">{{ item.score }}</div>
+            <div class="mt-2 text-3xl font-semibold text-ink" style="font-variant-numeric: tabular-nums">{{ item.score }}</div>
             <p class="mt-2 text-sm leading-6 text-secondary">{{ item.summary }}</p>
           </div>
         </div>
@@ -180,7 +181,7 @@
               <span class="text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">标准答案</span>
             </div>
             <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-primary">
-              {{ record.standardAnswer || '这道题的标准答案还没生成出来，先回看你的回答，再结合复盘建议补一版更完整的答案。' }}
+              {{ record.standardAnswer || '这道题暂时没有标准答案。可以回看你的回答，并补充更完整的版本。' }}
             </p>
           </div>
         </div>
@@ -196,7 +197,7 @@
           模拟面试
         </RouterLink>
         <RouterLink to="/interview" class="hard-button-primary flex-1 text-center">
-          再来一场
+          开始新一场
         </RouterLink>
       </section>
     </template>
@@ -210,8 +211,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { interviewDetailApi } from '@/api/interview'
 import { ERROR_COPY } from '@/constants/productCopy'
 import type { InterviewDetail } from '@/types/api'
-
 import { buildAgentWorkbenchLocation } from '@/utils/agent'
+
 const route = useRoute()
 const router = useRouter()
 
@@ -256,7 +257,6 @@ const interviewContextLabel = (context?: InterviewDetail['contextSource'] | null
 }
 
 const sessionId = () => String(route.params.id || '')
-
 const interviewReviewAgentLink = computed(() => {
   const id = sessionId()
   const contextRefs = ['analytics:profile']
@@ -277,6 +277,7 @@ const interviewReviewAgentLink = computed(() => {
       : '基于这次模拟面试记录，总结薄弱点并安排下一轮训练。'
   })
 })
+
 const loadData = async () => {
   const id = sessionId()
   if (!id) {

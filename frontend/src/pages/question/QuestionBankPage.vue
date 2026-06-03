@@ -5,7 +5,7 @@
         <div class="workspace-head__top">
           <div class="workspace-head__main">
             <h1 class="workspace-title">题库训练</h1>
-            <p class="workspace-summary">先筛到要练的题，先看清题目和答案，再决定下一步是继续追问，还是去模拟面试练表达。</p>
+            <p class="workspace-summary">按关键词、分类和难度筛选题目，查看答案并开始练习。</p>
           </div>
           <div v-if="questions.length" class="question-toolbar__summary text-xs text-tertiary">
             <span>共 <strong class="font-semibold text-ink">{{ total }}</strong> 题</span>
@@ -69,7 +69,7 @@
 
       <div v-if="loading" class="workspace-section min-h-[260px] text-center">
         <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-        <p class="mt-4 text-sm text-secondary">正在读取当前筛选下的题目...</p>
+        <p class="mt-4 text-sm text-secondary">正在加载题目...</p>
       </div>
 
       <div v-else class="workspace-section question-list-section">
@@ -113,7 +113,7 @@
                 class="hard-button-primary text-sm"
                 @click="openDetail(item)"
               >
-                先看这道题
+                查看题目
               </button>
             </div>
           </div>
@@ -138,8 +138,8 @@
         <section v-else class="py-2">
           <EmptyState
             icon="search"
-            title="当前筛选下还没有可练的题目"
-            description="先换个分类、标签或关键词，再继续筛一轮，找到可以先看答案再继续追问的题目。"
+            title="没有找到匹配的题目"
+            description="试试调整分类、标签或关键词。"
           />
         </section>
 
@@ -157,7 +157,7 @@
 
     <el-drawer
       v-model="detailVisible"
-      title="先看题，再决定下一步"
+      title="题目详情"
       size="min(720px, 100%)"
     >
       <template v-if="selectedQuestion">
@@ -178,7 +178,7 @@
               v-if="selectedQuestion.applicableScope || selectedQuestion.source"
               class="mt-3 text-sm text-secondary"
             >
-              {{ selectedQuestion.applicableScope || '先把核心思路讲清楚，再补来源和扩展资料。' }}
+              {{ selectedQuestion.applicableScope || '建议整理核心思路，并补充来源和扩展资料。' }}
               <span v-if="selectedQuestion.source"> · 来源：{{ selectedQuestion.source }}</span>
             </p>
           </section>
@@ -195,15 +195,15 @@
           </section>
 
           <section class="question-detail-block">
-            <span class="question-detail-title">先看标准答案</span>
-            <p>{{ selectedQuestion.standardAnswer || '这道题的标准答案还没补齐，先根据题干组织一版自己的回答，再继续追问。' }}</p>
+            <span class="question-detail-title">标准答案</span>
+            <p>{{ selectedQuestion.standardAnswer || '这道题暂时没有标准答案。你可以根据题干整理自己的回答。' }}</p>
           </section>
 
           <section
             v-if="selectedQuestion.interviewAnswer"
             class="question-detail-block"
           >
-            <span class="question-detail-title">再看表达示例</span>
+            <span class="question-detail-title">表达示例</span>
             <p>{{ selectedQuestion.interviewAnswer }}</p>
           </section>
 
@@ -211,7 +211,7 @@
             v-if="selectedQuestion.followUpSuggestions"
             class="question-detail-block"
           >
-            <span class="question-detail-title">再决定怎么继续追问</span>
+            <span class="question-detail-title">练习建议</span>
             <p>{{ selectedQuestion.followUpSuggestions }}</p>
           </section>
 
@@ -232,23 +232,23 @@
           </section>
 
           <section class="question-detail-block question-detail-block-action">
-            <span class="question-detail-title">再选下一步</span>
-            <p>先把这道题看明白，再决定接下来是继续追问细节，还是切去模拟面试练完整表达。</p>
+            <span class="question-detail-title">下一步</span>
+            <p>你可以追问细节，或切到模拟面试练完整表达。</p>
 
             <div class="question-next-step mt-4">
               <RouterLink
                 :to="questionChatTarget(selectedQuestion)"
                 class="hard-button-primary text-sm"
               >
-                去问答继续追问
+                去问答页追问
               </RouterLink>
               <div class="question-next-step__secondary">
-                <span class="question-next-step__hint">想练完整表达时，再切去模拟面试。</span>
+                <span class="question-next-step__hint">想练完整表达时，可以切到模拟面试。</span>
                 <RouterLink
                   :to="questionInterviewTarget(selectedQuestion)"
                   class="hard-button-secondary text-sm"
                 >
-                  去模拟面试练表达
+                  去模拟面试
                 </RouterLink>
               </div>
             </div>
@@ -384,7 +384,7 @@ function tagList(tags?: string) {
 
 const answerPreview = (answer?: string, max = 180) => {
   if (!answer?.trim()) {
-    return '这道题的标准答案还没补齐，先根据题干整理一版自己的回答。'
+    return '这道题暂时没有标准答案。你可以根据题干整理自己的回答。'
   }
   return answer.length > max ? `${answer.slice(0, max)}...` : answer
 }
@@ -487,14 +487,14 @@ watch(
 }
 
 .filter-chip {
-  min-height: 2rem;
+  min-height: 2.5rem;
   border-radius: 0.625rem;
   border: 1px solid rgba(var(--bc-accent-rgb), 0.22);
   background: rgba(var(--bc-accent-rgb), 0.06);
   color: var(--bc-ink);
   font-size: 0.8rem;
   font-weight: 600;
-  padding: 0 0.85rem;
+  padding: 0 0.95rem;
   cursor: pointer;
   transition:
     background var(--motion-fast) var(--ease-hard),
@@ -630,14 +630,17 @@ watch(
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   border: none;
   border-radius: 999px;
   background: transparent;
   color: var(--bc-ink-secondary);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .favorites-toggle:hover {

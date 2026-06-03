@@ -14,7 +14,7 @@
             v-for="item in group.items"
             :key="item.path"
             :to="item.path"
-            class="group flex cursor-pointer items-center gap-3 px-3 py-3 text-sm transition-all duration-150"
+            class="group flex cursor-pointer items-center gap-3 px-3 py-3 text-sm transition-[background-color,color,box-shadow,transform] duration-150"
             style="border-radius: var(--radius-md)"
             :class="
               isActive(item.path)

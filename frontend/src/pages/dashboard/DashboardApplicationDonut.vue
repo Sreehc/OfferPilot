@@ -6,7 +6,7 @@
       </div>
       <RouterLink
         to="/applications"
-        class="accent-link text-sm font-semibold"
+        class="accent-link touch-link text-sm font-semibold"
       >
         查看全部
       </RouterLink>
@@ -81,7 +81,7 @@ const renderChart = () => {
         name: item.label,
         itemStyle: { color: item.color }
       }))
-    : [{ value: 1, name: '先记录投递', itemStyle: { color: emptyColor } }]
+    : [{ value: 1, name: '记录投递', itemStyle: { color: emptyColor } }]
 
   chart.setOption({
     animationDuration: 550,
@@ -159,7 +159,8 @@ onBeforeUnmount(() => {
   color: #162b4a;
   font-size: 1.04rem;
   font-weight: 800;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
+  text-wrap: balance;
 }
 
 .dashboard-donut-card__body {
@@ -184,6 +185,10 @@ onBeforeUnmount(() => {
   flex-direction: column;
   justify-content: space-between;
   gap: 0.65rem;
+}
+
+.dashboard-donut-card__legend strong {
+  font-variant-numeric: tabular-nums;
 }
 
 .dashboard-donut-card__legend-row {

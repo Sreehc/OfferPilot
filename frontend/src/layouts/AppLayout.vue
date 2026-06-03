@@ -72,7 +72,7 @@
                   />
                 </svg>
               </span>
-              <span class="app-topbar__search-text">搜索功能、页面或操作</span>
+              <span class="app-topbar__search-text">搜索页面或操作</span>
               <span class="app-topbar__search-kbd hidden sm:inline-flex">/</span>
             </button>
           </div>
@@ -407,8 +407,9 @@ const handleLogout = async () => {
 
 .app-topbar__menu {
   display: inline-flex;
-  width: 38px;
-  height: 38px;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -441,12 +442,12 @@ const handleLogout = async () => {
   width: 100%;
   align-items: center;
   gap: 10px;
-  min-height: 52px;
+  min-height: 48px;
   border-radius: 18px;
   border: 1px solid rgba(84, 116, 198, 0.14);
   background: rgba(255, 255, 255, 0.92);
   color: #6f7d95;
-  padding: 0.5rem 0.9rem;
+  padding: 0.45rem 0.82rem;
   box-shadow: 0 8px 18px rgba(41, 62, 109, 0.05);
   transition:
     border-color var(--motion-base) var(--ease-hard),
@@ -597,6 +598,40 @@ const handleLogout = async () => {
 
   .app-shell--sidebar-hidden .app-shell__content {
     padding-left: 18px;
+  }
+}
+
+@media (max-width: 767px) {
+  .app-topbar {
+    gap: 10px;
+    padding: 8px 12px 4px;
+  }
+
+  .app-topbar__left,
+  .app-topbar__right {
+    gap: 10px;
+  }
+
+  .app-topbar__menu {
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
+    border-radius: 13px;
+  }
+
+  .app-topbar__search {
+    min-height: 44px;
+    border-radius: 16px;
+    padding: 0.38rem 0.72rem;
+    box-shadow: 0 6px 14px rgba(41, 62, 109, 0.05);
+  }
+
+  .app-topbar__search-text {
+    font-size: 0.84rem;
+  }
+
+  .app-topbar__search-kbd {
+    display: none;
   }
 }
 

@@ -41,11 +41,4 @@ public class DefaultPromptTemplateService implements PromptTemplateService {
     public String followUpPrompt() {
         return systemConfigService.getString(AiSystemConfigKeys.PROMPT_FOLLOW_UP, PromptTemplateDefaults.FOLLOW_UP);
     }
-
-    @Override
-    public String knowledgeCardPrompt() {
-        return systemConfigService.getString(
-                AiSystemConfigKeys.PROMPT_KNOWLEDGE_CARD,
-                PromptTemplateDefaults.KNOWLEDGE_CARD);
-    }
 }

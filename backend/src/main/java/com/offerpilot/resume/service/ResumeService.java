@@ -4,6 +4,8 @@ import com.offerpilot.resume.dto.ResumeUpdateRequest;
 import com.offerpilot.resume.vo.ResumeFileVO;
 import com.offerpilot.resume.vo.ResumeInterviewResumeVO;
 import com.offerpilot.resume.vo.ResumeProjectVO;
+import com.offerpilot.resume.vo.ResumeScoreVO;
+import com.offerpilot.resume.vo.ResumeVersionVO;
 import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,6 +27,12 @@ public interface ResumeService {
     ResumeFileVO retryParse(Long userId, Long resumeId);
 
     ResumeFileVO update(Long userId, Long resumeId, ResumeUpdateRequest request);
+
+    ResumeScoreVO score(Long userId, Long resumeId);
+
+    List<ResumeVersionVO> listVersions(Long userId, Long resumeId);
+
+    ResumeFileVO restoreVersion(Long userId, Long versionId);
 
     ResumeFileVO saveFollowUpDraft(Long userId, Long resumeId, String summary, List<String> recommendations);
 }

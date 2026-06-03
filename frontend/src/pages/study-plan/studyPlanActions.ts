@@ -15,8 +15,8 @@ export const getStudyPlanPrimaryActionLabel = (
   moduleLabel: (value: string) => string
 ) => {
   if (overview?.nextAction?.title) return overview.nextAction.title
-  if (!currentPlan) return '开始生成计划'
+  if (!currentPlan) return '生成学习计划'
   if (currentPlan.todayFocusSummary?.state === 'completed') return '查看进度走势'
-  if (!nextTask) return '继续今天的训练'
-  return `先做 ${moduleLabel(nextTask.module)}`
+  if (!nextTask) return '查看今日任务'
+  return `打开${moduleLabel(nextTask.module)}任务`
 }

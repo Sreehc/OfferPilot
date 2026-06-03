@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.offerpilot.common.api.ResultCode;
 import com.offerpilot.common.dto.PageResult;
 import com.offerpilot.common.exception.BusinessException;
-import com.offerpilot.cards.service.KnowledgeCardService;
 import com.offerpilot.dashboard.service.DashboardService;
 import com.offerpilot.question.entity.Question;
 import com.offerpilot.question.mapper.QuestionMapper;
@@ -29,7 +28,6 @@ public class WrongServiceImpl implements WrongService {
     private final WrongQuestionMapper wrongQuestionMapper;
     private final QuestionMapper questionMapper;
     private final DashboardService dashboardService;
-    private final KnowledgeCardService knowledgeCardService;
 
     @Override
     public PageResult<WrongQuestionVO> list(Long userId, int pageNum, int pageSize) {
@@ -146,7 +144,6 @@ public class WrongServiceImpl implements WrongService {
         wrong.setReviewCount((wrong.getReviewCount() == null ? 0 : wrong.getReviewCount()) + 1);
         wrong.setLastReviewTime(LocalDateTime.now());
         wrongQuestionMapper.updateById(wrong);
-        knowledgeCardService.syncWrongDeck(userId);
         dashboardService.evictCache(userId);
     }
 
@@ -154,7 +151,6 @@ public class WrongServiceImpl implements WrongService {
     public void delete(Long userId, Long id) {
         WrongQuestion wrong = getOwnedWrong(userId, id);
         wrongQuestionMapper.deleteById(wrong.getId());
-        knowledgeCardService.syncWrongDeck(userId);
         dashboardService.evictCache(userId);
     }
 

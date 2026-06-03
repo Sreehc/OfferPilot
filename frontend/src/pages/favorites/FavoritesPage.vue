@@ -80,7 +80,7 @@
                 </div>
                 <h4 class="mt-2 text-base font-semibold leading-7 text-ink">{{ fav.title }}</h4>
                 <p class="mt-1 text-sm leading-6 text-secondary line-clamp-2">
-                  {{ fav.summary || '这条收藏还没有补充摘要，先打开原内容继续查看重点。' }}
+                  {{ fav.summary || '这条收藏暂时没有摘要。可以打开原内容查看重点。' }}
                 </p>
                 <div class="mt-3 flex flex-wrap items-center gap-3">
                   <span class="text-xs text-tertiary">{{ formatTime(fav.createTime) }}</span>
