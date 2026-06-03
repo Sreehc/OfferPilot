@@ -638,7 +638,17 @@ const applicationBoardEntryLink = computed<RouteLocationRaw>(() =>
 
 const quickEntries = computed<DashboardQuickEntry[]>(() => [
   { label: '模拟面试', description: 'AI 全真模拟', path: mockInterviewEntryLink.value, icon: 'interview', tone: 'blue' },
-  { label: '知识库', description: '查看推荐资料和个人文档', path: '/knowledge', icon: 'knowledge', tone: 'green' },
+  {
+    label: '知识库',
+    description: '查看推荐资料和个人文档',
+    path: buildSeededPath(
+      '/knowledge',
+      'knowledge',
+      dashboardSeedTopic.value ? `当前从工作台进入，优先围绕「${dashboardSeedTopic.value}」查资料和整理证据。` : undefined
+    ),
+    icon: 'knowledge',
+    tone: 'green'
+  },
   {
     label: '简历助手',
     description: '整理简历与面试提纲',
@@ -650,7 +660,17 @@ const quickEntries = computed<DashboardQuickEntry[]>(() => [
     icon: 'resume',
     tone: 'violet'
   },
-  { label: '学习计划', description: '定制学习路径', path: '/study-plan', icon: 'plan', tone: 'cyan' },
+  {
+    label: '学习计划',
+    description: '定制学习路径',
+    path: buildSeededPath(
+      '/study-plan',
+      'study-plan',
+      dashboardSeedTopic.value ? `当前从工作台进入，优先围绕「${dashboardSeedTopic.value}」刷新训练计划。` : undefined
+    ),
+    icon: 'plan',
+    tone: 'cyan'
+  },
   {
     label: '投递管理',
     description: '追踪求职进度',
@@ -658,7 +678,17 @@ const quickEntries = computed<DashboardQuickEntry[]>(() => [
     icon: 'applications',
     tone: 'indigo'
   },
-  { label: '题库训练', description: '筛题、看答案和练表达', path: '/question', icon: 'question', tone: 'sky' }
+  {
+    label: '题库训练',
+    description: '筛题、看答案和练表达',
+    path: buildSeededPath(
+      '/question',
+      'question',
+      dashboardSeedTopic.value ? `当前从工作台进入，优先刷「${dashboardSeedTopic.value}」相关题目。` : undefined
+    ),
+    icon: 'question',
+    tone: 'sky'
+  }
 ])
 
 const greetingText = computed(() => resolveGreetingLabel())
@@ -697,7 +727,7 @@ const firstVisitGuide = computed<FirstVisitGuideState>(() => {
       title: '生成学习计划',
       description: '生成一份学习计划，明确接下来几天的训练安排。',
       actionLabel: '去生成计划',
-      actionTo: '/study-plan#plan-builder',
+      actionTo: appendDashboardSeedToPath('/study-plan#plan-builder'),
       hint: '计划生成后，可以开始准备岗位信息。'
     }
   }
@@ -977,7 +1007,7 @@ const fallbackTasks = computed<StudyPlanTaskItem[]>(() => {
       module: 'question',
       title: `刷一组 ${topWeak} 面试题`,
       description: '',
-      actionPath: '/question',
+      actionPath: appendDashboardSeedToPath('/question'),
       estimatedMinutes: 20,
       priority: 'high',
       status: 'pending'
@@ -989,7 +1019,7 @@ const fallbackTasks = computed<StudyPlanTaskItem[]>(() => {
       module: 'knowledge',
       title: `复盘 ${topWeak} 知识点`,
       description: '',
-      actionPath: '/knowledge',
+      actionPath: appendDashboardSeedToPath('/knowledge'),
       estimatedMinutes: 15,
       priority: 'medium',
       status: 'pending'
@@ -1069,7 +1099,7 @@ const recommendations = computed<DashboardRecommendationItem[]>(() => {
         title: item.title,
         category: [item.categoryName, difficultyLabel(item.difficulty)].filter(Boolean).join(' · ') || '面试题',
         hint: item.reason || '适合作为今天的热身题目',
-        path: `/question?${query.toString()}`,
+        path: appendDashboardSeedToPath(`/question?${query.toString()}`),
         tone: recommendationTone(index)
       }
     })
@@ -1083,7 +1113,7 @@ const recommendations = computed<DashboardRecommendationItem[]>(() => {
       title: topWeak.includes('JVM') ? '深入理解 JVM 内存模型' : 'Java 中 == 和 equals 的区别',
       category: topWeak.includes('JVM') ? 'JVM' : 'Java基础',
       hint: '适合作为今天的热身题目',
-      path: '/question',
+      path: appendDashboardSeedToPath('/question'),
       tone: 'violet'
     },
     {
@@ -1091,7 +1121,7 @@ const recommendations = computed<DashboardRecommendationItem[]>(() => {
       title: 'Spring Boot 自动配置原理',
       category: 'Spring',
       hint: '适合配合面试题复习',
-      path: '/knowledge',
+      path: appendDashboardSeedToPath('/knowledge'),
       tone: 'blue'
     },
     {
@@ -1099,7 +1129,7 @@ const recommendations = computed<DashboardRecommendationItem[]>(() => {
       title: 'Redis 缓存穿透的解决方案',
       category: 'Redis',
       hint: '高频场景题',
-      path: '/question',
+      path: appendDashboardSeedToPath('/question'),
       tone: 'indigo'
     },
     {
@@ -1107,7 +1137,7 @@ const recommendations = computed<DashboardRecommendationItem[]>(() => {
       title: '多线程并发面试答题框架',
       category: '并发',
       hint: '适合补弱项',
-      path: '/knowledge',
+      path: appendDashboardSeedToPath('/knowledge'),
       tone: 'green'
     }
   ]
