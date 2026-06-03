@@ -35,7 +35,7 @@
             去 Copilot Prep
           </RouterLink>
           <RouterLink :to="applicationResumeLink" class="hard-button-secondary">检查简历版本</RouterLink>
-          <RouterLink v-if="currentFocus" :to="`/applications/${currentFocus.id}`" class="hard-button-secondary">
+          <RouterLink v-if="currentFocus" :to="buildApplicationDetailLink(currentFocus.id)" class="hard-button-secondary">
             查看当前时间线
           </RouterLink>
         </div>
@@ -165,7 +165,7 @@
                   {{ tag }}
                 </span>
               </div>
-              <RouterLink :to="`/applications/${currentFocus.id}`" class="hard-button-primary mt-5 inline-flex">
+              <RouterLink :to="buildApplicationDetailLink(currentFocus.id)" class="hard-button-primary mt-5 inline-flex">
                 打开这条岗位
               </RouterLink>
               <div class="mt-3 flex flex-wrap gap-2">
@@ -207,7 +207,7 @@
                   <RouterLink
                     v-for="item in column.items"
                     :key="item.id"
-                    :to="`/applications/${item.id}`"
+                    :to="buildApplicationDetailLink(item.id)"
                     class="application-card block"
                   >
                     <div class="flex items-center justify-between gap-3">
@@ -485,6 +485,12 @@ const applicationResumeLink = computed(() => {
   }))
   return `/resume?${query.toString()}`
 })
+
+const buildApplicationDetailLink = (applicationId: string) => {
+  const query = appendSeedQuery(new URLSearchParams())
+  const queryString = query.toString()
+  return queryString ? `/applications/${applicationId}?${queryString}` : `/applications/${applicationId}`
+}
 
 const statusLabel = (value: string) => {
   switch (value) {
