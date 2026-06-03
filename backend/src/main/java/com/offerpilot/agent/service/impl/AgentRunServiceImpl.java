@@ -1957,10 +1957,23 @@ public class AgentRunServiceImpl implements AgentRunService {
             case "interview_review" -> normalizedPath.startsWith("/interview/detail/") ? "前往面试详情" : "前往面试复盘";
             case "resume_coach" -> "前往简历页";
             case "application_strategist" -> normalizedPath.startsWith("/applications/") ? "前往投递详情" : "前往投递页";
-            case "realtime_copilot" -> "前往 Copilot";
+            case "realtime_copilot" -> realtimeCopilotNextActionLabel(normalizedPath);
             case "coordinator" -> coordinatorNextActionLabel(normalizedPath);
             default -> "前往下一步";
         };
+    }
+
+    private String realtimeCopilotNextActionLabel(String nextActionPath) {
+        if (nextActionPath.startsWith("/interview?workspace=copilot-live")) {
+            return "前往实时 Copilot";
+        }
+        if (nextActionPath.startsWith("/interview?workspace=copilot-prep")) {
+            return "前往 Copilot Prep";
+        }
+        if (nextActionPath.startsWith("/interview?workspace=recording-review")) {
+            return "前往录音复盘";
+        }
+        return "前往 Copilot";
     }
 
     private String studyPlannerNextActionLabel(String nextActionPath) {

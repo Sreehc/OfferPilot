@@ -840,6 +840,7 @@ class AgentRunServiceImplTest {
                 .anyMatch(item -> "analysis_ready".equals(item.getKey()) && "prepare_realtime".equals(item.getStepType())));
         assertTrue(result.getTimeline().stream()
                 .anyMatch(item -> "next_action".equals(item.getKey()) && "prepare_realtime".equals(item.getStepType())));
+        assertEquals("前往 Copilot Prep", result.getNextActionLabel());
         assertEquals("not_required", result.getApprovalStage());
     }
 
@@ -961,6 +962,7 @@ class AgentRunServiceImplTest {
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("降级模式")));
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("根据现场追问调整回答重点")));
         assertEquals("/interview?workspace=copilot-live&copilotRealtimeSessionId=88", result.getNextActionPath());
+        assertEquals("前往实时 Copilot", result.getNextActionLabel());
     }
 
     @Test
