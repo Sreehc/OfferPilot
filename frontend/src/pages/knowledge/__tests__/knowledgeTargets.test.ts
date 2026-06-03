@@ -57,4 +57,30 @@ describe('knowledgeTargets', () => {
       }
     })
   })
+
+  it('carries seed context into chat target when present', () => {
+    const systemDoc: KnowledgeDocItem = {
+      id: 7,
+      title: 'MySQL 索引清单',
+      status: 'indexed',
+      indexStatus: 'indexed',
+      libraryScope: 'system'
+    }
+
+    expect(buildKnowledgeChatTarget(systemDoc, {
+      seedTopic: 'MySQL',
+      seedWorkflow: 'analytics',
+      seedNote: '优先补索引与锁的表达'
+    })).toEqual({
+      path: '/chat',
+      query: {
+        knowledgeScope: 'system',
+        sourceDocId: '7',
+        sourceDocTitle: 'MySQL 索引清单',
+        seedTopic: 'MySQL',
+        seedWorkflow: 'analytics',
+        seedNote: '优先补索引与锁的表达'
+      }
+    })
+  })
 })

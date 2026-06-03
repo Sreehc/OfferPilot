@@ -330,7 +330,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter, type LocationQueryRaw, type RouteLocationRaw } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchCategoriesApi } from '@/api/category'
 import {
@@ -377,6 +377,37 @@ const filters = reactive<{
   keyword: '',
   status: undefined
 })
+
+const readSeedQueryValue = (key: 'seedTopic' | 'seedWorkflow' | 'seedNote') => {
+  const value = route.query[key]
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+const seededTopic = computed(() => readSeedQueryValue('seedTopic'))
+const seededWorkflow = computed(() => readSeedQueryValue('seedWorkflow'))
+const seededNote = computed(() => readSeedQueryValue('seedNote'))
+
+const buildSeedQuery = () => ({
+  ...(seededTopic.value ? { seedTopic: seededTopic.value } : {}),
+  ...(seededWorkflow.value ? { seedWorkflow: seededWorkflow.value } : {}),
+  ...(seededNote.value ? { seedNote: seededNote.value } : {})
+})
+
+const buildSeededAgentWorkbenchLocation = (
+  prefill: Parameters<typeof buildAgentWorkbenchLocation>[0]
+): RouteLocationRaw => {
+  const location = buildAgentWorkbenchLocation(prefill) as {
+    path: string
+    query?: LocationQueryRaw
+  }
+  return {
+    path: location.path,
+    query: {
+      ...(location.query || {}),
+      ...buildSeedQuery()
+    }
+  }
+}
 
 const statusSummary = computed(() => {
   const summary = { draft: 0, parsed: 0, indexed: 0, pending: 0 }
@@ -604,7 +635,7 @@ const unavailableActionHint = (doc: KnowledgeDocItem) => {
   return '索引完成后可提问'
 }
 
-const knowledgeChatTarget = (doc: KnowledgeDocItem) => buildKnowledgeChatTarget(doc)
+const knowledgeChatTarget = (doc: KnowledgeDocItem) => buildKnowledgeChatTarget(doc, buildSeedQuery())
 
 const knowledgeAgentLabel = (doc: KnowledgeDocItem) => {
   if (doc.businessType === 'jd') return '让 Agent 组织备面'
@@ -614,7 +645,7 @@ const knowledgeAgentLabel = (doc: KnowledgeDocItem) => {
 
 const knowledgeAgentTarget = (doc: KnowledgeDocItem) => {
   if (doc.businessType === 'jd') {
-    return buildAgentWorkbenchLocation({
+    return buildSeededAgentWorkbenchLocation({
       agentType: 'coordinator',
       triggerSource: 'manual',
       contextRefs: [`knowledge:${doc.id}`, 'application:board', 'resume:latest', 'settings:providers'],
@@ -622,14 +653,14 @@ const knowledgeAgentTarget = (doc: KnowledgeDocItem) => {
     })
   }
   if (doc.businessType === 'resume') {
-    return buildAgentWorkbenchLocation({
+    return buildSeededAgentWorkbenchLocation({
       agentType: 'resume_coach',
       triggerSource: 'manual',
       contextRefs: [`knowledge:${doc.id}`, 'resume:latest', 'application:board'],
       userPrompt: `围绕资料《${doc.title}》整理简历表达、项目顺序和后续模拟面试前的修改重点。`
     })
   }
-  return buildAgentWorkbenchLocation({
+  return buildSeededAgentWorkbenchLocation({
     agentType: 'study_planner',
     triggerSource: 'manual',
     contextRefs: [`knowledge:${doc.id}`, 'study-plan:active', 'analytics:profile'],
