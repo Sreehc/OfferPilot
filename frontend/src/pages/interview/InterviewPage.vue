@@ -2073,6 +2073,7 @@ const loadResumes = async () => {
   try {
     const response = await fetchResumeListApi()
     resumes.value = response.data
+    applyInterviewWorkspaceSeedsFromRoute(resolveInterviewWorkspaceRouteState().workspace)
     if (!jobPrepResumeId.value && response.data[0]) {
       jobPrepResumeId.value = response.data[0].id
     }
@@ -2088,6 +2089,7 @@ const loadApplications = async () => {
   try {
     const response = await fetchApplicationBoardApi()
     applications.value = response.data
+    applyInterviewWorkspaceSeedsFromRoute(resolveInterviewWorkspaceRouteState().workspace)
   } catch {
     applications.value = []
   } finally {
@@ -2323,6 +2325,27 @@ const resolveInterviewWorkspaceRouteState = () => {
   }
 }
 
+const applyInterviewWorkspaceSeedsFromRoute = (workspace?: string) => {
+  const resumeId = String(route.query.resumeId || '').trim()
+  const applicationId = String(route.query.applicationId || route.query.jobPrepApplicationId || '').trim()
+
+  if (resumeId) {
+    if (workspace === 'mock-interview' || workspace === 'history' || !workspace) {
+      selectedResumeId.value = resumeId
+      if (interviewContextPath.value === 'general') {
+        interviewContextPath.value = 'resume'
+      }
+    }
+    if (workspace === 'job-prep' || workspace === 'copilot-prep' || workspace === 'copilot-live') {
+      jobPrepResumeId.value = resumeId
+    }
+  }
+
+  if (applicationId && (workspace === 'job-prep' || workspace === 'copilot-prep' || workspace === 'copilot-live')) {
+    selectedJobPrepApplicationId.value = applicationId
+  }
+}
+
 const hydrateInterviewWorkspaceFromRoute = async () => {
   if (phase.value !== 'idle') return
 
@@ -2334,8 +2357,17 @@ const hydrateInterviewWorkspaceFromRoute = async () => {
     recordingReviewSessionId
   } = resolveInterviewWorkspaceRouteState()
 
-  const hasCopilotPrepSeedContext = Boolean(copilotPrepSessionId || jobPrepSessionId)
-  const hasCopilotRealtimeSeedContext = Boolean(copilotRealtimeSessionId || copilotPrepSessionId || jobPrepSessionId)
+  applyInterviewWorkspaceSeedsFromRoute(workspace)
+
+  const hasRouteSeedContext = Boolean(
+    String(route.query.applicationId || route.query.jobPrepApplicationId || '').trim() ||
+      String(route.query.resumeId || '').trim()
+  )
+  const hasJobPrepSeedContext = Boolean(jobPrepSessionId || hasRouteSeedContext)
+  const hasCopilotPrepSeedContext = Boolean(copilotPrepSessionId || jobPrepSessionId || hasRouteSeedContext)
+  const hasCopilotRealtimeSeedContext = Boolean(
+    copilotRealtimeSessionId || copilotPrepSessionId || jobPrepSessionId || hasRouteSeedContext
+  )
 
   try {
     if (jobPrepSessionId && jobPrepSession.value?.id !== jobPrepSessionId) {
@@ -2345,7 +2377,7 @@ const hydrateInterviewWorkspaceFromRoute = async () => {
       if (workspace === 'job-prep') {
         await syncInterviewWorkspaceRoute('job-prep', { jobPrepSessionId: response.data.id })
       }
-    } else if (workspace === 'job-prep' && !jobPrepSessionId && !jobPrepSession.value) {
+    } else if (workspace === 'job-prep' && !hasJobPrepSeedContext && !jobPrepSession.value) {
       await hydrateLatestJobPrepSession()
     }
     if (copilotPrepSessionId && copilotPrepSession.value?.id !== copilotPrepSessionId) {

@@ -27,6 +27,12 @@
           <RouterLink :to="applicationBoardAgentLink" class="hard-button-secondary">
             交给 Agent 推进
           </RouterLink>
+          <RouterLink v-if="currentFocus" :to="applicationJobPrepLink" class="hard-button-secondary">
+            去 JD 备面
+          </RouterLink>
+          <RouterLink v-if="currentFocus" :to="applicationCopilotPrepLink" class="hard-button-secondary">
+            去 Copilot Prep
+          </RouterLink>
           <RouterLink to="/resume" class="hard-button-secondary">检查简历版本</RouterLink>
           <RouterLink v-if="currentFocus" :to="`/applications/${currentFocus.id}`" class="hard-button-secondary">
             查看当前时间线
@@ -146,9 +152,17 @@
               <RouterLink :to="`/applications/${currentFocus.id}`" class="hard-button-primary mt-5 inline-flex">
                 打开这条岗位
               </RouterLink>
-              <RouterLink :to="applicationBoardAgentLink" class="hard-button-secondary mt-3 inline-flex">
-                生成推进策略
-              </RouterLink>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <RouterLink :to="applicationJobPrepLink" class="hard-button-secondary inline-flex">
+                  做 JD 备面
+                </RouterLink>
+                <RouterLink :to="applicationCopilotPrepLink" class="hard-button-secondary inline-flex">
+                  进入 Copilot Prep
+                </RouterLink>
+                <RouterLink :to="applicationBoardAgentLink" class="hard-button-secondary inline-flex">
+                  生成推进策略
+                </RouterLink>
+              </div>
             </div>
             <div v-else class="mt-5 rounded-2xl border border-dashed border-[var(--bc-line)] p-5 text-sm text-secondary">
               {{ EMPTY_STATE_COPY.applicationBoardFocus.title }}，{{ EMPTY_STATE_COPY.applicationBoardFocus.description }}
@@ -374,6 +388,28 @@ const applicationBoardAgentLink = computed(() => {
       ? `围绕 ${currentFocus.value.company} 的 ${currentFocus.value.jobTitle} 岗位，整理下一步推进策略和备面动作。`
       : '结合当前投递看板、JD 分析和简历上下文，整理下一步推进策略。'
   })
+})
+const applicationJobPrepLink = computed(() => {
+  if (!currentFocus.value?.id) return '/interview?workspace=job-prep'
+  const query = new URLSearchParams({
+    workspace: 'job-prep',
+    applicationId: String(currentFocus.value.id)
+  })
+  if (currentFocus.value.resumeFileId) {
+    query.set('resumeId', String(currentFocus.value.resumeFileId))
+  }
+  return `/interview?${query.toString()}`
+})
+const applicationCopilotPrepLink = computed(() => {
+  if (!currentFocus.value?.id) return '/interview?workspace=copilot-prep'
+  const query = new URLSearchParams({
+    workspace: 'copilot-prep',
+    applicationId: String(currentFocus.value.id)
+  })
+  if (currentFocus.value.resumeFileId) {
+    query.set('resumeId', String(currentFocus.value.resumeFileId))
+  }
+  return `/interview?${query.toString()}`
 })
 
 const statusLabel = (value: string) => {

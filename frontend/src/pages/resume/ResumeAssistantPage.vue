@@ -62,7 +62,8 @@
           <RouterLink v-if="currentResume" :to="resumeCoachAgentLink" class="hard-button-secondary">
             交给 Agent 优化
           </RouterLink>
-          <RouterLink v-if="currentResume" to="/interview" class="hard-button-secondary">去模拟面试</RouterLink>
+          <RouterLink v-if="currentResume" :to="resumeJobPrepLink" class="hard-button-secondary">去 JD 备面</RouterLink>
+          <RouterLink v-if="currentResume" :to="resumeInterviewLink" class="hard-button-secondary">去模拟面试</RouterLink>
         </div>
       </div>
 
@@ -514,7 +515,8 @@
             <div class="flex flex-wrap gap-2">
               <button type="button" class="hard-button-secondary" @click="handleCopyResume">复制提纲</button>
               <button type="button" class="hard-button-secondary" @click="handleDownloadResume">导出文本</button>
-              <RouterLink to="/interview" class="hard-button-primary">去模拟面试</RouterLink>
+              <RouterLink :to="resumeCopilotPrepLink" class="hard-button-secondary">去 Copilot Prep</RouterLink>
+              <RouterLink :to="resumeInterviewLink" class="hard-button-primary">去模拟面试</RouterLink>
             </div>
           </div>
 
@@ -676,6 +678,7 @@ const nextActionText = computed(() => {
   if (!currentResume.value) return '上传简历'
   if (currentResume.value.parseStatus === 'failed') return '修正简历内容'
   if (!currentResume.value.projects.length) return '补项目经历'
+  if (interviewResume.value) return '进入 JD 备面'
   return '确认开场和面试提纲'
 })
 const resumeCoachAgentLink = computed(() => {
@@ -693,6 +696,18 @@ const resumeCoachAgentLink = computed(() => {
       ? '先修正这份简历的缺失内容，再整理成可用于面试和投递的版本。'
       : '结合当前简历内容、项目追问和面试提纲，生成下一轮简历优化动作。'
   })
+})
+const resumeInterviewLink = computed(() => {
+  if (!currentResume.value?.id) return '/interview?workspace=mock-interview'
+  return `/interview?workspace=mock-interview&resumeId=${encodeURIComponent(String(currentResume.value.id))}`
+})
+const resumeJobPrepLink = computed(() => {
+  if (!currentResume.value?.id) return '/interview?workspace=job-prep'
+  return `/interview?workspace=job-prep&resumeId=${encodeURIComponent(String(currentResume.value.id))}`
+})
+const resumeCopilotPrepLink = computed(() => {
+  if (!currentResume.value?.id) return '/interview?workspace=copilot-prep'
+  return `/interview?workspace=copilot-prep&resumeId=${encodeURIComponent(String(currentResume.value.id))}`
 })
 
 const workflowSteps = computed(() => {
