@@ -273,7 +273,7 @@
                   <div>
                     <h3 class="dashboard-section-title">最近模拟面试</h3>
                   </div>
-                  <RouterLink to="/interview" class="accent-link touch-link text-sm font-semibold">查看全部</RouterLink>
+                  <RouterLink to="/interview?workspace=history" class="accent-link touch-link text-sm font-semibold">查看全部</RouterLink>
                 </div>
 
                 <template v-if="recentInterviewCard">
@@ -323,7 +323,7 @@
                 <div v-else class="dashboard-inline-empty">
                   <div class="dashboard-inline-empty__title">{{ EMPTY_STATE_COPY.dashboardRecentInterview.title }}</div>
                   <p class="dashboard-inline-empty__desc">{{ EMPTY_STATE_COPY.dashboardRecentInterview.description }}</p>
-                  <RouterLink to="/interview" class="hard-button-primary mt-4 inline-flex">开始模拟面试</RouterLink>
+                  <RouterLink to="/interview?workspace=mock-interview" class="hard-button-primary mt-4 inline-flex">开始模拟面试</RouterLink>
                 </div>
               </article>
 

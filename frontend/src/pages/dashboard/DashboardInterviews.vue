@@ -6,8 +6,8 @@
         <h3 class="mt-3 text-2xl font-semibold text-ink">回看最近几次模拟面试</h3>
       </div>
       <div class="flex gap-3">
-        <RouterLink class="accent-link touch-link text-sm font-semibold" to="/interview">全部历史</RouterLink>
-        <RouterLink class="accent-link touch-link text-sm font-semibold" to="/interview">开始下一次模拟面试</RouterLink>
+        <RouterLink class="accent-link touch-link text-sm font-semibold" to="/interview?workspace=history">全部历史</RouterLink>
+        <RouterLink class="accent-link touch-link text-sm font-semibold" to="/interview?workspace=mock-interview">开始下一次模拟面试</RouterLink>
       </div>
     </div>
 
