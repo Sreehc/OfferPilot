@@ -287,6 +287,52 @@ class DashboardServiceImplTest {
     }
 
     @Test
+    void overview_recommendsMockInterviewWorkspaceWhenCoreInputsAreReady() throws Exception {
+        OfferPilotProperties.Dashboard dashboardProps = new OfferPilotProperties.Dashboard();
+        dashboardProps.setCacheTtlMinutes(5);
+
+        try (MockedStatic<SecurityUtils> mocked = mockStatic(SecurityUtils.class)) {
+            mocked.when(SecurityUtils::getCurrentUserId).thenReturn(1L);
+            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+            when(valueOperations.get("dashboard:overview:1")).thenReturn(null);
+            when(props.getDashboard()).thenReturn(dashboardProps);
+            when(dashboardMetricsMapper.countChatSessions(1L)).thenReturn(3L);
+            when(dashboardMetricsMapper.countInterviewSessions(1L)).thenReturn(2L);
+            when(dashboardMetricsMapper.averageInterviewScore(1L)).thenReturn(new BigDecimal("82"));
+            when(dashboardMetricsMapper.countWrongQuestions(1L)).thenReturn(1L);
+            when(dashboardMetricsMapper.selectRecentInterviews(1L)).thenReturn(List.of());
+            when(dashboardMetricsMapper.selectWeakPoints(1L)).thenReturn(List.of());
+            when(dashboardMetricsMapper.countReviewDebt(1L)).thenReturn(0L);
+            when(reviewLogMapper.selectList(org.mockito.ArgumentMatchers.any())).thenReturn(List.of());
+
+            ResumeFile resume = new ResumeFile();
+            resume.setTitle("已上传简历");
+            when(resumeFileMapper.selectList(org.mockito.ArgumentMatchers.any())).thenReturn(List.of(resume));
+
+            StudyPlan activePlan = new StudyPlan();
+            activePlan.setId(10L);
+            activePlan.setCurrentDay(2);
+            activePlan.setStatus("active");
+            when(studyPlanMapper.selectOne(org.mockito.ArgumentMatchers.any())).thenReturn(activePlan);
+
+            StudyPlanTask doneTask = new StudyPlanTask();
+            doneTask.setStatus("completed");
+            doneTask.setDayIndex(2);
+            when(studyPlanTaskMapper.selectList(org.mockito.ArgumentMatchers.any())).thenReturn(List.of(doneTask));
+
+            when(jobApplicationMapper.selectList(org.mockito.ArgumentMatchers.any())).thenReturn(List.of());
+            when(adaptiveService.getAbilityProfile(1L)).thenReturn(AbilityProfileVO.builder().build());
+            doReturn("{}").when(objectMapper)
+                    .writeValueAsString(org.mockito.ArgumentMatchers.any(DashboardOverviewVO.class));
+
+            DashboardOverviewVO result = dashboardService.overview();
+
+            assertEquals("start_interview", result.getNextAction().getKey());
+            assertEquals("/interview?workspace=mock-interview", result.getNextAction().getPath());
+        }
+    }
+
+    @Test
     void overview_noUserId_throws() {
         try (MockedStatic<SecurityUtils> mocked = mockStatic(SecurityUtils.class)) {
             mocked.when(SecurityUtils::getCurrentUserId).thenReturn(null);

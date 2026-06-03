@@ -1,7 +1,7 @@
 <template>
   <div class="interview-cockpit h-full">
     <template v-if="phase === 'idle'">
-      <section class="interview-setup-bar shell-section-card workspace-shell">
+      <section ref="setupSectionRef" class="interview-setup-bar shell-section-card workspace-shell">
         <div class="workspace-head">
           <div class="workspace-head__top">
             <div class="workspace-head__main">
@@ -1000,7 +1000,7 @@
         </div>
       </section>
 
-      <section class="shell-section-card workspace-shell interview-history-shell">
+      <section ref="historySectionRef" class="shell-section-card workspace-shell interview-history-shell">
         <div class="workspace-section">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -1561,9 +1561,11 @@ const recordingReviewNotes = ref('')
 const recordingReviewFile = ref<File | null>(null)
 const recordingReviewLoading = ref(false)
 const recordingReviewSession = ref<RecordingReviewSession | null>(null)
+const setupSectionRef = ref<HTMLElement | null>(null)
 const jobPrepSectionRef = ref<HTMLElement | null>(null)
 const copilotPrepSectionRef = ref<HTMLElement | null>(null)
 const recordingReviewSectionRef = ref<HTMLElement | null>(null)
+const historySectionRef = ref<HTMLElement | null>(null)
 const providerConfigs = ref<UserProviderConfigItem[]>([])
 const interviewMode = ref<'text' | 'voice'>('text')
 const voiceAvailable = ref(false)
@@ -1665,13 +1667,17 @@ const toggleQuestion = (questionId: string) => {
 
 const scrollToInterviewWorkspace = async (workspace: string) => {
   await nextTick()
-  const target = workspace === 'job-prep'
-    ? jobPrepSectionRef.value
-    : workspace === 'copilot-prep' || workspace === 'copilot-live'
-      ? copilotPrepSectionRef.value
-      : workspace === 'recording-review'
-        ? recordingReviewSectionRef.value
-        : null
+  const target = workspace === 'mock-interview'
+    ? setupSectionRef.value
+    : workspace === 'job-prep'
+      ? jobPrepSectionRef.value
+      : workspace === 'copilot-prep' || workspace === 'copilot-live'
+        ? copilotPrepSectionRef.value
+        : workspace === 'recording-review'
+          ? recordingReviewSectionRef.value
+          : workspace === 'history'
+            ? historySectionRef.value
+            : null
   target?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
@@ -2203,14 +2209,45 @@ const hydrateRealtimeSession = async (sessionId: string) => {
   copilotRealtimeSession.value = response.data
 }
 
+const resolveInterviewWorkspaceRouteState = () => {
+  const workspaceQuery = String(route.query.workspace || '').trim()
+  const jobPrepSessionId = String(route.query.jobPrepSessionId || route.query.jobPrep || '').trim()
+  const copilotPrepSessionId = String(route.query.copilotPrepSessionId || route.query.copilotPrep || '').trim()
+  const copilotRealtimeSessionId = String(route.query.copilotRealtimeSessionId || route.query.copilotRealtime || '').trim()
+  const recordingReviewSessionId = String(route.query.recordingReviewSessionId || route.query.recordingReview || '').trim()
+
+  let workspace = workspaceQuery
+  if (!workspace) {
+    if (recordingReviewSessionId) {
+      workspace = 'recording-review'
+    } else if (copilotRealtimeSessionId) {
+      workspace = 'copilot-live'
+    } else if (copilotPrepSessionId) {
+      workspace = 'copilot-prep'
+    } else if (jobPrepSessionId) {
+      workspace = 'job-prep'
+    }
+  }
+
+  return {
+    workspace,
+    jobPrepSessionId,
+    copilotPrepSessionId,
+    copilotRealtimeSessionId,
+    recordingReviewSessionId
+  }
+}
+
 const hydrateInterviewWorkspaceFromRoute = async () => {
   if (phase.value !== 'idle') return
 
-  const workspace = String(route.query.workspace || '').trim()
-  const jobPrepSessionId = String(route.query.jobPrepSessionId || '').trim()
-  const copilotPrepSessionId = String(route.query.copilotPrepSessionId || '').trim()
-  const copilotRealtimeSessionId = String(route.query.copilotRealtimeSessionId || '').trim()
-  const recordingReviewSessionId = String(route.query.recordingReviewSessionId || '').trim()
+  const {
+    workspace,
+    jobPrepSessionId,
+    copilotPrepSessionId,
+    copilotRealtimeSessionId,
+    recordingReviewSessionId
+  } = resolveInterviewWorkspaceRouteState()
 
   try {
     if (jobPrepSessionId && jobPrepSession.value?.id !== jobPrepSessionId) {

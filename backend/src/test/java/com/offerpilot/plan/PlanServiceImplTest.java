@@ -220,4 +220,39 @@ class PlanServiceImplTest {
                         && "面试复盘专项 | Redis".equals(task.getTitle())
                         && "/interview/detail/77".equals(task.getActionPath())));
     }
+
+    @Test
+    void saveInterviewReviewAction_defaultsToMockInterviewWorkspaceWhenNoPathProvided() {
+        StudyPlanCurrentVO result = planService.saveInterviewReviewAction(
+                1L,
+                null,
+                null,
+                "Java 后端",
+                "后端开发",
+                "Spring, Redis",
+                "面试复盘专项 | 表达节奏",
+                "先整理表达节奏，再回到下一轮模拟。",
+                null);
+
+        assertTrue(result.getTasks().stream().anyMatch(task ->
+                "interview_review".equals(task.getModule())
+                        && "/interview?workspace=mock-interview".equals(task.getActionPath())));
+    }
+
+    @Test
+    void saveRecordingReviewAction_defaultsToRecordingWorkspaceWhenNoPathProvided() {
+        StudyPlanCurrentVO result = planService.saveRecordingReviewAction(
+                1L,
+                null,
+                "Java 后端",
+                "后端开发",
+                "Spring Boot, Redis",
+                "录音复盘专项 | 表达结构",
+                "先处理转写复盘，再补下一轮训练。",
+                null);
+
+        assertTrue(result.getTasks().stream().anyMatch(task ->
+                "recording_review".equals(task.getModule())
+                        && "/interview?workspace=recording-review".equals(task.getActionPath())));
+    }
 }

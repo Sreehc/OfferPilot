@@ -153,7 +153,7 @@ public class PlanServiceImpl implements PlanService {
                 actionPath,
                 interviewSessionId == null ? null : "/interview/detail/" + interviewSessionId,
                 copilotRealtimeSessionId == null ? null : "/interview?workspace=copilot-live&copilotRealtimeSessionId=" + copilotRealtimeSessionId,
-                "/interview");
+                "/interview?workspace=mock-interview");
 
         StudyPlanTask existingTask = studyPlanTaskMapper.selectOne(new LambdaQueryWrapper<StudyPlanTask>()
                 .eq(StudyPlanTask::getPlanId, synced.getId())
@@ -197,7 +197,7 @@ public class PlanServiceImpl implements PlanService {
         String normalizedActionPath = firstNonBlank(
                 actionPath,
                 recordingReviewSessionId == null ? null : "/interview?workspace=recording-review&recordingReviewSessionId=" + recordingReviewSessionId,
-                "/interview");
+                "/interview?workspace=recording-review");
 
         StudyPlanTask existingTask = studyPlanTaskMapper.selectOne(new LambdaQueryWrapper<StudyPlanTask>()
                 .eq(StudyPlanTask::getPlanId, synced.getId())
@@ -478,7 +478,7 @@ public class PlanServiceImpl implements PlanService {
                                 + " 面试，重点验证 "
                                 + profile.targetRole()
                                 + " 场景下的回答结构和项目表达。",
-                        "/interview",
+                        "/interview?workspace=mock-interview",
                         25,
                         "high"));
             }

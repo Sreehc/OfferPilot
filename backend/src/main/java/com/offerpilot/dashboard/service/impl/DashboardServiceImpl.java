@@ -254,7 +254,7 @@ public class DashboardServiceImpl implements DashboardService {
                 .key("start_interview")
                 .title("安排下一轮模拟面试")
                 .description("用一轮新的模拟面试检查这段时间的训练有没有真正转成表达能力。")
-                .path("/interview")
+                .path("/interview?workspace=mock-interview")
                 .reason("当前基础资料和计划都已具备，下一步应回到表达检验。")
                 .priority("P2")
                 .build();
