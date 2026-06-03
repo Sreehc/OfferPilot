@@ -230,13 +230,57 @@ const filteredSearchItems = computed(() => {
 const displayName = computed(() => authStore.user?.nickname || '访客')
 const initials = computed(() => displayName.value.slice(0, 1).toUpperCase())
 
+const readSeedQueryValue = (key: 'seedTopic' | 'seedWorkflow' | 'seedNote') => {
+  const value = route.query[key]
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+const seededTopic = computed(() => readSeedQueryValue('seedTopic'))
+const seededWorkflow = computed(() => readSeedQueryValue('seedWorkflow'))
+const seededNote = computed(() => readSeedQueryValue('seedNote'))
+
+const carrySeedToPath = (path: string) => {
+  if (!seededTopic.value && !seededWorkflow.value && !seededNote.value) return path
+  if (
+    !path.startsWith('/interview') &&
+    !path.startsWith('/resume') &&
+    !path.startsWith('/applications') &&
+    !path.startsWith('/analytics') &&
+    !path.startsWith('/study-plan') &&
+    !path.startsWith('/review') &&
+    !path.startsWith('/wrong') &&
+    !path.startsWith('/question') &&
+    !path.startsWith('/chat') &&
+    !path.startsWith('/knowledge')
+  ) {
+    return path
+  }
+  const [rawPathWithoutHash, rawHash] = path.split('#')
+  const pathWithoutHash = rawPathWithoutHash || ''
+  const hash = rawHash || ''
+  const [rawPathname, rawQuery] = pathWithoutHash.split('?')
+  const pathname = rawPathname || ''
+  const query = new URLSearchParams(rawQuery)
+  if (seededTopic.value && !query.get('seedTopic') && pathname !== '/analytics') {
+    query.set('seedTopic', seededTopic.value)
+  }
+  if (seededWorkflow.value && !query.get('seedWorkflow') && pathname !== '/analytics') {
+    query.set('seedWorkflow', seededWorkflow.value)
+  }
+  if (seededNote.value && !query.get('seedNote') && pathname !== '/analytics') {
+    query.set('seedNote', seededNote.value)
+  }
+  const nextPath = query.toString() ? `${pathname}?${query.toString()}` : pathname
+  return hash ? `${nextPath}#${hash}` : nextPath
+}
+
 const navigateTo = (path: string) => {
   searchVisible.value = false
   searchQuery.value = ''
   if (window.innerWidth < 1024) {
     sidebarVisible.value = false
   }
-  router.push(path)
+  router.push(carrySeedToPath(path))
 }
 
 const handleSearchNavigate = () => {

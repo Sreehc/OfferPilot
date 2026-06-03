@@ -7,7 +7,7 @@
         :is="item.path ? 'RouterLink' : 'button'"
         v-for="item in items"
         :key="item.path"
-        v-bind="item.path ? { to: item.path } : { type: 'button' }"
+        v-bind="item.path ? { to: itemTarget(item.path) } : { type: 'button' }"
         class="mobile-nav-shell__item"
         :class="
           isActive(item.path) ? 'mobile-nav-shell__item-active' : 'text-secondary'
@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { h } from 'vue'
+import { computed, h } from 'vue'
 import { useRoute } from 'vue-router'
 import { PRODUCT_PAGE_NAMES } from '@/constants/productCopy'
 
@@ -80,6 +80,32 @@ const IconMore = () =>
 
 const openSidebar = () => {
   window.dispatchEvent(new CustomEvent('offerpilot:open-sidebar'))
+}
+
+const readSeedQueryValue = (key: 'seedTopic' | 'seedWorkflow' | 'seedNote') => {
+  const value = route.query[key]
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+const seededTopic = computed(() => readSeedQueryValue('seedTopic'))
+const seededWorkflow = computed(() => readSeedQueryValue('seedWorkflow'))
+const seededNote = computed(() => readSeedQueryValue('seedNote'))
+
+const itemTarget = (path?: string) => {
+  if (!path) return path
+  if (!seededTopic.value && !seededWorkflow.value && !seededNote.value) return path
+  if (!path.startsWith('/interview')) return path
+  const query = new URLSearchParams()
+  if (seededTopic.value) {
+    query.set('seedTopic', seededTopic.value)
+  }
+  if (seededWorkflow.value) {
+    query.set('seedWorkflow', seededWorkflow.value)
+  }
+  if (seededNote.value) {
+    query.set('seedNote', seededNote.value)
+  }
+  return query.toString() ? `${path}?${query.toString()}` : path
 }
 
 const primaryPaths = ['/dashboard', '/question', '/chat', '/interview']
