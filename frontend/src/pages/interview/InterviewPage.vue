@@ -1496,7 +1496,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router'
+import { useRoute, useRouter, type LocationQueryRaw, type RouteLocationRaw } from 'vue-router'
 import { fetchApplicationBoardApi } from '@/api/applications'
 import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
 import {
@@ -1651,6 +1651,63 @@ const buildInterviewSeedHint = (seedTopic: string, seedNote: string, fallback: s
   const topicHint = normalizedTopic ? `当前主题：${normalizedTopic}` : ''
   const detailHint = normalizedNote || fallback
   return [topicHint, detailHint].filter(Boolean).join('；')
+}
+
+const readSeedQueryValue = (key: 'seedTopic' | 'seedWorkflow' | 'seedNote') => {
+  const value = route.query[key]
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+const seededTopic = computed(() => readSeedQueryValue('seedTopic'))
+const seededWorkflow = computed(() => readSeedQueryValue('seedWorkflow'))
+const seededNote = computed(() => readSeedQueryValue('seedNote'))
+
+const appendSeedToPath = (path: string | null): string | null => {
+  if (!path) return path
+  if (!seededTopic.value && !seededWorkflow.value && !seededNote.value) return path
+  if (!path.startsWith('/interview') && !path.startsWith('/resume') && !path.startsWith('/applications') && !path.startsWith('/agent')) {
+    return path
+  }
+  const [rawPathWithoutHash, rawHash] = path.split('#')
+  const pathWithoutHash = rawPathWithoutHash || ''
+  const hash = rawHash || ''
+  const [rawPathname, rawQuery] = pathWithoutHash.split('?')
+  const pathname = rawPathname || ''
+  const query = new URLSearchParams(rawQuery)
+  if (seededTopic.value && !query.get('seedTopic')) {
+    query.set('seedTopic', seededTopic.value)
+  }
+  if (seededWorkflow.value && !query.get('seedWorkflow')) {
+    query.set('seedWorkflow', seededWorkflow.value)
+  }
+  if (seededNote.value && !query.get('seedNote')) {
+    query.set('seedNote', seededNote.value)
+  }
+  const nextPath = query.toString() ? `${pathname}?${query.toString()}` : pathname
+  return hash ? `${nextPath}#${hash}` : nextPath
+}
+
+const buildSeededAgentWorkbenchLocation = (
+  prefill: Parameters<typeof buildAgentWorkbenchLocation>[0]
+): RouteLocationRaw => {
+  const location = buildAgentWorkbenchLocation(prefill) as {
+    path: string
+    query?: LocationQueryRaw
+  }
+  const baseQuery: LocationQueryRaw = location.query ? { ...location.query } : {}
+  if (seededTopic.value) {
+    baseQuery.seedTopic = seededTopic.value
+  }
+  if (seededWorkflow.value) {
+    baseQuery.seedWorkflow = seededWorkflow.value
+  }
+  if (seededNote.value) {
+    baseQuery.seedNote = seededNote.value
+  }
+  return {
+    path: location.path,
+    query: baseQuery
+  }
 }
 
 const draftContextSource = computed<ContextSource | null>(() => {
@@ -1922,19 +1979,25 @@ const copilotRealtimeConnectionLabel = computed(() => {
 })
 const recordingReviewPending = computed(() => isRecordingReviewPendingStatus(recordingReviewSession.value?.status))
 const jobPrepNextActionLink = computed(() => {
-  if (jobPrepSession.value?.nextActionPath) return jobPrepSession.value.nextActionPath
+  if (jobPrepSession.value?.nextActionPath) {
+    return appendSeedToPath(jobPrepSession.value.nextActionPath) ?? jobPrepSession.value.nextActionPath
+  }
   if (!jobPrepSession.value) return ''
-  return `/interview?workspace=copilot-prep&jobPrepSessionId=${encodeURIComponent(jobPrepSession.value.id)}`
+  return appendSeedToPath(`/interview?workspace=copilot-prep&jobPrepSessionId=${encodeURIComponent(jobPrepSession.value.id)}`) || ''
 })
 const copilotPrepNextActionLink = computed(() => {
-  if (copilotPrepSession.value?.nextActionPath) return copilotPrepSession.value.nextActionPath
+  if (copilotPrepSession.value?.nextActionPath) {
+    return appendSeedToPath(copilotPrepSession.value.nextActionPath) ?? copilotPrepSession.value.nextActionPath
+  }
   if (!copilotPrepSession.value) return ''
-  return `/interview?workspace=copilot-live&copilotPrepSessionId=${encodeURIComponent(copilotPrepSession.value.id)}`
+  return appendSeedToPath(`/interview?workspace=copilot-live&copilotPrepSessionId=${encodeURIComponent(copilotPrepSession.value.id)}`) || ''
 })
 const recordingReviewNextActionLink = computed(() => {
-  if (recordingReviewSession.value?.nextActionPath) return recordingReviewSession.value.nextActionPath
+  if (recordingReviewSession.value?.nextActionPath) {
+    return appendSeedToPath(recordingReviewSession.value.nextActionPath) ?? recordingReviewSession.value.nextActionPath
+  }
   if (!recordingReviewSession.value) return '/agent'
-  return buildAgentWorkbenchLocation({
+  return buildSeededAgentWorkbenchLocation({
     agentType: 'recording_review',
     triggerSource: 'recording_review',
     contextRefs: [`interview:recording-review:${recordingReviewSession.value.id}`, 'analytics:profile', 'study-plan:active'],
@@ -1943,7 +2006,7 @@ const recordingReviewNextActionLink = computed(() => {
 })
 const copilotRealtimeAgentLink = computed(() => {
   if (!copilotRealtimeSession.value) return '/agent'
-  return buildAgentWorkbenchLocation({
+  return buildSeededAgentWorkbenchLocation({
     agentType: 'interview_review',
     triggerSource: 'interview_live',
     contextRefs: [`interview:copilot-realtime:${copilotRealtimeSession.value.id}`, 'analytics:profile', 'study-plan:active'],
@@ -1952,7 +2015,8 @@ const copilotRealtimeAgentLink = computed(() => {
 })
 const copilotRealtimePostReviewLink = computed(() => {
   if (copilotRealtimeSession.value?.postInterviewReview?.nextActionPath) {
-    return copilotRealtimeSession.value.postInterviewReview.nextActionPath
+    return appendSeedToPath(copilotRealtimeSession.value.postInterviewReview.nextActionPath)
+      ?? copilotRealtimeSession.value.postInterviewReview.nextActionPath
   }
   return copilotRealtimeAgentLink.value
 })
@@ -1974,7 +2038,7 @@ const copilotRealtimeRecoveryDescription = computed(() => {
 })
 const recordingReviewPlanRefreshLink = computed(() => {
   if (!recordingReviewSession.value) return '/study-plan'
-  return buildAgentWorkbenchLocation({
+  return buildSeededAgentWorkbenchLocation({
     agentType: 'study_planner',
     triggerSource: 'recording_review',
     contextRefs: [`interview:recording-review:${recordingReviewSession.value.id}`, 'analytics:profile', 'study-plan:active'],
