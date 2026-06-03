@@ -1865,22 +1865,12 @@ const recordingReviewPending = computed(() => isRecordingReviewPendingStatus(rec
 const jobPrepNextActionLink = computed(() => {
   if (jobPrepSession.value?.nextActionPath) return jobPrepSession.value.nextActionPath
   if (!jobPrepSession.value) return ''
-  return buildAgentWorkbenchLocation({
-    agentType: 'realtime_copilot',
-    triggerSource: 'interview',
-    contextRefs: [`interview:job-prep:${jobPrepSession.value.id}`, 'settings:providers'],
-    userPrompt: '把这次JD备面结果转成Copilot Prep会前草案。'
-  })
+  return `/interview?workspace=copilot-prep&jobPrepSessionId=${encodeURIComponent(jobPrepSession.value.id)}`
 })
 const copilotPrepNextActionLink = computed(() => {
   if (copilotPrepSession.value?.nextActionPath) return copilotPrepSession.value.nextActionPath
   if (!copilotPrepSession.value) return ''
-  return buildAgentWorkbenchLocation({
-    agentType: 'realtime_copilot',
-    triggerSource: 'interview_live',
-    contextRefs: [`interview:copilot-prep:${copilotPrepSession.value.id}`, 'settings:providers'],
-    userPrompt: '把这份Copilot Prep整理成进入实时阶段前的检查清单。'
-  })
+  return `/interview?workspace=copilot-live&copilotPrepSessionId=${encodeURIComponent(copilotPrepSession.value.id)}`
 })
 const recordingReviewNextActionLink = computed(() => {
   if (recordingReviewSession.value?.nextActionPath) return recordingReviewSession.value.nextActionPath
@@ -2344,7 +2334,9 @@ const hydrateInterviewWorkspaceFromRoute = async () => {
       const response = await fetchJobPrepSessionApi(jobPrepSessionId)
       jobPrepSession.value = response.data
       syncJobPrepToCopilot()
-      await syncInterviewWorkspaceRoute('job-prep', response.data.id)
+      if (workspace === 'job-prep') {
+        await syncInterviewWorkspaceRoute('job-prep', response.data.id)
+      }
     } else if (workspace === 'job-prep' && !jobPrepSessionId && !jobPrepSession.value) {
       await hydrateLatestJobPrepSession()
     }
@@ -2354,7 +2346,9 @@ const hydrateInterviewWorkspaceFromRoute = async () => {
       if (response.data.jobPrepSessionId) {
         linkedCopilotJobPrepId.value = response.data.jobPrepSessionId
       }
-      await syncInterviewWorkspaceRoute('copilot-prep', response.data.id)
+      if (workspace === 'copilot-prep') {
+        await syncInterviewWorkspaceRoute('copilot-prep', response.data.id)
+      }
     } else if (workspace === 'copilot-prep' && !hasCopilotPrepSeedContext && !copilotPrepSession.value) {
       await hydrateLatestCopilotPrepSession()
     }
@@ -2377,7 +2371,9 @@ const hydrateInterviewWorkspaceFromRoute = async () => {
       if (isRecordingReviewPendingStatus(response.data.status)) {
         scheduleRecordingReviewPoll(response.data.id)
       }
-      await syncInterviewWorkspaceRoute('recording-review', response.data.id)
+      if (workspace === 'recording-review') {
+        await syncInterviewWorkspaceRoute('recording-review', response.data.id)
+      }
     } else if (workspace === 'recording-review' && !recordingReviewSessionId && !recordingReviewSession.value) {
       await hydrateLatestRecordingReviewSession()
     }
