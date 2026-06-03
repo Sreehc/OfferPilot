@@ -33,6 +33,10 @@ export const fetchKnowledgeDocsApi = (params?: KnowledgeListQuery) => {
   return request<PageResult<KnowledgeDocItem>>({ url: '/knowledge/list', method: 'get', params })
 }
 
+export const fetchKnowledgeDocDetailApi = (docId: number) => {
+  return request<KnowledgeDocItem>({ url: `/knowledge/${docId}`, method: 'get' })
+}
+
 export const searchKnowledgeApi = (query: string) => {
   return request<KnowledgeSearchResult>({ url: '/knowledge/search', method: 'post', data: { query } })
 }

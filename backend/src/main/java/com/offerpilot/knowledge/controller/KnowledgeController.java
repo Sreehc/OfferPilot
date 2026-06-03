@@ -60,6 +60,14 @@ public class KnowledgeController {
         return Result.success(knowledgeService.listUserDocs(userId, query));
     }
 
+    @Operation(summary = "文档详情", description = "查询单篇知识资料详情，用于深链恢复和工作流回跳")
+    @GetMapping("/{docId}")
+    public Result<KnowledgeDocVO> detail(
+            @Parameter(description = "文档 ID") @PathVariable Long docId) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        return Result.success(knowledgeService.detailDoc(userId, docId));
+    }
+
     @Operation(summary = "删除文档", description = "删除用户自己上传的文档（级联删除 chunk 和向量）")
     @DeleteMapping("/{docId}")
     public Result<Void> delete(

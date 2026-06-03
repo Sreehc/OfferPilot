@@ -76,7 +76,40 @@
           </div>
 
           <div v-else class="knowledge-list">
-            <article v-for="doc in docs" :key="doc.id" class="knowledge-row" :class="statusToneClass(doc.status)">
+            <article
+              v-if="pinnedFocusedDoc"
+              class="knowledge-row knowledge-row--focused"
+              :class="statusToneClass(pinnedFocusedDoc.status)"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="hard-chip">深链定位</span>
+                    <span class="detail-pill">{{ libraryScopeLabel(pinnedFocusedDoc.libraryScope) }}</span>
+                    <span v-if="pinnedFocusedDoc.businessType" class="detail-pill">{{ businessTypeLabel(pinnedFocusedDoc.businessType) }}</span>
+                    <span v-if="pinnedFocusedDoc.categoryName" class="detail-pill">{{ pinnedFocusedDoc.categoryName }}</span>
+                  </div>
+                  <h4 class="mt-3 text-lg font-semibold leading-7 text-ink">{{ pinnedFocusedDoc.title }}</h4>
+                  <p class="mt-3 text-sm leading-7 text-secondary">
+                    {{ pinnedFocusedDoc.summary || '这份资料已经通过深链定位到当前页面，但当前分页列表里暂时还没加载到它。' }}
+                  </p>
+                </div>
+                <div class="doc-card__memory-actions">
+                  <RouterLink v-if="canAskWithDocument(pinnedFocusedDoc)" :to="knowledgeChatTarget(pinnedFocusedDoc)" class="hard-button-primary text-sm">
+                    去提问
+                  </RouterLink>
+                  <RouterLink :to="knowledgeAgentTarget(pinnedFocusedDoc)" class="hard-button-secondary text-sm">
+                    {{ knowledgeAgentLabel(pinnedFocusedDoc) }}
+                  </RouterLink>
+                </div>
+              </div>
+            </article>
+            <article
+              v-for="doc in docs"
+              :key="doc.id"
+              class="knowledge-row"
+              :class="[statusToneClass(doc.status), focusedDoc?.id === doc.id ? 'knowledge-row--focused' : '']"
+            >
               <div class="flex items-start justify-between gap-3">
                 <div class="flex min-w-0 items-start gap-3">
                   <div
@@ -296,11 +329,13 @@
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchCategoriesApi } from '@/api/category'
 import {
   deleteKnowledgeDocApi,
+  fetchKnowledgeDocDetailApi,
   fetchKnowledgeDocsApi,
   fetchMyKnowledgeDocsApi,
   uploadKnowledgeDocApi
@@ -311,8 +346,11 @@ import type { CategoryItem, KnowledgeDocItem } from '@/types/api'
 import { buildAgentWorkbenchLocation } from '@/utils/agent'
 import { buildKnowledgeChatTarget, canAskWithKnowledgeDocument } from './knowledgeTargets'
 
+const route = useRoute()
+const router = useRouter()
 const categories = ref<CategoryItem[]>([])
 const docs = ref<KnowledgeDocItem[]>([])
+const focusedDoc = ref<KnowledgeDocItem | null>(null)
 const loadingDocs = ref(false)
 const uploading = ref(false)
 const activeTab = ref<'system' | 'my'>('system')
@@ -352,6 +390,28 @@ const statusSummary = computed(() => {
 })
 
 const activeTabLabel = computed(() => (activeTab.value === 'my' ? '我的文档' : '推荐资料'))
+const pinnedFocusedDoc = computed(() => {
+  if (!focusedDoc.value) return null
+  return docs.value.some((item) => item.id === focusedDoc.value?.id) ? null : focusedDoc.value
+})
+
+const readRouteDocId = () => {
+  const raw = String(route.query.docId || '').trim()
+  const value = Number(raw)
+  return Number.isFinite(value) && value > 0 ? value : null
+}
+
+const syncKnowledgeRoute = async (docId?: number | null) => {
+  const nextId = docId && docId > 0 ? String(docId) : ''
+  const currentId = String(route.query.docId || '').trim()
+  if (nextId === currentId) return
+  await router.replace({
+    query: {
+      ...route.query,
+      docId: nextId || undefined
+    }
+  })
+}
 
 const loadCategories = async () => {
   try {
@@ -383,6 +443,13 @@ const loadDocs = async () => {
     docs.value = response.data.records
     total.value = response.data.total
     totalPages.value = response.data.totalPages
+    const routeDocId = readRouteDocId()
+    if (routeDocId) {
+      const matchedDoc = response.data.records.find((item) => item.id === routeDocId)
+      if (matchedDoc) {
+        focusedDoc.value = matchedDoc
+      }
+    }
   } catch {
     ElMessage.error(ERROR_COPY.knowledgeListLoadFailed)
   } finally {
@@ -570,6 +637,36 @@ const knowledgeAgentTarget = (doc: KnowledgeDocItem) => {
   })
 }
 
+const hydrateDocFromRoute = async () => {
+  const docId = readRouteDocId()
+  if (!docId) {
+    focusedDoc.value = null
+    return
+  }
+  try {
+    const { data } = await fetchKnowledgeDocDetailApi(docId)
+    focusedDoc.value = data
+    const targetTab = data.libraryScope === 'personal' ? 'my' : 'system'
+    if (activeTab.value !== targetTab) {
+      activeTab.value = targetTab
+      currentPage.value = 1
+      await loadDocs()
+      return
+    }
+    if (!docs.value.length) {
+      await loadDocs()
+      return
+    }
+    const matchedDoc = docs.value.find((item) => item.id === docId)
+    if (matchedDoc) {
+      focusedDoc.value = matchedDoc
+    }
+  } catch {
+    focusedDoc.value = null
+    await syncKnowledgeRoute(null)
+  }
+}
+
 const docType = (fileUrl?: string): 'pdf' | 'text' => {
   if (!fileUrl) return 'text'
   return fileUrl.toLowerCase().endsWith('.pdf') ? 'pdf' : 'text'
@@ -608,8 +705,20 @@ const toggleFavorite = async (doc: KnowledgeDocItem) => {
 
 onMounted(async () => {
   await loadCategories()
-  await Promise.all([loadDocs(), loadFavoriteIds()])
+  if (readRouteDocId()) {
+    await hydrateDocFromRoute()
+  } else {
+    await loadDocs()
+  }
+  await loadFavoriteIds()
 })
+
+watch(
+  () => route.query.docId,
+  () => {
+    void hydrateDocFromRoute()
+  }
+)
 </script>
 
 <style scoped>
@@ -934,6 +1043,13 @@ onMounted(async () => {
 
 .knowledge-row {
   padding: 20px;
+}
+
+.knowledge-row--focused {
+  box-shadow: inset 4px 0 0 rgba(var(--bc-accent-rgb), 0.9);
+  background:
+    linear-gradient(135deg, rgba(var(--bc-accent-rgb), 0.08), transparent 46%),
+    var(--bc-surface-card);
 }
 
 .knowledge-row + .knowledge-row {

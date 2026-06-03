@@ -907,7 +907,9 @@ const resolveContextRefPath = (contextRef: string) => {
   if (contextRef === 'resume:latest') return '/resume'
   if (contextRef === 'application:board') return '/applications'
   if (contextRef === 'settings:providers') return '/settings?tab=providers'
-  if (contextRef.startsWith('knowledge:')) return '/knowledge'
+  if (contextRef.startsWith('knowledge:')) {
+    return `/knowledge?docId=${encodeURIComponent(contextRef.slice('knowledge:'.length))}`
+  }
   if (contextRef.startsWith('question:')) {
     return `/question?questionId=${encodeURIComponent(contextRef.slice('question:'.length))}`
   }
