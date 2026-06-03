@@ -27,7 +27,10 @@ public class CopilotRealtimeSessionVO {
     private String company;
     private String jobTitle;
     private String status;
+    private String connectionState;
+    private Boolean canReconnect;
     private String providerStatus;
+    private String websocketPath;
     private String prepSummary;
     private List<String> liveChecklist;
     private List<ProviderReadinessVO> providerReadiness;

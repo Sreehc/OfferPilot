@@ -228,7 +228,10 @@ public class InterviewCopilotRealtimeServiceImpl implements InterviewCopilotReal
                 .company(session.getCompany())
                 .jobTitle(session.getJobTitle())
                 .status(session.getStatus())
+                .connectionState(resolveConnectionState(session))
+                .canReconnect(resolveCanReconnect(session))
                 .providerStatus(session.getProviderStatus())
+                .websocketPath(resolveWebsocketPath(session))
                 .prepSummary(session.getPrepSummary())
                 .liveChecklist(readStringList(session.getLiveChecklistJson()))
                 .providerReadiness(providerReadiness)
@@ -240,6 +243,29 @@ public class InterviewCopilotRealtimeServiceImpl implements InterviewCopilotReal
                 .events(eventVos)
                 .updateTime(session.getUpdateTime())
                 .build();
+    }
+
+    private String resolveConnectionState(CopilotRealtimeSession session) {
+        String status = normalize(session.getStatus());
+        return switch (status) {
+            case "awaiting_connection" -> "ready";
+            case "live" -> "connected";
+            case "disconnected" -> "disconnected";
+            case "completed" -> "closed";
+            default -> "unknown";
+        };
+    }
+
+    private boolean resolveCanReconnect(CopilotRealtimeSession session) {
+        String status = normalize(session.getStatus());
+        return "awaiting_connection".equals(status) || "disconnected".equals(status);
+    }
+
+    private String resolveWebsocketPath(CopilotRealtimeSession session) {
+        if (session.getId() == null) {
+            return null;
+        }
+        return "/ws/interview/copilot/" + session.getId();
     }
 
     private CopilotRealtimeSessionVO.CopilotRealtimeEventVO buildEventVo(CopilotEvent event) {
@@ -432,5 +458,9 @@ public class InterviewCopilotRealtimeServiceImpl implements InterviewCopilotReal
 
     private String defaultText(String value, String fallback) {
         return StringUtils.hasText(value) ? value : fallback;
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.trim().toLowerCase(java.util.Locale.ROOT);
     }
 }

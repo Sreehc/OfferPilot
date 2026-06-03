@@ -103,10 +103,16 @@ class InterviewCopilotRealtimeServiceImplTest {
     void complete_buildsStructuredPostInterviewReview() {
         CopilotRealtimeSessionVO noteSnapshot = service.appendClientNote(1L, 45L, "面试官追问 Redis 双写一致性，项目例子没讲稳。");
         assertEquals("live", noteSnapshot.getStatus());
+        assertEquals("connected", noteSnapshot.getConnectionState());
+        assertEquals(Boolean.FALSE, noteSnapshot.getCanReconnect());
+        assertEquals("/ws/interview/copilot/45", noteSnapshot.getWebsocketPath());
 
         CopilotRealtimeSessionVO completed = service.complete(1L, 45L, "当前实时阶段已结束，转入面后复盘。");
 
         assertEquals("completed", completed.getStatus());
+        assertEquals("closed", completed.getConnectionState());
+        assertEquals(Boolean.FALSE, completed.getCanReconnect());
+        assertEquals("/ws/interview/copilot/45", completed.getWebsocketPath());
         assertNotNull(completed.getPostInterviewReview());
         assertTrue(completed.getPostInterviewReview().getSummary().contains("实时阶段已结束"));
         assertTrue(completed.getPostInterviewReview().getWeakPoints().stream().anyMatch(item -> item.contains("依赖降级")));
@@ -134,10 +140,27 @@ class InterviewCopilotRealtimeServiceImplTest {
         assertEquals(88L, latest.getId());
         assertEquals("Java 后端简历", latest.getResumeTitle());
         assertEquals("completed", latest.getStatus());
+        assertEquals("closed", latest.getConnectionState());
+        assertEquals(Boolean.FALSE, latest.getCanReconnect());
+        assertEquals("/ws/interview/copilot/88", latest.getWebsocketPath());
         assertNotNull(latest.getPostInterviewReview());
         assertTrue(latest.getPostInterviewReview().getRecommendedActions().stream().anyMatch(item -> item.contains("面后复盘 run")));
         assertTrue(latest.getEvents().stream().anyMatch(item -> "runtime_note".equals(item.getEventType())));
         verify(copilotRealtimeSessionMapper).selectOne(any());
+    }
+
+    @Test
+    void detail_exposesReconnectContractForDisconnectedSession() {
+        storedSession.setStatus("disconnected");
+        storedSession.setDisconnectedAt(LocalDateTime.of(2026, 6, 2, 10, 20));
+        storedSession.setLatestEventSummary("实时连接已断开，可以稍后重新连接。");
+
+        CopilotRealtimeSessionVO detail = service.detail(1L, 45L);
+
+        assertEquals("disconnected", detail.getStatus());
+        assertEquals("disconnected", detail.getConnectionState());
+        assertEquals(Boolean.TRUE, detail.getCanReconnect());
+        assertEquals("/ws/interview/copilot/45", detail.getWebsocketPath());
     }
 
     private CopilotEvent realtimeEvent(Long id, String eventType, String source, String summary, int minute) {
