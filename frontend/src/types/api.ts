@@ -855,6 +855,11 @@ export interface CategoryAbility {
   abilityScore: number
   interviewCount: number
   recordingReviewCount: number
+  jobPrepCount?: number
+  copilotPrepCount?: number
+  copilotRealtimeCount?: number
+  applicationFeedbackCount?: number
+  resumeEvidenceCount?: number
   wrongCount: number
   isWeak: boolean
   recommendedDifficulty: string
@@ -864,6 +869,7 @@ export interface AbilityProfile {
   overallAbility: number
   recommendedDifficulty: string
   recordingReviewCount: number
+  copilotRealtimeCount?: number
   categoryAbilities: CategoryAbility[]
   weakCategories: string[]
   suggestedFocus: string | null
@@ -884,6 +890,7 @@ export interface ProfileTopicDetail {
   recordingReviewCount: number
   jobPrepCount?: number
   copilotPrepCount?: number
+  copilotRealtimeCount?: number
   applicationFeedbackCount?: number
   resumeEvidenceCount?: number
   wrongCount: number

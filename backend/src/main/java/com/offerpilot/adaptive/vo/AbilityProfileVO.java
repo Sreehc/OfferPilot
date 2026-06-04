@@ -10,6 +10,7 @@ public class AbilityProfileVO {
     private Double overallAbility;
     private String recommendedDifficulty;
     private Integer recordingReviewCount;
+    private Integer copilotRealtimeCount;
     private List<CategoryAbilityVO> categoryAbilities;
     private List<String> weakCategories;
     private String suggestedFocus;

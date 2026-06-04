@@ -28,7 +28,9 @@ import com.offerpilot.interview.entity.InterviewSession;
 import com.offerpilot.interview.entity.RecordingReviewSession;
 import com.offerpilot.interview.entity.JobPrepSession;
 import com.offerpilot.interview.entity.CopilotPrepSession;
+import com.offerpilot.interview.entity.CopilotRealtimeSession;
 import com.offerpilot.interview.mapper.CopilotPrepSessionMapper;
+import com.offerpilot.interview.mapper.CopilotRealtimeSessionMapper;
 import com.offerpilot.interview.mapper.InterviewRecordMapper;
 import com.offerpilot.interview.mapper.RecordingReviewSessionMapper;
 import com.offerpilot.interview.mapper.InterviewSessionMapper;
@@ -66,6 +68,8 @@ class AdaptiveServiceImplTest {
     private JobPrepSessionMapper jobPrepSessionMapper;
     @Mock
     private CopilotPrepSessionMapper copilotPrepSessionMapper;
+    @Mock
+    private CopilotRealtimeSessionMapper copilotRealtimeSessionMapper;
     @Mock
     private JobApplicationMapper jobApplicationMapper;
     @Mock
@@ -114,6 +118,7 @@ class AdaptiveServiceImplTest {
         when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
         when(jobPrepSessionMapper.selectList(any())).thenReturn(List.of());
         when(copilotPrepSessionMapper.selectList(any())).thenReturn(List.of());
+        when(copilotRealtimeSessionMapper.selectList(any())).thenReturn(List.of());
         when(jobApplicationMapper.selectList(any())).thenReturn(List.of());
 
         AbilityProfileVO profile = service.getAbilityProfile(1L);
@@ -121,6 +126,7 @@ class AdaptiveServiceImplTest {
         assertEquals(0.0, profile.getOverallAbility());
         assertEquals("easy", profile.getRecommendedDifficulty());
         assertEquals(0, profile.getRecordingReviewCount());
+        assertEquals(0, profile.getCopilotRealtimeCount());
         assertTrue(profile.getCategoryAbilities().isEmpty());
         assertTrue(profile.getWeakCategories().isEmpty());
         assertNull(profile.getSuggestedFocus());
@@ -135,6 +141,7 @@ class AdaptiveServiceImplTest {
         when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
         when(jobPrepSessionMapper.selectList(any())).thenReturn(List.of());
         when(copilotPrepSessionMapper.selectList(any())).thenReturn(List.of());
+        when(copilotRealtimeSessionMapper.selectList(any())).thenReturn(List.of());
         when(jobApplicationMapper.selectList(any())).thenReturn(List.of());
 
         InterviewSession session = makeSession(1L, LocalDateTime.now().minusDays(1));
@@ -165,6 +172,7 @@ class AdaptiveServiceImplTest {
         when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
         when(jobPrepSessionMapper.selectList(any())).thenReturn(List.of());
         when(copilotPrepSessionMapper.selectList(any())).thenReturn(List.of());
+        when(copilotRealtimeSessionMapper.selectList(any())).thenReturn(List.of());
         when(jobApplicationMapper.selectList(any())).thenReturn(List.of());
 
         when(sessionMapper.selectList(any())).thenReturn(List.of(makeSession(1L, LocalDateTime.now().minusDays(1))));
@@ -185,6 +193,7 @@ class AdaptiveServiceImplTest {
         when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
         when(jobPrepSessionMapper.selectList(any())).thenReturn(List.of());
         when(copilotPrepSessionMapper.selectList(any())).thenReturn(List.of());
+        when(copilotRealtimeSessionMapper.selectList(any())).thenReturn(List.of());
         when(jobApplicationMapper.selectList(any())).thenReturn(List.of());
 
         when(sessionMapper.selectList(any())).thenReturn(List.of(
@@ -209,6 +218,7 @@ class AdaptiveServiceImplTest {
         when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
         when(jobPrepSessionMapper.selectList(any())).thenReturn(List.of());
         when(copilotPrepSessionMapper.selectList(any())).thenReturn(List.of());
+        when(copilotRealtimeSessionMapper.selectList(any())).thenReturn(List.of());
         when(jobApplicationMapper.selectList(any())).thenReturn(List.of());
         when(sessionMapper.selectList(any())).thenReturn(List.of(makeSession(1L, LocalDateTime.now().minusDays(1))));
         when(recordMapper.selectList(any())).thenReturn(List.of(makeRecord(1L, 10L, new BigDecimal("20"))));
@@ -255,6 +265,7 @@ class AdaptiveServiceImplTest {
         when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
         when(jobPrepSessionMapper.selectList(any())).thenReturn(List.of());
         when(copilotPrepSessionMapper.selectList(any())).thenReturn(List.of());
+        when(copilotRealtimeSessionMapper.selectList(any())).thenReturn(List.of());
         when(jobApplicationMapper.selectList(any())).thenReturn(List.of());
         mockCategories(makeCategory(100L, "Java基础"));
 

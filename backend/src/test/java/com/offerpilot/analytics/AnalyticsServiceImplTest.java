@@ -289,6 +289,7 @@ class AnalyticsServiceImplTest {
                 .overallAbility(68.0)
                 .recommendedDifficulty("medium")
                 .recordingReviewCount(1)
+                .copilotRealtimeCount(1)
                 .categoryAbilities(List.of(CategoryAbilityVO.builder()
                         .categoryId(7L)
                         .categoryName("Redis")
@@ -297,6 +298,7 @@ class AnalyticsServiceImplTest {
                         .recordingReviewCount(1)
                         .jobPrepCount(1)
                         .copilotPrepCount(1)
+                        .copilotRealtimeCount(1)
                         .applicationFeedbackCount(1)
                         .resumeEvidenceCount(1)
                         .wrongCount(1)
@@ -356,18 +358,22 @@ class AnalyticsServiceImplTest {
         assertEquals(1, detail.getRecordingReviewCount());
         assertEquals(1, detail.getJobPrepCount());
         assertEquals(1, detail.getCopilotPrepCount());
+        assertEquals(1, detail.getCopilotRealtimeCount());
         assertEquals(1, detail.getApplicationFeedbackCount());
         assertEquals(1, detail.getResumeEvidenceCount());
         assertEquals("ready", detail.getEvidenceStatus());
         assertEquals(Boolean.TRUE, detail.getRetrospectiveReady());
         assertTrue(detail.getSummary().contains("真实录音复盘证据"));
         assertTrue(detail.getSummary().contains("Copilot Prep"));
+        assertTrue(detail.getSummary().contains("实时 Copilot"));
         assertTrue(detail.getSummary().contains("投递反馈证据"));
         assertTrue(detail.getSummary().contains("简历表达证据"));
         assertTrue(detail.getFocusRecommendations().stream()
                 .anyMatch(item -> item.contains("真实录音复盘里暴露的表达问题")));
         assertTrue(detail.getFocusRecommendations().stream()
                 .anyMatch(item -> item.contains("岗位化表达")));
+        assertTrue(detail.getFocusRecommendations().stream()
+                .anyMatch(item -> item.contains("实时 Copilot") || item.contains("实时追问")));
         assertTrue(detail.getFocusRecommendations().stream()
                 .anyMatch(item -> item.contains("投递反馈缺口")));
         assertTrue(detail.getFocusRecommendations().stream()
@@ -380,6 +386,7 @@ class AnalyticsServiceImplTest {
                 .overallAbility(52.0)
                 .recommendedDifficulty("easy")
                 .recordingReviewCount(0)
+                .copilotRealtimeCount(0)
                 .categoryAbilities(List.of(CategoryAbilityVO.builder()
                         .categoryId(8L)
                         .categoryName("JVM")
@@ -388,6 +395,7 @@ class AnalyticsServiceImplTest {
                         .recordingReviewCount(0)
                         .jobPrepCount(0)
                         .copilotPrepCount(0)
+                        .copilotRealtimeCount(0)
                         .applicationFeedbackCount(0)
                         .resumeEvidenceCount(0)
                         .wrongCount(2)

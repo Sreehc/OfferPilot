@@ -11,11 +11,13 @@ import com.offerpilot.application.mapper.JobApplicationMapper;
 import com.offerpilot.category.entity.Category;
 import com.offerpilot.category.service.CategoryService;
 import com.offerpilot.interview.entity.CopilotPrepSession;
+import com.offerpilot.interview.entity.CopilotRealtimeSession;
 import com.offerpilot.interview.entity.InterviewRecord;
 import com.offerpilot.interview.entity.RecordingReviewSession;
 import com.offerpilot.interview.entity.InterviewSession;
 import com.offerpilot.interview.entity.JobPrepSession;
 import com.offerpilot.interview.mapper.CopilotPrepSessionMapper;
+import com.offerpilot.interview.mapper.CopilotRealtimeSessionMapper;
 import com.offerpilot.interview.mapper.InterviewRecordMapper;
 import com.offerpilot.interview.mapper.RecordingReviewSessionMapper;
 import com.offerpilot.interview.mapper.InterviewSessionMapper;
@@ -57,6 +59,7 @@ public class AdaptiveServiceImpl implements AdaptiveService {
     private final RecordingReviewSessionMapper recordingReviewSessionMapper;
     private final JobPrepSessionMapper jobPrepSessionMapper;
     private final CopilotPrepSessionMapper copilotPrepSessionMapper;
+    private final CopilotRealtimeSessionMapper copilotRealtimeSessionMapper;
     private final JobApplicationMapper jobApplicationMapper;
     private final ResumeFileMapper resumeFileMapper;
     private final ResumeProjectMapper resumeProjectMapper;
@@ -247,6 +250,11 @@ public class AdaptiveServiceImpl implements AdaptiveService {
                         .eq(CopilotPrepSession::getUserId, userId)
                         .eq(CopilotPrepSession::getStatus, "ready")
                         .orderByDesc(CopilotPrepSession::getUpdateTime));
+        List<CopilotRealtimeSession> copilotRealtimeSessions = copilotRealtimeSessionMapper.selectList(
+                new LambdaQueryWrapper<CopilotRealtimeSession>()
+                        .eq(CopilotRealtimeSession::getUserId, userId)
+                        .eq(CopilotRealtimeSession::getStatus, "completed")
+                        .orderByDesc(CopilotRealtimeSession::getUpdateTime));
         List<JobApplication> applications = jobApplicationMapper.selectList(
                 new LambdaQueryWrapper<JobApplication>()
                         .eq(JobApplication::getUserId, userId)
@@ -264,16 +272,18 @@ public class AdaptiveServiceImpl implements AdaptiveService {
                         .orderByDesc(InterviewSession::getCreateTime));
 
         if (sessions.isEmpty() && recordingReviews.isEmpty() && jobPrepSessions.isEmpty()
-                && copilotPrepSessions.isEmpty() && applications.isEmpty() && resumes.isEmpty()) {
+                && copilotPrepSessions.isEmpty() && copilotRealtimeSessions.isEmpty()
+                && applications.isEmpty() && resumes.isEmpty()) {
             return AbilityProfileVO.builder()
                     .overallAbility(0.0)
                     .recommendedDifficulty("easy")
                     .recordingReviewCount(0)
+                    .copilotRealtimeCount(0)
                     .categoryAbilities(List.of())
                     .weakCategories(List.of())
                     .suggestedFocus(null)
                     .evidenceStatus("insufficient")
-                    .evidenceSummary("还没有足够训练证据形成长期画像。先完成几轮题库、模拟面试或录音复盘。")
+                    .evidenceSummary("还没有足够训练证据形成长期画像。先完成几轮题库、模拟面试、录音复盘或实时 Copilot。")
                     .build();
         }
 
@@ -308,6 +318,7 @@ public class AdaptiveServiceImpl implements AdaptiveService {
         Map<Long, Integer> recordingReviewCountByCategory = new HashMap<>();
         Map<Long, Integer> jobPrepCountByCategory = new HashMap<>();
         Map<Long, Integer> copilotPrepCountByCategory = new HashMap<>();
+        Map<Long, Integer> copilotRealtimeCountByCategory = new HashMap<>();
         Map<Long, Integer> applicationFeedbackCountByCategory = new HashMap<>();
         Map<Long, Integer> resumeEvidenceCountByCategory = new HashMap<>();
         LocalDateTime now = LocalDateTime.now();
@@ -386,6 +397,18 @@ public class AdaptiveServiceImpl implements AdaptiveService {
             }
         }
 
+        for (CopilotRealtimeSession session : copilotRealtimeSessions) {
+            for (Long categoryId : resolveCopilotRealtimeCategories(session, allCategories)) {
+                double realtimeScore = resolveCopilotRealtimeScore(session);
+                double recencyWeight = computeRecencyWeight(
+                        session.getUpdateTime() == null ? session.getCreateTime() : session.getUpdateTime(),
+                        now) * 0.70;
+                categoryScores.computeIfAbsent(categoryId, k -> new ArrayList<>())
+                        .add(new ScoreEntry(realtimeScore, recencyWeight));
+                copilotRealtimeCountByCategory.merge(categoryId, 1, Integer::sum);
+            }
+        }
+
         for (JobApplication application : applications) {
             for (Long categoryId : resolveApplicationCategories(application, allCategories)) {
                 double feedbackScore = resolveApplicationFeedbackScore(application);
@@ -447,6 +470,7 @@ public class AdaptiveServiceImpl implements AdaptiveService {
                     .recordingReviewCount(recordingReviewCountByCategory.getOrDefault(categoryId, 0))
                     .jobPrepCount(jobPrepCountByCategory.getOrDefault(categoryId, 0))
                     .copilotPrepCount(copilotPrepCountByCategory.getOrDefault(categoryId, 0))
+                    .copilotRealtimeCount(copilotRealtimeCountByCategory.getOrDefault(categoryId, 0))
                     .applicationFeedbackCount(applicationFeedbackCountByCategory.getOrDefault(categoryId, 0))
                     .resumeEvidenceCount(resumeEvidenceCountByCategory.getOrDefault(categoryId, 0))
                     .wrongCount((int) wrongCount)
@@ -468,13 +492,15 @@ public class AdaptiveServiceImpl implements AdaptiveService {
         String suggestedFocus = categoryAbilities.isEmpty() ? null
                 : categoryAbilities.get(0).getCategoryName();
         int totalEvidenceCount = allRecords.size() + recordingReviews.size()
-                + jobPrepSessions.size() + copilotPrepSessions.size() + applications.size() + resumes.size();
+                + jobPrepSessions.size() + copilotPrepSessions.size() + copilotRealtimeSessions.size()
+                + applications.size() + resumes.size();
         String evidenceStatus = resolveEvidenceStatus(categoryAbilities, totalEvidenceCount);
 
         return AbilityProfileVO.builder()
                 .overallAbility(Math.round(overallAbility * 100.0) / 100.0)
                 .recommendedDifficulty(recommendedDifficulty)
                 .recordingReviewCount(recordingReviews.size())
+                .copilotRealtimeCount(copilotRealtimeSessions.size())
                 .categoryAbilities(categoryAbilities)
                 .weakCategories(weakCategories)
                 .suggestedFocus(suggestedFocus)
@@ -558,6 +584,17 @@ public class AdaptiveServiceImpl implements AdaptiveService {
                 nullSafe(session.getLiveCuesJson()),
                 nullSafe(session.getFollowUpQuestionsJson()),
                 nullSafe(session.getNextActionsJson()));
+        return matchCategoryIds(evidence, categories);
+    }
+
+    private List<Long> resolveCopilotRealtimeCategories(CopilotRealtimeSession session, List<Category> categories) {
+        String evidence = String.join(" ",
+                nullSafe(session.getCompany()),
+                nullSafe(session.getJobTitle()),
+                nullSafe(session.getPrepSummary()),
+                nullSafe(session.getLiveChecklistJson()),
+                nullSafe(session.getLatestEventSummary()),
+                nullSafe(session.getProviderReadinessJson()));
         return matchCategoryIds(evidence, categories);
     }
 
@@ -648,6 +685,29 @@ public class AdaptiveServiceImpl implements AdaptiveService {
             base -= 6.0;
         }
         return Math.max(45.0, Math.min(82.0, base));
+    }
+
+    private double resolveCopilotRealtimeScore(CopilotRealtimeSession session) {
+        double base = 58.0;
+        if (org.springframework.util.StringUtils.hasText(session.getPrepSummary())) {
+            base += 4.0;
+        }
+        if (org.springframework.util.StringUtils.hasText(session.getLiveChecklistJson())) {
+            base += 5.0;
+        }
+        if (org.springframework.util.StringUtils.hasText(session.getLatestEventSummary())) {
+            base += 4.0;
+        }
+        if (session.getConnectedAt() != null) {
+            base += 3.0;
+        }
+        if (session.getEndedAt() != null) {
+            base += 4.0;
+        }
+        if ("degraded".equals(normalize(session.getProviderStatus()))) {
+            base -= 5.0;
+        }
+        return Math.max(48.0, Math.min(86.0, base));
     }
 
     private double resolveApplicationFeedbackScore(JobApplication application) {

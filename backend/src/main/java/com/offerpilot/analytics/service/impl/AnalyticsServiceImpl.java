@@ -311,6 +311,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .recordingReviewCount(categoryAbility.getRecordingReviewCount())
                 .jobPrepCount(categoryAbility.getJobPrepCount())
                 .copilotPrepCount(categoryAbility.getCopilotPrepCount())
+                .copilotRealtimeCount(categoryAbility.getCopilotRealtimeCount())
                 .applicationFeedbackCount(categoryAbility.getApplicationFeedbackCount())
                 .resumeEvidenceCount(categoryAbility.getResumeEvidenceCount())
                 .wrongCount(categoryAbility.getWrongCount())
@@ -525,6 +526,11 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         } else {
             suggestions.add("当前还没把这个主题压到真实岗位语境，建议补 1 次 JD 备面或 Copilot Prep。");
         }
+        if (safeInt(categoryAbility.getCopilotRealtimeCount()) > 0) {
+            suggestions.add("已经有实时 Copilot 证据，优先复盘真实追问里的卡点和临场表达波动。");
+        } else {
+            suggestions.add("当前还没进入实时 Copilot 阶段，建议至少做 1 次实时追问演练验证临场稳定性。");
+        }
         if (categoryMastery.getDueCount() > 0) {
             suggestions.add("当前有 " + categoryMastery.getDueCount() + " 道题待复盘，先清掉到期负债。");
         }
@@ -556,6 +562,9 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 ? "，并且已有 " + safeInt(categoryAbility.getJobPrepCount()) + " 次 JD 备面、"
                 + safeInt(categoryAbility.getCopilotPrepCount()) + " 次 Copilot Prep 证据"
                 : "，当前还没沉淀岗位化 Prep 证据";
+        String realtimeText = safeInt(categoryAbility.getCopilotRealtimeCount()) > 0
+                ? "，并且已有 " + safeInt(categoryAbility.getCopilotRealtimeCount()) + " 次实时 Copilot 证据"
+                : "，当前还缺实时 Copilot 阶段证据";
         String applicationText = safeInt(categoryAbility.getApplicationFeedbackCount()) > 0
                 ? "，同时已有 " + safeInt(categoryAbility.getApplicationFeedbackCount()) + " 条投递反馈证据"
                 : "，但还缺真实投递反馈证据";
@@ -575,7 +584,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
             case "forming" -> "，当前画像仍在形成中";
             default -> "";
         };
-        return "主题「" + categoryAbility.getCategoryName() + "」" + abilityText + reviewText + recordingText + prepText + applicationText + resumeText + trendText + evidenceText + "。";
+        return "主题「" + categoryAbility.getCategoryName() + "」" + abilityText + reviewText + recordingText + prepText + realtimeText + applicationText + resumeText + trendText + evidenceText + "。";
     }
 
     private String resolveTopicEvidenceStatus(CategoryAbilityVO categoryAbility,
@@ -585,6 +594,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 + safeInt(categoryAbility.getRecordingReviewCount())
                 + safeInt(categoryAbility.getJobPrepCount())
                 + safeInt(categoryAbility.getCopilotPrepCount())
+                + safeInt(categoryAbility.getCopilotRealtimeCount())
                 + safeInt(categoryAbility.getApplicationFeedbackCount())
                 + safeInt(categoryAbility.getResumeEvidenceCount())
                 + (safeInt(categoryAbility.getWrongCount()) > 0 ? 1 : 0)
@@ -606,6 +616,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         int recordingReviews = safeInt(categoryAbility.getRecordingReviewCount());
         int jobPrepCount = safeInt(categoryAbility.getJobPrepCount());
         int copilotPrepCount = safeInt(categoryAbility.getCopilotPrepCount());
+        int copilotRealtimeCount = safeInt(categoryAbility.getCopilotRealtimeCount());
         int applicationFeedbackCount = safeInt(categoryAbility.getApplicationFeedbackCount());
         int resumeEvidenceCount = safeInt(categoryAbility.getResumeEvidenceCount());
         int wrongCount = safeInt(categoryAbility.getWrongCount());
@@ -616,6 +627,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                     + recordingReviews + " 次录音复盘、"
                     + jobPrepCount + " 次 JD 备面、"
                     + copilotPrepCount + " 次 Copilot Prep、"
+                    + copilotRealtimeCount + " 次实时 Copilot、"
                     + applicationFeedbackCount + " 条投递反馈、"
                     + resumeEvidenceCount + " 份简历表达、"
                     + wrongCount + " 道相关错题。建议先补 1-2 次同主题训练。";
@@ -624,6 +636,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                     + recordingReviews + " 次录音复盘、"
                     + jobPrepCount + " 次 JD 备面、"
                     + copilotPrepCount + " 次 Copilot Prep、"
+                    + copilotRealtimeCount + " 次实时 Copilot、"
                     + applicationFeedbackCount + " 条投递反馈、"
                     + resumeEvidenceCount + " 份简历表达、"
                     + wrongCount + " 道相关错题"
