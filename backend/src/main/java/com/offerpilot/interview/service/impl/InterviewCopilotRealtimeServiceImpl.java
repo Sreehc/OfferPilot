@@ -211,6 +211,19 @@ public class InterviewCopilotRealtimeServiceImpl implements InterviewCopilotReal
                 "system",
                 cleanSpeaker + "：" + abbreviate(cleanTranscript, 90),
                 Map.of("transcriptText", cleanTranscript, "speaker", cleanSpeaker));
+        AutoSuggestion autoSuggestion = buildAutoSuggestion(session, cleanTranscript, cleanSpeaker);
+        if (autoSuggestion != null) {
+            appendEvent(
+                    session,
+                    "suggestion",
+                    "copilot",
+                    autoSuggestion.category() + "：" + abbreviate(autoSuggestion.suggestion(), 90),
+                    Map.of(
+                            "suggestion", autoSuggestion.suggestion(),
+                            "category", autoSuggestion.category(),
+                            "generated", true,
+                            "speaker", cleanSpeaker));
+        }
         return detail(userId, sessionId);
     }
 
@@ -465,6 +478,40 @@ public class InterviewCopilotRealtimeServiceImpl implements InterviewCopilotReal
         return company + " / " + role + " 的实时阶段已结束，下一步建议把现场过程整理成正式复盘和训练动作。";
     }
 
+    private AutoSuggestion buildAutoSuggestion(CopilotRealtimeSession session, String transcriptText, String speaker) {
+        if (!StringUtils.hasText(transcriptText)) {
+            return null;
+        }
+        String normalized = transcriptText.trim();
+        if (normalized.length() < 8) {
+            return null;
+        }
+        List<String> checklist = readStringList(session.getLiveChecklistJson());
+        List<CopilotRealtimeSessionVO.ProviderReadinessVO> providerWarnings = readProviderList(session.getProviderReadinessJson()).stream()
+                .filter(item -> !isProviderAvailable(item.getStatus()))
+                .toList();
+
+        String category = "自动建议";
+        String suggestion;
+        if (containsAny(normalized, "不会", "没做过", "不太清楚", "想不起来")) {
+            category = "补位提示";
+            suggestion = defaultText(speaker, "候选人")
+                    + " 这段回答暴露了经验边界，先承认限制，再补一个相近项目、排障动作或取舍案例。";
+        } else if (containsAny(normalized, "我们", "项目", "负责", "上线", "优化")) {
+            String checklistHint = checklist.isEmpty() ? "把场景、动作、结果和取舍讲完整。" : firstItem(checklist);
+            suggestion = "继续围绕项目案例展开，优先量化结果，并记得 " + checklistHint;
+        } else if (normalized.length() >= 48) {
+            category = "收束提示";
+            suggestion = "这段回答已经够长，先收一个结论，再补最关键的技术动作或量化结果，避免继续发散。";
+        } else {
+            suggestion = "先补结论，再补一条最关键的技术动作或取舍，确保回答能回到岗位价值。";
+        }
+        if (!providerWarnings.isEmpty()) {
+            suggestion += " 当前处于依赖降级，记得手动记下追问链路，避免只依赖自动能力。";
+        }
+        return new AutoSuggestion(category, suggestion);
+    }
+
     private String resolveProviderStatus(String providerReadinessJson) {
         List<CopilotRealtimeSessionVO.ProviderReadinessVO> providerReadiness = readProviderList(providerReadinessJson);
         boolean requiredMissing = providerReadiness.stream()
@@ -569,6 +616,28 @@ public class InterviewCopilotRealtimeServiceImpl implements InterviewCopilotReal
         return StringUtils.hasText(value) ? value : fallback;
     }
 
+    private boolean containsAny(String text, String... fragments) {
+        String normalized = normalize(text);
+        for (String fragment : fragments) {
+            if (normalized.contains(normalize(fragment))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String firstItem(List<String> items) {
+        if (items == null || items.isEmpty()) {
+            return "先收束回答";
+        }
+        for (String item : items) {
+            if (StringUtils.hasText(item)) {
+                return item.trim();
+            }
+        }
+        return "先收束回答";
+    }
+
     private boolean isRealtimeRequiredScope(String scope) {
         String normalizedScope = normalize(scope);
         return "asr".equals(normalizedScope) || "search".equals(normalizedScope);
@@ -581,5 +650,8 @@ public class InterviewCopilotRealtimeServiceImpl implements InterviewCopilotReal
 
     private String normalize(String value) {
         return value == null ? "" : value.trim().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    private record AutoSuggestion(String category, String suggestion) {
     }
 }

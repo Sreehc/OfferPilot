@@ -113,6 +113,10 @@ class InterviewCopilotRealtimeServiceImplTest {
         assertEquals("/ws/interview/copilot/45", noteSnapshot.getWebsocketPath());
         CopilotRealtimeSessionVO transcriptSnapshot = service.appendTranscript(1L, 45L, "我先讲项目背景，再讲缓存一致性和补偿策略。", "候选人");
         assertTrue(transcriptSnapshot.getEvents().stream().anyMatch(item -> "transcript".equals(item.getEventType())));
+        assertTrue(transcriptSnapshot.getEvents().stream().anyMatch(item ->
+                "suggestion".equals(item.getEventType())
+                        && "copilot".equals(item.getSource())
+                        && String.valueOf(item.getPayload().get("generated")).contains("true")));
         CopilotRealtimeSessionVO suggestionSnapshot = service.appendSuggestion(1L, 45L, "先收束回答，再补一个 Redis 双写修复案例。", "追问提示");
         assertTrue(suggestionSnapshot.getEvents().stream().anyMatch(item -> "suggestion".equals(item.getEventType())));
 
@@ -135,6 +139,16 @@ class InterviewCopilotRealtimeServiceImplTest {
         assertTrue(completed.getEvents().stream().anyMatch(item -> "suggestion".equals(item.getEventType())));
         assertTrue(completed.getEvents().stream().anyMatch(item -> "session_completed".equals(item.getEventType())));
         verify(trainingSignalService).handleEvidenceUpdate(1L);
+    }
+
+    @Test
+    void appendTranscript_generatesAutoSuggestionForWeakSignal() {
+        CopilotRealtimeSessionVO snapshot = service.appendTranscript(1L, 45L, "这个点我没做过，暂时想不起来具体案例。", "候选人");
+
+        assertTrue(snapshot.getEvents().stream().anyMatch(item ->
+                "suggestion".equals(item.getEventType())
+                        && "copilot".equals(item.getSource())
+                        && String.valueOf(item.getPayload().get("suggestion")).contains("先承认限制")));
     }
 
     @Test

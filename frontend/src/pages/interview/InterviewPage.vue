@@ -597,7 +597,7 @@
                         </span>
                       </div>
                       <p class="mt-2 text-sm leading-6 text-secondary">
-                        这一阶段先承接会话创建、连接状态和事件时间线，后续再逐步接入实时转写和建议流。
+                        这一阶段已经承接会话创建、连接状态、实时转写片段和建议流，面后复盘会直接消费这些过程证据。
                       </p>
                     </div>
                     <div class="flex flex-wrap gap-2">
@@ -2115,7 +2115,7 @@ const providerStatusSummaryLabel = (status?: string) => {
 const providerStatusPillClass = (status?: string) => (status === 'ready' ? '' : 'detail-pill-risk')
 const realtimeProviderStatusDescription = (status?: string) => {
   if (status === 'blocked') return '关键 provider 尚未配置完整，当前实时阶段不适合继续推进。'
-  if (status === 'degraded') return '仍有 provider 未完全就绪，实时阶段只开放骨架能力。'
+  if (status === 'degraded') return '仍有 provider 未完全就绪，但实时阶段仍会保留转写、建议和事件时间线。'
   return '当前 provider readiness 已满足基础实时阶段。'
 }
 const realtimeProviderAlertTitle = (status?: string) => {
