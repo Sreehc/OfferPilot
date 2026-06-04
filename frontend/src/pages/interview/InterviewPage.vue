@@ -1996,7 +1996,14 @@ const recordingReviewNextActionLink = computed(() => {
   if (recordingReviewSession.value?.nextActionPath) {
     return appendSeedToPath(recordingReviewSession.value.nextActionPath) ?? recordingReviewSession.value.nextActionPath
   }
-  if (!recordingReviewSession.value) return '/agent'
+  if (!recordingReviewSession.value) {
+    return buildSeededAgentWorkbenchLocation({
+      agentType: 'recording_review',
+      triggerSource: 'recording_review',
+      contextRefs: ['analytics:profile', 'study-plan:active'],
+      userPrompt: '把最近一次录音复盘的结果转成下一轮训练动作。'
+    })
+  }
   return buildSeededAgentWorkbenchLocation({
     agentType: 'recording_review',
     triggerSource: 'recording_review',
@@ -2005,7 +2012,14 @@ const recordingReviewNextActionLink = computed(() => {
   })
 })
 const copilotRealtimeAgentLink = computed(() => {
-  if (!copilotRealtimeSession.value) return '/agent'
+  if (!copilotRealtimeSession.value) {
+    return buildSeededAgentWorkbenchLocation({
+      agentType: 'interview_review',
+      triggerSource: 'interview_live',
+      contextRefs: ['analytics:profile', 'study-plan:active'],
+      userPrompt: '把最近一次实时面试的现场追问和卡壳点转成面后复盘与下一轮训练动作。'
+    })
+  }
   return buildSeededAgentWorkbenchLocation({
     agentType: 'interview_review',
     triggerSource: 'interview_live',

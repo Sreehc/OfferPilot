@@ -291,7 +291,14 @@ const wrongPlanRefreshLink = computed(() => {
   })
 })
 const wrongAgentLink = computed(() => {
-  if (!selectedWrong.value) return '/agent'
+  if (!selectedWrong.value) {
+    return buildSeededAgentWorkbenchLocation({
+      agentType: 'coordinator',
+      triggerSource: 'manual',
+      contextRefs: ['analytics:profile', 'study-plan:active'],
+      userPrompt: '结合当前错题、长期画像和学习计划，安排下一步训练动作。'
+    })
+  }
   return buildSeededAgentWorkbenchLocation({
     agentType: 'coordinator',
     triggerSource: 'manual',
