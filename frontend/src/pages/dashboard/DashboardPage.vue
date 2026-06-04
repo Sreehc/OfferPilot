@@ -826,6 +826,53 @@ const dashboardNextActionDescription = computed(
 const dashboardNextActionReason = computed(() => dashboardNextAction.value?.reason || '')
 const dashboardNextActionPath = computed<string>(() => appendDashboardSeedToPath(dashboardNextAction.value?.path || '/dashboard'))
 const dashboardNextActionPriority = computed(() => dashboardNextAction.value?.priority || 'P1')
+const parsePathQuery = (path: string) => {
+  const [rawPathname, queryString = ''] = path.split('?')
+  return {
+    pathname: rawPathname || '',
+    query: new URLSearchParams(queryString)
+  }
+}
+const resolveDashboardContinuationContextRef = (entry: DashboardContinuationEntry) => {
+  const { pathname, query } = parsePathQuery(entry.path)
+  if (pathname === '/interview') {
+    const workspace = query.get('workspace') || ''
+    if (workspace === 'job-prep') {
+      return query.get('jobPrepSessionId')
+        ? `interview:job-prep:${query.get('jobPrepSessionId')}`
+        : 'interview:job-prep'
+    }
+    if (workspace === 'copilot-prep') {
+      return query.get('copilotPrepSessionId')
+        ? `interview:copilot-prep:${query.get('copilotPrepSessionId')}`
+        : 'interview:copilot-prep'
+    }
+    if (workspace === 'copilot-live') {
+      return query.get('copilotRealtimeSessionId')
+        ? `interview:copilot-realtime:${query.get('copilotRealtimeSessionId')}`
+        : 'interview:copilot-realtime'
+    }
+    if (workspace === 'recording-review') {
+      return query.get('recordingReviewSessionId')
+        ? `interview:recording-review:${query.get('recordingReviewSessionId')}`
+        : 'interview:recording-review'
+    }
+  }
+  if (pathname.startsWith('/applications/')) {
+    return `application:${pathname.slice('/applications/'.length)}`
+  }
+  if (pathname === '/resume') {
+    return query.get('resumeId') ? `resume:${query.get('resumeId')}` : 'resume:latest'
+  }
+  return null
+}
+const pendingApprovalRunId = computed(() => {
+  const approvalEntry = workflowContinuations.value.find((entry) => entry.key === 'agent_approval')
+  if (!approvalEntry) return ''
+  const { pathname, query } = parsePathQuery(approvalEntry.path)
+  if (pathname !== '/agent') return ''
+  return query.get('runId') || ''
+})
 const dashboardAgentLink = computed(() => {
   const contextRefs = ['dashboard:overview', 'analytics:profile', 'study-plan:active']
   if (overview.value.recentInterviews.length) {
@@ -834,14 +881,40 @@ const dashboardAgentLink = computed(() => {
   if (applications.value.length) {
     contextRefs.push('application:board')
   }
-  return buildSeededAgentWorkbenchLocation({
+  workflowContinuations.value
+    .map(resolveDashboardContinuationContextRef)
+    .filter((item): item is string => Boolean(item))
+    .forEach((item) => {
+      if (!contextRefs.includes(item)) {
+        contextRefs.push(item)
+      }
+    })
+
+  const location = buildSeededAgentWorkbenchLocation({
     agentType: 'coordinator',
     triggerSource: 'dashboard',
     contextRefs,
     userPrompt: dashboardNextAction.value?.title
       ? `围绕“${dashboardNextAction.value.title}”统筹今天的训练与求职动作。`
       : '结合当前工作台状态，整理今天最值得推进的训练与求职动作。'
-  }, 'dashboard', dashboardSeedTopic.value ? `当前从工作台发起，优先围绕「${dashboardSeedTopic.value}」统筹下一步动作。` : undefined)
+  }, 'dashboard', dashboardSeedTopic.value ? `当前从工作台发起，优先围绕「${dashboardSeedTopic.value}」统筹下一步动作。` : undefined) as {
+    path: string
+    query?: Record<string, string | string[] | undefined>
+  }
+
+  if (!pendingApprovalRunId.value) {
+    return location
+  }
+
+  return {
+    path: location.path,
+    query: {
+      ...(location.query || {}),
+      runId: pendingApprovalRunId.value,
+      listStatus: 'pending_approval',
+      listApprovalStage: 'waiting'
+    }
+  }
 })
 const workflowContinuationEntries = computed<DashboardContinuationEntry[]>(() =>
   workflowContinuations.value.map((entry) => ({
