@@ -468,7 +468,7 @@
                         <p class="mt-2 text-sm leading-6 text-primary">{{ question.question }}</p>
                         <div class="mt-2">
                           <RouterLink
-                            :to="{ path: '/chat', query: { q: question.question, context: project.projectName } }"
+                            :to="buildProjectChatLink(project, question.question)"
                             class="text-xs font-semibold text-accent hover:underline"
                           >
                             单独练习
@@ -735,6 +735,24 @@ const buildSeededAgentWorkbenchLocation = (
     }
   }
 }
+
+const buildProjectChatLink = (
+  project: Pick<ResumeProjectItem, 'projectName'> & { id?: string },
+  question: string
+): RouteLocationRaw => ({
+  path: '/chat',
+  query: {
+    q: question,
+    context: project.projectName,
+    resumeId: currentResume.value?.id || undefined,
+    resumeTitle: currentResume.value?.title || undefined,
+    projectId: project.id || undefined,
+    projectName: project.projectName,
+    ...(seededTopic.value ? { seedTopic: seededTopic.value } : {}),
+    ...(seededWorkflow.value ? { seedWorkflow: seededWorkflow.value } : {}),
+    ...(seededNote.value ? { seedNote: seededNote.value } : {})
+  }
+})
 
 const flattenedRisks = computed(() => {
   if (!currentResume.value) return []

@@ -558,6 +558,7 @@ const selectedResumeId = ref('')
 const selectedProjectId = ref('')
 const resumeProjects = ref<ResumeProjectItem[]>([])
 const seededQuestionSummary = ref('')
+const pendingProjectSeedId = ref('')
 
 const sessionFilters: Array<{ label: string; value: SessionFilterValue }> = [
   { label: '全部', value: 'all' },
@@ -603,6 +604,10 @@ const sourceDocId = computed(() => String(route.query.sourceDocId || '').trim())
 const sourceQuestionCategory = computed(() => String(route.query.sourceQuestionCategory || '').trim())
 const sourceQuestionTag = computed(() => String(route.query.sourceQuestionTag || '').trim())
 const sourceQuestionDirection = computed(() => String(route.query.sourceQuestionDirection || '').trim())
+const routeResumeId = computed(() => String(route.query.resumeId || '').trim())
+const routeResumeTitle = computed(() => String(route.query.resumeTitle || '').trim())
+const routeProjectId = computed(() => String(route.query.projectId || '').trim())
+const routeProjectName = computed(() => String(route.query.projectName || route.query.context || '').trim())
 
 const buildSeedQuery = () => ({
   ...(seedTopic.value ? { seedTopic: seedTopic.value } : {}),
@@ -641,6 +646,63 @@ const buildDocSourceQuery = () => ({
   ...buildSeedQuery()
 })
 
+const draftContextSource = computed<ContextSource | null>(() => {
+  if (chatPath.value === 'project') {
+    const resume = resumes.value.find((item) => item.id === selectedResumeId.value)
+    const project = resumeProjects.value.find((item) => item.id === selectedProjectId.value)
+    const resumeId = selectedResumeId.value || routeResumeId.value || undefined
+    const resumeTitle = resume?.title || routeResumeTitle.value || undefined
+    const projectId = project?.id || selectedProjectId.value || routeProjectId.value || undefined
+    const projectName = project?.projectName || routeProjectName.value || undefined
+    const hasProjectContext = Boolean(project || projectId || projectName)
+    return {
+      type: hasProjectContext ? 'project' : 'resume',
+      label: hasProjectContext ? '项目上下文' : '简历上下文',
+      knowledgeScope: knowledgeScope.value,
+      resumeId,
+      resumeTitle,
+      projectId,
+      projectName,
+      summary: project
+        ? seededQuestionSummary.value ||
+          `当前问题会结合项目「${project.projectName}」，并参考${knowledgeScopeLabel(knowledgeScope.value)}。`
+        : resume || routeProjectName.value
+          ? seededQuestionSummary.value ||
+            (projectName
+              ? `当前问题会结合项目「${projectName}」，并参考${knowledgeScopeLabel(knowledgeScope.value)}。`
+              : `当前问题会结合简历《${resumeTitle || '当前简历'}》，并参考${knowledgeScopeLabel(knowledgeScope.value)}。`)
+          : seededQuestionSummary.value || '选择一份简历，也可以进一步指定项目。'
+    }
+  }
+  if (chatPath.value === 'knowledge') {
+    return {
+      type: 'knowledge',
+      label: '资料上下文',
+      knowledgeScope: knowledgeScope.value,
+      sourceDocId: sourceDocId.value || undefined,
+      sourceDocTitle: sourceDocTitle.value || undefined,
+      summary:
+        seededQuestionSummary.value ||
+        (sourceDocTitle.value
+          ? `当前问题会围绕资料《${sourceDocTitle.value}》展开，并参考${knowledgeScopeLabel(knowledgeScope.value)}。`
+          : `当前问题会参考${knowledgeScopeLabel(knowledgeScope.value)}。`)
+    }
+  }
+  return {
+    type: 'general',
+    label: '直接提问',
+    summary: seededQuestionSummary.value || '当前不会绑定资料、简历或项目。适合直接提问原理、场景和表达问题。'
+  }
+})
+
+const activeContextSource = computed(() => activeSession.value?.contextSource ?? draftContextSource.value)
+const activeContextSummary = computed(() => activeContextSource.value?.summary || '')
+const draftContextSummary = computed(() => draftContextSource.value?.summary || '')
+const buildResumeSourceQuery = (contextSource?: ContextSource | null) => ({
+  resumeId: contextSource?.resumeId || selectedResumeId.value || routeResumeId.value || undefined,
+  projectId: contextSource?.projectId || selectedProjectId.value || routeProjectId.value || undefined,
+  ...buildSeedQuery()
+})
 const contextWorkflowActions = computed<ContextWorkflowAction[]>(() => {
   if (sourceQuestionTitle.value) {
     return [
@@ -711,54 +773,52 @@ const contextWorkflowActions = computed<ContextWorkflowAction[]>(() => {
     ]
   }
 
+  const contextSource = activeContextSource.value
+  if ((contextSource?.type === 'project' || contextSource?.type === 'resume')
+      && (contextSource.resumeId || contextSource.resumeTitle || selectedResumeId.value || routeResumeId.value)) {
+    const resumeId = contextSource.resumeId || selectedResumeId.value || routeResumeId.value
+    const projectName = contextSource.projectName || routeProjectName.value
+    const resumePromptTarget = projectName
+      ? `项目「${projectName}」`
+      : `简历《${contextSource.resumeTitle || routeResumeTitle.value || '当前简历'}》`
+    return [
+      {
+        key: 'resume-agent',
+        label: '交给 Agent 收简历表达',
+        to: buildSeededAgentWorkbenchLocation({
+          agentType: 'resume_coach',
+          triggerSource: 'chat',
+          contextRefs: resumeId ? [`resume:${resumeId}`, 'analytics:profile'] : ['resume:latest', 'analytics:profile'],
+          userPrompt: `围绕${resumePromptTarget}整理项目表达、追问口径和下一轮简历优化动作。`
+        }),
+        tone: 'secondary'
+      },
+      {
+        key: 'resume-job-prep',
+        label: '带去 JD 备面',
+        to: {
+          path: '/interview',
+          query: {
+            workspace: 'job-prep',
+            ...buildResumeSourceQuery(contextSource)
+          }
+        },
+        tone: 'secondary'
+      },
+      {
+        key: 'resume-interview',
+        label: '去模拟面试',
+        to: {
+          path: '/interview',
+          query: buildResumeSourceQuery(contextSource)
+        },
+        tone: 'primary'
+      }
+    ]
+  }
+
   return []
 })
-
-const draftContextSource = computed<ContextSource | null>(() => {
-  if (chatPath.value === 'project') {
-    const resume = resumes.value.find((item) => item.id === selectedResumeId.value)
-    const project = resumeProjects.value.find((item) => item.id === selectedProjectId.value)
-    return {
-      type: project ? 'project' : 'resume',
-      label: project ? '项目上下文' : '简历上下文',
-      knowledgeScope: knowledgeScope.value,
-      resumeId: selectedResumeId.value || undefined,
-      resumeTitle: resume?.title,
-      projectId: project?.id,
-      projectName: project?.projectName,
-      summary: project
-        ? seededQuestionSummary.value ||
-          `当前问题会结合项目「${project.projectName}」，并参考${knowledgeScopeLabel(knowledgeScope.value)}。`
-        : resume
-          ? seededQuestionSummary.value ||
-            `当前问题会结合简历《${resume.title}》，并参考${knowledgeScopeLabel(knowledgeScope.value)}。`
-          : seededQuestionSummary.value || '选择一份简历，也可以进一步指定项目。'
-    }
-  }
-  if (chatPath.value === 'knowledge') {
-    return {
-      type: 'knowledge',
-      label: '资料上下文',
-      knowledgeScope: knowledgeScope.value,
-      sourceDocId: sourceDocId.value || undefined,
-      sourceDocTitle: sourceDocTitle.value || undefined,
-      summary:
-        seededQuestionSummary.value ||
-        (sourceDocTitle.value
-          ? `当前问题会围绕资料《${sourceDocTitle.value}》展开，并参考${knowledgeScopeLabel(knowledgeScope.value)}。`
-          : `当前问题会参考${knowledgeScopeLabel(knowledgeScope.value)}。`)
-    }
-  }
-  return {
-    type: 'general',
-    label: '直接提问',
-    summary: seededQuestionSummary.value || '当前不会绑定资料、简历或项目。适合直接提问原理、场景和表达问题。'
-  }
-})
-
-const activeContextSource = computed(() => activeSession.value?.contextSource ?? draftContextSource.value)
-const activeContextSummary = computed(() => activeContextSource.value?.summary || '')
-const draftContextSummary = computed(() => draftContextSource.value?.summary || '')
 const composerContextHint = computed(() => {
   if (chatPath.value === 'project') {
     return selectedProjectId.value ? '回答会结合当前项目' : '回答会结合当前简历'
@@ -1012,6 +1072,7 @@ const startNewSession = () => {
   activeSessionId.value = null
   messages.value = []
   prompt.value = ''
+  pendingProjectSeedId.value = ''
   focusedReferenceMessageId.value = null
   suggestedQuestions.value = []
   referenceDrawerVisible.value = false
@@ -1026,13 +1087,21 @@ const applyQuestionSeedFromRoute = () => {
   const questionParam = String(route.query.q || '').trim()
   const contextParam = String(route.query.context || '').trim()
   if (questionParam) {
-    seededQuestionSummary.value = contextParam
-      ? `当前问题会围绕项目「${contextParam}」展开。`
-      : '当前问题会结合简历内容展开。'
-    prompt.value = contextParam
-      ? `我在项目「${contextParam}」中遇到了这个追问：「${questionParam}」，请帮我组织一个结构清晰、有亮点的回答，并给出常见追问和注意事项。`
+    seededQuestionSummary.value = routeProjectName.value
+      ? `当前问题会围绕项目「${routeProjectName.value}」展开。`
+      : contextParam
+        ? `当前问题会围绕项目「${contextParam}」展开。`
+        : routeResumeTitle.value
+          ? `当前问题会结合简历《${routeResumeTitle.value}》展开。`
+          : '当前问题会结合简历内容展开。'
+    prompt.value = routeProjectName.value || contextParam
+      ? `我在项目「${routeProjectName.value || contextParam}」中遇到了这个追问：「${questionParam}」，请帮我组织一个结构清晰、有亮点的回答，并给出常见追问和注意事项。`
       : `请帮我回答这个面试追问：「${questionParam}」，给出结构清晰、有亮点的回答。`
     applyChatPath('project')
+    if (routeResumeId.value) {
+      selectedResumeId.value = routeResumeId.value
+    }
+    pendingProjectSeedId.value = routeProjectId.value
     return
   }
 
@@ -1067,7 +1136,7 @@ const applySessionContext = (session: ChatSessionItem) => {
     mode.value = 'rag'
     knowledgeScope.value = session.contextSource?.knowledgeScope || session.knowledgeScope || 'personal'
     selectedResumeId.value = session.contextSource?.resumeId || ''
-    selectedProjectId.value = session.contextSource?.projectId || ''
+    pendingProjectSeedId.value = session.contextSource?.projectId || ''
     if (selectedResumeId.value) {
       void loadResumeProjects(selectedResumeId.value)
     }
@@ -1085,6 +1154,7 @@ const applySessionContext = (session: ChatSessionItem) => {
   mode.value = 'chat'
   selectedResumeId.value = ''
   selectedProjectId.value = ''
+  pendingProjectSeedId.value = ''
 }
 
 const applyChatPath = (path: 'general' | 'knowledge' | 'project') => {
@@ -1093,12 +1163,14 @@ const applyChatPath = (path: 'general' | 'knowledge' | 'project') => {
     mode.value = 'chat'
     selectedResumeId.value = ''
     selectedProjectId.value = ''
+    pendingProjectSeedId.value = ''
     return
   }
   mode.value = 'rag'
   selectedProjectId.value = ''
   if (path === 'knowledge') {
     selectedResumeId.value = ''
+    pendingProjectSeedId.value = ''
     return
   }
   if (path === 'project') {
@@ -1397,9 +1469,16 @@ watch(selectedResumeId, async (resumeId) => {
   selectedProjectId.value = ''
   if (!resumeId) {
     resumeProjects.value = []
+    pendingProjectSeedId.value = ''
     return
   }
   await loadResumeProjects(resumeId)
+  if (!pendingProjectSeedId.value) return
+  const matchedProject = resumeProjects.value.find((item) => item.id === pendingProjectSeedId.value)
+  if (matchedProject) {
+    selectedProjectId.value = matchedProject.id
+  }
+  pendingProjectSeedId.value = ''
 })
 
 watch(

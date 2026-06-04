@@ -1694,6 +1694,7 @@ const loadingResumes = ref(false)
 const selectedResumeId = ref('')
 const selectedProjectId = ref('')
 const resumeProjects = ref<ResumeProjectItem[]>([])
+const pendingRouteProjectId = ref('')
 const applications = ref<JobApplicationItem[]>([])
 const loadingApplications = ref(false)
 const selectedJobPrepApplicationId = ref('')
@@ -2767,6 +2768,7 @@ const resolveInterviewWorkspaceRouteState = () => {
 
 const applyInterviewWorkspaceSeedsFromRoute = (workspace?: string) => {
   const resumeId = String(route.query.resumeId || '').trim()
+  const projectId = String(route.query.projectId || '').trim()
   const applicationId = String(route.query.applicationId || route.query.jobPrepApplicationId || '').trim()
   const seedTopic = String(route.query.seedTopic || '').trim()
   const seedWorkflow = String(route.query.seedWorkflow || '').trim()
@@ -2775,9 +2777,8 @@ const applyInterviewWorkspaceSeedsFromRoute = (workspace?: string) => {
   if (resumeId) {
     if (workspace === 'mock-interview' || workspace === 'history' || !workspace) {
       selectedResumeId.value = resumeId
-      if (interviewContextPath.value === 'general') {
-        interviewContextPath.value = 'resume'
-      }
+      pendingRouteProjectId.value = projectId
+      interviewContextPath.value = projectId ? 'project' : 'resume'
     }
     if (workspace === 'recording-review') {
       applyRecordingReviewResumeSeed(resumeId)
@@ -3264,9 +3265,16 @@ watch(selectedResumeId, async (resumeId) => {
   selectedProjectId.value = ''
   if (!resumeId) {
     resumeProjects.value = []
+    pendingRouteProjectId.value = ''
     return
   }
   await loadResumeProjects(resumeId)
+  if (!pendingRouteProjectId.value) return
+  const matchedProject = resumeProjects.value.find((item) => item.id === pendingRouteProjectId.value)
+  if (matchedProject) {
+    selectedProjectId.value = matchedProject.id
+  }
+  pendingRouteProjectId.value = ''
 })
 
 watch(selectedJobPrepApplicationId, (applicationId) => {
