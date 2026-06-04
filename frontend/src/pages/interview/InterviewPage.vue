@@ -2057,6 +2057,23 @@ const providerSettingsPath = computed<RouteLocationRaw>(() => {
   const currentWorkspace = resolveInterviewWorkspaceRouteState().workspace || 'mock-interview'
   return buildProviderSettingsLocation(route.fullPath, providerSettingsLabelByWorkspace(currentWorkspace))
 })
+
+const isProviderSettingsPath = (path: string) => path.startsWith('/settings?tab=providers')
+
+const rewriteProviderSettingsPath = (path: string) => {
+  if (isProviderSettingsPath(path)) {
+    const currentWorkspace = resolveInterviewWorkspaceRouteState().workspace || 'mock-interview'
+    const location = buildProviderSettingsLocation(route.fullPath, providerSettingsLabelByWorkspace(currentWorkspace)) as {
+      path: string
+      query?: Record<string, string>
+    }
+    const query = location.query || {}
+    const params = new URLSearchParams(query)
+    return `${location.path}?${params.toString()}`
+  }
+  return appendSeedToPath(path) ?? path
+}
+
 const copilotRealtimeConnectionLabel = computed(() => {
   if (copilotRealtimeSocketState.value === 'connecting') return '连接中'
   if (copilotRealtimeSocketState.value === 'connected') return '已连接'
@@ -2067,21 +2084,21 @@ const copilotRealtimeConnectionLabel = computed(() => {
 const recordingReviewPending = computed(() => isRecordingReviewPendingStatus(recordingReviewSession.value?.status))
 const jobPrepNextActionLink = computed(() => {
   if (jobPrepSession.value?.nextActionPath) {
-    return appendSeedToPath(jobPrepSession.value.nextActionPath) ?? jobPrepSession.value.nextActionPath
+    return rewriteProviderSettingsPath(jobPrepSession.value.nextActionPath)
   }
   if (!jobPrepSession.value) return ''
   return appendSeedToPath(`/interview?workspace=copilot-prep&jobPrepSessionId=${encodeURIComponent(jobPrepSession.value.id)}`) || ''
 })
 const copilotPrepNextActionLink = computed(() => {
   if (copilotPrepSession.value?.nextActionPath) {
-    return appendSeedToPath(copilotPrepSession.value.nextActionPath) ?? copilotPrepSession.value.nextActionPath
+    return rewriteProviderSettingsPath(copilotPrepSession.value.nextActionPath)
   }
   if (!copilotPrepSession.value) return ''
   return appendSeedToPath(`/interview?workspace=copilot-live&copilotPrepSessionId=${encodeURIComponent(copilotPrepSession.value.id)}`) || ''
 })
 const recordingReviewNextActionLink = computed(() => {
   if (recordingReviewSession.value?.nextActionPath) {
-    return appendSeedToPath(recordingReviewSession.value.nextActionPath) ?? recordingReviewSession.value.nextActionPath
+    return rewriteProviderSettingsPath(recordingReviewSession.value.nextActionPath)
   }
   if (!recordingReviewSession.value) {
     return buildSeededAgentWorkbenchLocation({
@@ -2116,8 +2133,7 @@ const copilotRealtimeAgentLink = computed(() => {
 })
 const copilotRealtimePostReviewLink = computed(() => {
   if (copilotRealtimeSession.value?.postInterviewReview?.nextActionPath) {
-    return appendSeedToPath(copilotRealtimeSession.value.postInterviewReview.nextActionPath)
-      ?? copilotRealtimeSession.value.postInterviewReview.nextActionPath
+    return rewriteProviderSettingsPath(copilotRealtimeSession.value.postInterviewReview.nextActionPath)
   }
   return copilotRealtimeAgentLink.value
 })

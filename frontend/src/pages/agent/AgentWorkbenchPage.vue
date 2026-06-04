@@ -254,8 +254,8 @@
                 <p class="mt-2 text-sm leading-6 text-primary">{{ selectedRun.executionSummary }}</p>
               </div>
               <RouterLink
-                v-if="selectedRun.executionActionPath"
-                :to="selectedRun.executionActionPath"
+                v-if="selectedRunExecutionActionPath"
+                :to="selectedRunExecutionActionPath"
                 class="hard-button-secondary"
               >
                 {{ selectedRun.executionActionLabel || '查看结果' }}
@@ -306,8 +306,8 @@
                   前往 Provider 设置
                 </RouterLink>
                 <RouterLink
-                  v-if="selectedRun.nextActionPath && selectedRun.nextActionPath !== '/settings?tab=providers'"
-                  :to="selectedRun.nextActionPath"
+                  v-if="selectedRunPrimaryActionPath && !isProviderSettingsPath(selectedRun.nextActionPath || '')"
+                  :to="selectedRunPrimaryActionPath"
                   class="hard-button-primary"
                 >
                   {{ resolveNextActionLabel(selectedRun) }}
@@ -435,7 +435,7 @@
               <el-button class="action-button" @click="prefillFromRun(selectedRun)">
                 重新预填发起
               </el-button>
-              <RouterLink v-if="selectedRun.nextActionPath" :to="selectedRun.nextActionPath" class="hard-button-primary">
+              <RouterLink v-if="selectedRunPrimaryActionPath" :to="selectedRunPrimaryActionPath" class="hard-button-primary">
                 {{ resolveNextActionLabel(selectedRun) }}
               </RouterLink>
             </div>
@@ -715,6 +715,16 @@ const selectedRunProviderSettingsPath = computed<RouteLocationRaw>(() => {
   return buildProviderSettingsLocation(route.fullPath, runLabel)
 })
 
+const selectedRunPrimaryActionPath = computed(() => {
+  if (!selectedRun.value?.nextActionPath) return null
+  return rewriteProviderSettingsPath(selectedRun.value.nextActionPath, selectedRun.value)
+})
+
+const selectedRunExecutionActionPath = computed(() => {
+  if (!selectedRun.value?.executionActionPath) return null
+  return rewriteProviderSettingsPath(selectedRun.value.executionActionPath, selectedRun.value)
+})
+
 const parseQueryList = (value: unknown) => {
   if (Array.isArray(value)) {
     return value.flatMap((item) => String(item || '').split(',')).map((item) => item.trim()).filter(Boolean)
@@ -986,7 +996,23 @@ const resolveContextRefPath = (contextRef: string) => {
   if (contextRef === 'interview:copilot-realtime') return appendSeedToPath('/interview?workspace=copilot-live')
   if (contextRef === 'resume:latest') return appendSeedToPath('/resume')
   if (contextRef === 'application:board') return appendSeedToPath('/applications')
-  if (contextRef === 'settings:providers') return '/settings?tab=providers'
+  if (contextRef === 'settings:providers') {
+    return nullSafeProviderSettingsPath(route.fullPath, {
+      id: '',
+      agentType: 'coordinator',
+      triggerSource: 'settings',
+      status: 'completed',
+      title: '',
+      summary: '',
+      recommendations: [],
+      checkpoints: [],
+      contextRefs: [],
+      streamMode: 'sync',
+      requiresApproval: false,
+      timeline: [],
+      providerGates: []
+    } as AgentRun)
+  }
   if (contextRef.startsWith('knowledge:')) {
     return appendSeedToPath(`/knowledge?docId=${encodeURIComponent(contextRef.slice('knowledge:'.length))}`)
   }
@@ -1129,12 +1155,12 @@ const buildFollowUpActions = (run: AgentRun): FollowUpAction[] => {
   }
 
   if (run.nextActionPath) {
-    const nextPath = appendSeedToPath(run.nextActionPath) ?? run.nextActionPath
+    const nextPath = rewriteProviderSettingsPath(run.nextActionPath, run)
     addAction('next', resolveNextActionLabel(run), nextPath, describeFollowUpPath(nextPath), 'primary')
   }
 
   if (run.executionActionPath && run.executionActionPath !== run.nextActionPath) {
-    const executionPath = appendSeedToPath(run.executionActionPath) ?? run.executionActionPath
+    const executionPath = rewriteProviderSettingsPath(run.executionActionPath, run)
     addAction(
       'execution',
       run.executionActionLabel || '查看执行结果',
@@ -1192,6 +1218,15 @@ const buildFollowUpActions = (run: AgentRun): FollowUpAction[] => {
 }
 
 const selectedRunFollowUpActions = computed(() => (selectedRun.value ? buildFollowUpActions(selectedRun.value) : []))
+
+const isProviderSettingsPath = (path: string) => path.startsWith('/settings?tab=providers')
+
+const rewriteProviderSettingsPath = (path: string, run: AgentRun) => {
+  if (isProviderSettingsPath(path)) {
+    return route.fullPath ? nullSafeProviderSettingsPath(route.fullPath, run) : path
+  }
+  return appendSeedToPath(path) ?? path
+}
 
 const nullSafeProviderSettingsPath = (returnTo: string, run: AgentRun) => {
   const location = buildProviderSettingsLocation(returnTo, `返回 ${resolveAgentLabel(run.agentType)} Run`) as {
