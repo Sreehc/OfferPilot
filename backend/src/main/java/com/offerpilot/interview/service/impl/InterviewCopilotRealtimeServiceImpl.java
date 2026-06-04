@@ -193,6 +193,42 @@ public class InterviewCopilotRealtimeServiceImpl implements InterviewCopilotReal
         return detail(userId, sessionId);
     }
 
+    @Override
+    @Transactional
+    public CopilotRealtimeSessionVO appendTranscript(Long userId, Long sessionId, String transcriptText, String speaker) {
+        CopilotRealtimeSession session = loadRealtimeSession(userId, sessionId);
+        String cleanTranscript = trimToNull(transcriptText);
+        if (!StringUtils.hasText(cleanTranscript)) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "realtime transcript is empty");
+        }
+        String cleanSpeaker = defaultText(trimToNull(speaker), "候选人");
+        appendEvent(
+                session,
+                "transcript",
+                "system",
+                cleanSpeaker + "：" + abbreviate(cleanTranscript, 90),
+                Map.of("transcriptText", cleanTranscript, "speaker", cleanSpeaker));
+        return detail(userId, sessionId);
+    }
+
+    @Override
+    @Transactional
+    public CopilotRealtimeSessionVO appendSuggestion(Long userId, Long sessionId, String suggestion, String category) {
+        CopilotRealtimeSession session = loadRealtimeSession(userId, sessionId);
+        String cleanSuggestion = trimToNull(suggestion);
+        if (!StringUtils.hasText(cleanSuggestion)) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "realtime suggestion is empty");
+        }
+        String cleanCategory = defaultText(trimToNull(category), "实时提示");
+        appendEvent(
+                session,
+                "suggestion",
+                "system",
+                cleanCategory + "：" + abbreviate(cleanSuggestion, 90),
+                Map.of("suggestion", cleanSuggestion, "category", cleanCategory));
+        return detail(userId, sessionId);
+    }
+
     private CopilotPrepSession loadPrepSession(Long userId, Long sessionId) {
         CopilotPrepSession session = copilotPrepSessionMapper.selectById(sessionId);
         if (session == null || !session.getUserId().equals(userId)) {
@@ -326,6 +362,21 @@ public class InterviewCopilotRealtimeServiceImpl implements InterviewCopilotReal
                 .distinct()
                 .limit(3)
                 .toList();
+        List<String> transcriptHighlights = orderedEvents.stream()
+                .filter(event -> "transcript".equals(event.getEventType()))
+                .map(event -> stringPayload(event.getPayload(), "transcriptText"))
+                .filter(StringUtils::hasText)
+                .map(text -> abbreviate(text, 48))
+                .distinct()
+                .limit(3)
+                .toList();
+        List<String> realtimeSuggestions = orderedEvents.stream()
+                .filter(event -> "suggestion".equals(event.getEventType()))
+                .map(event -> stringPayload(event.getPayload(), "suggestion"))
+                .filter(StringUtils::hasText)
+                .distinct()
+                .limit(3)
+                .toList();
         List<String> providerWarnings = readProviderList(session.getProviderReadinessJson()).stream()
                 .filter(item -> !"ready".equals(item.getStatus()) && !"saved".equals(item.getStatus()))
                 .map(item -> item.getLabel() + " 未完全就绪")
@@ -337,14 +388,20 @@ public class InterviewCopilotRealtimeServiceImpl implements InterviewCopilotReal
         if (session.getConnectedAt() != null) {
             strengths.add("实时连接已建立，说明本轮面试过程至少完成了一次在线跟进。");
         }
+        if (!transcriptHighlights.isEmpty()) {
+            strengths.add("实时阶段已沉淀 " + transcriptHighlights.size() + " 条转写片段，面后复盘不再只依赖主观回忆。");
+        }
         if (!runtimeNotes.isEmpty()) {
             strengths.add("面中已经主动记录关键追问与现场变化，便于面后复盘。");
         }
+        if (!realtimeSuggestions.isEmpty()) {
+            strengths.add("实时阶段已经输出针对性的提醒和建议，可以直接用于面后复盘。");
+        }
 
         List<String> weakPoints = new ArrayList<>();
-        if (providerWarnings.isEmpty()) {
+        if (providerWarnings.isEmpty() && transcriptHighlights.isEmpty()) {
             weakPoints.add("当前没有自动转写摘要，面后仍需要补一轮结构化复盘，避免现场笔记丢失细节。");
-        } else {
+        } else if (!providerWarnings.isEmpty()) {
             weakPoints.add("实时阶段存在依赖降级：" + String.join("、", providerWarnings) + "。");
         }
         if (runtimeNotes.isEmpty()) {
@@ -352,17 +409,26 @@ public class InterviewCopilotRealtimeServiceImpl implements InterviewCopilotReal
         } else {
             weakPoints.add("现场备注已记录，但还没有沉淀成正式训练动作。");
         }
+        if (realtimeSuggestions.isEmpty()) {
+            weakPoints.add("本轮没有沉淀实时提示，建议面后补写关键追问和更优回答路径。");
+        }
 
         List<String> recommendedActions = new ArrayList<>();
         recommendedActions.add("先把本轮实时阶段转成面后复盘 run，整理追问、卡壳点和表达缺口。");
         if (!runtimeNotes.isEmpty()) {
             recommendedActions.add("优先围绕这些现场备注复盘：" + String.join("；", runtimeNotes) + "。");
         }
+        if (!transcriptHighlights.isEmpty()) {
+            recommendedActions.add("回放这些实时转写片段，补齐回答结构和例子支撑：" + String.join("；", transcriptHighlights) + "。");
+        }
+        if (!realtimeSuggestions.isEmpty()) {
+            recommendedActions.add("把这些实时提示改写成下一轮训练要求：" + String.join("；", realtimeSuggestions) + "。");
+        }
         recommendedActions.add(StringUtils.hasText(session.getJobTitle())
                 ? "结合 " + session.getJobTitle() + " 岗位目标，决定是否刷新下一轮训练计划。"
                 : "结合当前岗位目标，决定是否刷新下一轮训练计划。");
 
-        String summary = buildPostInterviewReviewSummary(session, runtimeNotes, providerWarnings);
+        String summary = buildPostInterviewReviewSummary(session, runtimeNotes, transcriptHighlights, realtimeSuggestions, providerWarnings);
         return CopilotRealtimeSessionVO.PostInterviewReviewVO.builder()
                 .summary(summary)
                 .strengths(strengths)
@@ -378,12 +444,16 @@ public class InterviewCopilotRealtimeServiceImpl implements InterviewCopilotReal
     private String buildPostInterviewReviewSummary(
             CopilotRealtimeSession session,
             List<String> runtimeNotes,
+            List<String> transcriptHighlights,
+            List<String> realtimeSuggestions,
             List<String> providerWarnings) {
         String company = StringUtils.hasText(session.getCompany()) ? session.getCompany() : "当前岗位";
         String role = StringUtils.hasText(session.getJobTitle()) ? session.getJobTitle() : "本轮面试";
-        if (!runtimeNotes.isEmpty()) {
-            return company + " / " + role + " 的实时阶段已结束，已沉淀 " + runtimeNotes.size()
-                    + " 条现场备注，下一步适合直接转入面后复盘。";
+        if (!runtimeNotes.isEmpty() || !transcriptHighlights.isEmpty() || !realtimeSuggestions.isEmpty()) {
+            return company + " / " + role + " 的实时阶段已结束，已沉淀 "
+                    + runtimeNotes.size() + " 条现场备注、"
+                    + transcriptHighlights.size() + " 条转写片段和 "
+                    + realtimeSuggestions.size() + " 条实时提示，下一步适合直接转入面后复盘。";
         }
         if (!providerWarnings.isEmpty()) {
             return company + " / " + role + " 的实时阶段已结束，但过程中存在依赖降级，建议优先补一轮结构化复盘。";
@@ -439,6 +509,14 @@ public class InterviewCopilotRealtimeServiceImpl implements InterviewCopilotReal
         } catch (JsonProcessingException e) {
             throw new BusinessException(ResultCode.SERVER_ERROR.getCode(), "failed to serialize realtime payload");
         }
+    }
+
+    private String stringPayload(Map<String, Object> payload, String key) {
+        if (payload == null || !payload.containsKey(key)) {
+            return null;
+        }
+        Object value = payload.get(key);
+        return value == null ? null : trimToNull(String.valueOf(value));
     }
 
     private String abbreviate(String text, int maxLength) {

@@ -18,4 +18,8 @@ public interface InterviewCopilotRealtimeService {
     CopilotRealtimeSessionVO complete(Long userId, Long sessionId, String summary);
 
     CopilotRealtimeSessionVO appendClientNote(Long userId, Long sessionId, String note);
+
+    CopilotRealtimeSessionVO appendTranscript(Long userId, Long sessionId, String transcriptText, String speaker);
+
+    CopilotRealtimeSessionVO appendSuggestion(Long userId, Long sessionId, String suggestion, String category);
 }

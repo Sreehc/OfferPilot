@@ -59,6 +59,20 @@ public class CopilotRealtimeWebSocketHandler extends TextWebSocketHandler {
             sendEnvelope(session, "snapshot", Map.of("session", snapshot, "serverTime", Instant.now().toString()));
             return;
         }
+        if ("transcript".equals(type)) {
+            String transcript = String.valueOf(payload.getOrDefault("transcript", "")).trim();
+            String speaker = String.valueOf(payload.getOrDefault("speaker", "")).trim();
+            CopilotRealtimeSessionVO snapshot = interviewCopilotRealtimeService.appendTranscript(userId, realtimeSessionId, transcript, speaker);
+            sendEnvelope(session, "snapshot", Map.of("session", snapshot, "serverTime", Instant.now().toString()));
+            return;
+        }
+        if ("suggestion".equals(type)) {
+            String suggestion = String.valueOf(payload.getOrDefault("suggestion", "")).trim();
+            String category = String.valueOf(payload.getOrDefault("category", "")).trim();
+            CopilotRealtimeSessionVO snapshot = interviewCopilotRealtimeService.appendSuggestion(userId, realtimeSessionId, suggestion, category);
+            sendEnvelope(session, "snapshot", Map.of("session", snapshot, "serverTime", Instant.now().toString()));
+            return;
+        }
         if ("complete".equals(type)) {
             String summary = String.valueOf(payload.getOrDefault("summary", "")).trim();
             CopilotRealtimeSessionVO snapshot = interviewCopilotRealtimeService.complete(userId, realtimeSessionId, summary);

@@ -109,6 +109,10 @@ class InterviewCopilotRealtimeServiceImplTest {
         assertEquals("connected", noteSnapshot.getConnectionState());
         assertEquals(Boolean.FALSE, noteSnapshot.getCanReconnect());
         assertEquals("/ws/interview/copilot/45", noteSnapshot.getWebsocketPath());
+        CopilotRealtimeSessionVO transcriptSnapshot = service.appendTranscript(1L, 45L, "我先讲项目背景，再讲缓存一致性和补偿策略。", "候选人");
+        assertTrue(transcriptSnapshot.getEvents().stream().anyMatch(item -> "transcript".equals(item.getEventType())));
+        CopilotRealtimeSessionVO suggestionSnapshot = service.appendSuggestion(1L, 45L, "先收束回答，再补一个 Redis 双写修复案例。", "追问提示");
+        assertTrue(suggestionSnapshot.getEvents().stream().anyMatch(item -> "suggestion".equals(item.getEventType())));
 
         CopilotRealtimeSessionVO completed = service.complete(1L, 45L, "当前实时阶段已结束，转入面后复盘。");
 
@@ -118,11 +122,15 @@ class InterviewCopilotRealtimeServiceImplTest {
         assertEquals("/ws/interview/copilot/45", completed.getWebsocketPath());
         assertNotNull(completed.getPostInterviewReview());
         assertTrue(completed.getPostInterviewReview().getSummary().contains("实时阶段已结束"));
+        assertTrue(completed.getPostInterviewReview().getSummary().contains("转写片段"));
         assertTrue(completed.getPostInterviewReview().getWeakPoints().stream().anyMatch(item -> item.contains("依赖降级")));
         assertTrue(completed.getPostInterviewReview().getRecommendedActions().stream().anyMatch(item -> item.contains("面后复盘 run")));
+        assertTrue(completed.getPostInterviewReview().getRecommendedActions().stream().anyMatch(item -> item.contains("Redis 双写修复案例")));
         assertEquals("interview_review", completed.getPostInterviewReview().getSuggestedAgentType());
         assertTrue(completed.getPostInterviewReview().getNextActionPath().contains("interview:copilot-realtime:45"));
         assertTrue(completed.getEvents().stream().anyMatch(item -> "runtime_note".equals(item.getEventType())));
+        assertTrue(completed.getEvents().stream().anyMatch(item -> "transcript".equals(item.getEventType())));
+        assertTrue(completed.getEvents().stream().anyMatch(item -> "suggestion".equals(item.getEventType())));
         assertTrue(completed.getEvents().stream().anyMatch(item -> "session_completed".equals(item.getEventType())));
         verify(trainingSignalService).handleEvidenceUpdate(1L);
     }

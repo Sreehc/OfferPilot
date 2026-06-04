@@ -728,6 +728,46 @@
                             </el-button>
                           </div>
                         </div>
+                        <div>
+                          <label class="flat-field-label">实时转写片段</label>
+                          <el-input
+                            v-model="copilotRealtimeTranscript"
+                            type="textarea"
+                            :rows="3"
+                            :disabled="copilotRealtimeSocketState !== 'connected'"
+                            placeholder="把当前一句回答或追问片段写进实时会话，面后复盘会直接引用这些片段。"
+                          />
+                          <div class="mt-3 flex flex-wrap gap-2">
+                            <el-button
+                              :disabled="copilotRealtimeSocketState !== 'connected' || !copilotRealtimeTranscript.trim()"
+                              type="default"
+                              size="small"
+                              @click="handleSendCopilotRealtimeTranscript"
+                            >
+                              发送转写
+                            </el-button>
+                          </div>
+                        </div>
+                        <div>
+                          <label class="flat-field-label">实时建议</label>
+                          <el-input
+                            v-model="copilotRealtimeSuggestion"
+                            type="textarea"
+                            :rows="3"
+                            :disabled="copilotRealtimeSocketState !== 'connected'"
+                            placeholder="记录当下应该怎么收束回答、补例子或切回主线，后续会直接进入复盘建议。"
+                          />
+                          <div class="mt-3 flex flex-wrap gap-2">
+                            <el-button
+                              :disabled="copilotRealtimeSocketState !== 'connected' || !copilotRealtimeSuggestion.trim()"
+                              type="default"
+                              size="small"
+                              @click="handleSendCopilotRealtimeSuggestion"
+                            >
+                              发送建议
+                            </el-button>
+                          </div>
+                        </div>
                       </div>
 
                       <div>
@@ -778,6 +818,9 @@
                               <div class="min-w-0">
                                 <p class="copilot-realtime-event__title">{{ realtimeEventLabel(event.eventType) }}</p>
                                 <p class="mt-1 text-sm leading-6 text-primary">{{ event.summary }}</p>
+                                <p v-if="realtimeEventDetail(event)" class="mt-1 text-xs leading-5 text-secondary">
+                                  {{ realtimeEventDetail(event) }}
+                                </p>
                               </div>
                               <div class="text-right">
                                 <p class="text-xs uppercase tracking-[0.18em] text-tertiary">{{ event.source }}</p>
@@ -1529,6 +1572,7 @@ import EmptyState from '@/components/EmptyState.vue'
 import { isProviderStatusMissing } from '@/utils/providerReadiness'
 import type {
   CopilotPrepSession,
+  CopilotRealtimeEvent,
   CopilotRealtimeSession,
   ContextSource,
   InterviewAnswerResult,
@@ -1598,6 +1642,8 @@ const copilotRealtimeConnecting = ref(false)
 const copilotRealtimeSession = ref<CopilotRealtimeSession | null>(null)
 const copilotRealtimeSocketState = ref<'idle' | 'connecting' | 'connected' | 'disconnected' | 'error'>('idle')
 const copilotRealtimeNote = ref('')
+const copilotRealtimeTranscript = ref('')
+const copilotRealtimeSuggestion = ref('')
 const linkedCopilotJobPrepId = ref('')
 const recordingReviewNotes = ref('')
 const recordingReviewFile = ref<File | null>(null)
@@ -2753,6 +2799,30 @@ const handleSendCopilotRealtimeNote = () => {
   copilotRealtimeNote.value = ''
 }
 
+const handleSendCopilotRealtimeTranscript = () => {
+  if (!copilotRealtimeSocket || copilotRealtimeSocket.readyState !== WebSocket.OPEN || !copilotRealtimeTranscript.value.trim()) {
+    return
+  }
+  copilotRealtimeSocket.send(JSON.stringify({
+    type: 'transcript',
+    transcript: copilotRealtimeTranscript.value.trim(),
+    speaker: '候选人'
+  }))
+  copilotRealtimeTranscript.value = ''
+}
+
+const handleSendCopilotRealtimeSuggestion = () => {
+  if (!copilotRealtimeSocket || copilotRealtimeSocket.readyState !== WebSocket.OPEN || !copilotRealtimeSuggestion.value.trim()) {
+    return
+  }
+  copilotRealtimeSocket.send(JSON.stringify({
+    type: 'suggestion',
+    suggestion: copilotRealtimeSuggestion.value.trim(),
+    category: '实时提示'
+  }))
+  copilotRealtimeSuggestion.value = ''
+}
+
 const handleCompleteCopilotRealtime = () => {
   if (!copilotRealtimeSocket || copilotRealtimeSocket.readyState !== WebSocket.OPEN) {
     return
@@ -2874,9 +2944,25 @@ const realtimeEventLabel = (eventType?: string) => {
   if (eventType === 'connection_established') return '连接建立'
   if (eventType === 'provider_degraded') return '降级提醒'
   if (eventType === 'runtime_note') return '运行中备注'
+  if (eventType === 'transcript') return '实时转写'
+  if (eventType === 'suggestion') return '实时建议'
   if (eventType === 'session_completed') return '阶段结束'
   if (eventType === 'connection_closed') return '连接关闭'
   return eventType || '事件'
+}
+
+const realtimeEventDetail = (event?: CopilotRealtimeEvent) => {
+  const payload = event?.payload || {}
+  if (event?.eventType === 'transcript' && typeof payload.transcriptText === 'string') {
+    return payload.transcriptText
+  }
+  if (event?.eventType === 'suggestion' && typeof payload.suggestion === 'string') {
+    return payload.suggestion
+  }
+  if (event?.eventType === 'runtime_note' && typeof payload.note === 'string') {
+    return payload.note
+  }
+  return ''
 }
 
 const applyQuestionSeedFromRoute = () => {
