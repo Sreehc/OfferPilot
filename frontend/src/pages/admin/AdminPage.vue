@@ -98,6 +98,10 @@
           <AdminAiLogTab />
         </el-tab-pane>
 
+        <el-tab-pane label="运行时治理" name="runtimeGovernance">
+          <AdminRuntimeGovernanceTab />
+        </el-tab-pane>
+
         <el-tab-pane label="系统配置" name="systemConfig">
           <AdminSystemConfigTab />
         </el-tab-pane>
@@ -127,6 +131,7 @@ import AdminQuestionTab from './AdminQuestionTab.vue'
 import AdminKnowledgeTab from './AdminKnowledgeTab.vue'
 import AdminLoginLogTab from './AdminLoginLogTab.vue'
 import AdminAiLogTab from './AdminAiLogTab.vue'
+import AdminRuntimeGovernanceTab from './AdminRuntimeGovernanceTab.vue'
 import AdminSystemConfigTab from './AdminSystemConfigTab.vue'
 import AdminInterviewGovernanceTab from './AdminInterviewGovernanceTab.vue'
 import { exportQuestionsApi, exportUsersApi } from '@/api/admin'

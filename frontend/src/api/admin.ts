@@ -197,6 +197,35 @@ export interface AdminInterviewGovernanceSummary {
   averageScore: number
 }
 
+export interface AdminRuntimeGovernanceSummary {
+  totalAgentRuns: number
+  pendingApprovalRuns: number
+  rejectedAgentRuns: number
+  providerBlockedRuns: number
+  totalCopilotPrepSessions: number
+  totalCopilotRealtimeSessions: number
+  liveCopilotRealtimeSessions: number
+  disconnectedCopilotRealtimeSessions: number
+  blockedCopilotRealtimeSessions: number
+  degradedCopilotRealtimeSessions: number
+  totalRecordingReviews: number
+  processingRecordingReviews: number
+  failedRecordingReviews: number
+  readyRecordingReviews: number
+  avgTranscriptTimeMs?: number
+  totalProviderConfigs: number
+  enabledProviderConfigs: number
+  readyProviderConfigs: number
+  failedProviderConfigs: number
+  uncheckedProviderConfigs: number
+  configuredProviderUsers: number
+  totalEstimatedAiCost: number
+  failedAiCalls: number
+  avgAiLatencyMs: number
+  riskSignals: string[]
+  recommendations: string[]
+}
+
 export const fetchAdminOverviewApi = () => {
   return request<AdminOverview>({ url: '/admin/overview', method: 'get' })
 }
@@ -244,6 +273,10 @@ export const fetchAdminInterviewGovernanceApi = (params: {
   pageSize?: number
 }) => {
   return request<PageResult<AdminInterviewGovernanceItem>>({ url: '/admin/interviews', method: 'get', params })
+}
+
+export const fetchAdminRuntimeGovernanceSummaryApi = () => {
+  return request<AdminRuntimeGovernanceSummary>({ url: '/admin/runtime-governance/summary', method: 'get' })
 }
 
 // ─── Data export ───

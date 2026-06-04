@@ -217,6 +217,7 @@ export const ERROR_COPY = {
   adminQuestionSaveFailed: '题目保存失败，请检查标题和分类后重试。',
   adminQuestionDeleteFailed: '题目删除失败，请稍后重试。',
   adminQuestionImportFailed: '题库导入失败，请检查文件格式后重试。',
+  adminRuntimeGovernanceLoadFailed: '无法加载运行时治理数据，请刷新页面后重试。',
   adminSystemConfigLoadFailed: '无法加载系统配置，请刷新后重试。',
   adminSystemConfigSaveFailed: '配置保存失败，请检查改动后重试。',
   adminInterviewGovernanceLoadFailed: '无法加载面试治理数据，请刷新列表后重试。',
