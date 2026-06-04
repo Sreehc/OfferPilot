@@ -1480,9 +1480,9 @@
 
           <div class="flex gap-2">
             <RouterLink :to="finishedWrongFocusLink" class="hard-button-secondary flex-1 text-center text-sm">
-              {{ finishedWrongFocusLink === '/wrong' ? '错题本' : '低分题' }}
+              {{ hasFinishedWrongFocusLink ? '低分题' : '错题本' }}
             </RouterLink>
-            <RouterLink to="/review" class="hard-button-secondary flex-1 text-center text-sm">去复习</RouterLink>
+            <RouterLink :to="reviewEntryLink" class="hard-button-secondary flex-1 text-center text-sm">去复习</RouterLink>
             <el-button type="primary" size="default" class="action-button flex-1" @click="handleNewInterview">
               开始新一场
             </el-button>
@@ -1665,7 +1665,19 @@ const seededNote = computed(() => readSeedQueryValue('seedNote'))
 const appendSeedToPath = (path: string | null): string | null => {
   if (!path) return path
   if (!seededTopic.value && !seededWorkflow.value && !seededNote.value) return path
-  if (!path.startsWith('/interview') && !path.startsWith('/resume') && !path.startsWith('/applications') && !path.startsWith('/agent')) {
+  if (
+    !path.startsWith('/interview') &&
+    !path.startsWith('/resume') &&
+    !path.startsWith('/applications') &&
+    !path.startsWith('/agent') &&
+    !path.startsWith('/analytics') &&
+    !path.startsWith('/study-plan') &&
+    !path.startsWith('/review') &&
+    !path.startsWith('/wrong') &&
+    !path.startsWith('/question') &&
+    !path.startsWith('/knowledge') &&
+    !path.startsWith('/chat')
+  ) {
     return path
   }
   const [rawPathWithoutHash, rawHash] = path.split('#')
@@ -2051,7 +2063,7 @@ const copilotRealtimeRecoveryDescription = computed(() => {
   return '当前会话已经断开，但这轮实时阶段还没有结束。可以直接恢复连接，或者转去面后复盘先消费已产生的上下文。'
 })
 const recordingReviewPlanRefreshLink = computed(() => {
-  if (!recordingReviewSession.value) return '/study-plan'
+  if (!recordingReviewSession.value) return appendSeedToPath('/study-plan') || '/study-plan'
   return buildSeededAgentWorkbenchLocation({
     agentType: 'study_planner',
     triggerSource: 'recording_review',
@@ -2059,10 +2071,14 @@ const recordingReviewPlanRefreshLink = computed(() => {
     userPrompt: '把这次录音复盘结果写回学习计划，并刷新下一轮训练任务。'
   })
 })
-const recordingReviewAnalyticsLink = computed(() => '/analytics')
+const recordingReviewAnalyticsLink = computed(() => appendSeedToPath('/analytics') || '/analytics')
+const reviewEntryLink = computed(() => appendSeedToPath('/review') || '/review')
+const finishedWrongFocusId = computed(() => detail.value?.records?.find((item) => item.wrongQuestionId)?.wrongQuestionId || '')
+const hasFinishedWrongFocusLink = computed(() => Boolean(finishedWrongFocusId.value))
 const finishedWrongFocusLink = computed(() => {
-  const wrongQuestionId = detail.value?.records?.find((item) => item.wrongQuestionId)?.wrongQuestionId
-  return wrongQuestionId ? `/wrong?wrongId=${encodeURIComponent(wrongQuestionId)}` : '/wrong'
+  return finishedWrongFocusId.value
+    ? appendSeedToPath(`/wrong?wrongId=${encodeURIComponent(finishedWrongFocusId.value)}`) || '/wrong'
+    : appendSeedToPath('/wrong') || '/wrong'
 })
 
 const handleStart = async (reanswerQuestionId?: number) => {

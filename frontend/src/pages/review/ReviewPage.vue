@@ -66,7 +66,7 @@
               <span v-if="seededFocusLabel" class="detail-pill">{{ seededFocusLabel }}</span>
               <RouterLink :to="recordingReviewLink" class="hard-button-secondary">去录音复盘</RouterLink>
               <RouterLink :to="reviewFocusWrongLink" class="hard-button-secondary">
-                {{ reviewFocusWrongLink === '/wrong' ? '查看错题本' : '定位首个错题' }}
+                {{ hasReviewFocusWrongLink ? '定位首个错题' : '查看错题本' }}
               </RouterLink>
             </div>
           </div>
@@ -103,9 +103,9 @@
                 <RouterLink :to="reviewPlannerAgentLink" class="hard-button-primary">刷新学习计划</RouterLink>
                 <RouterLink :to="mockInterviewLink" class="hard-button-secondary">去模拟面试</RouterLink>
                 <RouterLink :to="reviewFocusWrongLink" class="hard-button-primary">
-                  {{ reviewFocusWrongLink === '/wrong' ? '去错题本' : '看这道错题' }}
+                  {{ hasReviewFocusWrongLink ? '看这道错题' : '去错题本' }}
                 </RouterLink>
-                <RouterLink to="/knowledge" class="hard-button-secondary">去知识库</RouterLink>
+                <RouterLink :to="reviewKnowledgeLink" class="hard-button-secondary">去知识库</RouterLink>
               </div>
             </template>
           </EmptyState>
@@ -238,7 +238,7 @@
               <RouterLink :to="reviewPlannerAgentLink" class="hard-button-secondary">转成下一轮计划</RouterLink>
               <RouterLink :to="recordingReviewLink" class="hard-button-secondary">去录音复盘</RouterLink>
               <RouterLink :to="completedReviewWrongLink" class="hard-button-primary">
-                {{ completedReviewWrongLink === '/wrong' ? '回到错题本' : '回看这道错题' }}
+                {{ hasCompletedReviewWrongLink ? '回看这道错题' : '回到错题本' }}
               </RouterLink>
             </div>
           </template>
@@ -310,18 +310,32 @@ const buildInterviewWorkspaceLink = (workspace: 'mock-interview' | 'recording-re
   return `/interview?${query.toString()}`
 }
 
+const buildSeededPath = (path: string, query: Record<string, string> = {}) => {
+  const nextQuery = appendSeedQuery(new URLSearchParams(query))
+  return nextQuery.toString() ? `${path}?${nextQuery.toString()}` : path
+}
+
 const recordingReviewLink = computed(() => buildInterviewWorkspaceLink('recording-review'))
 const mockInterviewLink = computed(() => buildInterviewWorkspaceLink('mock-interview'))
+const reviewKnowledgeLink = computed(() => buildSeededPath('/knowledge'))
 
 const reviewItems = computed(() => reviewData.value?.items ?? [])
 const currentReviewItem = computed(() => reviewItems.value[currentIndex.value] ?? null)
+const reviewFocusWrongId = computed(() => reviewItems.value[0]?.wrongQuestionId || '')
+const completedReviewWrongId = computed(
+  () => currentReviewItem.value?.wrongQuestionId || reviewItems.value.at(-1)?.wrongQuestionId || ''
+)
+const hasReviewFocusWrongLink = computed(() => Boolean(reviewFocusWrongId.value))
+const hasCompletedReviewWrongLink = computed(() => Boolean(completedReviewWrongId.value))
 const reviewFocusWrongLink = computed(() => {
-  const wrongQuestionId = reviewItems.value[0]?.wrongQuestionId
-  return wrongQuestionId ? `/wrong?wrongId=${encodeURIComponent(wrongQuestionId)}` : '/wrong'
+  return reviewFocusWrongId.value
+    ? buildSeededPath('/wrong', { wrongId: reviewFocusWrongId.value })
+    : buildSeededPath('/wrong')
 })
 const completedReviewWrongLink = computed(() => {
-  const wrongQuestionId = currentReviewItem.value?.wrongQuestionId || reviewItems.value.at(-1)?.wrongQuestionId
-  return wrongQuestionId ? `/wrong?wrongId=${encodeURIComponent(wrongQuestionId)}` : '/wrong'
+  return completedReviewWrongId.value
+    ? buildSeededPath('/wrong', { wrongId: completedReviewWrongId.value })
+    : buildSeededPath('/wrong')
 })
 const reviewPlannerPrompt = computed(() =>
   reviewItems.value.length

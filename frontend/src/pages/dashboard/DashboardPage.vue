@@ -332,7 +332,7 @@
                   <div>
                     <h3 class="dashboard-section-title">学习进度</h3>
                   </div>
-                  <RouterLink to="/study-plan" class="accent-link touch-link text-sm font-semibold">查看全部</RouterLink>
+                  <RouterLink :to="studyPlanEntryLink" class="accent-link touch-link text-sm font-semibold">查看全部</RouterLink>
                 </div>
 
                 <div class="dashboard-progress-list">
@@ -431,7 +431,7 @@
                 </article>
               </div>
 
-              <RouterLink to="/study-plan" class="accent-link touch-link mt-4 inline-flex text-sm font-semibold">
+              <RouterLink :to="studyPlanEntryLink" class="accent-link touch-link mt-4 inline-flex text-sm font-semibold">
                 查看完整计划
               </RouterLink>
             </section>
@@ -601,7 +601,17 @@ const buildInterviewWorkspaceLink = (
 const appendDashboardSeedToPath = (path?: string | null): string => {
   if (!path) return '/dashboard'
   if (!dashboardSeedTopic.value) return path
-  if (!path.startsWith('/interview') && !path.startsWith('/resume') && !path.startsWith('/applications')) {
+  if (
+    !path.startsWith('/interview') &&
+    !path.startsWith('/resume') &&
+    !path.startsWith('/applications') &&
+    !path.startsWith('/question') &&
+    !path.startsWith('/knowledge') &&
+    !path.startsWith('/wrong') &&
+    !path.startsWith('/review') &&
+    !path.startsWith('/study-plan') &&
+    !path.startsWith('/chat')
+  ) {
     return path
   }
   const hashSplit = path.split('#')
@@ -625,6 +635,13 @@ const mockInterviewEntryLink = computed<RouteLocationRaw>(() =>
   buildInterviewWorkspaceLink(
     'mock-interview',
     dashboardSeedTopic.value ? `当前从工作台进入，优先验证「${dashboardSeedTopic.value}」是否已经讲稳。` : undefined
+  )
+)
+const studyPlanEntryLink = computed<RouteLocationRaw>(() =>
+  buildSeededPath(
+    '/study-plan',
+    'study-plan',
+    dashboardSeedTopic.value ? `当前从工作台进入，优先围绕「${dashboardSeedTopic.value}」刷新训练计划。` : undefined
   )
 )
 const interviewHistoryLink = computed<string>(() => appendDashboardSeedToPath('/interview?workspace=history'))

@@ -486,7 +486,18 @@ const seededNote = computed(() => readSeedQueryValue('seedNote'))
 const appendSeedToPath = (path: string | null): string | null => {
   if (!path) return null
   if (!seededTopic.value && !seededWorkflow.value && !seededNote.value) return path
-  if (!path.startsWith('/interview') && !path.startsWith('/resume') && !path.startsWith('/applications') && !path.startsWith('/analytics')) {
+  if (
+    !path.startsWith('/interview') &&
+    !path.startsWith('/resume') &&
+    !path.startsWith('/applications') &&
+    !path.startsWith('/analytics') &&
+    !path.startsWith('/study-plan') &&
+    !path.startsWith('/knowledge') &&
+    !path.startsWith('/question') &&
+    !path.startsWith('/wrong') &&
+    !path.startsWith('/review') &&
+    !path.startsWith('/chat')
+  ) {
     return path
   }
   const hashSplit = path.split('#')
@@ -949,7 +960,7 @@ const resolveContextRefLabel = (contextRef: string) => {
 const resolveContextRefPath = (contextRef: string) => {
   if (contextRef === 'dashboard:overview') return '/dashboard'
   if (contextRef === 'analytics:profile' || contextRef === 'analytics:weak-topics') return appendSeedToPath('/analytics')
-  if (contextRef === 'study-plan:active') return '/study-plan'
+  if (contextRef === 'study-plan:active') return appendSeedToPath('/study-plan')
   if (contextRef === 'interview:latest') return appendSeedToPath('/interview')
   if (contextRef === 'interview:recording-review') return appendSeedToPath('/interview?workspace=recording-review')
   if (contextRef === 'interview:job-prep') return appendSeedToPath('/interview?workspace=job-prep')
@@ -959,13 +970,13 @@ const resolveContextRefPath = (contextRef: string) => {
   if (contextRef === 'application:board') return appendSeedToPath('/applications')
   if (contextRef === 'settings:providers') return '/settings?tab=providers'
   if (contextRef.startsWith('knowledge:')) {
-    return `/knowledge?docId=${encodeURIComponent(contextRef.slice('knowledge:'.length))}`
+    return appendSeedToPath(`/knowledge?docId=${encodeURIComponent(contextRef.slice('knowledge:'.length))}`)
   }
   if (contextRef.startsWith('question:')) {
-    return `/question?questionId=${encodeURIComponent(contextRef.slice('question:'.length))}`
+    return appendSeedToPath(`/question?questionId=${encodeURIComponent(contextRef.slice('question:'.length))}`)
   }
   if (contextRef.startsWith('wrong:')) {
-    return `/wrong?wrongId=${encodeURIComponent(contextRef.slice('wrong:'.length))}`
+    return appendSeedToPath(`/wrong?wrongId=${encodeURIComponent(contextRef.slice('wrong:'.length))}`)
   }
   if (contextRef.startsWith('analytics:topic:')) {
     return appendSeedToPath(`/analytics?topic=${encodeURIComponent(contextRef.slice('analytics:topic:'.length))}`)
@@ -1130,7 +1141,10 @@ const buildFollowUpActions = (run: AgentRun): FollowUpAction[] => {
       contextRef.startsWith('study-plan:') ||
       contextRef.startsWith('interview:') ||
       contextRef.startsWith('resume:') ||
-      contextRef.startsWith('application:')
+      contextRef.startsWith('application:') ||
+      contextRef.startsWith('knowledge:') ||
+      contextRef.startsWith('question:') ||
+      contextRef.startsWith('wrong:')
     ) {
       addAction(
         `context:${contextRef}`,
@@ -1144,7 +1158,13 @@ const buildFollowUpActions = (run: AgentRun): FollowUpAction[] => {
   }
 
   if (!actions.length) {
-    addAction('fallback-plan', '前往学习计划', '/study-plan', '把这次 run 的结果整理成后续训练动作。', 'primary')
+    addAction(
+      'fallback-plan',
+      '前往学习计划',
+      appendSeedToPath('/study-plan'),
+      '把这次 run 的结果整理成后续训练动作。',
+      'primary'
+    )
   }
 
   return actions.slice(0, 4)

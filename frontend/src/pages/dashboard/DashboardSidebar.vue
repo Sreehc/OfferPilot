@@ -246,7 +246,15 @@ const seededQuery = computed<Record<string, string>>(() => {
 })
 
 const shouldCarrySeed = (path: string) =>
-  path === '/interview' || path === '/resume' || path === '/applications' || path === '/review'
+  path === '/interview' ||
+  path === '/resume' ||
+  path === '/applications' ||
+  path === '/review' ||
+  path === '/question' ||
+  path === '/wrong' ||
+  path === '/knowledge' ||
+  path === '/study-plan' ||
+  path === '/chat'
 
 const routeTarget = (item: SidebarItem) => {
   if (!item.query && !item.hash && (!shouldCarrySeed(item.path) || !Object.keys(seededQuery.value).length)) {

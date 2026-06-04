@@ -64,7 +64,7 @@
                 去录音复盘
               </RouterLink>
               <RouterLink :to="interviewWrongFocusLink" class="hard-button-secondary inline-flex items-center justify-center px-4">
-                {{ interviewWrongFocusLink === '/wrong' ? '查看错题本' : '查看低分题' }}
+                {{ hasInterviewWrongFocusLink ? '查看低分题' : '查看错题本' }}
               </RouterLink>
             </div>
           </div>
@@ -323,6 +323,10 @@ const buildInterviewWorkspaceLink = (workspace: 'mock-interview' | 'recording-re
   const query = appendSeedQuery(new URLSearchParams({ workspace }))
   return `/interview?${query.toString()}`
 }
+const buildSeededPath = (path: string, query: Record<string, string> = {}) => {
+  const nextQuery = appendSeedQuery(new URLSearchParams(query))
+  return nextQuery.toString() ? `${path}?${nextQuery.toString()}` : path
+}
 const mockInterviewWorkspaceLink = computed(() => buildInterviewWorkspaceLink('mock-interview'))
 const interviewResumeId = computed(() => detail.value?.contextSource?.resumeId || '')
 const restartInterviewLink = computed(() => {
@@ -333,9 +337,12 @@ const restartInterviewLink = computed(() => {
   return `/interview?${query.toString()}`
 })
 const interviewRecordingReviewLink = computed(() => buildInterviewWorkspaceLink('recording-review'))
+const interviewWrongFocusId = computed(() => firstWrongRecord.value?.wrongQuestionId || '')
+const hasInterviewWrongFocusLink = computed(() => Boolean(interviewWrongFocusId.value))
 const interviewWrongFocusLink = computed(() => {
-  if (!firstWrongRecord.value?.wrongQuestionId) return '/wrong'
-  return `/wrong?wrongId=${encodeURIComponent(firstWrongRecord.value.wrongQuestionId)}`
+  return interviewWrongFocusId.value
+    ? buildSeededPath('/wrong', { wrongId: interviewWrongFocusId.value })
+    : buildSeededPath('/wrong')
 })
 const interviewReviewAgentLink = computed(() => {
   const id = sessionId()

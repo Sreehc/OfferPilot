@@ -24,9 +24,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
+import { useRoute } from 'vue-router'
 import type { LearningInsights } from '@/types/api'
 
 const props = defineProps<{ data: LearningInsights }>()
+const route = useRoute()
 
 type Insight = {
   key: string
@@ -38,11 +40,21 @@ type Insight = {
   iconClass: string
 }
 
-const buildSeededProductLink = (path: string, workflow: 'applications' | 'resume', note: string): RouteLocationRaw => ({
+const readSeedQueryValue = (key: 'seedTopic' | 'seedWorkflow' | 'seedNote') => {
+  const value = route.query[key]
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+const seededTopic = computed(() => readSeedQueryValue('seedTopic'))
+const seededWorkflow = computed(() => readSeedQueryValue('seedWorkflow'))
+const seededNote = computed(() => readSeedQueryValue('seedNote'))
+
+const buildSeededProductLink = (path: string, workflow?: string, note?: string): RouteLocationRaw => ({
   path,
   query: {
-    seedWorkflow: workflow,
-    seedNote: note
+    ...(seededTopic.value ? { seedTopic: seededTopic.value } : {}),
+    ...(workflow || seededWorkflow.value ? { seedWorkflow: workflow || seededWorkflow.value } : {}),
+    ...(note || seededNote.value ? { seedNote: note || seededNote.value } : {})
   }
 })
 
@@ -68,7 +80,7 @@ const insights = computed<Insight[]>(() => {
       icon: '□',
       title: '今天的计划',
       description: d.planExecutionStatus,
-      to: '/study-plan',
+      to: buildSeededProductLink('/study-plan', 'study-plan', d.planExecutionStatus),
       toneClass: 'insight-card--good',
       iconClass: 'insight-icon--good'
     })
@@ -106,7 +118,7 @@ const insights = computed<Insight[]>(() => {
         icon: '▼',
         title: '本周面试分下降',
         description: `平均分 ${Math.round(d.thisWeekAvgScore)}，比上周低 ${Math.abs(Math.round(diff))} 分。建议补弱项，并安排一次模拟面试。`,
-        to: '/question',
+        to: buildSeededProductLink('/question', 'question', '当前从训练洞察进入，先补一轮题库训练再回来看分数走势。'),
         toneClass: 'insight-card--warn',
         iconClass: 'insight-icon--warn'
       })
@@ -129,7 +141,7 @@ const insights = computed<Insight[]>(() => {
       icon: '!',
       title: '错题积压偏高',
       description: '处理到期错题后，安排新训练，节奏会更稳定。',
-      to: '/review',
+      to: buildSeededProductLink('/review', 'review', '当前从训练洞察进入，优先先清理到期错题。'),
       toneClass: 'insight-card--warn',
       iconClass: 'insight-icon--warn'
     })
@@ -141,7 +153,7 @@ const insights = computed<Insight[]>(() => {
       icon: '✓',
       title: '训练节奏稳定',
       description: `本周已完成 ${d.thisWeekInterviewCount} 场模拟面试，保持当前训练节奏。`,
-      to: '/interview',
+      to: buildSeededProductLink('/interview', 'mock-interview', '当前从训练洞察进入，继续通过模拟面试验证表达稳定性。'),
       toneClass: 'insight-card--good',
       iconClass: 'insight-icon--good'
     })
@@ -153,7 +165,7 @@ const insights = computed<Insight[]>(() => {
       icon: '△',
       title: '掌握进度放缓',
       description: '减少新题，集中完成已有错题的复盘。',
-      to: '/review',
+      to: buildSeededProductLink('/review', 'review', '当前从训练洞察进入，先集中做复习巩固。'),
       toneClass: 'insight-card--info',
       iconClass: 'insight-icon--info'
     })
