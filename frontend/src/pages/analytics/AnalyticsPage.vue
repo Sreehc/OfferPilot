@@ -95,6 +95,22 @@
                 <p class="mt-1 text-sm text-secondary">把长期画像直接落到下一轮训练、备面和复盘动作。</p>
               </div>
             </div>
+            <article v-if="analyticsPlanPendingApprovalRun" class="analytics-approval-card mt-4">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="detail-pill detail-pill-risk">待审批</span>
+                    <span class="detail-pill">训练动作草案</span>
+                  </div>
+                  <p class="mt-3 text-sm leading-6 text-primary">
+                    {{ analyticsPlanPendingApprovalRun.approvalSummary || '当前训练画像已经生成一份待确认的下一轮训练动作，等待你在 Agent 工作台审批。' }}
+                  </p>
+                </div>
+                <RouterLink :to="buildAnalyticsApprovalRunLink(analyticsPlanPendingApprovalRun)" class="hard-button-secondary text-sm">
+                  去 Agent 审批
+                </RouterLink>
+              </div>
+            </article>
             <div class="mt-4 space-y-3">
               <RouterLink
                 v-for="item in profileWorkflowActions"
@@ -273,6 +289,23 @@
                 </div>
               </div>
 
+              <article v-if="topicPlannerPendingApprovalRun" class="analytics-approval-card mt-5">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="detail-pill detail-pill-risk">待审批</span>
+                      <span class="detail-pill">当前领域训练动作</span>
+                    </div>
+                    <p class="mt-3 text-sm leading-6 text-primary">
+                      {{ topicPlannerPendingApprovalRun.approvalSummary || '当前领域已经整理出下一轮正式训练动作，等待你在 Agent 工作台确认后写回计划。' }}
+                    </p>
+                  </div>
+                  <RouterLink :to="buildAnalyticsApprovalRunLink(topicPlannerPendingApprovalRun)" class="hard-button-secondary text-sm">
+                    去 Agent 审批
+                  </RouterLink>
+                </div>
+              </article>
+
               <div v-if="retrospectiveLoading" class="topic-retrospective-shell mt-5 flex h-[220px] items-center justify-center">
                 <div class="text-center">
                   <div class="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
@@ -295,6 +328,23 @@
                     </RouterLink>
                   </div>
                 </div>
+
+                <article v-if="topicRetrospectivePendingApprovalRun" class="analytics-approval-card mt-5">
+                  <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="detail-pill detail-pill-risk">待审批</span>
+                        <span class="detail-pill">领域回顾训练动作</span>
+                      </div>
+                      <p class="mt-3 text-sm leading-6 text-primary">
+                        {{ topicRetrospectivePendingApprovalRun.approvalSummary || '这份领域回顾已经整理成正式训练动作，等待你在 Agent 工作台确认后写回学习计划。' }}
+                      </p>
+                    </div>
+                    <RouterLink :to="buildAnalyticsApprovalRunLink(topicRetrospectivePendingApprovalRun)" class="hard-button-secondary text-sm">
+                      去 Agent 审批
+                    </RouterLink>
+                  </div>
+                </article>
 
                 <div
                   v-if="topicRetrospective.evidenceStatus !== 'ready'"
@@ -634,6 +684,7 @@ import * as echarts from 'echarts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { LocationQueryRaw, RouteLocationRaw } from 'vue-router'
+import { fetchAgentRunsApi } from '@/api/agent'
 import EmptyState from '@/components/EmptyState.vue'
 import { EMPTY_STATE_COPY } from '@/constants/productCopy'
 import { useTheme } from '@/composables/useTheme'
@@ -649,6 +700,7 @@ import {
   fetchLearningInsightsApi
 } from '@/api/analytics'
 import type {
+  AgentRun,
   AbilityProfile,
   AbilityTrend,
   EfficiencyData,
@@ -731,6 +783,7 @@ const abilityProfile = ref<AbilityProfile>({
   evidenceStatus: 'insufficient',
   evidenceSummary: ''
 })
+const pendingAnalyticsApprovalRuns = ref<AgentRun[]>([])
 const topicDetailLoading = ref(false)
 const topicDetail = ref<ProfileTopicDetail | null>(null)
 const retrospectiveLoading = ref(false)
@@ -889,6 +942,24 @@ const buildSeededAgentWorkbenchLocation = (
     }
   }
 }
+const buildAnalyticsApprovalRunLink = (run: AgentRun) =>
+  `/agent?runId=${encodeURIComponent(run.id)}&listStatus=pending_approval&listApprovalStage=waiting`
+const resolvePendingAnalyticsApprovalRun = (specificContextRef?: string, genericContextRef?: string) => {
+  const candidates = pendingAnalyticsApprovalRuns.value.filter((run) => {
+    if (run.status !== 'pending_approval') return false
+    if (run.approvalStage !== 'waiting') return false
+    return run.approvalActionType === 'save_topic_retrospective_action' || run.approvalActionType === 'refresh_study_plan'
+  })
+  if (specificContextRef) {
+    const matchedSpecificRun = candidates.find((run) => run.contextRefs.includes(specificContextRef))
+    if (matchedSpecificRun) return matchedSpecificRun
+  }
+  if (genericContextRef) {
+    const matchedGenericRun = candidates.find((run) => run.contextRefs.includes(genericContextRef))
+    if (matchedGenericRun) return matchedGenericRun
+  }
+  return null
+}
 
 const buildTopicQuestionSeed = (topicName: string) => ({
   sourceQuestionTitle: `${topicName} 定向模拟`,
@@ -924,6 +995,9 @@ const analyticsAgentLink = computed(() =>
   }, abilityProfile.value.suggestedFocus, 'analytics', abilityProfile.value.suggestedFocus
     ? `当前从训练洞察进入，优先围绕「${abilityProfile.value.suggestedFocus}」刷新下一轮动作。`
     : '当前从训练洞察进入，优先根据训练画像刷新下一轮动作。')
+)
+const analyticsPlanPendingApprovalRun = computed(() =>
+  resolvePendingAnalyticsApprovalRun('analytics:profile', 'analytics:weak-topics')
 )
 const profileEmptyStateActions = computed(() => {
   const focusTopic = abilityProfile.value.suggestedFocus || '当前重点方向'
@@ -1056,6 +1130,13 @@ const topicPlannerAgentLink = computed(() => {
     userPrompt: `结合 ${topicDetail.value.categoryName} 的领域详情和回顾结果，生成下一轮训练动作。`
   }, topicDetail.value.categoryName, 'analytics', `当前从领域详情进入，优先围绕「${topicDetail.value.categoryName}」刷新下一轮动作。`)
 })
+const topicPlannerPendingApprovalRun = computed(() => {
+  if (!topicDetail.value?.categoryId) return null
+  return resolvePendingAnalyticsApprovalRun(
+    `analytics:topic:${topicDetail.value.categoryId}`,
+    'analytics:profile'
+  )
+})
 const topicRetrospectivePlannerAgentLink = computed(() => {
   if (!topicRetrospective.value?.categoryId) {
     return topicPlannerAgentLink.value
@@ -1073,6 +1154,13 @@ const topicRetrospectivePlannerAgentLink = computed(() => {
     ],
     userPrompt: `把 ${topicRetrospective.value.categoryName} 的领域回顾结论转成下一轮正式训练动作。`
   }, topicRetrospective.value.categoryName, 'analytics', `当前从领域回顾进入，优先围绕「${topicRetrospective.value.categoryName}」刷新下一轮动作。`)
+})
+const topicRetrospectivePendingApprovalRun = computed(() => {
+  if (!topicRetrospective.value?.categoryId) return null
+  return resolvePendingAnalyticsApprovalRun(
+    `analytics:retrospective:topic:${topicRetrospective.value.categoryId}`,
+    `analytics:topic:${topicRetrospective.value.categoryId}`
+  )
 })
 const topicWorkflowActions = computed(() => {
   if (!topicDetail.value) return profileWorkflowActions.value
@@ -1390,6 +1478,26 @@ const loadEfficiency = async () => {
   }
 }
 
+const loadPendingAnalyticsApprovalRuns = async () => {
+  try {
+    const response = await fetchAgentRunsApi({
+      status: 'pending_approval',
+      approvalStage: 'waiting'
+    })
+    pendingAnalyticsApprovalRuns.value = response.data
+      .filter((run) =>
+        ['save_topic_retrospective_action', 'refresh_study_plan'].includes(run.approvalActionType || '')
+      )
+      .sort((left, right) => {
+        const leftTime = new Date(left.updateTime || 0).getTime()
+        const rightTime = new Date(right.updateTime || 0).getTime()
+        return rightTime - leftTime
+      })
+  } catch {
+    pendingAnalyticsApprovalRuns.value = []
+  }
+}
+
 const difficultyText = (value?: string) => {
   if (value === 'hard') return '高强度'
   if (value === 'medium') return '中强度'
@@ -1704,6 +1812,7 @@ const handleResize = () => {
 onMounted(() => {
   void loadTrend()
   void loadEfficiency()
+  void loadPendingAnalyticsApprovalRuns()
   void applyTopicFromRoute()
   window.addEventListener('resize', handleResize)
 })
@@ -1734,6 +1843,7 @@ watch(theme, () => {
 })
 
 watch(() => [route.query.topic, route.query.topicName, route.query.retrospective], () => {
+  void loadPendingAnalyticsApprovalRuns()
   void applyTopicFromRoute()
 })
 </script>
@@ -1809,6 +1919,15 @@ watch(() => [route.query.topic, route.query.topicName, route.query.retrospective
     linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.06), transparent 62%),
     var(--panel-bg);
   padding: 18px;
+}
+
+.analytics-approval-card {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid rgba(var(--bc-amber-rgb), 0.28);
+  background:
+    radial-gradient(circle at top right, rgba(var(--bc-amber-rgb), 0.14), transparent 36%),
+    var(--panel-bg);
+  padding: 16px;
 }
 
 .profile-action-panel__label {
