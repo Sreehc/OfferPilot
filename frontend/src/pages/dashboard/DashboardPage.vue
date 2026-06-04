@@ -447,7 +447,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
-import type { RouteLocationRaw } from 'vue-router'
+import { useRoute, type RouteLocationRaw } from 'vue-router'
 import { fetchApplicationBoardApi } from '@/api/applications'
 import { fetchRecommendQuestionsApi } from '@/api/adaptive'
 import { fetchDashboardOverviewApi } from '@/api/dashboard'
@@ -553,6 +553,7 @@ const applications = ref<JobApplicationItem[]>([])
 const recentInterviewDetail = ref<InterviewDetail | null>(null)
 const recommendedQuestions = ref<RecommendQuestion[]>([])
 const currentUser = ref<UserInfo | null>(storage.getUser())
+const route = useRoute()
 
 const weekDays = ['一', '二', '三', '四', '五', '六', '日']
 
@@ -568,6 +569,28 @@ const buildSeededPath = (path: string, workflow?: string, note?: string): RouteL
   path,
   query: buildSeedQuery(workflow, note)
 })
+
+const buildProviderSettingsLocation = (returnTo: string, returnLabel: string): RouteLocationRaw => ({
+  path: '/settings',
+  query: {
+    tab: 'providers',
+    returnTo,
+    returnLabel
+  }
+})
+
+const stringifyRouteLocation = (location: RouteLocationRaw): string => {
+  if (typeof location === 'string') return location
+  const resolved = location as { path: string; query?: Record<string, string | undefined> }
+  const params = new URLSearchParams()
+  Object.entries(resolved.query || {}).forEach(([key, value]) => {
+    if (value) params.set(key, value)
+  })
+  const query = params.toString()
+  return query ? `${resolved.path}?${query}` : resolved.path
+}
+
+const isProviderSettingsPath = (path: string) => path.startsWith('/settings?tab=providers')
 
 const buildSeededAgentWorkbenchLocation = (
   prefill: Parameters<typeof buildAgentWorkbenchLocation>[0],
@@ -600,6 +623,9 @@ const buildInterviewWorkspaceLink = (
 
 const appendDashboardSeedToPath = (path?: string | null): string => {
   if (!path) return '/dashboard'
+  if (isProviderSettingsPath(path)) {
+    return stringifyRouteLocation(buildProviderSettingsLocation(route.fullPath, '返回工作台'))
+  }
   if (!dashboardSeedTopic.value) return path
   if (
     !path.startsWith('/interview') &&

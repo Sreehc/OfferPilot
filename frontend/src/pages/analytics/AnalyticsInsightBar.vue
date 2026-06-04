@@ -49,6 +49,22 @@ const seededTopic = computed(() => readSeedQueryValue('seedTopic'))
 const seededWorkflow = computed(() => readSeedQueryValue('seedWorkflow'))
 const seededNote = computed(() => readSeedQueryValue('seedNote'))
 
+const buildProviderSettingsLink = (): RouteLocationRaw => ({
+  path: '/settings',
+  query: {
+    tab: 'providers',
+    returnTo: route.fullPath,
+    returnLabel: '返回训练洞察'
+  }
+})
+
+const rewriteNextActionPath = (path: string): RouteLocationRaw => {
+  if (path.startsWith('/settings?tab=providers')) {
+    return buildProviderSettingsLink()
+  }
+  return path
+}
+
 const buildSeededProductLink = (path: string, workflow?: string, note?: string): RouteLocationRaw => ({
   path,
   query: {
@@ -68,7 +84,7 @@ const insights = computed<Insight[]>(() => {
       icon: '→',
       title: d.nextAction.title,
       description: d.nextAction.description || '推进这一项，看看后续变化。',
-      to: d.nextAction.path,
+      to: rewriteNextActionPath(d.nextAction.path),
       toneClass: 'insight-card--info',
       iconClass: 'insight-icon--info'
     })

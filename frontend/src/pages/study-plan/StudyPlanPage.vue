@@ -341,8 +341,33 @@ const seededTopic = computed(() => readSeedQueryValue('seedTopic'))
 const seededWorkflow = computed(() => readSeedQueryValue('seedWorkflow'))
 const seededNote = computed(() => readSeedQueryValue('seedNote'))
 
+const buildProviderSettingsLocation = (returnTo: string, returnLabel: string): RouteLocationRaw => ({
+  path: '/settings',
+  query: {
+    tab: 'providers',
+    returnTo,
+    returnLabel
+  }
+})
+
+const stringifyRouteLocation = (location: RouteLocationRaw): string => {
+  if (typeof location === 'string') return location
+  const resolved = location as { path: string; query?: Record<string, string | undefined> }
+  const params = new URLSearchParams()
+  Object.entries(resolved.query || {}).forEach(([key, value]) => {
+    if (value) params.set(key, value)
+  })
+  const query = params.toString()
+  return query ? `${resolved.path}?${query}` : resolved.path
+}
+
+const isProviderSettingsPath = (path: string) => path.startsWith('/settings?tab=providers')
+
 const appendSeedToPath = (path: string | null | undefined): string => {
   if (!path) return '/study-plan'
+  if (isProviderSettingsPath(path)) {
+    return stringifyRouteLocation(buildProviderSettingsLocation(route.fullPath, currentPlan.value ? '返回学习计划' : '返回计划入口'))
+  }
   if (!seededTopic.value && !seededWorkflow.value && !seededNote.value) return path
   if (
     !path.startsWith('/interview') &&
