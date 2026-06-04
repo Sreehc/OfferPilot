@@ -3,6 +3,7 @@ package com.offerpilot.interview.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.offerpilot.ai.service.AiOrchestratorService;
+import com.offerpilot.adaptive.service.TrainingSignalService;
 import com.offerpilot.category.entity.Category;
 import com.offerpilot.category.service.CategoryService;
 import com.offerpilot.common.api.ResultCode;
@@ -73,6 +74,7 @@ public class InterviewServiceImpl implements InterviewService {
     private final AiOrchestratorService aiOrchestratorService;
     private final DashboardService dashboardService;
     private final NotificationService notificationService;
+    private final TrainingSignalService trainingSignalService;
     private final OfferPilotProperties props;
     private final ObjectMapper objectMapper;
     private final ResumeFileMapper resumeFileMapper;
@@ -262,7 +264,7 @@ public class InterviewServiceImpl implements InterviewService {
             sessionMapper.updateById(session);
         } else {
             finishSession(session, records, currentRecord);
-            dashboardService.evictCache(userId);
+            trainingSignalService.handleEvidenceUpdate(userId);
         }
 
         if (addedToWrong) {

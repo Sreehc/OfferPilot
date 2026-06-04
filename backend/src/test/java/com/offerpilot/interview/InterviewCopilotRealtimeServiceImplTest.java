@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.offerpilot.adaptive.service.TrainingSignalService;
 import com.offerpilot.interview.entity.CopilotEvent;
 import com.offerpilot.interview.entity.CopilotPrepSession;
 import com.offerpilot.interview.entity.CopilotRealtimeSession;
@@ -42,6 +43,8 @@ class InterviewCopilotRealtimeServiceImplTest {
     private CopilotEventMapper copilotEventMapper;
     @Mock
     private ResumeFileMapper resumeFileMapper;
+    @Mock
+    private TrainingSignalService trainingSignalService;
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -121,6 +124,7 @@ class InterviewCopilotRealtimeServiceImplTest {
         assertTrue(completed.getPostInterviewReview().getNextActionPath().contains("interview:copilot-realtime:45"));
         assertTrue(completed.getEvents().stream().anyMatch(item -> "runtime_note".equals(item.getEventType())));
         assertTrue(completed.getEvents().stream().anyMatch(item -> "session_completed".equals(item.getEventType())));
+        verify(trainingSignalService).handleEvidenceUpdate(1L);
     }
 
     @Test

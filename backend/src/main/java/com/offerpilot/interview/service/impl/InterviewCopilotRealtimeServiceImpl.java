@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.offerpilot.adaptive.service.TrainingSignalService;
 import com.offerpilot.common.api.ResultCode;
 import com.offerpilot.common.exception.BusinessException;
 import com.offerpilot.interview.dto.CopilotRealtimeSessionCreateRequest;
@@ -46,6 +47,7 @@ public class InterviewCopilotRealtimeServiceImpl implements InterviewCopilotReal
     private final CopilotEventMapper copilotEventMapper;
     private final ResumeFileMapper resumeFileMapper;
     private final ObjectMapper objectMapper;
+    private final TrainingSignalService trainingSignalService;
 
     @Override
     @Transactional
@@ -173,6 +175,7 @@ public class InterviewCopilotRealtimeServiceImpl implements InterviewCopilotReal
                 "client",
                 session.getLatestEventSummary(),
                 Map.of("status", session.getStatus()));
+        trainingSignalService.handleEvidenceUpdate(userId);
         return detail(userId, sessionId);
     }
 

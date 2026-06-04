@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.offerpilot.adaptive.service.TrainingSignalService;
 import com.offerpilot.ai.service.AiOrchestratorService;
 import com.offerpilot.category.entity.Category;
 import com.offerpilot.category.service.CategoryService;
@@ -68,6 +69,8 @@ class InterviewServiceImplTest {
     private DashboardService dashboardService;
     @Mock
     private NotificationService notificationService;
+    @Mock
+    private TrainingSignalService trainingSignalService;
     @Mock
     private ResumeFileMapper resumeFileMapper;
     @Mock
@@ -208,6 +211,7 @@ class InterviewServiceImplTest {
         assertFalse(result.getHasNextQuestion());
         verify(wrongQuestionMapper, never()).insert(any(WrongQuestion.class));
         verify(notificationService).send(any(), any(), any(), any(), any());
+        verify(trainingSignalService).handleEvidenceUpdate(1L);
     }
 
     @Test
