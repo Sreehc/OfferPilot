@@ -17,11 +17,100 @@
       </div>
     </section>
 
+    <section class="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+      <article class="shell-section-card p-5 sm:p-6">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p class="section-kicker">运行态</p>
+            <h2 class="text-2xl font-semibold tracking-[-0.03em] text-ink">当前 Run 概览</h2>
+            <p class="mt-2 text-sm text-secondary">先看待审批、依赖阻断和降级运行，再决定要补配置还是直接处理 run。</p>
+          </div>
+          <RouterLink :to="providerSettingsEntryPath" class="hard-button-secondary">
+            检查 Provider 配置
+          </RouterLink>
+        </div>
+
+        <div class="mt-5 grid gap-3 md:grid-cols-3">
+          <article class="agent-summary-card agent-summary-card--warning">
+            <p class="agent-summary-card__label">待审批</p>
+            <p class="agent-summary-card__value">{{ pendingApprovalRunCount }}</p>
+            <p class="mt-2 text-xs leading-5 text-secondary">需要人工确认后才会把草案写回训练、备面或投递链路。</p>
+          </article>
+          <article class="agent-summary-card agent-summary-card--danger">
+            <p class="agent-summary-card__label">依赖阻断</p>
+            <p class="agent-summary-card__value">{{ blockedRunCount }}</p>
+            <p class="mt-2 text-xs leading-5 text-secondary">关键 provider 未就绪，run 继续推进前建议先补配置。</p>
+          </article>
+          <article class="agent-summary-card agent-summary-card--accent">
+            <p class="agent-summary-card__label">降级运行</p>
+            <p class="agent-summary-card__value">{{ degradedRunCount }}</p>
+            <p class="mt-2 text-xs leading-5 text-secondary">可以继续，但研究、转写或实时增强能力可能不完整。</p>
+          </article>
+        </div>
+      </article>
+
+      <article class="shell-section-card p-5 sm:p-6">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="section-kicker">优先处理</p>
+            <h2 class="text-2xl font-semibold tracking-[-0.03em] text-ink">待审批队列</h2>
+            <p class="mt-2 text-sm text-secondary">优先清掉正在卡住写回闭环的 run，不要让画像、复盘和备面草案滞留。</p>
+          </div>
+        </div>
+
+        <div v-if="pendingApprovalRuns.length" class="mt-5 space-y-3">
+          <button
+            v-for="run in pendingApprovalRuns"
+            :key="`pending-${run.id}`"
+            type="button"
+            class="agent-queue-card"
+            @click="selectRun(run)"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-sm font-semibold text-ink">{{ run.title }}</p>
+                <p class="mt-1 text-xs uppercase tracking-[0.18em] text-tertiary">
+                  {{ resolveAgentLabel(run.agentType) }} · {{ resolveTriggerLabel(run.triggerSource) }}
+                </p>
+              </div>
+              <span class="agent-run-status agent-run-status--warning">待审批</span>
+            </div>
+            <p class="mt-3 text-sm leading-6 text-secondary">{{ run.approvalSummary || run.summary }}</p>
+          </button>
+        </div>
+        <EmptyState
+          v-else
+          class="mt-5"
+          icon="clipboard"
+          title="当前没有待审批 Run"
+          description="写回动作没有堆积，后续可以优先处理阻断 run 或继续发起新的任务。"
+          compact
+        />
+      </article>
+    </section>
+
     <section class="shell-section-card p-5 sm:p-6">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 class="text-2xl font-semibold tracking-[-0.03em] text-ink">快速发起</h2>
           <p class="mt-1 text-sm text-secondary">先选 agent 类型和触发来源，再决定要把哪个模块的上下文带进来。</p>
+        </div>
+      </div>
+
+      <div v-if="agentLaunchProviderMessage" class="agent-launch-alert mt-5">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="detail-pill" :class="agentLaunchProviderSeverity === 'blocked' ? 'detail-pill-risk' : ''">
+                {{ agentLaunchProviderSeverity === 'blocked' ? '关键依赖未就绪' : '将以降级模式运行' }}
+              </span>
+              <span class="detail-pill">{{ resolveAgentLabel(form.agentType) }}</span>
+            </div>
+            <p class="mt-3 text-sm leading-6 text-primary">{{ agentLaunchProviderMessage }}</p>
+          </div>
+          <RouterLink :to="providerSettingsEntryPath" class="hard-button-secondary text-sm">
+            去补 Provider 配置
+          </RouterLink>
         </div>
       </div>
 
@@ -467,9 +556,10 @@ import {
   rejectAgentRunApi,
   type AgentRunListQuery
 } from '@/api/agent'
+import { fetchProviderConfigsApi } from '@/api/settings'
 import EmptyState from '@/components/EmptyState.vue'
 import { PRODUCT_PAGE_NAMES } from '@/constants/productCopy'
-import type { AgentRun } from '@/types/api'
+import type { AgentRun, ProviderScope, UserProviderConfigItem } from '@/types/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -707,6 +797,7 @@ const filters = reactive({
 
 const runs = ref<AgentRun[]>([])
 const selectedRun = ref<AgentRun | null>(null)
+const providerConfigs = ref<UserProviderConfigItem[]>([])
 const loading = ref(false)
 const creating = ref(false)
 const actionLoading = ref('')
@@ -717,6 +808,104 @@ const selectedRunProviderSettingsPath = computed<RouteLocationRaw>(() => {
   const runLabel = selectedRun.value ? `返回 ${resolveAgentLabel(selectedRun.value.agentType)} Run` : '返回 Agent 工作台'
   return buildProviderSettingsLocation(route.fullPath, runLabel)
 })
+const providerSettingsEntryPath = computed<RouteLocationRaw>(() =>
+  buildProviderSettingsLocation(route.fullPath, '返回 Agent 工作台')
+)
+
+const pendingApprovalRuns = computed(() => runs.value.filter((run) => run.status === 'pending_approval').slice(0, 4))
+const pendingApprovalRunCount = computed(() => runs.value.filter((run) => run.status === 'pending_approval').length)
+const blockedRunCount = computed(() => runs.value.filter((run) => run.providerGateStatus === 'blocked').length)
+const degradedRunCount = computed(() => runs.value.filter((run) => run.providerGateStatus === 'degraded').length)
+
+const providerConfigMap = computed<Record<ProviderScope, UserProviderConfigItem | undefined>>(() => {
+  const entries = providerConfigs.value.map((item) => [item.scope, item] as const)
+  return Object.fromEntries(entries) as Record<ProviderScope, UserProviderConfigItem | undefined>
+})
+
+const isProviderReady = (scope: ProviderScope) => {
+  const item = providerConfigMap.value[scope]
+  return item?.status === 'ready' || item?.status === 'saved'
+}
+
+const resolveAgentProviderRequirements = (agentType: string) => {
+  switch (agentType) {
+    case 'job_prep':
+      return {
+        required: ['llm'] as ProviderScope[],
+        optional: ['search'] as ProviderScope[]
+      }
+    case 'recording_review':
+      return {
+        required: ['llm'] as ProviderScope[],
+        optional: ['asr', 'oss'] as ProviderScope[]
+      }
+    case 'realtime_copilot':
+      return {
+        required: ['llm', 'asr', 'search'] as ProviderScope[],
+        optional: ['voiceprint'] as ProviderScope[]
+      }
+    case 'study_planner':
+      return {
+        required: ['llm'] as ProviderScope[],
+        optional: ['embedding'] as ProviderScope[]
+      }
+    case 'resume_coach':
+    case 'application_strategist':
+    case 'interview_review':
+      return {
+        required: ['llm'] as ProviderScope[],
+        optional: [] as ProviderScope[]
+      }
+    default:
+      return {
+        required: ['llm'] as ProviderScope[],
+        optional: ['embedding', 'search'] as ProviderScope[]
+      }
+  }
+}
+
+const providerScopeLabel = (scope: ProviderScope) => {
+  switch (scope) {
+    case 'llm':
+      return '主模型'
+    case 'embedding':
+      return '向量检索'
+    case 'asr':
+      return '语音识别'
+    case 'search':
+      return '联网搜索'
+    case 'oss':
+      return '对象存储'
+    case 'voiceprint':
+      return '声纹识别'
+    default:
+      return scope
+  }
+}
+
+const agentLaunchProviderState = computed(() => {
+  const requirements = resolveAgentProviderRequirements(form.agentType)
+  const missingRequired = requirements.required.filter((scope) => !isProviderReady(scope))
+  const missingOptional = requirements.optional.filter((scope) => !isProviderReady(scope))
+  if (missingRequired.length) {
+    return {
+      severity: 'blocked' as const,
+      message: `${missingRequired.map(providerScopeLabel).join('、')} 未就绪，当前 agent run 很可能会被关键依赖阻断。`
+    }
+  }
+  if (missingOptional.length) {
+    return {
+      severity: 'degraded' as const,
+      message: `${missingOptional.map(providerScopeLabel).join('、')} 未配置，这次 run 可以继续，但会以降级模式运行。`
+    }
+  }
+  return {
+    severity: 'ready' as const,
+    message: ''
+  }
+})
+const agentLaunchProviderMessage = computed(() => agentLaunchProviderState.value.message)
+const agentLaunchProviderSeverity = computed(() => agentLaunchProviderState.value.severity)
 
 const selectedRunPrimaryActionPath = computed(() => {
   if (!selectedRun.value?.nextActionPath) return null
@@ -882,6 +1071,15 @@ const loadRuns = async (selectedId?: string) => {
     ElMessage.error('无法加载 Agent Run 列表，请稍后重试。')
   } finally {
     loading.value = false
+  }
+}
+
+const loadProviderConfigs = async () => {
+  try {
+    const response = await fetchProviderConfigsApi()
+    providerConfigs.value = response.data
+  } catch {
+    providerConfigs.value = []
   }
 }
 
@@ -1443,11 +1641,13 @@ const handleCreate = async () => {
 
 onMounted(() => {
   applyRoutePrefill()
+  void loadProviderConfigs()
   void loadRuns()
 })
 
 watch(() => route.fullPath, () => {
   applyRoutePrefill()
+  void loadProviderConfigs()
   void loadRuns(selectedRun.value?.id)
 })
 </script>
@@ -1457,6 +1657,78 @@ watch(() => route.fullPath, () => {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.agent-summary-card {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--panel-bg);
+  padding: 16px;
+}
+
+.agent-summary-card--warning {
+  background:
+    linear-gradient(180deg, rgba(var(--bc-amber-rgb), 0.09), transparent 58%),
+    var(--panel-bg);
+}
+
+.agent-summary-card--danger {
+  background:
+    linear-gradient(180deg, rgba(224, 73, 73, 0.08), transparent 58%),
+    var(--panel-bg);
+}
+
+.agent-summary-card--accent {
+  background:
+    linear-gradient(180deg, rgba(var(--bc-cyan-rgb), 0.08), transparent 58%),
+    var(--panel-bg);
+}
+
+.agent-summary-card__label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--bc-ink-tertiary);
+}
+
+.agent-summary-card__value {
+  margin-top: 10px;
+  font-family: theme('fontFamily.mono');
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--bc-ink);
+}
+
+.agent-queue-card {
+  width: 100%;
+  text-align: left;
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid rgba(var(--bc-amber-rgb), 0.24);
+  background:
+    linear-gradient(180deg, rgba(var(--bc-amber-rgb), 0.09), transparent 58%),
+    var(--panel-bg);
+  padding: 14px;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.agent-queue-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(var(--bc-amber-rgb), 0.38);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+}
+
+.agent-launch-alert {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid rgba(var(--bc-amber-rgb), 0.24);
+  background:
+    radial-gradient(circle at top right, rgba(var(--bc-amber-rgb), 0.14), transparent 38%),
+    var(--panel-bg);
+  padding: 16px;
 }
 
 .agent-launch-card {
