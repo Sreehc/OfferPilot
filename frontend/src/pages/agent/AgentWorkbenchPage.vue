@@ -591,6 +591,7 @@ const contextRefOptions = [
   'analytics:profile',
   'analytics:weak-topics',
   'analytics:topic:{id}',
+  'analytics:topic-name:{name}',
   'analytics:retrospective:topic:{id}',
   'study-plan:active',
   'interview:latest',
@@ -938,6 +939,9 @@ const resolveContextRefLabel = (contextRef: string) => {
   if (contextRef.startsWith('question:')) return `题库题目 #${contextRef.slice('question:'.length)}`
   if (contextRef.startsWith('wrong:')) return `错题 #${contextRef.slice('wrong:'.length)}`
   if (contextRef.startsWith('analytics:topic:')) return `主题详情 #${contextRef.slice('analytics:topic:'.length)}`
+  if (contextRef.startsWith('analytics:topic-name:')) {
+    return `主题详情 · ${contextRef.slice('analytics:topic-name:'.length)}`
+  }
   if (contextRef.startsWith('analytics:retrospective:topic:')) {
     return `领域回顾 #${contextRef.slice('analytics:retrospective:topic:'.length)}`
   }
@@ -980,6 +984,9 @@ const resolveContextRefPath = (contextRef: string) => {
   }
   if (contextRef.startsWith('analytics:topic:')) {
     return appendSeedToPath(`/analytics?topic=${encodeURIComponent(contextRef.slice('analytics:topic:'.length))}`)
+  }
+  if (contextRef.startsWith('analytics:topic-name:')) {
+    return appendSeedToPath(`/analytics?topicName=${encodeURIComponent(contextRef.slice('analytics:topic-name:'.length))}`)
   }
   if (contextRef.startsWith('analytics:retrospective:topic:')) {
     return appendSeedToPath(`/analytics?topic=${encodeURIComponent(contextRef.slice('analytics:retrospective:topic:'.length))}&retrospective=1`)

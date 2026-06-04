@@ -1244,13 +1244,15 @@ const changeWeeks = (w: number) => {
 const syncTopicQuery = async (topicId?: string | null, retrospective?: boolean) => {
   const nextTopic = topicId?.trim() || ''
   const currentTopic = typeof route.query.topic === 'string' ? route.query.topic.trim() : ''
+  const currentTopicName = typeof route.query.topicName === 'string' ? route.query.topicName.trim() : ''
   const nextRetrospective = retrospective ? '1' : ''
   const currentRetrospective = typeof route.query.retrospective === 'string' ? route.query.retrospective.trim() : ''
-  if (nextTopic === currentTopic && nextRetrospective === currentRetrospective) return
+  if (nextTopic === currentTopic && !currentTopicName && nextRetrospective === currentRetrospective) return
   await router.replace({
     query: {
       ...route.query,
       ...(nextTopic ? { topic: nextTopic } : { topic: undefined }),
+      topicName: undefined,
       ...(nextRetrospective ? { retrospective: nextRetrospective } : { retrospective: undefined })
     }
   })
@@ -1287,8 +1289,22 @@ const openTopicRetrospective = async (topicId: number) => {
 
 const applyTopicFromRoute = async () => {
   const topicQuery = typeof route.query.topic === 'string' ? route.query.topic.trim() : ''
+  const topicNameQuery = typeof route.query.topicName === 'string' ? route.query.topicName.trim() : ''
   const retrospectiveQuery = typeof route.query.retrospective === 'string' ? route.query.retrospective.trim() : ''
-  if (!topicQuery) return
+  if (!topicQuery && !topicNameQuery) return
+  if (!topicQuery && topicNameQuery) {
+    const matchedTopic = abilityProfile.value.categoryAbilities.find((item) => item.categoryName?.trim().toLowerCase() === topicNameQuery.toLowerCase())
+    if (!matchedTopic?.categoryId) return
+    const matchedTopicId = String(matchedTopic.categoryId)
+    if (retrospectiveQuery) {
+      if (topicDetail.value?.categoryId === matchedTopicId && topicRetrospective.value?.categoryId === matchedTopicId) return
+      await openTopicRetrospective(Number(matchedTopicId))
+      return
+    }
+    if (topicDetail.value?.categoryId === matchedTopicId) return
+    await openTopicDetail(Number(matchedTopicId))
+    return
+  }
   if (retrospectiveQuery) {
     if (topicDetail.value?.categoryId === topicQuery && topicRetrospective.value?.categoryId === topicQuery) return
     await openTopicRetrospective(Number(topicQuery))
@@ -1363,6 +1379,7 @@ const loadEfficiency = async () => {
     efficiencyData.value = efficiencyRes.data
     learningInsights.value = insightsRes.data
     abilityProfile.value = profileRes.data
+    void applyTopicFromRoute()
     nextTick(() => {
       renderEFChart()
       renderFRChart()
@@ -1716,7 +1733,7 @@ watch(theme, () => {
   })
 })
 
-watch(() => route.query.topic, () => {
+watch(() => [route.query.topic, route.query.topicName, route.query.retrospective], () => {
   void applyTopicFromRoute()
 })
 </script>
