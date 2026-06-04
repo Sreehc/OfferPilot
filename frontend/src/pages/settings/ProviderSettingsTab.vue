@@ -369,7 +369,7 @@ const providerScopeLabel = (scope: ProviderScope) => {
 }
 
 const buildInterviewWorkspaceLink = (
-  workspace: 'job-prep' | 'recording-review' | 'copilot-prep',
+  workspace: 'job-prep' | 'recording-review' | 'copilot-prep' | 'copilot-live',
   note: string
 ): RouteLocationRaw => ({
   path: '/interview',
@@ -546,7 +546,7 @@ const capabilityCards = computed<CapabilityCard[]>(() => [
     '实时 Copilot 仍可进入，但说话人区分或部分增强能力会降级。',
     '实时 Copilot 缺少关键依赖，当前不建议进入实时阶段。',
     '进入 Copilot 工作区',
-    buildInterviewWorkspaceLink('copilot-prep', '当前从 Provider 设置进入，先确认实时依赖恢复后再继续 Copilot Prep。')
+    buildInterviewWorkspaceLink('copilot-live', '当前从 Provider 设置进入，先确认实时依赖恢复后再继续实时 Copilot。')
   ),
   buildCapabilityCard(
     'profile_loop',
