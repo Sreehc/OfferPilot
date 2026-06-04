@@ -302,7 +302,7 @@
                 </p>
               </div>
               <div class="flex flex-wrap gap-3">
-                <RouterLink to="/settings?tab=providers" class="hard-button-secondary">
+                <RouterLink :to="selectedRunProviderSettingsPath" class="hard-button-secondary">
                   前往 Provider 设置
                 </RouterLink>
                 <RouterLink
@@ -457,7 +457,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter, type RouteLocationRaw } from 'vue-router'
 import {
   approveAgentRunApi,
   cancelAgentRunApi,
@@ -482,6 +482,15 @@ const readSeedQueryValue = (key: 'seedTopic' | 'seedWorkflow' | 'seedNote') => {
 const seededTopic = computed(() => readSeedQueryValue('seedTopic'))
 const seededWorkflow = computed(() => readSeedQueryValue('seedWorkflow'))
 const seededNote = computed(() => readSeedQueryValue('seedNote'))
+
+const buildProviderSettingsLocation = (returnTo: string, returnLabel: string): RouteLocationRaw => ({
+  path: '/settings',
+  query: {
+    tab: 'providers',
+    returnTo,
+    returnLabel
+  }
+})
 
 const appendSeedToPath = (path: string | null): string | null => {
   if (!path) return null
@@ -700,6 +709,11 @@ const creating = ref(false)
 const actionLoading = ref('')
 
 const hasActiveFilters = ref(false)
+
+const selectedRunProviderSettingsPath = computed<RouteLocationRaw>(() => {
+  const runLabel = selectedRun.value ? `返回 ${resolveAgentLabel(selectedRun.value.agentType)} Run` : '返回 Agent 工作台'
+  return buildProviderSettingsLocation(route.fullPath, runLabel)
+})
 
 const parseQueryList = (value: unknown) => {
   if (Array.isArray(value)) {
@@ -1134,7 +1148,7 @@ const buildFollowUpActions = (run: AgentRun): FollowUpAction[] => {
     addAction(
       'providers',
       '前往 Provider 设置',
-      '/settings?tab=providers',
+      route.fullPath ? nullSafeProviderSettingsPath(route.fullPath, run) : '/settings?tab=providers',
       '先检查模型、ASR、搜索或存储依赖，避免下一次 run 继续卡在依赖层。',
       run.nextActionPath ? 'secondary' : 'primary'
     )
@@ -1178,6 +1192,16 @@ const buildFollowUpActions = (run: AgentRun): FollowUpAction[] => {
 }
 
 const selectedRunFollowUpActions = computed(() => (selectedRun.value ? buildFollowUpActions(selectedRun.value) : []))
+
+const nullSafeProviderSettingsPath = (returnTo: string, run: AgentRun) => {
+  const location = buildProviderSettingsLocation(returnTo, `返回 ${resolveAgentLabel(run.agentType)} Run`) as {
+    path: string
+    query?: Record<string, string>
+  }
+  const query = location.query || {}
+  const params = new URLSearchParams(query)
+  return `${location.path}?${params.toString()}`
+}
 
 const resolveProviderGateLabel = (status?: string) => {
   switch (status) {

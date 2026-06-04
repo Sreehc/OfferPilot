@@ -2027,7 +2027,36 @@ const countdownPercent = computed(() => {
   return Math.max(0, Math.round((countdown.value / total) * 100))
 })
 const countdownUrgent = computed(() => countdown.value <= 30)
-const providerSettingsPath = '/settings?tab=providers'
+const buildProviderSettingsLocation = (returnTo: string, returnLabel: string): RouteLocationRaw => ({
+  path: '/settings',
+  query: {
+    tab: 'providers',
+    returnTo,
+    returnLabel
+  }
+})
+
+const providerSettingsLabelByWorkspace = (workspace: string) => {
+  switch (workspace) {
+    case 'job-prep':
+      return '返回 JD 备面'
+    case 'copilot-prep':
+      return '返回 Copilot Prep'
+    case 'copilot-live':
+      return '返回实时 Copilot'
+    case 'recording-review':
+      return '返回录音复盘'
+    case 'history':
+      return '返回面试记录'
+    default:
+      return '返回模拟面试'
+  }
+}
+
+const providerSettingsPath = computed<RouteLocationRaw>(() => {
+  const currentWorkspace = resolveInterviewWorkspaceRouteState().workspace || 'mock-interview'
+  return buildProviderSettingsLocation(route.fullPath, providerSettingsLabelByWorkspace(currentWorkspace))
+})
 const copilotRealtimeConnectionLabel = computed(() => {
   if (copilotRealtimeSocketState.value === 'connecting') return '连接中'
   if (copilotRealtimeSocketState.value === 'connected') return '已连接'

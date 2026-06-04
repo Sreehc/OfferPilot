@@ -21,6 +21,23 @@
       </div>
     </section>
 
+    <section v-if="providerReturnPath" class="shell-section-card p-5 sm:p-6 provider-return-card">
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p class="section-kicker">恢复链路</p>
+          <h3 class="mt-2 text-2xl font-semibold tracking-[-0.03em] text-ink">
+            补齐依赖后继续原来的工作区
+          </h3>
+          <p class="mt-2 max-w-3xl text-sm leading-7 text-secondary">
+            你是从受 provider 影响的链路进入这里的。保存或重新检测完成后，可以直接回到原页面继续 JD 备面、录音复盘、实时 Copilot 或 Agent Run。
+          </p>
+        </div>
+        <RouterLink :to="providerReturnPath" class="hard-button-primary">
+          {{ providerReturnLabel }}
+        </RouterLink>
+      </div>
+    </section>
+
     <section v-if="!loading" class="shell-section-card p-5 sm:p-6">
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -233,7 +250,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
-import type { RouteLocationRaw } from 'vue-router'
+import { useRoute, type RouteLocationRaw } from 'vue-router'
 import {
   checkProviderConfigsApi,
   fetchProviderConfigsApi,
@@ -260,11 +277,28 @@ type CapabilityCard = {
   reviewRunsPath: RouteLocationRaw
 }
 
+const route = useRoute()
 const loading = ref(true)
 const savingScope = ref<ProviderScope | ''>('')
 const checking = ref(false)
 const configs = ref<UserProviderConfigItem[]>([])
 const draftByScope = reactive<Record<string, ProviderDraft>>({})
+
+const providerReturnPath = computed<string | null>(() => {
+  const value = route.query.returnTo
+  if (typeof value !== 'string') return null
+  const normalized = value.trim()
+  if (!normalized.startsWith('/')) return null
+  return normalized
+})
+
+const providerReturnLabel = computed(() => {
+  const value = route.query.returnLabel
+  if (typeof value === 'string' && value.trim()) {
+    return value.trim()
+  }
+  return '返回上一条链路'
+})
 
 const defaultDraft = (scope: ProviderScope): ProviderDraft => ({
   scope,
@@ -616,6 +650,13 @@ onMounted(loadConfigs)
 .provider-grid {
   display: grid;
   gap: 1rem;
+}
+
+.provider-return-card {
+  background:
+    linear-gradient(135deg, rgba(var(--bc-accent-rgb), 0.1), rgba(255, 255, 255, 0.92)),
+    var(--panel-bg);
+  border: 1px solid rgba(var(--bc-accent-rgb), 0.16);
 }
 
 .provider-capability-summary {
