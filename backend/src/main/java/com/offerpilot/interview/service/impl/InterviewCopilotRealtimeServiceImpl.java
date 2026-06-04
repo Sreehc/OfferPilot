@@ -118,6 +118,9 @@ public class InterviewCopilotRealtimeServiceImpl implements InterviewCopilotReal
     @Transactional
     public CopilotRealtimeSessionVO connect(Long userId, Long sessionId) {
         CopilotRealtimeSession session = loadRealtimeSession(userId, sessionId);
+        if ("blocked".equals(session.getProviderStatus())) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "realtime copilot requires ASR and search providers");
+        }
         session.setStatus("live");
         session.setConnectedAt(LocalDateTime.now());
         session.setDisconnectedAt(null);
@@ -270,6 +273,7 @@ public class InterviewCopilotRealtimeServiceImpl implements InterviewCopilotReal
                 .connectionState(resolveConnectionState(session))
                 .canReconnect(resolveCanReconnect(session))
                 .providerStatus(session.getProviderStatus())
+                .providerStatusMessage(buildProviderStatusMessage(providerReadiness))
                 .websocketPath(resolveWebsocketPath(session))
                 .prepSummary(session.getPrepSummary())
                 .liveChecklist(readStringList(session.getLiveChecklistJson()))
@@ -462,9 +466,33 @@ public class InterviewCopilotRealtimeServiceImpl implements InterviewCopilotReal
     }
 
     private String resolveProviderStatus(String providerReadinessJson) {
-        boolean degraded = readProviderList(providerReadinessJson).stream()
-                .anyMatch(item -> !"ready".equals(item.getStatus()) && !"saved".equals(item.getStatus()));
+        List<CopilotRealtimeSessionVO.ProviderReadinessVO> providerReadiness = readProviderList(providerReadinessJson);
+        boolean requiredMissing = providerReadiness.stream()
+                .filter(item -> isRealtimeRequiredScope(item.getScope()))
+                .anyMatch(item -> !isProviderAvailable(item.getStatus()));
+        if (requiredMissing) {
+            return "blocked";
+        }
+        boolean degraded = providerReadiness.stream()
+                .anyMatch(item -> !isProviderAvailable(item.getStatus()));
         return degraded ? "degraded" : "ready";
+    }
+
+    private String buildProviderStatusMessage(List<CopilotRealtimeSessionVO.ProviderReadinessVO> providerReadiness) {
+        List<String> unavailable = providerReadiness.stream()
+                .filter(item -> !isProviderAvailable(item.getStatus()))
+                .map(CopilotRealtimeSessionVO.ProviderReadinessVO::getLabel)
+                .distinct()
+                .toList();
+        if (unavailable.isEmpty()) {
+            return "实时 Copilot 当前依赖已就绪。";
+        }
+        boolean requiredMissing = providerReadiness.stream()
+                .filter(item -> isRealtimeRequiredScope(item.getScope()))
+                .anyMatch(item -> !isProviderAvailable(item.getStatus()));
+        return requiredMissing
+                ? "实时 Copilot 当前缺少关键依赖：" + String.join("、", unavailable) + "。请先补齐 ASR 和联网搜索配置后再连接实时阶段。"
+                : "实时 Copilot 当前有依赖未完全就绪：" + String.join("、", unavailable) + "，实时阶段会按降级模式运行。";
     }
 
     private List<String> readStringList(String json) {
@@ -539,6 +567,16 @@ public class InterviewCopilotRealtimeServiceImpl implements InterviewCopilotReal
 
     private String defaultText(String value, String fallback) {
         return StringUtils.hasText(value) ? value : fallback;
+    }
+
+    private boolean isRealtimeRequiredScope(String scope) {
+        String normalizedScope = normalize(scope);
+        return "asr".equals(normalizedScope) || "search".equals(normalizedScope);
+    }
+
+    private boolean isProviderAvailable(String status) {
+        String normalizedStatus = normalize(status);
+        return "ready".equals(normalizedStatus) || "saved".equals(normalizedStatus);
     }
 
     private String normalize(String value) {

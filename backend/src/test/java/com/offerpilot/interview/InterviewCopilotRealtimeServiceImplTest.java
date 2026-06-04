@@ -1,6 +1,7 @@
 package com.offerpilot.interview;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -11,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.offerpilot.adaptive.service.TrainingSignalService;
+import com.offerpilot.common.exception.BusinessException;
 import com.offerpilot.interview.entity.CopilotEvent;
 import com.offerpilot.interview.entity.CopilotPrepSession;
 import com.offerpilot.interview.entity.CopilotRealtimeSession;
@@ -155,6 +157,7 @@ class InterviewCopilotRealtimeServiceImplTest {
         assertEquals("closed", latest.getConnectionState());
         assertEquals(Boolean.FALSE, latest.getCanReconnect());
         assertEquals("/ws/interview/copilot/88", latest.getWebsocketPath());
+        assertEquals("实时 Copilot 当前缺少关键依赖：联网搜索。请先补齐 ASR 和联网搜索配置后再连接实时阶段。", latest.getProviderStatusMessage());
         assertNotNull(latest.getPostInterviewReview());
         assertTrue(latest.getPostInterviewReview().getRecommendedActions().stream().anyMatch(item -> item.contains("面后复盘 run")));
         assertTrue(latest.getEvents().stream().anyMatch(item -> "runtime_note".equals(item.getEventType())));
@@ -173,6 +176,16 @@ class InterviewCopilotRealtimeServiceImplTest {
         assertEquals("disconnected", detail.getConnectionState());
         assertEquals(Boolean.TRUE, detail.getCanReconnect());
         assertEquals("/ws/interview/copilot/45", detail.getWebsocketPath());
+        assertEquals("实时 Copilot 当前缺少关键依赖：联网搜索。请先补齐 ASR 和联网搜索配置后再连接实时阶段。", detail.getProviderStatusMessage());
+    }
+
+    @Test
+    void connect_rejectsBlockedRealtimeSession() {
+        storedSession.setStatus("awaiting_connection");
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> service.connect(1L, 45L));
+
+        assertEquals("realtime copilot requires ASR and search providers", exception.getMessage());
     }
 
     private CopilotEvent realtimeEvent(Long id, String eventType, String source, String summary, int minute) {

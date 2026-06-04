@@ -489,6 +489,7 @@ export interface CopilotRealtimeSession {
   jobTitle?: string
   status: string
   providerStatus: string
+  providerStatusMessage?: string
   prepSummary: string
   liveChecklist: string[]
   providerReadiness: CopilotPrepProviderReadiness[]

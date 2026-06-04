@@ -290,8 +290,13 @@
                 >
                   <div class="flex flex-wrap items-center justify-between gap-3">
                     <p class="job-prep-panel__title">Provider Readiness</p>
-                    <span class="detail-pill detail-pill-risk">已降级生成</span>
+                    <span class="detail-pill" :class="providerStatusPillClass(jobPrepSession.providerStatus)">
+                      {{ providerStatusBadgeLabel(jobPrepSession.providerStatus) }}
+                    </span>
                   </div>
+                  <p v-if="jobPrepSession.providerStatusMessage" class="mt-3 text-sm leading-6 text-secondary">
+                    {{ jobPrepSession.providerStatusMessage }}
+                  </p>
                   <div class="mt-3 grid gap-3 sm:grid-cols-2">
                     <div
                       v-for="item in jobPrepSession.providerReadiness"
@@ -508,7 +513,15 @@
                 </div>
 
                 <article class="copilot-prep-panel">
-                  <p class="copilot-prep-panel__title">Provider Readiness</p>
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <p class="copilot-prep-panel__title">Provider Readiness</p>
+                    <span class="detail-pill" :class="providerStatusPillClass(copilotPrepSession.providerStatus)">
+                      {{ providerStatusBadgeLabel(copilotPrepSession.providerStatus) }}
+                    </span>
+                  </div>
+                  <p v-if="copilotPrepSession.providerStatusMessage" class="mt-3 text-sm leading-6 text-secondary">
+                    {{ copilotPrepSession.providerStatusMessage }}
+                  </p>
                   <div class="mt-3 grid gap-3 sm:grid-cols-3">
                     <div
                       v-for="item in copilotPrepSession.providerReadiness"
@@ -578,9 +591,9 @@
                         <span
                           v-if="copilotRealtimeSession"
                           class="detail-pill"
-                          :class="copilotRealtimeSession.providerStatus === 'degraded' ? 'detail-pill-risk' : ''"
+                          :class="providerStatusPillClass(copilotRealtimeSession.providerStatus)"
                         >
-                          {{ copilotRealtimeSession.providerStatus === 'degraded' ? '降级模式' : '依赖就绪' }}
+                          {{ providerStatusBadgeLabel(copilotRealtimeSession.providerStatus) }}
                         </span>
                       </div>
                       <p class="mt-2 text-sm leading-6 text-secondary">
@@ -598,12 +611,12 @@
                       </el-button>
                       <el-button
                         :loading="copilotRealtimeConnecting"
-                        :disabled="!copilotRealtimeSession || copilotRealtimeSocketState === 'connected'"
+                        :disabled="!copilotRealtimeSession || copilotRealtimeSocketState === 'connected' || copilotRealtimeSession.providerStatus === 'blocked'"
                         type="primary"
                         size="small"
                         @click="handleConnectCopilotRealtime"
                       >
-                        {{ copilotRealtimeSocketState === 'connected' ? '已连接' : '连接实时阶段' }}
+                        {{ copilotRealtimeSession?.providerStatus === 'blocked' ? '等待补齐关键依赖' : copilotRealtimeSocketState === 'connected' ? '已连接' : '连接实时阶段' }}
                       </el-button>
                       <el-button
                         :disabled="copilotRealtimeSocketState !== 'connected'"
@@ -639,16 +652,19 @@
                       <article class="copilot-realtime-status-card">
                         <p class="copilot-realtime-status-card__label">Provider Gate</p>
                         <p class="copilot-realtime-status-card__value">
-                          {{ copilotRealtimeSession.providerStatus === 'degraded' ? '降级' : '正常' }}
+                          {{ providerStatusSummaryLabel(copilotRealtimeSession.providerStatus) }}
                         </p>
                         <p class="mt-2 text-xs leading-5 text-secondary">
-                          {{ copilotRealtimeSession.providerStatus === 'degraded' ? '仍有 provider 未完全就绪，实时阶段只开放骨架能力。' : '当前 provider readiness 已满足基础实时阶段。' }}
+                          {{ copilotRealtimeSession.providerStatusMessage || realtimeProviderStatusDescription(copilotRealtimeSession.providerStatus) }}
                         </p>
                       </article>
                     </div>
 
-                    <div v-if="copilotRealtimeSession.providerStatus === 'degraded'" class="copilot-prep-provider-alert">
-                      <p class="text-sm font-semibold text-ink">实时阶段当前是降级模式</p>
+                    <div v-if="copilotRealtimeSession.providerStatus !== 'ready'" class="copilot-prep-provider-alert">
+                      <p class="text-sm font-semibold text-ink">{{ realtimeProviderAlertTitle(copilotRealtimeSession.providerStatus) }}</p>
+                      <p v-if="copilotRealtimeSession.providerStatusMessage" class="mt-2 text-sm leading-6 text-secondary">
+                        {{ copilotRealtimeSession.providerStatusMessage }}
+                      </p>
                       <div class="mt-3 flex flex-wrap gap-2">
                         <span
                           v-for="item in copilotRealtimeSession.providerReadiness.filter((entry) => entry.status !== 'ready' && entry.status !== 'saved')"
@@ -1009,8 +1025,13 @@
                 >
                   <div class="flex flex-wrap items-center justify-between gap-3">
                     <p class="recording-review-panel__title">Provider Readiness</p>
-                    <span class="detail-pill detail-pill-risk">存在降级</span>
+                    <span class="detail-pill" :class="providerStatusPillClass(recordingReviewSession.providerStatus)">
+                      {{ providerStatusBadgeLabel(recordingReviewSession.providerStatus) }}
+                    </span>
                   </div>
+                  <p v-if="recordingReviewSession.providerStatusMessage" class="mt-3 text-sm leading-6 text-secondary">
+                    {{ recordingReviewSession.providerStatusMessage }}
+                  </p>
                   <div class="mt-3 grid gap-3 sm:grid-cols-2">
                     <div
                       v-for="item in recordingReviewSession.providerReadiness"
@@ -2081,6 +2102,27 @@ const copilotRealtimeConnectionLabel = computed(() => {
   if (copilotRealtimeSocketState.value === 'error') return '连接失败'
   return '未连接'
 })
+const providerStatusBadgeLabel = (status?: string) => {
+  if (status === 'blocked') return '关键依赖缺失'
+  if (status === 'degraded') return '已降级生成'
+  return '依赖就绪'
+}
+const providerStatusSummaryLabel = (status?: string) => {
+  if (status === 'blocked') return '已阻断'
+  if (status === 'degraded') return '降级'
+  return '正常'
+}
+const providerStatusPillClass = (status?: string) => (status === 'ready' ? '' : 'detail-pill-risk')
+const realtimeProviderStatusDescription = (status?: string) => {
+  if (status === 'blocked') return '关键 provider 尚未配置完整，当前实时阶段不适合继续推进。'
+  if (status === 'degraded') return '仍有 provider 未完全就绪，实时阶段只开放骨架能力。'
+  return '当前 provider readiness 已满足基础实时阶段。'
+}
+const realtimeProviderAlertTitle = (status?: string) => {
+  if (status === 'blocked') return '实时阶段当前缺少关键依赖'
+  if (status === 'degraded') return '实时阶段当前是降级模式'
+  return '实时阶段依赖已就绪'
+}
 const recordingReviewPending = computed(() => isRecordingReviewPendingStatus(recordingReviewSession.value?.status))
 const jobPrepNextActionLink = computed(() => {
   if (jobPrepSession.value?.nextActionPath) {
