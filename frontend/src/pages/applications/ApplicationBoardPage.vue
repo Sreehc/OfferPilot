@@ -31,6 +31,9 @@
           <RouterLink v-if="currentFocus" :to="applicationJobPrepLink" class="hard-button-secondary">
             去 JD 备面
           </RouterLink>
+          <RouterLink v-if="currentFocus" :to="applicationRecordingReviewLink" class="hard-button-secondary">
+            去录音复盘
+          </RouterLink>
           <RouterLink v-if="currentFocus" :to="applicationCopilotPrepLink" class="hard-button-secondary">
             去 Copilot Prep
           </RouterLink>
@@ -67,6 +70,7 @@
           </div>
           <div class="flex flex-wrap gap-2">
             <RouterLink :to="applicationJobPrepLink" class="hard-button-secondary">带去 JD 备面</RouterLink>
+            <RouterLink :to="applicationRecordingReviewLink" class="hard-button-secondary">带去录音复盘</RouterLink>
             <RouterLink :to="applicationCopilotPrepLink" class="hard-button-secondary">带去 Copilot Prep</RouterLink>
             <RouterLink :to="applicationBoardAgentLink" class="hard-button-secondary">交给 Agent 推进</RouterLink>
           </div>
@@ -171,6 +175,9 @@
               <div class="mt-3 flex flex-wrap gap-2">
                 <RouterLink :to="applicationJobPrepLink" class="hard-button-secondary inline-flex">
                   做 JD 备面
+                </RouterLink>
+                <RouterLink :to="applicationRecordingReviewLink" class="hard-button-secondary inline-flex">
+                  做录音复盘
                 </RouterLink>
                 <RouterLink :to="applicationCopilotPrepLink" class="hard-button-secondary inline-flex">
                   进入 Copilot Prep
@@ -479,6 +486,22 @@ const applicationJobPrepLink = computed(() => {
   }
   const query = appendSeedQuery(new URLSearchParams({
     workspace: 'job-prep',
+    applicationId: String(currentFocus.value.id)
+  }))
+  if (currentFocus.value.resumeFileId) {
+    query.set('resumeId', String(currentFocus.value.resumeFileId))
+  }
+  return `/interview?${query.toString()}`
+})
+const applicationRecordingReviewLink = computed(() => {
+  if (!currentFocus.value?.id) {
+    const query = appendSeedQuery(new URLSearchParams({
+      workspace: 'recording-review'
+    }))
+    return `/interview?${query.toString()}`
+  }
+  const query = appendSeedQuery(new URLSearchParams({
+    workspace: 'recording-review',
     applicationId: String(currentFocus.value.id)
   }))
   if (currentFocus.value.resumeFileId) {

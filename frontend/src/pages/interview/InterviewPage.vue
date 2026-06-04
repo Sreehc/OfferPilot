@@ -1903,6 +1903,21 @@ const canSubmitRecordingReview = computed(() => {
   return recordingReviewTranscript.value.trim().length > 0
 })
 
+const applyRecordingReviewApplicationSeed = (applicationId?: string) => {
+  const normalizedId = (applicationId || '').trim()
+  if (!normalizedId) return
+  const item = applications.value.find((application) => application.id === normalizedId)
+  if (!item) return
+  jobRole.value = item.jobTitle || jobRole.value
+  recordingReviewNotes.value = mergeSeededText(
+    recordingReviewNotes.value,
+    [
+      `${item.company || '目标公司'} · ${item.jobTitle || '目标岗位'}`,
+      item.reviewSuggestion || item.nextStepSuggestion || item.analysisSummary || '优先围绕这条真实岗位反馈回听表达、追问和卡壳点。'
+    ].filter(Boolean).join('；')
+  )
+}
+
 const toggleQuestion = (questionId: string) => {
   if (expandedQuestions.value.has(questionId)) {
     expandedQuestions.value.delete(questionId)
@@ -2720,6 +2735,10 @@ const applyInterviewWorkspaceSeedsFromRoute = (workspace?: string) => {
 
   if (applicationId && (workspace === 'job-prep' || workspace === 'copilot-prep' || workspace === 'copilot-live')) {
     selectedJobPrepApplicationId.value = applicationId
+  }
+
+  if (applicationId && workspace === 'recording-review') {
+    applyRecordingReviewApplicationSeed(applicationId)
   }
 
   if (seedTopic && directions.some((item) => item.name === seedTopic)) {

@@ -35,6 +35,9 @@
               <RouterLink :to="applicationJobPrepLink" class="hard-button-secondary">
                 去 JD 备面
               </RouterLink>
+              <RouterLink :to="applicationRecordingReviewLink" class="hard-button-secondary">
+                去录音复盘
+              </RouterLink>
               <RouterLink :to="applicationCopilotPrepLink" class="hard-button-secondary">
                 去 Copilot Prep
               </RouterLink>
@@ -79,6 +82,9 @@
           <div class="flex shrink-0 flex-wrap gap-3">
             <RouterLink :to="applicationJobPrepLink" class="hard-button-secondary">
               结合当前岗位备面
+            </RouterLink>
+            <RouterLink :to="applicationRecordingReviewLink" class="hard-button-secondary">
+              带去录音复盘
             </RouterLink>
             <RouterLink :to="applicationMockInterviewLink" class="hard-button-secondary">
               去模拟面试
@@ -431,7 +437,7 @@ const eventTypeLabel = (value: string) => {
 
 const formatDateTime = (value?: string) => (value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '刚刚')
 const applicationId = () => String(route.params.id || '')
-const buildInterviewWorkspaceLink = (workspace: 'job-prep' | 'copilot-prep' | 'mock-interview') => {
+const buildInterviewWorkspaceLink = (workspace: 'job-prep' | 'copilot-prep' | 'mock-interview' | 'recording-review') => {
   const query = appendSeedQuery(new URLSearchParams({ workspace }))
   const id = applicationId()
   if (id) {
@@ -464,6 +470,7 @@ const applicationAgentLink = computed(() => {
   })
 })
 const applicationJobPrepLink = computed(() => buildInterviewWorkspaceLink('job-prep'))
+const applicationRecordingReviewLink = computed(() => buildInterviewWorkspaceLink('recording-review'))
 const applicationCopilotPrepLink = computed(() => buildInterviewWorkspaceLink('copilot-prep'))
 const applicationMockInterviewLink = computed(() => buildInterviewWorkspaceLink('mock-interview'))
 
