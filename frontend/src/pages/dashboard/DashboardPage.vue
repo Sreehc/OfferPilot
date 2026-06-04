@@ -912,6 +912,10 @@ const resolveContinuationStage = (key: string) => {
   switch (key) {
     case 'agent_approval':
       return '审批'
+    case 'resume_agent_draft':
+      return '简历草稿'
+    case 'application_strategy_draft':
+      return '投递策略'
     case 'copilot_realtime':
       return 'Realtime'
     case 'recording_review':

@@ -7,6 +7,8 @@ import com.offerpilot.adaptive.vo.AbilityProfileVO;
 import com.offerpilot.agent.entity.AgentRun;
 import com.offerpilot.agent.mapper.AgentRunMapper;
 import com.offerpilot.application.entity.JobApplication;
+import com.offerpilot.application.entity.JobApplicationEvent;
+import com.offerpilot.application.mapper.JobApplicationEventMapper;
 import com.offerpilot.application.mapper.JobApplicationMapper;
 import com.offerpilot.common.api.ResultCode;
 import com.offerpilot.common.config.OfferPilotProperties;
@@ -60,6 +62,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final AdaptiveService adaptiveService;
     private final OfferPilotProperties props;
     private final JobApplicationMapper jobApplicationMapper;
+    private final JobApplicationEventMapper jobApplicationEventMapper;
     private final ReviewLogMapper reviewLogMapper;
     private final StudyPlanMapper studyPlanMapper;
     private final StudyPlanTaskMapper studyPlanTaskMapper;
@@ -334,6 +337,41 @@ public class DashboardServiceImpl implements DashboardService {
                     .build());
         }
 
+        ResumeFile latestResume = loadLatestResume(userId);
+        if (latestResume != null && "agent_draft".equalsIgnoreCase(latestResume.getUserFixStatus())) {
+            items.add(DashboardOverviewVO.WorkflowContinuation.builder()
+                    .key("resume_agent_draft")
+                    .label("确认简历 Agent 草稿")
+                    .status("草稿待确认")
+                    .description(firstNonBlank(
+                            latestResume.getInterviewResumeText(),
+                            latestResume.getSummary(),
+                            "最近一次简历教练已经写回项目追问草稿，可继续整理后进入面试工作区。"))
+                    .path("/resume?resumeId=" + latestResume.getId())
+                    .tone("teal")
+                    .build());
+        }
+
+        JobApplicationEvent strategyDraftEvent = loadLatestStrategyDraftEvent(userId);
+        if (strategyDraftEvent != null) {
+            JobApplication strategyApplication = strategyDraftEvent.getApplicationId() == null
+                    ? null
+                    : jobApplicationMapper.selectById(strategyDraftEvent.getApplicationId());
+            if (strategyApplication != null && userId.equals(strategyApplication.getUserId())) {
+                items.add(DashboardOverviewVO.WorkflowContinuation.builder()
+                        .key("application_strategy_draft")
+                        .label("消费投递策略草案")
+                        .status("策略待落地")
+                        .description(firstNonBlank(
+                                strategyDraftEvent.getContent(),
+                                joinParts(strategyApplication.getCompany(), strategyApplication.getJobTitle()),
+                                "最近一次投递策略草案已写回，可继续带去 JD 备面、Copilot Prep 或真实反馈复盘。"))
+                        .path("/applications/" + strategyApplication.getId())
+                        .tone("blue")
+                        .build());
+            }
+        }
+
         CopilotPrepSession prepSession = loadLatestCopilotPrepSession(userId);
         if (prepSession != null) {
             items.add(DashboardOverviewVO.WorkflowContinuation.builder()
@@ -416,6 +454,19 @@ public class DashboardServiceImpl implements DashboardService {
                 .eq(RecordingReviewSession::getUserId, userId)
                 .orderByDesc(RecordingReviewSession::getUpdateTime)
                 .last("LIMIT 1"));
+    }
+
+    private JobApplicationEvent loadLatestStrategyDraftEvent(Long userId) {
+        List<JobApplicationEvent> events = jobApplicationEventMapper.selectList(new LambdaQueryWrapper<JobApplicationEvent>()
+                .eq(JobApplicationEvent::getUserId, userId)
+                .eq(JobApplicationEvent::getEventType, "strategy")
+                .orderByDesc(JobApplicationEvent::getEventTime)
+                .orderByDesc(JobApplicationEvent::getId)
+                .last("LIMIT 5"));
+        return events.stream()
+                .filter(event -> splitComma(event.getFeedbackTags()).contains("strategy-draft"))
+                .findFirst()
+                .orElse(null);
     }
 
     private boolean isRecordingContinuationEligible(String status) {
@@ -517,6 +568,17 @@ public class DashboardServiceImpl implements DashboardService {
             }
         }
         return "";
+    }
+
+    private List<String> splitComma(String raw) {
+        if (!StringUtils.hasText(raw)) {
+            return List.of();
+        }
+        return java.util.Arrays.stream(raw.split("[,，]"))
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
     }
 
     private String normalize(String value) {
