@@ -41,3 +41,15 @@ export const buildQuestionInterviewTarget = (question: QuestionItem, seed?: Seed
     sourceQuestionDirection: question.jobDirection || ''
   }, seed)
 })
+
+export const buildQuestionJobPrepTarget = (question: QuestionItem, seed?: SeedQuery) => ({
+  path: '/interview',
+  query: appendSeedQuery({
+    workspace: 'job-prep',
+    sourceQuestionId: String(question.id),
+    sourceQuestionTitle: question.title,
+    sourceQuestionCategory: question.categoryName || '',
+    sourceQuestionTag: questionTagList(question.tags)[0] || '',
+    sourceQuestionDirection: question.jobDirection || ''
+  }, seed)
+})

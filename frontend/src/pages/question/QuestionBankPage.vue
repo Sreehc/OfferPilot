@@ -248,8 +248,14 @@
               >
                 去问答页追问
               </RouterLink>
+              <RouterLink
+                :to="questionJobPrepTarget(selectedQuestion)"
+                class="hard-button-secondary text-sm"
+              >
+                带去 JD 备面
+              </RouterLink>
               <div class="question-next-step__secondary">
-                <span class="question-next-step__hint">想练完整表达时，可以切到模拟面试。</span>
+                <span class="question-next-step__hint">想把题目压到真实岗位语境里，可先去 JD 备面；想练完整表达时，再切到模拟面试。</span>
                 <RouterLink
                   :to="questionInterviewTarget(selectedQuestion)"
                   class="hard-button-secondary text-sm"
@@ -276,7 +282,7 @@ import { addFavoriteApi, removeFavoriteApi, fetchFavoriteListApi } from '@/api/f
 import { ERROR_COPY } from '@/constants/productCopy'
 import type { CategoryItem, QuestionItem } from '@/types/api'
 import { buildAgentWorkbenchLocation } from '@/utils/agent'
-import { buildQuestionChatTarget, buildQuestionInterviewTarget, questionTagList } from './questionTargets'
+import { buildQuestionChatTarget, buildQuestionInterviewTarget, buildQuestionJobPrepTarget, questionTagList } from './questionTargets'
 
 const route = useRoute()
 const router = useRouter()
@@ -436,6 +442,8 @@ const openDetail = (question: QuestionItem) => {
 const questionChatTarget = (question: QuestionItem) => buildQuestionChatTarget(question, buildSeedQuery())
 
 const questionInterviewTarget = (question: QuestionItem) => buildQuestionInterviewTarget(question, buildSeedQuery())
+
+const questionJobPrepTarget = (question: QuestionItem) => buildQuestionJobPrepTarget(question, buildSeedQuery())
 
 const questionStudyPlannerTarget = (question: QuestionItem) => buildSeededAgentWorkbenchLocation({
   agentType: 'study_planner',

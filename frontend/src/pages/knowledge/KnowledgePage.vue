@@ -98,6 +98,9 @@
                   <RouterLink v-if="canAskWithDocument(pinnedFocusedDoc)" :to="knowledgeChatTarget(pinnedFocusedDoc)" class="hard-button-primary text-sm">
                     去提问
                   </RouterLink>
+                  <RouterLink :to="knowledgeJobPrepTarget(pinnedFocusedDoc)" class="hard-button-secondary text-sm">
+                    {{ knowledgeJobPrepLabel(pinnedFocusedDoc) }}
+                  </RouterLink>
                   <RouterLink :to="knowledgeAgentTarget(pinnedFocusedDoc)" class="hard-button-secondary text-sm">
                     {{ knowledgeAgentLabel(pinnedFocusedDoc) }}
                   </RouterLink>
@@ -213,6 +216,9 @@
                   <div class="doc-card__memory-actions">
                     <RouterLink v-if="canAskWithDocument(doc)" :to="knowledgeChatTarget(doc)" class="hard-button-primary text-sm">
                       去提问
+                    </RouterLink>
+                    <RouterLink :to="knowledgeJobPrepTarget(doc)" class="hard-button-secondary text-sm">
+                      {{ knowledgeJobPrepLabel(doc) }}
                     </RouterLink>
                     <RouterLink :to="knowledgeAgentTarget(doc)" class="hard-button-secondary text-sm">
                       {{ knowledgeAgentLabel(doc) }}
@@ -344,7 +350,7 @@ import { addFavoriteApi, removeFavoriteApi, fetchFavoriteListApi } from '@/api/f
 import { EMPTY_STATE_COPY, ERROR_COPY, KNOWLEDGE_STATUS_NAMES } from '@/constants/productCopy'
 import type { CategoryItem, KnowledgeDocItem } from '@/types/api'
 import { buildAgentWorkbenchLocation } from '@/utils/agent'
-import { buildKnowledgeChatTarget, canAskWithKnowledgeDocument } from './knowledgeTargets'
+import { buildKnowledgeChatTarget, buildKnowledgeJobPrepTarget, canAskWithKnowledgeDocument } from './knowledgeTargets'
 
 const route = useRoute()
 const router = useRouter()
@@ -636,6 +642,12 @@ const unavailableActionHint = (doc: KnowledgeDocItem) => {
 }
 
 const knowledgeChatTarget = (doc: KnowledgeDocItem) => buildKnowledgeChatTarget(doc, buildSeedQuery())
+
+const knowledgeJobPrepLabel = (doc: KnowledgeDocItem) => {
+  return doc.businessType === 'jd' ? '去 JD 备面' : '带去 JD 备面'
+}
+
+const knowledgeJobPrepTarget = (doc: KnowledgeDocItem) => buildKnowledgeJobPrepTarget(doc, buildSeedQuery())
 
 const knowledgeAgentLabel = (doc: KnowledgeDocItem) => {
   if (doc.businessType === 'jd') return '让 Agent 组织备面'

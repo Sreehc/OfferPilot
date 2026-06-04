@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { KnowledgeDocItem } from '@/types/api'
-import { buildKnowledgeChatTarget, canAskWithKnowledgeDocument } from '../knowledgeTargets'
+import { buildKnowledgeChatTarget, buildKnowledgeJobPrepTarget, canAskWithKnowledgeDocument } from '../knowledgeTargets'
 
 describe('knowledgeTargets', () => {
   it('allows chat only when document and index are both ready', () => {
@@ -80,6 +80,25 @@ describe('knowledgeTargets', () => {
         seedTopic: 'MySQL',
         seedWorkflow: 'analytics',
         seedNote: '优先补索引与锁的表达'
+      }
+    })
+  })
+
+  it('builds job prep target with source document context', () => {
+    const systemDoc: KnowledgeDocItem = {
+      id: 7,
+      title: 'MySQL 索引清单',
+      status: 'indexed',
+      indexStatus: 'indexed',
+      libraryScope: 'system'
+    }
+
+    expect(buildKnowledgeJobPrepTarget(systemDoc)).toEqual({
+      path: '/interview',
+      query: {
+        workspace: 'job-prep',
+        sourceDocId: '7',
+        sourceDocTitle: 'MySQL 索引清单'
       }
     })
   })

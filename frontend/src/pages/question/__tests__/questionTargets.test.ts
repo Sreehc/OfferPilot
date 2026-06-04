@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { QuestionItem } from '@/types/api'
-import { buildQuestionChatTarget, buildQuestionInterviewTarget, questionTagList } from '../questionTargets'
+import { buildQuestionChatTarget, buildQuestionInterviewTarget, buildQuestionJobPrepTarget, questionTagList } from '../questionTargets'
 
 const question: QuestionItem = {
   id: 42,
@@ -34,6 +34,20 @@ describe('questionTargets', () => {
     expect(buildQuestionInterviewTarget(question)).toEqual({
       path: '/interview',
       query: {
+        sourceQuestionId: '42',
+        sourceQuestionTitle: '说一下 Redis 持久化',
+        sourceQuestionCategory: 'Redis',
+        sourceQuestionTag: 'Redis',
+        sourceQuestionDirection: 'Java 后端'
+      }
+    })
+  })
+
+  it('builds job prep target with question context and explicit workspace', () => {
+    expect(buildQuestionJobPrepTarget(question)).toEqual({
+      path: '/interview',
+      query: {
+        workspace: 'job-prep',
         sourceQuestionId: '42',
         sourceQuestionTitle: '说一下 Redis 持久化',
         sourceQuestionCategory: 'Redis',

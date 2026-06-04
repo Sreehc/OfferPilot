@@ -20,3 +20,15 @@ export const buildKnowledgeChatTarget = (doc: KnowledgeDocItem, seed?: SeedQuery
     ...(seed?.seedNote ? { seedNote: seed.seedNote } : {})
   }
 })
+
+export const buildKnowledgeJobPrepTarget = (doc: KnowledgeDocItem, seed?: SeedQuery) => ({
+  path: '/interview',
+  query: {
+    workspace: 'job-prep',
+    sourceDocId: String(doc.id),
+    sourceDocTitle: doc.title,
+    ...(seed?.seedTopic ? { seedTopic: seed.seedTopic } : {}),
+    ...(seed?.seedWorkflow ? { seedWorkflow: seed.seedWorkflow } : {}),
+    ...(seed?.seedNote ? { seedNote: seed.seedNote } : {})
+  }
+})

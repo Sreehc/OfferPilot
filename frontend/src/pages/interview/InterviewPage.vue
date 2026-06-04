@@ -182,6 +182,13 @@
                 </div>
               </div>
 
+              <div v-if="jobPrepSeedSummary" class="copilot-prep-provider-alert">
+                <p class="text-sm font-semibold text-ink">当前从外部训练上下文进入 JD 备面</p>
+                <p class="mt-2 text-sm leading-6 text-secondary">
+                  {{ jobPrepSeedSummary }}
+                </p>
+              </div>
+
               <div>
                 <label class="flat-field-label">关联投递</label>
                 <el-select
@@ -1901,6 +1908,36 @@ const canSubmitRecordingReview = computed(() => {
     return recordingReviewAudioAllowed.value && !!recordingReviewFile.value
   }
   return recordingReviewTranscript.value.trim().length > 0
+})
+const jobPrepSeedSummary = computed(() => {
+  const sourceQuestionTitle = String(route.query.sourceQuestionTitle || '').trim()
+  const sourceQuestionCategory = String(route.query.sourceQuestionCategory || '').trim()
+  const sourceQuestionTag = String(route.query.sourceQuestionTag || '').trim()
+  const sourceQuestionDirection = String(route.query.sourceQuestionDirection || '').trim()
+  const sourceDocTitle = String(route.query.sourceDocTitle || '').trim()
+  const seedTopic = String(route.query.seedTopic || '').trim()
+  const seedNote = String(route.query.seedNote || '').trim()
+
+  if (sourceQuestionTitle) {
+    return [
+      `来自题库题「${sourceQuestionTitle}」`,
+      sourceQuestionCategory ? `当前主题：${sourceQuestionCategory}` : '',
+      sourceQuestionTag ? `关键词：${sourceQuestionTag}` : '',
+      sourceQuestionDirection ? `岗位方向：${sourceQuestionDirection}` : '',
+      seedNote || '建议把这道题压到真实 JD 和岗位语境里，确认需要补的表达与实战口径。'
+    ].filter(Boolean).join('；')
+  }
+  if (sourceDocTitle) {
+    return [
+      `来自资料《${sourceDocTitle}》`,
+      seedTopic ? `当前主题：${seedTopic}` : '',
+      seedNote || '建议把这份资料转成岗位备面重点、项目表达和下一轮模拟准备。'
+    ].filter(Boolean).join('；')
+  }
+  if (seedTopic || seedNote) {
+    return buildInterviewSeedHint(seedTopic, seedNote, '建议先围绕当前主题收紧岗位语境，再生成正式 JD 备面结果。')
+  }
+  return ''
 })
 
 const applyRecordingReviewApplicationSeed = (applicationId?: string) => {
