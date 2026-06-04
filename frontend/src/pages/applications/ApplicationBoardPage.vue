@@ -9,6 +9,7 @@
             <span class="detail-pill">{{ activeCount }} 条正在推进</span>
             <span v-if="seededFocusLabel" class="detail-pill">{{ seededFocusLabel }}</span>
             <span v-if="currentFocus" class="detail-pill">{{ statusLabel(currentFocus.status) }}</span>
+            <span v-if="currentFocus?.hasStrategyDraft" class="detail-pill">Agent 策略草案待消费</span>
           </div>
 
           <h1 class="mt-4 workspace-title">投递管理</h1>
@@ -153,6 +154,7 @@
                 <span class="hard-chip">{{ currentFocus.company }}</span>
                 <span class="detail-pill">{{ currentFocus.jobTitle }}</span>
                 <span class="detail-pill">{{ statusLabel(currentFocus.status) }}</span>
+                <span v-if="currentFocus.hasStrategyDraft" class="detail-pill">策略草案</span>
               </div>
               <p class="mt-4 text-lg font-semibold text-ink">
                 {{ currentFocus.nextStepSuggestion || '把这条岗位推进到下一阶段' }}
@@ -160,6 +162,20 @@
               <p class="mt-3 text-sm leading-7 text-secondary">
                 {{ currentFocus.reviewSuggestion || currentFocus.analysisSummary }}
               </p>
+              <div v-if="currentFocus.hasStrategyDraft" class="mt-4 rounded-2xl border border-accent/20 bg-accent/5 p-4">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="hard-chip">Agent 投递策略草案</span>
+                  <span v-if="currentFocus.strategyDraftUpdatedAt" class="detail-pill">
+                    {{ formatDateTime(currentFocus.strategyDraftUpdatedAt) }}
+                  </span>
+                </div>
+                <p class="mt-3 text-sm leading-7 text-secondary">
+                  {{ currentFocus.strategyDraftSummary || '最近一次 Agent 已经写回推进策略草案。' }}
+                </p>
+                <ul v-if="currentFocus.strategyDraftActions?.length" class="mt-3 space-y-2 text-sm leading-6 text-primary">
+                  <li v-for="item in currentFocus.strategyDraftActions" :key="item">• {{ item }}</li>
+                </ul>
+              </div>
               <div class="mt-4 flex flex-wrap gap-2">
                 <span
                   v-for="tag in currentFocus.missingKeywords.slice(0, 4)"
@@ -227,6 +243,9 @@
                       <span class="text-xl font-semibold tracking-[-0.03em]" :class="scoreClass(item.matchScore)">
                         {{ Math.round(item.matchScore || 0) }}
                       </span>
+                    </div>
+                    <div v-if="item.hasStrategyDraft" class="mt-2 flex flex-wrap gap-2">
+                      <span class="detail-pill">Agent 策略草案</span>
                     </div>
                     <p class="mt-2 text-sm leading-7 text-secondary">
                       {{ item.nextStepSuggestion || item.reviewSuggestion || item.analysisSummary }}
@@ -561,6 +580,8 @@ const statusLabel = (value: string) => {
       return value
   }
 }
+
+const formatDateTime = (value?: string) => (value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '刚刚')
 
 const scoreClass = (score: number) => (score >= 75 ? 'text-accent' : score >= 60 ? 'text-amber-500' : 'text-coral')
 

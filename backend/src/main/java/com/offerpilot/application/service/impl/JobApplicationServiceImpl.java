@@ -295,8 +295,9 @@ public class JobApplicationServiceImpl implements JobApplicationService {
 
     private JobApplicationVO buildVo(JobApplication application, boolean includeEvents) {
         ResumeFile resume = application.getResumeFileId() == null ? null : resumeFileMapper.selectById(application.getResumeFileId());
+        List<JobApplicationEvent> rawEvents = loadEvents(application.getId());
         List<JobApplicationEventVO> events = includeEvents
-                ? loadEvents(application.getId()).stream()
+                ? rawEvents.stream()
                         .map(event -> JobApplicationEventVO.builder()
                                 .id(event.getId())
                                 .eventType(event.getEventType())
@@ -310,6 +311,7 @@ public class JobApplicationServiceImpl implements JobApplicationService {
                                 .build())
                         .toList()
                 : List.of();
+        StrategyDraftSnapshot strategyDraft = extractStrategyDraft(rawEvents);
 
         return JobApplicationVO.builder()
                 .id(application.getId())
@@ -327,6 +329,10 @@ public class JobApplicationServiceImpl implements JobApplicationService {
                 .analysisSummary(application.getAnalysisSummary())
                 .reviewSuggestion(application.getReviewSuggestion())
                 .nextStepSuggestion(application.getNextStepSuggestion())
+                .hasStrategyDraft(strategyDraft != null)
+                .strategyDraftSummary(strategyDraft == null ? null : strategyDraft.summary())
+                .strategyDraftActions(strategyDraft == null ? List.of() : strategyDraft.actions())
+                .strategyDraftUpdatedAt(strategyDraft == null ? null : strategyDraft.updatedAt())
                 .applyDate(application.getApplyDate())
                 .nextStepDate(application.getNextStepDate())
                 .updateTime(application.getUpdateTime())
@@ -339,6 +345,43 @@ public class JobApplicationServiceImpl implements JobApplicationService {
                 .eq(JobApplicationEvent::getApplicationId, applicationId)
                 .orderByDesc(JobApplicationEvent::getEventTime)
                 .orderByDesc(JobApplicationEvent::getId));
+    }
+
+    private StrategyDraftSnapshot extractStrategyDraft(List<JobApplicationEvent> events) {
+        if (events == null || events.isEmpty()) {
+            return null;
+        }
+        for (JobApplicationEvent event : events) {
+            if (!"strategy".equalsIgnoreCase(event.getEventType())) {
+                continue;
+            }
+            List<String> tags = splitComma(event.getFeedbackTags());
+            if (!tags.contains("strategy-draft")) {
+                continue;
+            }
+            return new StrategyDraftSnapshot(
+                    firstNonBlank(event.getContent(), event.getTitle(), "已保存 Agent 投递策略草案"),
+                    extractStrategyActions(event.getContent()),
+                    event.getEventTime());
+        }
+        return null;
+    }
+
+    private List<String> extractStrategyActions(String content) {
+        if (!StringUtils.hasText(content)) {
+            return List.of();
+        }
+        return content.lines()
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .filter(line -> !line.startsWith("建议动作："))
+                .flatMap(line -> line.startsWith("建议动作：")
+                        ? Arrays.stream(line.substring("建议动作：".length()).split("[；;]"))
+                        : Arrays.stream(new String[]{line}))
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .limit(4)
+                .toList();
     }
 
     private void refreshSuggestions(JobApplication application) {
@@ -454,6 +497,18 @@ public class JobApplicationServiceImpl implements JobApplicationService {
         return text.length() <= limit ? text : text.substring(0, limit) + "...";
     }
 
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value.trim();
+            }
+        }
+        return null;
+    }
+
     private boolean nullOrEmpty(List<String> values) {
         return values == null || values.isEmpty();
     }
@@ -473,5 +528,8 @@ public class JobApplicationServiceImpl implements JobApplicationService {
     }
 
     private record AnalysisSnapshot(BigDecimal matchScore, List<String> jdKeywords, List<String> missingKeywords, String summary) {
+    }
+
+    private record StrategyDraftSnapshot(String summary, List<String> actions, LocalDateTime updatedAt) {
     }
 }

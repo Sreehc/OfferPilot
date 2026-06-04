@@ -24,6 +24,7 @@
               <span class="detail-pill">{{ detail.company }}</span>
               <span class="detail-pill">{{ detail.city || '城市待补充' }}</span>
               <span v-if="seededFocusLabel" class="detail-pill">{{ seededFocusLabel }}</span>
+              <span v-if="detail.hasStrategyDraft" class="detail-pill">Agent 策略草案待消费</span>
             </div>
             <h2 class="mt-5 text-3xl font-semibold tracking-[-0.04em] text-ink">{{ detail.jobTitle }}</h2>
             <p class="mt-4 max-w-3xl text-sm leading-7 text-secondary">
@@ -97,6 +98,25 @@
           <div class="text-xs font-semibold uppercase tracking-[0.22em] text-tertiary">当前进入上下文</div>
           <h4 class="mt-2 text-lg font-semibold text-ink">{{ seededFocusCard.title }}</h4>
           <p class="mt-2 text-sm leading-7 text-secondary">{{ seededFocusCard.description }}</p>
+        </article>
+
+        <article v-if="detail.hasStrategyDraft" class="surface-card mt-5 p-4">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="hard-chip">Agent 投递策略草案</span>
+            <span v-if="detail.strategyDraftUpdatedAt" class="detail-pill">{{ formatDateTime(detail.strategyDraftUpdatedAt) }}</span>
+          </div>
+          <p class="mt-3 text-sm leading-7 text-secondary">
+            {{ detail.strategyDraftSummary || '最近一次 Agent 已经把这条岗位的推进策略写回。' }}
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <RouterLink :to="applicationJobPrepLink" class="hard-button-secondary">带去 JD 备面</RouterLink>
+            <RouterLink :to="applicationRecordingReviewLink" class="hard-button-secondary">带去录音复盘</RouterLink>
+            <RouterLink :to="applicationCopilotPrepLink" class="hard-button-secondary">带去 Copilot Prep</RouterLink>
+            <RouterLink :to="applicationAgentLink" class="hard-button-secondary">回到 Agent 继续收口</RouterLink>
+          </div>
+          <ul v-if="detail.strategyDraftActions?.length" class="mt-4 space-y-2 text-sm leading-6 text-primary">
+            <li v-for="item in detail.strategyDraftActions" :key="item">• {{ item }}</li>
+          </ul>
         </article>
 
         <div class="mt-5 grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
@@ -430,6 +450,8 @@ const eventTypeLabel = (value: string) => {
       return '阶段变更'
     case 'analysis':
       return 'JD 分析'
+    case 'strategy':
+      return 'Agent 策略草案'
     default:
       return '状态备注'
   }

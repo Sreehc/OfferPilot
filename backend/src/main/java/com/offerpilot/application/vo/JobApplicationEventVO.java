@@ -3,6 +3,7 @@ package com.offerpilot.application.vo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 
@@ -18,5 +19,5 @@ public class JobApplicationEventVO {
     private String result;
     private Integer interviewRound;
     private String interviewer;
-    private java.util.List<String> feedbackTags;
+    private List<String> feedbackTags;
 }

@@ -730,6 +730,10 @@ export interface JobApplicationItem {
   analysisSummary: string
   reviewSuggestion?: string
   nextStepSuggestion?: string
+  hasStrategyDraft?: boolean
+  strategyDraftSummary?: string
+  strategyDraftActions?: string[]
+  strategyDraftUpdatedAt?: string
   applyDate?: string
   nextStepDate?: string
   updateTime?: string

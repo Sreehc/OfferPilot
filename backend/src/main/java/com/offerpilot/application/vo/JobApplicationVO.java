@@ -29,6 +29,10 @@ public class JobApplicationVO {
     private String analysisSummary;
     private String reviewSuggestion;
     private String nextStepSuggestion;
+    private Boolean hasStrategyDraft;
+    private String strategyDraftSummary;
+    private List<String> strategyDraftActions;
+    private LocalDateTime strategyDraftUpdatedAt;
     private LocalDate applyDate;
     private LocalDate nextStepDate;
     private LocalDateTime updateTime;
