@@ -251,7 +251,24 @@
                 </div>
               </div>
               <div v-else-if="!jobPrepSession" class="flex h-full min-h-[280px] items-center justify-center">
+                <div v-if="jobPrepPendingApprovalRun" class="interview-approval-card interview-approval-card--warning">
+                  <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="detail-pill detail-pill-risk">待审批</span>
+                        <span class="detail-pill">JD 备面草案</span>
+                      </div>
+                      <p class="mt-3 text-sm leading-6 text-primary">
+                        {{ jobPrepPendingApprovalRun.approvalSummary || 'Agent 已生成一份新的 JD 备面草案，等待你在 Agent 工作台确认后正式落库。' }}
+                      </p>
+                    </div>
+                    <RouterLink :to="buildInterviewApprovalRunLink(jobPrepPendingApprovalRun)" class="hard-button-secondary text-sm">
+                      去 Agent 审批
+                    </RouterLink>
+                  </div>
+                </div>
                 <EmptyState
+                  v-else
                   icon="clipboard"
                   title="先生成一份 JD 备面结果"
                   description="这里会给出匹配度、缺口、项目表达重点和建议追问，供下一轮模拟和真实面试直接使用。"
@@ -259,6 +276,22 @@
                 />
               </div>
               <div v-else class="space-y-4">
+                <article v-if="jobPrepPendingApprovalRun" class="interview-approval-card interview-approval-card--warning">
+                  <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="detail-pill detail-pill-risk">待审批</span>
+                        <span class="detail-pill">JD 备面草案</span>
+                      </div>
+                      <p class="mt-3 text-sm leading-6 text-primary">
+                        {{ jobPrepPendingApprovalRun.approvalSummary || '当前 JD 备面结果已有一份待确认草案。审批通过后，会正式写回到面试工作区并继续后续动作。' }}
+                      </p>
+                    </div>
+                    <RouterLink :to="buildInterviewApprovalRunLink(jobPrepPendingApprovalRun)" class="hard-button-secondary text-sm">
+                      去 Agent 审批
+                    </RouterLink>
+                  </div>
+                </article>
                 <div class="job-prep-summary-card">
                   <div class="flex flex-wrap items-start justify-between gap-3">
                     <div class="min-w-0">
@@ -496,7 +529,24 @@
                 </div>
               </div>
               <div v-else-if="!copilotPrepSession" class="flex h-full min-h-[280px] items-center justify-center">
+                <div v-if="copilotPrepPendingApprovalRun" class="interview-approval-card interview-approval-card--warning">
+                  <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="detail-pill detail-pill-risk">待审批</span>
+                        <span class="detail-pill">Copilot Prep 草案</span>
+                      </div>
+                      <p class="mt-3 text-sm leading-6 text-primary">
+                        {{ copilotPrepPendingApprovalRun.approvalSummary || 'Agent 已生成一份新的 Copilot Prep 草案，等待你在 Agent 工作台确认后正式进入实时阶段。' }}
+                      </p>
+                    </div>
+                    <RouterLink :to="buildInterviewApprovalRunLink(copilotPrepPendingApprovalRun)" class="hard-button-secondary text-sm">
+                      去 Agent 审批
+                    </RouterLink>
+                  </div>
+                </div>
                 <EmptyState
+                  v-else
                   icon="chat"
                   title="先生成一份 Copilot Prep"
                   description="这里会整理开场提纲、实时提示、追问风险和 provider readiness，供后续实时阶段直接使用。"
@@ -504,6 +554,22 @@
                 />
               </div>
               <div v-else class="space-y-4">
+                <article v-if="copilotPrepPendingApprovalRun" class="interview-approval-card interview-approval-card--warning">
+                  <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="detail-pill detail-pill-risk">待审批</span>
+                        <span class="detail-pill">Copilot Prep 草案</span>
+                      </div>
+                      <p class="mt-3 text-sm leading-6 text-primary">
+                        {{ copilotPrepPendingApprovalRun.approvalSummary || '当前 Copilot Prep 已生成待确认草案。审批通过后，会把这轮 Prep 写成正式会前版本。' }}
+                      </p>
+                    </div>
+                    <RouterLink :to="buildInterviewApprovalRunLink(copilotPrepPendingApprovalRun)" class="hard-button-secondary text-sm">
+                      去 Agent 审批
+                    </RouterLink>
+                  </div>
+                </article>
                 <div class="copilot-prep-summary-card">
                   <div class="flex flex-wrap items-start justify-between gap-3">
                     <div class="min-w-0">
@@ -1033,6 +1099,25 @@
                 </p>
               </div>
               <div v-else class="space-y-4">
+                <article
+                  v-if="recordingReviewPendingApprovalRun"
+                  class="interview-approval-card interview-approval-card--warning"
+                >
+                  <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="detail-pill detail-pill-risk">待审批</span>
+                        <span class="detail-pill">录音复盘训练动作</span>
+                      </div>
+                      <p class="mt-3 text-sm leading-6 text-primary">
+                        {{ recordingReviewPendingApprovalRun.approvalSummary || '这次录音复盘已经整理出正式训练动作，等待你在 Agent 工作台确认后写回学习计划。' }}
+                      </p>
+                    </div>
+                    <RouterLink :to="buildInterviewApprovalRunLink(recordingReviewPendingApprovalRun)" class="hard-button-secondary text-sm">
+                      去 Agent 审批
+                    </RouterLink>
+                  </div>
+                </article>
                 <div class="recording-review-summary-card">
                   <div class="flex flex-wrap items-start justify-between gap-3">
                     <div class="min-w-0">
@@ -1609,6 +1694,7 @@
 import { ElMessage } from 'element-plus'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter, type LocationQueryRaw, type RouteLocationRaw } from 'vue-router'
+import { fetchAgentRunsApi } from '@/api/agent'
 import { fetchApplicationBoardApi } from '@/api/applications'
 import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
 import {
@@ -1640,6 +1726,7 @@ import { fetchProviderConfigsApi } from '@/api/settings'
 import EmptyState from '@/components/EmptyState.vue'
 import { isProviderStatusMissing } from '@/utils/providerReadiness'
 import type {
+  AgentRun,
   CopilotPrepSession,
   CopilotRealtimeEvent,
   CopilotRealtimeSession,
@@ -1721,6 +1808,7 @@ const recordingReviewTranscript = ref('')
 const recordingReviewFile = ref<File | null>(null)
 const recordingReviewLoading = ref(false)
 const recordingReviewSession = ref<RecordingReviewSession | null>(null)
+const pendingInterviewApprovalRuns = ref<AgentRun[]>([])
 const setupSectionRef = ref<HTMLElement | null>(null)
 const jobPrepSectionRef = ref<HTMLElement | null>(null)
 const copilotPrepSectionRef = ref<HTMLElement | null>(null)
@@ -2343,6 +2431,66 @@ const finishedWrongFocusLink = computed(() => {
     ? appendSeedToPath(`/wrong?wrongId=${encodeURIComponent(finishedWrongFocusId.value)}`) || '/wrong'
     : appendSeedToPath('/wrong') || '/wrong'
 })
+const buildInterviewApprovalRunLink = (run: AgentRun) =>
+  appendSeedToPath(`/agent?runId=${encodeURIComponent(run.id)}&listStatus=pending_approval&listApprovalStage=waiting`)
+  || '/agent'
+const resolvePendingInterviewApprovalRun = (approvalActionType: string, specificContextRef?: string, genericContextRef?: string) => {
+  const candidates = pendingInterviewApprovalRuns.value.filter((run) => {
+    if (run.status !== 'pending_approval') return false
+    if (run.approvalStage !== 'waiting') return false
+    return run.approvalActionType === approvalActionType
+  })
+  if (specificContextRef) {
+    const matchedSpecificRun = candidates.find((run) => run.contextRefs.includes(specificContextRef))
+    if (matchedSpecificRun) return matchedSpecificRun
+  }
+  if (genericContextRef) {
+    const matchedGenericRun = candidates.find((run) => run.contextRefs.includes(genericContextRef))
+    if (matchedGenericRun) return matchedGenericRun
+  }
+  return candidates[0] || null
+}
+const jobPrepPendingApprovalRun = computed(() =>
+  resolvePendingInterviewApprovalRun(
+    'save_job_prep_draft',
+    jobPrepSession.value ? `interview:job-prep:${jobPrepSession.value.id}` : undefined,
+    'interview:job-prep'
+  )
+)
+const copilotPrepPendingApprovalRun = computed(() =>
+  resolvePendingInterviewApprovalRun(
+    'save_copilot_prep_draft',
+    copilotPrepSession.value ? `interview:copilot-prep:${copilotPrepSession.value.id}` : undefined,
+    'interview:copilot-prep'
+  )
+)
+const recordingReviewPendingApprovalRun = computed(() =>
+  resolvePendingInterviewApprovalRun(
+    'save_recording_review_action',
+    recordingReviewSession.value ? `interview:recording-review:${recordingReviewSession.value.id}` : undefined,
+    'interview:recording-review'
+  )
+)
+
+const loadPendingInterviewApprovalRuns = async () => {
+  try {
+    const response = await fetchAgentRunsApi({
+      status: 'pending_approval',
+      approvalStage: 'waiting'
+    })
+    pendingInterviewApprovalRuns.value = response.data
+      .filter((run) =>
+        ['save_job_prep_draft', 'save_copilot_prep_draft', 'save_recording_review_action'].includes(run.approvalActionType || '')
+      )
+      .sort((left, right) => {
+        const leftTime = new Date(left.updateTime || 0).getTime()
+        const rightTime = new Date(right.updateTime || 0).getTime()
+        return rightTime - leftTime
+      })
+  } catch {
+    pendingInterviewApprovalRuns.value = []
+  }
+}
 
 const handleStart = async (reanswerQuestionId?: number) => {
   if (interviewContextPath.value !== 'general' && !selectedResumeId.value) {
@@ -3224,6 +3372,7 @@ onMounted(() => {
   void loadResumes()
   void loadApplications()
   void loadProviderConfigs()
+  void loadPendingInterviewApprovalRuns()
   applyQuestionSeedFromRoute()
   void hydrateInterviewWorkspaceFromRoute()
 
@@ -3290,6 +3439,7 @@ watch(selectedJobPrepApplicationId, (applicationId) => {
 
 watch(() => route.fullPath, () => {
   applyQuestionSeedFromRoute()
+  void loadPendingInterviewApprovalRuns()
   void hydrateInterviewWorkspaceFromRoute()
 })
 </script>
@@ -3554,6 +3704,19 @@ watch(() => route.fullPath, () => {
   border: 1px solid var(--bc-border-subtle);
   background: var(--panel-bg);
   padding: 16px;
+}
+
+.interview-approval-card {
+  border-radius: calc(var(--radius-md) - 4px);
+  border: 1px solid rgba(var(--bc-amber-rgb), 0.28);
+  background:
+    radial-gradient(circle at top right, rgba(var(--bc-amber-rgb), 0.14), transparent 36%),
+    var(--panel-bg);
+  padding: 16px;
+}
+
+.interview-approval-card--warning {
+  box-shadow: inset 0 0 0 1px rgba(var(--bc-amber-rgb), 0.08);
 }
 
 .recording-review-panel__title {
