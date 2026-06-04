@@ -1918,6 +1918,20 @@ const applyRecordingReviewApplicationSeed = (applicationId?: string) => {
   )
 }
 
+const applyRecordingReviewResumeSeed = (resumeId?: string) => {
+  const normalizedId = (resumeId || '').trim()
+  if (!normalizedId) return
+  selectedResumeId.value = normalizedId
+  const resume = resumes.value.find((item) => item.id === normalizedId)
+  recordingReviewNotes.value = mergeSeededText(
+    recordingReviewNotes.value,
+    [
+      resume?.title ? `当前从简历《${resume.title}》进入` : '当前从简历工作区进入',
+      '优先回听自我介绍、项目展开、结果量化和追问承接是否稳定。'
+    ].filter(Boolean).join('；')
+  )
+}
+
 const toggleQuestion = (questionId: string) => {
   if (expandedQuestions.value.has(questionId)) {
     expandedQuestions.value.delete(questionId)
@@ -2727,6 +2741,9 @@ const applyInterviewWorkspaceSeedsFromRoute = (workspace?: string) => {
       if (interviewContextPath.value === 'general') {
         interviewContextPath.value = 'resume'
       }
+    }
+    if (workspace === 'recording-review') {
+      applyRecordingReviewResumeSeed(resumeId)
     }
     if (workspace === 'job-prep' || workspace === 'copilot-prep' || workspace === 'copilot-live') {
       jobPrepResumeId.value = resumeId

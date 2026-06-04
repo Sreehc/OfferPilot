@@ -64,6 +64,7 @@
             交给 Agent 优化
           </RouterLink>
           <RouterLink v-if="currentResume" :to="resumeJobPrepLink" class="hard-button-secondary">去 JD 备面</RouterLink>
+          <RouterLink v-if="currentResume" :to="resumeRecordingReviewLink" class="hard-button-secondary">去录音复盘</RouterLink>
           <RouterLink v-if="currentResume" :to="resumeInterviewLink" class="hard-button-secondary">去模拟面试</RouterLink>
         </div>
       </div>
@@ -191,6 +192,7 @@
             </div>
             <div class="flex flex-wrap gap-2">
               <RouterLink :to="resumeJobPrepLink" class="hard-button-secondary">带去 JD 备面</RouterLink>
+              <RouterLink :to="resumeRecordingReviewLink" class="hard-button-secondary">带去录音复盘</RouterLink>
               <RouterLink :to="resumeCopilotPrepLink" class="hard-button-secondary">带去 Copilot Prep</RouterLink>
               <RouterLink :to="resumeCoachAgentLink" class="hard-button-secondary">交给 Agent 收口</RouterLink>
             </div>
@@ -531,6 +533,7 @@
             <div class="flex flex-wrap gap-2">
               <button type="button" class="hard-button-secondary" @click="handleCopyResume">复制提纲</button>
               <button type="button" class="hard-button-secondary" @click="handleDownloadResume">导出文本</button>
+              <RouterLink :to="resumeRecordingReviewLink" class="hard-button-secondary">去录音复盘</RouterLink>
               <RouterLink :to="resumeCopilotPrepLink" class="hard-button-secondary">去 Copilot Prep</RouterLink>
               <RouterLink :to="resumeInterviewLink" class="hard-button-primary">去模拟面试</RouterLink>
             </div>
@@ -756,7 +759,9 @@ const nextActionText = computed(() => {
   if (!currentResume.value) return '上传简历'
   if (currentResume.value.parseStatus === 'failed') return '修正简历内容'
   if (!currentResume.value.projects.length) return '补项目经历'
-  if (interviewResume.value) return '进入 JD 备面'
+  if (interviewResume.value) {
+    return flattenedRisks.value.length ? '补录音复盘' : '进入 Copilot Prep'
+  }
   return '确认开场和面试提纲'
 })
 const resumeCoachAgentLink = computed(() => {
@@ -801,6 +806,15 @@ const resumeJobPrepLink = computed(() => {
     workspace: 'job-prep',
     resumeId: String(currentResume.value.id)
   }))
+  return `/interview?${query.toString()}`
+})
+const resumeRecordingReviewLink = computed(() => {
+  const query = appendSeedQuery(new URLSearchParams({
+    workspace: 'recording-review'
+  }))
+  if (currentResume.value?.id) {
+    query.set('resumeId', String(currentResume.value.id))
+  }
   return `/interview?${query.toString()}`
 })
 const resumeCopilotPrepLink = computed(() => {
@@ -865,7 +879,7 @@ const workflowSteps = computed(() => {
       id: 'resume',
       index: '05',
       title: '导出面试提纲',
-      description: '确认项目展开顺序后，去模拟面试。',
+      description: '确认项目展开顺序后，去录音复盘、Copilot Prep 或模拟面试。',
       status: hasInterviewResume ? 'done' : hasIntro ? 'active' : 'pending',
       statusText: hasInterviewResume ? '可导出' : hasIntro ? '待确认' : '待开始'
     }
