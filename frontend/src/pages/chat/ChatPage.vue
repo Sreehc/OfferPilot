@@ -187,6 +187,17 @@
                 <span class="detail-pill">{{ chatPathLabel(chatPath) }}</span>
                 <span class="text-sm text-secondary">{{ draftContextSummary }}</span>
               </div>
+
+              <div v-if="contextWorkflowActions.length" class="chat-context-actions">
+                <RouterLink
+                  v-for="action in contextWorkflowActions"
+                  :key="action.key"
+                  :to="action.to"
+                  :class="action.tone === 'primary' ? 'hard-button-primary text-sm' : 'hard-button-secondary text-sm'"
+                >
+                  {{ action.label }}
+                </RouterLink>
+              </div>
             </div>
 
             <header class="conversation-bar">
@@ -485,7 +496,7 @@ import { ElMessage } from 'element-plus'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, type LocationQueryRaw, type RouteLocationRaw } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
 import { deleteChatSessionApi, fetchChatMessagesApi, fetchChatSessionsApi } from '@/api/chat'
 import { ERROR_COPY } from '@/constants/productCopy'
@@ -499,11 +510,18 @@ import type {
   ResumeProjectItem,
   ResumeSummaryItem
 } from '@/types/api'
+import { buildAgentWorkbenchLocation } from '@/utils/agent'
 import { storage } from '@/utils/storage'
 import { getStoredDeviceId } from '@/utils/device'
 
 type SessionFilterValue = 'all' | 'rag' | 'chat'
 type ElTextareaInstance = ComponentPublicInstance<{ focus?: () => void }>
+type ContextWorkflowAction = {
+  key: string
+  label: string
+  to: RouteLocationRaw
+  tone: 'primary' | 'secondary'
+}
 const route = useRoute()
 
 const sessions = ref<ChatSessionItem[]>([])
@@ -575,9 +593,126 @@ const activeSessionTitle = computed(() => {
   return activeSession.value?.title || '当前会话'
 })
 
+const seedTopic = computed(() => String(route.query.seedTopic || '').trim())
+const seedWorkflow = computed(() => String(route.query.seedWorkflow || '').trim())
+const seedNote = computed(() => String(route.query.seedNote || '').trim())
+const sourceQuestionId = computed(() => String(route.query.sourceQuestionId || '').trim())
 const sourceQuestionTitle = computed(() => String(route.query.sourceQuestionTitle || '').trim())
 const sourceDocTitle = computed(() => String(route.query.sourceDocTitle || '').trim())
 const sourceDocId = computed(() => String(route.query.sourceDocId || '').trim())
+const sourceQuestionCategory = computed(() => String(route.query.sourceQuestionCategory || '').trim())
+const sourceQuestionTag = computed(() => String(route.query.sourceQuestionTag || '').trim())
+const sourceQuestionDirection = computed(() => String(route.query.sourceQuestionDirection || '').trim())
+
+const buildSeedQuery = () => ({
+  ...(seedTopic.value ? { seedTopic: seedTopic.value } : {}),
+  ...(seedWorkflow.value ? { seedWorkflow: seedWorkflow.value } : {}),
+  ...(seedNote.value ? { seedNote: seedNote.value } : {})
+})
+
+const buildSeededAgentWorkbenchLocation = (
+  prefill: Parameters<typeof buildAgentWorkbenchLocation>[0]
+): RouteLocationRaw => {
+  const location = buildAgentWorkbenchLocation(prefill) as {
+    path: string
+    query?: LocationQueryRaw
+  }
+  return {
+    path: location.path,
+    query: {
+      ...(location.query || {}),
+      ...buildSeedQuery()
+    }
+  }
+}
+
+const buildQuestionSourceQuery = () => ({
+  sourceQuestionId: sourceQuestionId.value || undefined,
+  sourceQuestionTitle: sourceQuestionTitle.value || undefined,
+  sourceQuestionCategory: sourceQuestionCategory.value || undefined,
+  sourceQuestionTag: sourceQuestionTag.value || undefined,
+  sourceQuestionDirection: sourceQuestionDirection.value || undefined,
+  ...buildSeedQuery()
+})
+
+const buildDocSourceQuery = () => ({
+  sourceDocId: sourceDocId.value || undefined,
+  sourceDocTitle: sourceDocTitle.value || undefined,
+  ...buildSeedQuery()
+})
+
+const contextWorkflowActions = computed<ContextWorkflowAction[]>(() => {
+  if (sourceQuestionTitle.value) {
+    return [
+      {
+        key: 'question-agent',
+        label: '交给 Agent 收口',
+        to: buildSeededAgentWorkbenchLocation({
+          agentType: 'study_planner',
+          triggerSource: 'chat',
+          contextRefs: sourceQuestionId.value
+            ? [`question:${sourceQuestionId.value}`, 'study-plan:active', 'analytics:profile']
+            : ['study-plan:active', 'analytics:profile'],
+          userPrompt: `围绕题目「${sourceQuestionTitle.value}」整理下一轮训练动作，并判断是否需要先补 JD 备面或模拟面试。`
+        }),
+        tone: 'secondary'
+      },
+      {
+        key: 'question-job-prep',
+        label: '带去 JD 备面',
+        to: {
+          path: '/interview',
+          query: {
+            workspace: 'job-prep',
+            ...buildQuestionSourceQuery()
+          }
+        },
+        tone: 'secondary'
+      },
+      {
+        key: 'question-interview',
+        label: '去模拟面试',
+        to: {
+          path: '/interview',
+          query: buildQuestionSourceQuery()
+        },
+        tone: 'primary'
+      }
+    ]
+  }
+
+  if (sourceDocTitle.value) {
+    return [
+      {
+        key: 'doc-agent',
+        label: '交给 Agent 安排下一步',
+        to: buildSeededAgentWorkbenchLocation({
+          agentType: 'coordinator',
+          triggerSource: 'chat',
+          contextRefs: sourceDocId.value
+            ? [`knowledge:${sourceDocId.value}`, 'study-plan:active', 'analytics:profile']
+            : ['study-plan:active', 'analytics:profile'],
+          userPrompt: `围绕资料《${sourceDocTitle.value}》安排下一步训练、JD 备面或简历表达动作。`
+        }),
+        tone: 'secondary'
+      },
+      {
+        key: 'doc-job-prep',
+        label: '带去 JD 备面',
+        to: {
+          path: '/interview',
+          query: {
+            workspace: 'job-prep',
+            ...buildDocSourceQuery()
+          }
+        },
+        tone: 'primary'
+      }
+    ]
+  }
+
+  return []
+})
 
 const draftContextSource = computed<ContextSource | null>(() => {
   if (chatPath.value === 'project') {
@@ -1419,6 +1554,13 @@ watch(
   flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
+}
+
+.chat-context-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
 }
 
 .session-pill__context {
