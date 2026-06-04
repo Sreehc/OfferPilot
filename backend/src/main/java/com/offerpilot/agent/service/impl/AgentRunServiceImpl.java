@@ -450,6 +450,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                     + " 的当前投递状态整理下一步推进建议。";
             recommendations = mergeRecommendations(
                     List.of("当前岗位状态：" + applicationStatusLabel(application.getStatus()) + "。"),
+                    applicationStrategistStageRecommendations(application),
                     StringUtils.hasText(application.getNextStepSuggestion()) ? List.of(application.getNextStepSuggestion()) : List.of(),
                     StringUtils.hasText(application.getReviewSuggestion()) ? List.of(application.getReviewSuggestion()) : List.of(),
                     nullSafeList(application.getMissingKeywords()).isEmpty()
@@ -458,7 +459,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                     providerContextRecommendations("application_strategist", snapshot),
                     prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”同步到投递推进排序。") : List.of(),
                     contextRefsText(contextRefs, "本次参考的岗位或反馈："));
-            nextActionPath = "/applications/" + application.getId();
+            nextActionPath = resolveApplicationStrategistNextActionPath(application);
         } else if (focusApplication != null) {
             summary = "已根据当前投递看板整理下一步推进建议。当前共有 "
                     + defaultInt(applicationBoard.totalCount())
@@ -471,10 +472,11 @@ public class AgentRunServiceImpl implements AgentRunService {
                     + "。";
             recommendations = mergeRecommendations(
                     applicationBoardRecommendations(applicationBoard),
+                    applicationStrategistStageRecommendations(focusApplication),
                     providerContextRecommendations("application_strategist", snapshot),
                     prompt != null ? List.of("把用户补充目标“" + abbreviate(prompt, 20) + "”同步到投递推进排序。") : List.of(),
                     contextRefsText(contextRefs, "本次参考的岗位或反馈："));
-            nextActionPath = "/applications/" + focusApplication.getId();
+            nextActionPath = resolveApplicationStrategistNextActionPath(focusApplication);
         } else {
             summary = "已根据当前投递状态和反馈节奏整理下一步推进建议。";
             recommendations = mergeRecommendations(
@@ -500,6 +502,17 @@ public class AgentRunServiceImpl implements AgentRunService {
                         focusApplication == null ? null : focusApplication.getId(),
                         summary,
                         recommendations), "{}"));
+    }
+
+    private List<String> applicationStrategistStageRecommendations(JobApplicationVO application) {
+        if (application == null) {
+            return List.of();
+        }
+        return switch (normalize(application.getStatus())) {
+            case "interview", "written" -> List.of("优先把这条岗位的真实反馈带去录音复盘，沉淀表达问题、追问卡点和下一轮训练动作。");
+            case "saved", "applied" -> List.of("先做一轮 JD 备面，把岗位缺口和项目表达压到真实岗位语境里。");
+            default -> List.of();
+        };
     }
 
     private RunBlueprint buildInterviewReviewBlueprint(List<String> contextRefs, String prompt, ContextSnapshot snapshot) {
@@ -1771,6 +1784,17 @@ public class AgentRunServiceImpl implements AgentRunService {
         return "/interview?workspace=recording-review";
     }
 
+    private String resolveApplicationStrategistNextActionPath(JobApplicationVO application) {
+        if (application == null || application.getId() == null) {
+            return "/applications";
+        }
+        return switch (normalize(application.getStatus())) {
+            case "interview", "written" -> "/interview?workspace=recording-review&applicationId=" + application.getId();
+            case "saved", "applied" -> "/interview?workspace=job-prep&applicationId=" + application.getId();
+            default -> "/applications/" + application.getId();
+        };
+    }
+
     private String resolveCopilotPrepWorkspacePath(ContextSnapshot snapshot) {
         if (snapshot.copilotPrepSession() != null && snapshot.copilotPrepSession().getId() != null) {
             return "/interview?workspace=copilot-prep&copilotPrepSessionId=" + snapshot.copilotPrepSession().getId();
@@ -2161,7 +2185,15 @@ public class AgentRunServiceImpl implements AgentRunService {
             case "recording_review" -> "前往录音复盘";
             case "interview_review" -> normalizedPath.startsWith("/interview/detail/") ? "前往面试详情" : "前往面试复盘";
             case "resume_coach" -> "前往简历页";
-            case "application_strategist" -> normalizedPath.startsWith("/applications/") ? "前往投递详情" : "前往投递页";
+            case "application_strategist" -> {
+                if (normalizedPath.startsWith("/interview?workspace=recording-review")) {
+                    yield "前往录音复盘";
+                }
+                if (normalizedPath.startsWith("/interview?workspace=job-prep")) {
+                    yield "前往 JD 备面";
+                }
+                yield normalizedPath.startsWith("/applications/") ? "前往投递详情" : "前往投递页";
+            }
             case "realtime_copilot" -> realtimeCopilotNextActionLabel(normalizedPath);
             case "coordinator" -> coordinatorNextActionLabel(normalizedPath);
             default -> "前往下一步";

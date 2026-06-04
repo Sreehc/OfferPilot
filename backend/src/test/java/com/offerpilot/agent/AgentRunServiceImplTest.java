@@ -655,8 +655,9 @@ class AgentRunServiceImplTest {
                 "优先推进下周的一面"));
 
         assertTrue(result.getSummary().contains("字节跳动"));
-        assertEquals("/applications/6", result.getNextActionPath());
+        assertEquals("/interview?workspace=recording-review&applicationId=6", result.getNextActionPath());
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("Redis")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("录音复盘")));
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("优先推进下周的一面")));
         assertTrue(Boolean.TRUE.equals(result.getRequiresApproval()));
         assertNotNull(result.getApprovalSummary());
@@ -702,9 +703,34 @@ class AgentRunServiceImplTest {
         assertTrue(result.getSummary().contains("共有 3 条岗位记录"));
         assertTrue(result.getSummary().contains("进行中 2 条"));
         assertTrue(result.getSummary().contains("字节跳动"));
-        assertEquals("/applications/8", result.getNextActionPath());
+        assertEquals("/interview?workspace=recording-review&applicationId=8", result.getNextActionPath());
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("进行中岗位有 2 条")));
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("面试中")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("录音复盘")));
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("Redis")));
+    }
+
+    @Test
+    void createRun_applicationStrategistRoutesPrepForPreInterviewStatus() {
+        when(jobApplicationService.detail(1L, 12L)).thenReturn(JobApplicationVO.builder()
+                .id(12L)
+                .company("美团")
+                .jobTitle("Java 后端开发")
+                .status("applied")
+                .matchScore(new BigDecimal("79"))
+                .missingKeywords(List.of("Redis"))
+                .nextStepSuggestion("等待一面通知前先补缓存一致性。")
+                .reviewSuggestion("把项目里的缓存方案压成岗位化表达。")
+                .build());
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "application_strategist",
+                "applications",
+                List.of("application:12"),
+                "先把这条岗位准备到可面状态"));
+
+        assertEquals("/interview?workspace=job-prep&applicationId=12", result.getNextActionPath());
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("JD 备面")));
         assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("Redis")));
     }
 
