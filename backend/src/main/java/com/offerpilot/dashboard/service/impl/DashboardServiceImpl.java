@@ -420,6 +420,8 @@ public class DashboardServiceImpl implements DashboardService {
 
     private boolean isRecordingContinuationEligible(String status) {
         return "processing".equalsIgnoreCase(status)
+                || "transcribing".equalsIgnoreCase(status)
+                || "analyzing".equalsIgnoreCase(status)
                 || "ready".equalsIgnoreCase(status)
                 || "failed".equalsIgnoreCase(status);
     }
@@ -444,7 +446,7 @@ public class DashboardServiceImpl implements DashboardService {
 
     private String resolveRecordingContinuationLabel(String status) {
         return switch (normalize(status)) {
-            case "processing" -> "查看录音复盘进度";
+            case "processing", "transcribing", "analyzing" -> "查看录音复盘进度";
             case "failed" -> "重试录音复盘";
             default -> "消费录音复盘结果";
         };
@@ -452,7 +454,9 @@ public class DashboardServiceImpl implements DashboardService {
 
     private String resolveRecordingContinuationStatus(String status) {
         return switch (normalize(status)) {
-            case "processing" -> "转写处理中";
+            case "processing" -> "排队处理中";
+            case "transcribing" -> "转写处理中";
+            case "analyzing" -> "复盘整理中";
             case "failed" -> "处理失败";
             default -> "已完成";
         };
@@ -466,10 +470,18 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     private String buildRecordingDescription(RecordingReviewSession session) {
-        return firstNonBlank(
+        String title = firstNonBlank(
                 joinParts(session.getDirection(), session.getJobRole()),
-                "最近一次录音复盘",
+                hasAudioInput(session) ? "最近一次录音复盘" : "最近一次 transcript 复盘",
                 "最近一次录音复盘");
+        if (hasAudioInput(session)) {
+            return title;
+        }
+        return title + "（文字模式）";
+    }
+
+    private boolean hasAudioInput(RecordingReviewSession session) {
+        return session != null && StringUtils.hasText(session.getAudioUrl());
     }
 
     private String buildPrepDescription(CopilotPrepSession session) {

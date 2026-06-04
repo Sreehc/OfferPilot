@@ -1349,12 +1349,25 @@ public class AgentRunServiceImpl implements AgentRunService {
         }
         List<AgentRunVO.ProviderGateVO> providerGates = resolveProviderGates(agentType, snapshot.providerConfigs(), snapshot);
         String overallStatus = resolveProviderGateStatus(providerGates);
+        boolean recordingReviewAgent = "recording_review".equals(normalize(agentType));
+        boolean asrUnavailable = providerGates.stream()
+                .anyMatch(item -> "asr".equals(normalize(item.getScope())) && !isProviderAvailable(item.getStatus()));
+        boolean ossUnavailable = providerGates.stream()
+                .anyMatch(item -> "oss".equals(normalize(item.getScope())) && !isProviderAvailable(item.getStatus()));
         if ("blocked".equals(overallStatus)) {
             return List.of(
                     "先去设置页补齐 "
                             + defaultText(joinLimited(unavailableProviderLabels(providerGates, true), 3, "、"), "关键 provider")
                             + " 配置，否则当前关键动作会被阻断。",
                     "补齐配置后再重跑这轮 agent，可以拿到完整的分析和下一步动作。");
+        }
+        if (recordingReviewAgent && asrUnavailable) {
+            List<String> recommendations = new ArrayList<>();
+            recommendations.add("当前语音识别未就绪，录音上传会被禁用，但可以先改用文字 transcript 模式继续录音复盘。");
+            if (ossUnavailable) {
+                recommendations.add("对象存储也还没完全就绪，长音频上传和回放承载能力会进一步降级。");
+            }
+            return recommendations;
         }
         if ("degraded".equals(overallStatus)) {
             return List.of("当前仍有 provider 未完全就绪："
@@ -2281,7 +2294,7 @@ public class AgentRunServiceImpl implements AgentRunService {
         requirements.add(new ProviderRequirement("llm", "主模型", true, "还没有保存主模型配置。"));
         switch (normalized) {
             case "recording_review" -> {
-                requirements.add(new ProviderRequirement("asr", "语音识别", true, "录音复盘至少需要语音识别配置。"));
+                requirements.add(new ProviderRequirement("asr", "语音识别", false, "语音识别未配置时，音频上传会被禁用，但文字 transcript 模式仍可继续。"));
                 requirements.add(new ProviderRequirement("oss", "对象存储", false, "长音频存储能力未配置，上传能力可能受限。"));
             }
             case "job_prep" -> requirements.add(new ProviderRequirement("search", "联网搜索", false, "联网搜索未配置，公司与岗位背景研究会降级。"));

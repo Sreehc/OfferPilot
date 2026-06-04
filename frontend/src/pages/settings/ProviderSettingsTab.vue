@@ -469,6 +469,48 @@ const buildCapabilityCard = (
   }
 }
 
+const buildRecordingReviewCapabilityCard = (): CapabilityCard => {
+  const llmReady = isProviderReadyForCapability('llm')
+  const asrReady = isProviderReadyForCapability('asr')
+  const ossReady = isProviderReadyForCapability('oss')
+  const status: CapabilityCardStatus = !llmReady ? 'missing' : asrReady && ossReady ? 'ready' : 'degraded'
+  const gaps = [
+    ...(!llmReady ? ['主模型还没就绪，会直接阻断录音复盘和 transcript 复盘生成。'] : []),
+    ...(!asrReady ? ['语音识别未配置时，音频上传会被禁用，但仍可改用文字 transcript 模式继续复盘。'] : []),
+    ...(!ossReady ? ['对象存储未配置，长音频上传、回放和存储承载能力会降级。'] : [])
+  ]
+
+  let summary = '当前录音复盘链路可完整使用，包括音频转写、复盘和训练建议。'
+  if (!llmReady) {
+    summary = '主模型未就绪，录音复盘当前无法稳定生成音频或 transcript 复盘结果。'
+  } else if (!asrReady && !ossReady) {
+    summary = '录音复盘仍可继续，但会退化为文字 transcript 模式，且长音频承载能力也会受限。'
+  } else if (!asrReady) {
+    summary = '录音复盘仍可继续，但音频上传会被禁用，建议先改用文字 transcript 模式。'
+  } else if (!ossReady) {
+    summary = '录音复盘可继续，但长音频存储和上传承载能力会降级。'
+  }
+
+  return {
+    key: 'recording_review',
+    label: '录音复盘',
+    description: '把真实面试录音或手动 transcript 转成转写、弱点提炼、训练动作和画像回写。',
+    agentType: 'recording_review',
+    providerScopes: ['llm', 'asr', 'oss'],
+    requiredScopes: ['llm'],
+    status,
+    summary,
+    gaps,
+    agentLaunchLabel: '进入录音复盘工作区',
+    agentLaunchPath: buildInterviewWorkspaceLink(
+      'recording-review',
+      '当前从 Provider 设置进入，先确认是否走音频上传还是文字 transcript 模式，再继续录音复盘。'
+    ),
+    reviewRunsLabel: status === 'ready' ? '查看相关 Run' : '查看受影响 Run',
+    reviewRunsPath: buildAgentRunReviewPath('recording_review', status === 'missing' ? 'blocked' : status === 'degraded' ? 'degraded' : '')
+  }
+}
+
 const buildAgentRunReviewPath = (agentType: string, providerGateStatus: string): RouteLocationRaw => {
   const params = new URLSearchParams()
   params.set('listAgentType', agentType)
@@ -492,19 +534,7 @@ const capabilityCards = computed<CapabilityCard[]>(() => [
     '进入 JD 备面工作区',
     buildInterviewWorkspaceLink('job-prep', '当前从 Provider 设置进入，先检查依赖恢复后再继续 JD 备面。')
   ),
-  buildCapabilityCard(
-    'recording_review',
-    '录音复盘',
-    '把真实面试录音转成转写、弱点提炼、训练动作和画像回写。',
-    'recording_review',
-    ['llm', 'asr', 'oss'],
-    ['llm', 'asr'],
-    '当前录音复盘链路可完整使用，包括转写、复盘和训练建议。',
-    '录音复盘可继续，但长音频存储和上传承载能力会降级。',
-    '录音复盘缺少关键依赖，当前无法稳定完成转写和复盘。',
-    '进入录音复盘工作区',
-    buildInterviewWorkspaceLink('recording-review', '当前从 Provider 设置进入，先确认转写和存储依赖后再继续录音复盘。')
-  ),
+  buildRecordingReviewCapabilityCard(),
   buildCapabilityCard(
     'realtime_copilot',
     '实时 Copilot',
