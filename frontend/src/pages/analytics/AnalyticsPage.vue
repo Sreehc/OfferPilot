@@ -942,8 +942,25 @@ const buildSeededAgentWorkbenchLocation = (
     }
   }
 }
-const buildAnalyticsApprovalRunLink = (run: AgentRun) =>
-  `/agent?runId=${encodeURIComponent(run.id)}&listStatus=pending_approval&listApprovalStage=waiting`
+const buildAnalyticsApprovalRunLink = (run: AgentRun): RouteLocationRaw => ({
+  path: '/agent',
+  query: {
+    runId: run.id,
+    listStatus: 'pending_approval',
+    listApprovalStage: 'waiting',
+    ...buildInterviewSeedQuery(
+      topicRetrospective.value?.categoryName || topicDetail.value?.categoryName || abilityProfile.value.suggestedFocus,
+      'analytics',
+      topicRetrospective.value?.categoryName
+        ? `当前从领域回顾进入，优先围绕「${topicRetrospective.value.categoryName}」处理待审批训练动作。`
+        : topicDetail.value?.categoryName
+          ? `当前从领域详情进入，优先围绕「${topicDetail.value.categoryName}」处理待审批训练动作。`
+          : abilityProfile.value.suggestedFocus
+            ? `当前从训练画像进入，优先围绕「${abilityProfile.value.suggestedFocus}」处理待审批训练动作。`
+            : '当前从训练画像进入，优先处理待审批训练动作。'
+    )
+  }
+})
 const resolvePendingAnalyticsApprovalRun = (specificContextRef?: string, genericContextRef?: string) => {
   const candidates = pendingAnalyticsApprovalRuns.value.filter((run) => {
     if (run.status !== 'pending_approval') return false
