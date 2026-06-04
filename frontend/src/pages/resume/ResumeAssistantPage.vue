@@ -218,6 +218,35 @@
           </div>
         </article>
 
+        <article v-if="currentResume && hasAgentFollowUpDraft" class="shell-section-card p-5 sm:p-6">
+          <div class="rounded-2xl border border-accent/20 bg-accent/5 p-4">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <div class="text-xs font-semibold uppercase tracking-[0.22em] text-tertiary">Agent 已写回正式草稿</div>
+                <h3 class="mt-2 text-xl font-semibold text-ink">简历项目追问草稿待确认</h3>
+                <p class="mt-2 text-sm leading-7 text-secondary">
+                  这份草稿来自最近一次简历教练审批写回。先确认项目追问、开场和修改顺序，再决定是直接进入面试训练，还是回到编辑态继续收紧表述。
+                </p>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" class="hard-button-secondary" @click="handleCopyAgentDraft">复制草稿</button>
+                <button type="button" class="hard-button-secondary" @click="startEditing">继续整理简历</button>
+                <RouterLink :to="resumeRecordingReviewLink" class="hard-button-secondary">去录音复盘</RouterLink>
+                <RouterLink :to="resumeCopilotPrepLink" class="hard-button-secondary">去 Copilot Prep</RouterLink>
+                <RouterLink :to="resumeInterviewLink" class="hard-button-primary">去模拟面试</RouterLink>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-5 surface-card p-5">
+            <div class="flex items-center justify-between gap-3">
+              <div class="text-xs font-semibold uppercase tracking-[0.22em] text-tertiary">Agent 追问草稿</div>
+              <span class="detail-pill">待确认</span>
+            </div>
+            <pre class="resume-agent-draft mt-4 whitespace-pre-wrap text-sm leading-7 text-primary">{{ agentFollowUpDraftText }}</pre>
+          </div>
+        </article>
+
         <article v-if="currentResume" class="shell-section-card p-5 sm:p-6">
           <div class="flex items-start justify-between gap-4">
             <div>
@@ -776,12 +805,17 @@ const stateTitle = computed(() => {
 const nextActionText = computed(() => {
   if (!currentResume.value) return '上传简历'
   if (currentResume.value.parseStatus === 'failed') return '修正简历内容'
+  if (currentResume.value.userFixStatus === 'agent_draft') return '确认 Agent 追问草稿'
   if (!currentResume.value.projects.length) return '补项目经历'
   if (interviewResume.value) {
     return flattenedRisks.value.length ? '补录音复盘' : '进入 Copilot Prep'
   }
   return '确认开场和面试提纲'
 })
+const hasAgentFollowUpDraft = computed(() => Boolean(
+  currentResume.value?.interviewResumeText?.trim() && currentResume.value?.userFixStatus === 'agent_draft'
+))
+const agentFollowUpDraftText = computed(() => currentResume.value?.interviewResumeText?.trim() || '')
 const resumeCoachAgentLink = computed(() => {
   const contextRefs = ['analytics:profile']
   if (currentResume.value?.id) {
@@ -910,6 +944,7 @@ const formatDateTime = (value?: string) => {
 }
 
 const parseStatusLabel = (status?: string, userFixStatus?: string) => {
+  if (userFixStatus === 'agent_draft') return 'Agent 草稿待确认'
   if (userFixStatus === 'updated') return '已手动修正'
   if (status === 'failed') return '识别失败'
   if (status === 'parsed') return '识别完成'
@@ -1195,6 +1230,16 @@ const handleCopyResume = async () => {
   try {
     await navigator.clipboard.writeText(interviewResume.value.exportText)
     ElMessage.success('面试提纲已复制')
+  } catch {
+    ElMessage.error(ERROR_COPY.resumeOutlineCopyFailed)
+  }
+}
+
+const handleCopyAgentDraft = async () => {
+  if (!agentFollowUpDraftText.value) return
+  try {
+    await navigator.clipboard.writeText(agentFollowUpDraftText.value)
+    ElMessage.success('Agent 追问草稿已复制')
   } catch {
     ElMessage.error(ERROR_COPY.resumeOutlineCopyFailed)
   }
