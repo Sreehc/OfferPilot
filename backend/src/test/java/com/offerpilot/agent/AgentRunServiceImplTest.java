@@ -921,6 +921,47 @@ class AgentRunServiceImplTest {
     }
 
     @Test
+    void createRun_realtimeCopilotLivePhaseBlocksWithoutRequiredProvidersEvenWithoutSettingsContext() {
+        when(userProviderConfigService.listCurrentUserConfigs()).thenReturn(List.of(
+                UserProviderConfigItemVO.builder()
+                        .scope("llm")
+                        .label("主模型")
+                        .status("ready")
+                        .statusMessage("配置完整，可供对应能力使用。")
+                        .build(),
+                UserProviderConfigItemVO.builder()
+                        .scope("asr")
+                        .label("语音识别")
+                        .status("ready")
+                        .statusMessage("配置完整，可供对应能力使用。")
+                        .build(),
+                UserProviderConfigItemVO.builder()
+                        .scope("search")
+                        .label("联网搜索")
+                        .status("missing")
+                        .statusMessage("还没有保存这类配置。")
+                        .build()));
+        when(interviewCopilotRealtimeService.detail(1L, 91L)).thenReturn(CopilotRealtimeSessionVO.builder()
+                .id(91L)
+                .company("小红书")
+                .jobTitle("后端开发")
+                .status("live")
+                .latestEventSummary("实时连接已建立。")
+                .build());
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "realtime_copilot",
+                "interview_live",
+                List.of("interview:copilot-realtime:91"),
+                "继续实时阶段"));
+
+        assertEquals("blocked", result.getProviderGateStatus());
+        assertEquals("/settings?tab=providers", result.getNextActionPath());
+        assertEquals("前往 Provider 设置", result.getNextActionLabel());
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("补齐") && item.contains("联网搜索")));
+    }
+
+    @Test
     void createRun_realtimeCopilotUsesLatestCopilotPrepContext() {
         when(interviewCopilotPrepService.latest(1L)).thenReturn(CopilotPrepSessionVO.builder()
                 .id(58L)

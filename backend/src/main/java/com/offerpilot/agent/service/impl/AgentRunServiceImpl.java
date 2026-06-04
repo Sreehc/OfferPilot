@@ -956,9 +956,7 @@ public class AgentRunServiceImpl implements AgentRunService {
             });
         }
 
-        if (hasContext(contextRefs, "settings:providers")) {
-            providerConfigs = loadProviderConfigs();
-        }
+        providerConfigs = loadProviderConfigs();
 
         return new ContextSnapshot(
                 abilityProfile,
