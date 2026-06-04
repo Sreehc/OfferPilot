@@ -12,6 +12,7 @@ import com.offerpilot.interview.support.RecordingReviewBlueprintFactory;
 import com.offerpilot.interview.support.RecordingReviewBlueprintFactory.RecordingReviewBlueprint;
 import com.offerpilot.interview.support.RecordingReviewBlueprintFactory.SegmentBlueprint;
 import com.offerpilot.interview.voice.SttGateway;
+import java.math.BigDecimal;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,37 +51,73 @@ public class InterviewRecordingReviewAsyncProcessor {
                 return;
             }
 
-            session.setTranscript(transcript);
-            session.setTranscriptConfidence(sttResult.confidence());
-            session.setTranscriptTimeMs(sttResult.processingTimeMs());
-            session.setStatus("analyzing");
-            session.setStatusMessage("已拿到转写结果，正在整理复盘建议。");
-            session.setSummary("已拿到转写结果，正在整理复盘建议。");
-            recordingReviewSessionMapper.updateById(session);
-
-            RecordingReviewBlueprint blueprint = blueprintFactory.build(
+            completeReviewFromTranscript(
+                    session,
                     transcript,
-                    session.getDirection(),
-                    session.getJobRole(),
-                    session.getNotes());
-
-            recordingTranscriptSegmentMapper.delete(new LambdaQueryWrapper<RecordingTranscriptSegment>()
-                    .eq(RecordingTranscriptSegment::getSessionId, sessionId));
-            persistSegments(session, blueprint.segments());
-
-            session.setStatus("ready");
-            session.setStatusMessage("录音复盘已生成。");
-            session.setOverallScore(blueprint.overallScore());
-            session.setSummary(blueprint.summary());
-            session.setStrengthsJson(writeList(blueprint.strengths()));
-            session.setWeakPointsJson(writeList(blueprint.weakPoints()));
-            session.setSuggestedActionsJson(writeList(blueprint.suggestedActions()));
-            recordingReviewSessionMapper.updateById(session);
-            trainingSignalService.handleEvidenceUpdate(session.getUserId());
+                    sttResult.confidence(),
+                    sttResult.processingTimeMs(),
+                    "已拿到转写结果，正在整理复盘建议。",
+                    "录音复盘已生成。");
         } catch (Exception e) {
             log.error("Async recording review processing failed for session {}", sessionId, e);
             fail(session, "录音复盘生成失败: " + abbreviate(e.getMessage(), 120));
         }
+    }
+
+    @Transactional
+    public void processTranscriptReview(Long sessionId, String transcript) {
+        RecordingReviewSession session = recordingReviewSessionMapper.selectById(sessionId);
+        if (session == null) {
+            log.warn("Recording review session {} missing before transcript processing", sessionId);
+            return;
+        }
+        try {
+            completeReviewFromTranscript(
+                    session,
+                    transcript,
+                    null,
+                    null,
+                    "已收到文字 transcript，正在整理复盘建议。",
+                    "已基于文字 transcript 生成复盘结果。");
+        } catch (Exception e) {
+            log.error("Transcript recording review processing failed for session {}", sessionId, e);
+            fail(session, "文字 transcript 复盘生成失败: " + abbreviate(e.getMessage(), 120));
+        }
+    }
+
+    private void completeReviewFromTranscript(RecordingReviewSession session,
+                                              String transcript,
+                                              BigDecimal confidence,
+                                              Integer processingTimeMs,
+                                              String analyzingMessage,
+                                              String readyMessage) {
+        session.setTranscript(transcript);
+        session.setTranscriptConfidence(confidence);
+        session.setTranscriptTimeMs(processingTimeMs);
+        session.setStatus("analyzing");
+        session.setStatusMessage(analyzingMessage);
+        session.setSummary(analyzingMessage);
+        recordingReviewSessionMapper.updateById(session);
+
+        RecordingReviewBlueprint blueprint = blueprintFactory.build(
+                transcript,
+                session.getDirection(),
+                session.getJobRole(),
+                session.getNotes());
+
+        recordingTranscriptSegmentMapper.delete(new LambdaQueryWrapper<RecordingTranscriptSegment>()
+                .eq(RecordingTranscriptSegment::getSessionId, session.getId()));
+        persistSegments(session, blueprint.segments());
+
+        session.setStatus("ready");
+        session.setStatusMessage(readyMessage);
+        session.setOverallScore(blueprint.overallScore());
+        session.setSummary(blueprint.summary());
+        session.setStrengthsJson(writeList(blueprint.strengths()));
+        session.setWeakPointsJson(writeList(blueprint.weakPoints()));
+        session.setSuggestedActionsJson(writeList(blueprint.suggestedActions()));
+        recordingReviewSessionMapper.updateById(session);
+        trainingSignalService.handleEvidenceUpdate(session.getUserId());
     }
 
     private void persistSegments(RecordingReviewSession session, List<SegmentBlueprint> segments) {

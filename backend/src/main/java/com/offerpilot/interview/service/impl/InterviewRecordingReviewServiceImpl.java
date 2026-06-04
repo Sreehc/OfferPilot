@@ -51,11 +51,25 @@ public class InterviewRecordingReviewServiceImpl implements InterviewRecordingRe
     @Override
     @Transactional
     public RecordingReviewSessionVO createReview(Long userId, String direction, String jobRole, String notes,
-                                                 byte[] audioData, String mimeType, String originalFilename) {
-        if (!sttGateway.isAvailable()) {
-            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "录音复盘功能未启用，请先配置 ASR 服务");
+                                                 String transcriptText, byte[] audioData, String mimeType,
+                                                 String originalFilename) {
+        String normalizedTranscript = trimToNull(transcriptText);
+        boolean hasTranscript = StringUtils.hasText(normalizedTranscript);
+        boolean hasAudio = audioData != null && audioData.length > 0;
+        if (hasTranscript == hasAudio) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "请在录音上传和文字 transcript 之间二选一。");
         }
+        if (hasTranscript) {
+            return createTranscriptReview(userId, direction, jobRole, notes, normalizedTranscript);
+        }
+        if (!sttGateway.isAvailable()) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "录音上传模式未启用，请先配置 ASR 服务，或改用文字 transcript。");
+        }
+        return createAudioReview(userId, direction, jobRole, notes, audioData, mimeType, originalFilename);
+    }
 
+    private RecordingReviewSessionVO createAudioReview(Long userId, String direction, String jobRole, String notes,
+                                                       byte[] audioData, String mimeType, String originalFilename) {
         StoredFile storedFile = fileStorageService.store(
                 StorageDirectory.INTERVIEW_AUDIO,
                 originalFilename,
@@ -75,6 +89,23 @@ public class InterviewRecordingReviewServiceImpl implements InterviewRecordingRe
 
         launchAfterCommit(session.getId(), audioData, mimeType);
         return buildVo(session, List.of());
+    }
+
+    private RecordingReviewSessionVO createTranscriptReview(Long userId, String direction, String jobRole, String notes,
+                                                            String transcriptText) {
+        RecordingReviewSession session = new RecordingReviewSession();
+        session.setUserId(userId);
+        session.setDirection(trimToNull(direction));
+        session.setJobRole(trimToNull(jobRole));
+        session.setNotes(trimToNull(notes));
+        session.setStatus("analyzing");
+        session.setStatusMessage("已收到文字 transcript，正在整理复盘建议。");
+        session.setSummary("已收到文字 transcript，正在整理复盘建议。");
+        recordingReviewSessionMapper.insert(session);
+
+        recordingReviewAsyncProcessor.processTranscriptReview(session.getId(), transcriptText);
+        RecordingReviewSession refreshed = recordingReviewSessionMapper.selectById(session.getId());
+        return buildVo(refreshed == null ? session : refreshed, loadSegments(session.getId()));
     }
 
     @Override
@@ -123,11 +154,13 @@ public class InterviewRecordingReviewServiceImpl implements InterviewRecordingRe
 
     private RecordingReviewSessionVO buildVo(RecordingReviewSession session, List<RecordingTranscriptSegment> segments) {
         List<RecordingReviewSessionVO.ProviderReadinessVO> providerReadiness = resolveProviderReadiness();
+        String inputMode = resolveInputMode(session);
         return RecordingReviewSessionVO.builder()
                 .id(session.getId())
                 .direction(session.getDirection())
                 .jobRole(session.getJobRole())
                 .notes(session.getNotes())
+                .inputMode(inputMode)
                 .status(session.getStatus())
                 .statusMessage(session.getStatusMessage())
                 .transcript(session.getTranscript())
@@ -138,8 +171,8 @@ public class InterviewRecordingReviewServiceImpl implements InterviewRecordingRe
                 .strengths(readList(session.getStrengthsJson()))
                 .weakPoints(readList(session.getWeakPointsJson()))
                 .suggestedActions(readList(session.getSuggestedActionsJson()))
-                .providerStatus(resolveProviderStatus(providerReadiness))
-                .providerStatusMessage(buildProviderStatusMessage(providerReadiness))
+                .providerStatus(resolveProviderStatus(providerReadiness, inputMode))
+                .providerStatusMessage(buildProviderStatusMessage(providerReadiness, inputMode))
                 .suggestedAgentType("recording_review")
                 .suggestedTriggerSource("recording_review")
                 .nextActionLabel("转成训练动作")
@@ -169,11 +202,11 @@ public class InterviewRecordingReviewServiceImpl implements InterviewRecordingRe
                 + "&userPrompt=把这次录音复盘的薄弱点转成下一轮训练动作。";
     }
 
-    private String resolveProviderStatus(List<RecordingReviewSessionVO.ProviderReadinessVO> providerReadiness) {
+    private String resolveProviderStatus(List<RecordingReviewSessionVO.ProviderReadinessVO> providerReadiness, String inputMode) {
         boolean asrMissing = providerReadiness.stream()
                 .filter(item -> "asr".equalsIgnoreCase(item.getScope()))
                 .anyMatch(item -> !isProviderAvailable(item.getStatus()));
-        if (asrMissing) {
+        if (asrMissing && "audio".equals(inputMode)) {
             return "blocked";
         }
         boolean hasUnavailable = providerReadiness.stream()
@@ -181,7 +214,8 @@ public class InterviewRecordingReviewServiceImpl implements InterviewRecordingRe
         return hasUnavailable ? "degraded" : "ready";
     }
 
-    private String buildProviderStatusMessage(List<RecordingReviewSessionVO.ProviderReadinessVO> providerReadiness) {
+    private String buildProviderStatusMessage(List<RecordingReviewSessionVO.ProviderReadinessVO> providerReadiness,
+                                              String inputMode) {
         List<String> unavailable = providerReadiness.stream()
                 .filter(item -> !isProviderAvailable(item.getStatus()))
                 .map(RecordingReviewSessionVO.ProviderReadinessVO::getLabel)
@@ -192,9 +226,18 @@ public class InterviewRecordingReviewServiceImpl implements InterviewRecordingRe
         boolean asrMissing = providerReadiness.stream()
                 .filter(item -> "asr".equalsIgnoreCase(item.getScope()))
                 .anyMatch(item -> !isProviderAvailable(item.getStatus()));
+        if (asrMissing && "audio".equals(inputMode)) {
+            return "录音复盘当前缺少关键依赖：" + String.join("、", unavailable)
+                    + "。音频上传暂不可用，请先补 ASR，或改用文字 transcript 模式。";
+        }
         return asrMissing
-                ? "录音复盘当前缺少关键依赖：" + String.join("、", unavailable) + "。"
+                ? "录音复盘当前缺少关键依赖：" + String.join("、", unavailable)
+                + "。音频上传暂不可用，但文字 transcript 模式仍可继续。"
                 : "录音复盘当前有依赖未完全就绪：" + String.join("、", unavailable) + "，部分能力会按降级模式运行。";
+    }
+
+    private String resolveInputMode(RecordingReviewSession session) {
+        return StringUtils.hasText(session.getAudioUrl()) ? "audio" : "transcript";
     }
 
     private List<RecordingReviewSessionVO.ProviderReadinessVO> resolveProviderReadiness() {

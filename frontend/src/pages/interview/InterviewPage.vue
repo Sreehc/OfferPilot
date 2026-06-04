@@ -866,11 +866,11 @@
                 <h3 class="workspace-section-title">录音复盘</h3>
                 <span class="detail-pill">真实面试回放</span>
               </div>
-              <p class="workspace-section-summary">上传一段真实面试录音，系统会先转写，再给出结构化复盘、薄弱点和下一步训练动作。</p>
+              <p class="workspace-section-summary">上传真实录音或直接粘贴 transcript，把真实面试内容转成结构化复盘、薄弱点和下一步训练动作。</p>
             </div>
             <el-button
               :loading="recordingReviewLoading"
-              :disabled="!voiceAvailable || !recordingReviewFile"
+              :disabled="!canSubmitRecordingReview"
               type="primary"
               size="large"
               class="action-button !min-h-11"
@@ -882,10 +882,29 @@
 
           <div class="recording-review-grid mt-5">
             <div class="space-y-4">
-              <div v-if="blockingRecordingReviewProviders.length" class="recording-review-provider-alert">
-                <p class="text-sm font-semibold text-ink">ASR 未配置</p>
+              <div class="recording-review-mode-switch">
+                <button
+                  type="button"
+                  class="recording-review-mode-switch__button"
+                  :class="recordingReviewMode === 'audio' ? 'recording-review-mode-switch__button-active' : ''"
+                  @click="recordingReviewMode = 'audio'"
+                >
+                  音频上传
+                </button>
+                <button
+                  type="button"
+                  class="recording-review-mode-switch__button"
+                  :class="recordingReviewMode === 'transcript' ? 'recording-review-mode-switch__button-active' : ''"
+                  @click="recordingReviewMode = 'transcript'"
+                >
+                  文字 transcript
+                </button>
+              </div>
+
+              <div v-if="recordingReviewAudioBlocked" class="recording-review-provider-alert">
+                <p class="text-sm font-semibold text-ink">音频上传当前不可用</p>
                 <p class="mt-2 text-sm leading-6 text-secondary">
-                  录音复盘依赖语音识别服务。请先到设置页完成 `ASR provider` 配置，再回来上传录音。
+                  当前缺少 `ASR provider` 或语音链路未就绪，暂时不能直接上传录音。你仍然可以切到「文字 transcript」模式继续生成复盘。
                 </p>
                 <div class="mt-3 flex flex-wrap gap-2">
                   <span v-for="item in blockingRecordingReviewProviders" :key="item.scope" class="detail-pill">
@@ -902,7 +921,7 @@
               <div v-else-if="degradedRecordingReviewProviders.length" class="copilot-prep-provider-alert">
                 <p class="text-sm font-semibold text-ink">录音复盘依赖未完全就绪</p>
                 <p class="mt-2 text-sm leading-6 text-secondary">
-                  当前语音识别可用，但仍有部分 provider 未配置。录音复盘可以继续生成，不过长音频上传或存储能力可能降级。
+                  当前语音识别可用，但仍有部分 provider 未配置。录音复盘可以继续生成，不过长音频上传、存储或后续回放能力可能降级。
                 </p>
                 <div class="mt-3 flex flex-wrap gap-2">
                   <span v-for="item in degradedRecordingReviewProviders" :key="item.scope" class="detail-pill">
@@ -936,15 +955,36 @@
                 />
               </div>
 
-              <div>
+              <div v-if="recordingReviewMode === 'audio'">
                 <label class="flat-field-label">录音文件</label>
-                <label class="recording-review-upload">
-                  <input accept="audio/*,.webm,.wav,.mp3,.m4a,.ogg" class="hidden" type="file" @change="handleRecordingFileChange" />
+                <label class="recording-review-upload" :class="{ 'recording-review-upload-disabled': !recordingReviewAudioAllowed }">
+                  <input
+                    accept="audio/*,.webm,.wav,.mp3,.m4a,.ogg"
+                    class="hidden"
+                    type="file"
+                    :disabled="!recordingReviewAudioAllowed"
+                    @change="handleRecordingFileChange"
+                  />
                   <span class="recording-review-upload__title">
-                    {{ recordingReviewFile ? recordingReviewFile.name : '选择录音文件' }}
+                    {{ recordingReviewAudioAllowed ? (recordingReviewFile ? recordingReviewFile.name : '选择录音文件') : '当前无法上传录音文件' }}
                   </span>
-                  <span class="recording-review-upload__hint">支持 webm / wav / mp3 / m4a / ogg，最大 15MB</span>
+                  <span class="recording-review-upload__hint">
+                    {{ recordingReviewAudioAllowed ? '支持 webm / wav / mp3 / m4a / ogg，最大 15MB' : '先补 ASR provider，或切到文字 transcript 模式继续。' }}
+                  </span>
                 </label>
+              </div>
+
+              <div v-else>
+                <label class="flat-field-label">文字 transcript</label>
+                <el-input
+                  v-model="recordingReviewTranscript"
+                  type="textarea"
+                  :rows="9"
+                  placeholder="粘贴真实面试问答 transcript。建议至少带一轮完整回答，便于系统拆出结构、例子和薄弱点。"
+                />
+                <p class="mt-2 text-xs leading-5 text-tertiary">
+                  适合你已经有会议纪要、手动转写文本，或者暂时没配 ASR 的情况。
+                </p>
               </div>
             </div>
 
@@ -952,13 +992,13 @@
               <div v-if="recordingReviewLoading && !recordingReviewSession" class="flex h-full min-h-[280px] items-center justify-center">
                 <div class="text-center">
                   <div class="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-                  <p class="mt-3 text-sm text-secondary">正在转写录音并生成复盘...</p>
+                  <p class="mt-3 text-sm text-secondary">{{ recordingReviewMode === 'audio' ? '正在转写录音并生成复盘...' : '正在整理 transcript 并生成复盘...' }}</p>
                 </div>
               </div>
               <div v-else-if="!recordingReviewSession" class="flex h-full min-h-[280px] items-center justify-center">
                 <EmptyState
                   icon="review"
-                  title="先上传一段真实录音"
+                  title="先上传录音或粘贴 transcript"
                   description="这里会展示转写文本、片段信号、优点、薄弱点和下一步训练动作。"
                   compact
                 />
@@ -980,9 +1020,9 @@
                 <div class="recording-review-status-pill recording-review-status-pill--failed">
                   {{ recordingReviewStatusLabel(recordingReviewSession.status) }}
                 </div>
-                <h4 class="mt-4 font-display text-2xl font-semibold text-ink">这段录音还没成功生成复盘</h4>
+                <h4 class="mt-4 font-display text-2xl font-semibold text-ink">{{ recordingReviewFailureTitle }}</h4>
                 <p class="mt-3 text-sm leading-6 text-secondary">
-                  {{ recordingReviewSession.statusMessage || recordingReviewSession.summary || '请重新上传更清晰的录音，或先检查 ASR provider。' }}
+                  {{ recordingReviewSession.statusMessage || recordingReviewSession.summary || recordingReviewFailureHint }}
                 </p>
               </div>
               <div v-else class="space-y-4">
@@ -992,6 +1032,7 @@
                       <div class="flex flex-wrap items-center gap-2">
                         <span class="detail-pill">{{ recordingReviewSession.direction || '未设方向' }}</span>
                         <span class="detail-pill">{{ recordingReviewSession.jobRole || '未设岗位' }}</span>
+                        <span class="detail-pill">{{ recordingReviewInputModeLabel(recordingReviewSession.inputMode) }}</span>
                         <span class="detail-pill">{{ recordingReviewStatusLabel(recordingReviewSession.status) }}</span>
                         <span v-if="recordingReviewSession.transcriptConfidence" class="detail-pill">
                           置信度 {{ Math.round(recordingReviewSession.transcriptConfidence * 100) }}%
@@ -1667,6 +1708,8 @@ const copilotRealtimeTranscript = ref('')
 const copilotRealtimeSuggestion = ref('')
 const linkedCopilotJobPrepId = ref('')
 const recordingReviewNotes = ref('')
+const recordingReviewMode = ref<'audio' | 'transcript'>('audio')
+const recordingReviewTranscript = ref('')
 const recordingReviewFile = ref<File | null>(null)
 const recordingReviewLoading = ref(false)
 const recordingReviewSession = ref<RecordingReviewSession | null>(null)
@@ -1851,6 +1894,14 @@ const blockingRecordingReviewProviders = computed(() =>
 const degradedRecordingReviewProviders = computed(() =>
   recordingReviewProviderItems.value.filter((item) => item.scope !== 'asr' && isProviderStatusMissing(item.status))
 )
+const recordingReviewAudioAllowed = computed(() => voiceAvailable.value && !blockingRecordingReviewProviders.value.length)
+const recordingReviewAudioBlocked = computed(() => !recordingReviewAudioAllowed.value)
+const canSubmitRecordingReview = computed(() => {
+  if (recordingReviewMode.value === 'audio') {
+    return recordingReviewAudioAllowed.value && !!recordingReviewFile.value
+  }
+  return recordingReviewTranscript.value.trim().length > 0
+})
 
 const toggleQuestion = (questionId: string) => {
   if (expandedQuestions.value.has(questionId)) {
@@ -2113,6 +2164,18 @@ const providerStatusSummaryLabel = (status?: string) => {
   return '正常'
 }
 const providerStatusPillClass = (status?: string) => (status === 'ready' ? '' : 'detail-pill-risk')
+const recordingReviewInputModeLabel = (mode?: string) => {
+  if (mode === 'transcript') return '文字 transcript'
+  return '音频上传'
+}
+const recordingReviewFailureTitle = computed(() =>
+  recordingReviewSession.value?.inputMode === 'transcript' ? '这份 transcript 还没成功生成复盘' : '这段录音还没成功生成复盘'
+)
+const recordingReviewFailureHint = computed(() =>
+  recordingReviewSession.value?.inputMode === 'transcript'
+    ? '请检查 transcript 是否足够完整，或补充更多真实回答内容后再试。'
+    : '请重新上传更清晰的录音，或先检查 ASR provider。'
+)
 const realtimeProviderStatusDescription = (status?: string) => {
   if (status === 'blocked') return '关键 provider 尚未配置完整，当前实时阶段不适合继续推进。'
   if (status === 'degraded') return '仍有 provider 未完全就绪，但实时阶段仍会保留转写、建议和事件时间线。'
@@ -2938,32 +3001,43 @@ const handleRecordingFileChange = (event: Event) => {
 }
 
 const handleCreateRecordingReview = async () => {
-  if (!voiceAvailable.value) {
-    ElMessage.warning('请先配置 ASR provider，再使用录音复盘。')
-    return
-  }
-  if (!recordingReviewFile.value) {
-    ElMessage.warning('请先选择一段录音文件。')
+  if (recordingReviewMode.value === 'audio') {
+    if (!recordingReviewAudioAllowed.value) {
+      ElMessage.warning('当前不能直接上传录音。请先补 ASR provider，或切到文字 transcript 模式。')
+      return
+    }
+    if (!recordingReviewFile.value) {
+      ElMessage.warning('请先选择一段录音文件。')
+      return
+    }
+  } else if (!recordingReviewTranscript.value.trim()) {
+    ElMessage.warning('请先粘贴一段文字 transcript。')
     return
   }
   recordingReviewLoading.value = true
   try {
     const response = await createRecordingReviewApi({
+      inputMode: recordingReviewMode.value,
       direction: direction.value.trim() || undefined,
       jobRole: jobRole.value.trim() || undefined,
       notes: recordingReviewNotes.value.trim() || undefined,
-      audioFile: recordingReviewFile.value
+      transcriptText: recordingReviewMode.value === 'transcript' ? recordingReviewTranscript.value.trim() : undefined,
+      audioFile: recordingReviewMode.value === 'audio' ? recordingReviewFile.value || undefined : undefined
     })
     recordingReviewSession.value = response.data
     await syncInterviewWorkspaceRoute('recording-review', { recordingReviewSessionId: response.data.id })
     if (isRecordingReviewPendingStatus(response.data.status)) {
       scheduleRecordingReviewPoll(response.data.id)
-      ElMessage.success('录音已上传，正在后台转写。')
+      ElMessage.success(
+        response.data.inputMode === 'transcript' ? '文字 transcript 已接收，正在后台整理复盘。' : '录音已上传，正在后台转写。'
+      )
     } else {
-      ElMessage.success('录音复盘结果已生成。')
+      ElMessage.success(
+        response.data.inputMode === 'transcript' ? '文字 transcript 复盘结果已生成。' : '录音复盘结果已生成。'
+      )
     }
   } catch (error: any) {
-    ElMessage.error(error?.message || '录音复盘生成失败，请检查文件后重试。')
+    ElMessage.error(error?.message || '录音复盘生成失败，请检查输入内容后重试。')
   } finally {
     recordingReviewLoading.value = false
   }
@@ -2981,10 +3055,15 @@ const scheduleRecordingReviewPoll = (sessionId: string, delay = 2200) => {
         return
       }
       if (previousStatus !== response.data.status && response.data.status === 'ready') {
-        ElMessage.success('录音复盘已生成。')
+        ElMessage.success(response.data.inputMode === 'transcript' ? '文字 transcript 复盘已生成。' : '录音复盘已生成。')
       }
       if (previousStatus !== response.data.status && response.data.status === 'failed') {
-        ElMessage.error(response.data.statusMessage || '录音复盘失败，请重新上传更清晰的录音。')
+        ElMessage.error(
+          response.data.statusMessage
+            || (response.data.inputMode === 'transcript'
+              ? '文字 transcript 复盘失败，请补充更完整的回答后重试。'
+              : '录音复盘失败，请重新上传更清晰的录音。')
+        )
       }
     } catch {
       scheduleRecordingReviewPoll(sessionId, 3200)
@@ -3246,6 +3325,34 @@ watch(() => route.fullPath, () => {
   gap: 16px;
 }
 
+.recording-review-mode-switch {
+  display: inline-flex;
+  width: fit-content;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(var(--bc-coral-rgb), 0.08);
+}
+
+.recording-review-mode-switch__button {
+  min-height: 2.4rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  padding: 0 14px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--bc-ink-secondary);
+  transition:
+    background var(--motion-fast) var(--ease-hard),
+    color var(--motion-fast) var(--ease-hard);
+}
+
+.recording-review-mode-switch__button-active {
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--bc-ink);
+}
+
 .copilot-prep-provider-alert {
   border-radius: calc(var(--radius-md) - 4px);
   border: 1px solid rgba(var(--bc-amber-rgb), 0.22);
@@ -3268,6 +3375,11 @@ watch(() => route.fullPath, () => {
   background: var(--panel-bg);
   padding: 16px;
   cursor: pointer;
+}
+
+.recording-review-upload-disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
 }
 
 .recording-review-upload__title {

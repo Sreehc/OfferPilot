@@ -18,6 +18,7 @@ public class RecordingReviewSessionVO {
     private String direction;
     private String jobRole;
     private String notes;
+    private String inputMode;
     private String status;
     private String statusMessage;
     private String transcript;

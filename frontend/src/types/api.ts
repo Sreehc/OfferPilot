@@ -516,6 +516,7 @@ export interface RecordingReviewSession {
   direction?: string
   jobRole?: string
   notes?: string
+  inputMode?: 'audio' | 'transcript' | string
   status: string
   statusMessage?: string
   transcript?: string

@@ -67,7 +67,9 @@ export interface RecordingReviewCreatePayload {
   direction?: string
   jobRole?: string
   notes?: string
-  audioFile: File
+  inputMode: 'audio' | 'transcript'
+  audioFile?: File
+  transcriptText?: string
 }
 
 export interface CopilotRealtimeSessionCreatePayload {
@@ -153,7 +155,9 @@ export const createRecordingReviewApi = (payload: RecordingReviewCreatePayload) 
   if (payload.direction) formData.append('direction', payload.direction)
   if (payload.jobRole) formData.append('jobRole', payload.jobRole)
   if (payload.notes) formData.append('notes', payload.notes)
-  formData.append('audio', payload.audioFile)
+  formData.append('inputMode', payload.inputMode)
+  if (payload.transcriptText) formData.append('transcriptText', payload.transcriptText)
+  if (payload.audioFile) formData.append('audio', payload.audioFile)
   return request<RecordingReviewSession>({
     url: '/interview/recording-reviews',
     method: 'post',

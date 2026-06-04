@@ -43,6 +43,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.util.StringUtils;
 
 @Tag(name = "模拟面试", description = "AI 驱动的模拟面试与评分")
 @RestController
@@ -160,22 +161,37 @@ public class InterviewController {
             @Parameter(description = "面试方向") @RequestParam(required = false) String direction,
             @Parameter(description = "目标岗位") @RequestParam(required = false) String jobRole,
             @Parameter(description = "场景备注") @RequestParam(required = false) String notes,
-            @Parameter(description = "录音文件") @RequestParam("audio") MultipartFile audioFile) {
+            @Parameter(description = "文字 transcript") @RequestParam(required = false) String transcriptText,
+            @Parameter(description = "录音文件") @RequestParam(name = "audio", required = false) MultipartFile audioFile) {
         try {
-            uploadPolicyService.validate(
-                    StorageDirectory.INTERVIEW_AUDIO,
-                    audioFile.getOriginalFilename(),
-                    audioFile.getContentType(),
-                    audioFile.getSize());
-            String mimeType = audioFile.getContentType() != null ? audioFile.getContentType() : "audio/webm";
+            boolean hasTranscript = StringUtils.hasText(transcriptText);
+            boolean hasAudio = audioFile != null && !audioFile.isEmpty();
+            if (hasTranscript == hasAudio) {
+                throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "请在录音上传和文字 transcript 之间二选一。");
+            }
+
+            byte[] audioBytes = null;
+            String mimeType = null;
+            String originalFilename = null;
+            if (hasAudio) {
+                uploadPolicyService.validate(
+                        StorageDirectory.INTERVIEW_AUDIO,
+                        audioFile.getOriginalFilename(),
+                        audioFile.getContentType(),
+                        audioFile.getSize());
+                audioBytes = audioFile.getBytes();
+                mimeType = audioFile.getContentType() != null ? audioFile.getContentType() : "audio/webm";
+                originalFilename = audioFile.getOriginalFilename();
+            }
             return Result.success(interviewRecordingReviewService.createReview(
                     currentUserId(),
                     direction,
                     jobRole,
                     notes,
-                    audioFile.getBytes(),
+                    transcriptText,
+                    audioBytes,
                     mimeType,
-                    audioFile.getOriginalFilename()));
+                    originalFilename));
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
