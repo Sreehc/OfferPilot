@@ -439,7 +439,7 @@ const questionInterviewTarget = (question: QuestionItem) => buildQuestionIntervi
 
 const questionStudyPlannerTarget = (question: QuestionItem) => buildSeededAgentWorkbenchLocation({
   agentType: 'study_planner',
-  triggerSource: 'manual',
+  triggerSource: 'agent_workbench',
   contextRefs: [`question:${question.id}`, 'study-plan:active', 'analytics:profile'],
   userPrompt: `围绕题库题「${question.title}」整理下一轮训练动作，优先补完整表达、常见误区和复习顺序。`
 })

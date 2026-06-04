@@ -559,15 +559,18 @@ const agentOptions = [
 ] as const
 
 const triggerOptions = [
-  { label: '手动发起', value: 'manual' },
-  { label: '工作台', value: 'dashboard' },
+  { label: 'Agent 工作台', value: 'agent_workbench' },
+  { label: '聊天问答', value: 'chat' },
+  { label: '学习计划', value: 'study_plan' },
+  { label: '工作台首页', value: 'dashboard' },
   { label: PRODUCT_PAGE_NAMES.analytics, value: 'analytics' },
   { label: '录音复盘', value: 'recording_review' },
   { label: '实时面试', value: 'interview_live' },
   { label: PRODUCT_PAGE_NAMES.interview, value: 'interview' },
   { label: PRODUCT_PAGE_NAMES.resume, value: 'resume' },
   { label: PRODUCT_PAGE_NAMES.applications, value: 'applications' },
-  { label: 'Provider 设置', value: 'settings' }
+  { label: 'Provider 设置', value: 'settings' },
+  { label: '手动发起（兼容旧 run）', value: 'manual' }
 ] as const
 
 const runStatusOptions = [
@@ -684,7 +687,7 @@ const defaultForm: {
   userPrompt: string
 } = {
   agentType: 'coordinator',
-  triggerSource: 'manual',
+  triggerSource: 'agent_workbench',
   streamMode: 'sync',
   userPrompt: ''
 }
@@ -742,6 +745,10 @@ const readRouteString = (value: unknown) => {
   return typeof value === 'string' ? value.trim() : ''
 }
 
+const normalizeTriggerSource = (value: string) => {
+  return value === 'manual' ? 'agent_workbench' : value
+}
+
 const resetForm = () => {
   form.agentType = defaultForm.agentType
   form.triggerSource = defaultForm.triggerSource
@@ -753,7 +760,7 @@ const resetForm = () => {
 const syncFiltersFromRoute = () => {
   filters.agentType = readRouteString(route.query.listAgentType)
   filters.status = readRouteString(route.query.listStatus)
-  filters.triggerSource = readRouteString(route.query.listTriggerSource)
+  filters.triggerSource = normalizeTriggerSource(readRouteString(route.query.listTriggerSource))
   filters.approvalStage = readRouteString(route.query.listApprovalStage)
   filters.providerGateStatus = readRouteString(route.query.listProviderGateStatus)
   hasActiveFilters.value = Boolean(
@@ -768,7 +775,7 @@ const applyRoutePrefill = () => {
     form.agentType = route.query.agentType.trim()
   }
   if (typeof route.query.triggerSource === 'string' && route.query.triggerSource.trim()) {
-    form.triggerSource = route.query.triggerSource.trim()
+    form.triggerSource = normalizeTriggerSource(route.query.triggerSource.trim())
   }
   if (typeof route.query.streamMode === 'string' && route.query.streamMode.trim()) {
     form.streamMode = route.query.streamMode.trim()
@@ -791,7 +798,7 @@ const applyQuickStart = (item: QuickStart) => {
 
 const prefillFromRun = async (run: AgentRun) => {
   form.agentType = run.agentType
-  form.triggerSource = run.triggerSource
+  form.triggerSource = normalizeTriggerSource(run.triggerSource)
   form.contextRefs = [...run.contextRefs]
   form.streamMode = run.streamMode || 'sync'
   form.userPrompt = run.userPrompt || ''
@@ -943,6 +950,7 @@ const resolveAgentLabel = (agentType: string) => {
 }
 
 const resolveTriggerLabel = (triggerSource: string) => {
+  if (triggerSource === 'manual') return 'Agent 工作台（旧）'
   return triggerOptions.find((item) => item.value === triggerSource)?.label || triggerSource
 }
 

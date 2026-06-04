@@ -4,6 +4,9 @@ import java.util.Arrays;
 import java.util.Locale;
 
 public enum TriggerSource {
+    AGENT_WORKBENCH("agent_workbench"),
+    CHAT("chat"),
+    STUDY_PLAN("study_plan"),
     MANUAL("manual"),
     DASHBOARD("dashboard"),
     ANALYTICS("analytics"),

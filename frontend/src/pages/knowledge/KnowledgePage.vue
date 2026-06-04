@@ -647,7 +647,7 @@ const knowledgeAgentTarget = (doc: KnowledgeDocItem) => {
   if (doc.businessType === 'jd') {
     return buildSeededAgentWorkbenchLocation({
       agentType: 'coordinator',
-      triggerSource: 'manual',
+      triggerSource: 'agent_workbench',
       contextRefs: [`knowledge:${doc.id}`, 'application:board', 'resume:latest', 'settings:providers'],
       userPrompt: `围绕资料《${doc.title}》安排 JD 备面、项目追问和下一步训练动作。`
     })
@@ -655,14 +655,14 @@ const knowledgeAgentTarget = (doc: KnowledgeDocItem) => {
   if (doc.businessType === 'resume') {
     return buildSeededAgentWorkbenchLocation({
       agentType: 'resume_coach',
-      triggerSource: 'manual',
+      triggerSource: 'agent_workbench',
       contextRefs: [`knowledge:${doc.id}`, 'resume:latest', 'application:board'],
       userPrompt: `围绕资料《${doc.title}》整理简历表达、项目顺序和后续模拟面试前的修改重点。`
     })
   }
   return buildSeededAgentWorkbenchLocation({
     agentType: 'study_planner',
-    triggerSource: 'manual',
+    triggerSource: 'agent_workbench',
     contextRefs: [`knowledge:${doc.id}`, 'study-plan:active', 'analytics:profile'],
     userPrompt: `把资料《${doc.title}》转成下一轮训练动作、题目方向和复习重点。`
   })

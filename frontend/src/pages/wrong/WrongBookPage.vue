@@ -279,13 +279,13 @@ const masteredCount = computed(() => wrongItems.value.filter((item) => item.mast
 const wrongPlanRefreshLink = computed(() => {
   if (!selectedWrong.value) return buildSeededAgentWorkbenchLocation({
     agentType: 'study_planner',
-    triggerSource: 'manual',
+    triggerSource: 'agent_workbench',
     contextRefs: ['study-plan:active', 'analytics:profile'],
     userPrompt: '结合当前错题和训练画像，刷新下一轮训练计划。'
   })
   return buildSeededAgentWorkbenchLocation({
     agentType: 'study_planner',
-    triggerSource: 'manual',
+    triggerSource: 'agent_workbench',
     contextRefs: [`wrong:${selectedWrong.value.id}`, 'study-plan:active', 'analytics:profile'],
     userPrompt: `围绕错题「${selectedWrong.value.title}」刷新下一轮训练计划，优先处理这道题的错误原因和表达缺口。`
   })
@@ -294,14 +294,14 @@ const wrongAgentLink = computed(() => {
   if (!selectedWrong.value) {
     return buildSeededAgentWorkbenchLocation({
       agentType: 'coordinator',
-      triggerSource: 'manual',
+      triggerSource: 'agent_workbench',
       contextRefs: ['analytics:profile', 'study-plan:active'],
       userPrompt: '结合当前错题、长期画像和学习计划，安排下一步训练动作。'
     })
   }
   return buildSeededAgentWorkbenchLocation({
     agentType: 'coordinator',
-    triggerSource: 'manual',
+    triggerSource: 'agent_workbench',
     contextRefs: [`wrong:${selectedWrong.value.id}`, 'analytics:profile', 'study-plan:active'],
     userPrompt: `围绕错题「${selectedWrong.value.title}」安排下一步训练动作，并判断是先复习、模拟面试还是录音复盘。`
   })
