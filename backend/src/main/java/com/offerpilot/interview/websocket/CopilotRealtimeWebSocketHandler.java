@@ -8,8 +8,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,16 +31,16 @@ public class CopilotRealtimeWebSocketHandler extends TextWebSocketHandler {
 
     private final InterviewCopilotRealtimeService interviewCopilotRealtimeService;
     private final ObjectMapper objectMapper;
-    private final Map<Long, Set<String>> activeConnections = new ConcurrentHashMap<>();
+    private final Map<Long, Map<String, WebSocketSession>> activeConnections = new ConcurrentHashMap<>();
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         Long userId = attributeAsLong(session, "userId");
         Long realtimeSessionId = extractSessionId(session.getUri());
         session.getAttributes().put("realtimeSessionId", realtimeSessionId);
-        activeConnections.computeIfAbsent(realtimeSessionId, ignored -> ConcurrentHashMap.newKeySet()).add(session.getId());
+        activeConnections.computeIfAbsent(realtimeSessionId, ignored -> new ConcurrentHashMap<>()).put(session.getId(), session);
         CopilotRealtimeSessionVO snapshot = interviewCopilotRealtimeService.connect(userId, realtimeSessionId);
-        sendEnvelope(session, "snapshot", Map.of("session", snapshot, "serverTime", Instant.now().toString()));
+        broadcastSnapshot(realtimeSessionId, snapshot);
     }
 
     @Override
@@ -56,27 +57,27 @@ public class CopilotRealtimeWebSocketHandler extends TextWebSocketHandler {
         if ("note".equals(type)) {
             String note = String.valueOf(payload.getOrDefault("note", "")).trim();
             CopilotRealtimeSessionVO snapshot = interviewCopilotRealtimeService.appendClientNote(userId, realtimeSessionId, note);
-            sendEnvelope(session, "snapshot", Map.of("session", snapshot, "serverTime", Instant.now().toString()));
+            broadcastSnapshot(realtimeSessionId, snapshot);
             return;
         }
         if ("transcript".equals(type)) {
             String transcript = String.valueOf(payload.getOrDefault("transcript", "")).trim();
             String speaker = String.valueOf(payload.getOrDefault("speaker", "")).trim();
             CopilotRealtimeSessionVO snapshot = interviewCopilotRealtimeService.appendTranscript(userId, realtimeSessionId, transcript, speaker);
-            sendEnvelope(session, "snapshot", Map.of("session", snapshot, "serverTime", Instant.now().toString()));
+            broadcastSnapshot(realtimeSessionId, snapshot);
             return;
         }
         if ("suggestion".equals(type)) {
             String suggestion = String.valueOf(payload.getOrDefault("suggestion", "")).trim();
             String category = String.valueOf(payload.getOrDefault("category", "")).trim();
             CopilotRealtimeSessionVO snapshot = interviewCopilotRealtimeService.appendSuggestion(userId, realtimeSessionId, suggestion, category);
-            sendEnvelope(session, "snapshot", Map.of("session", snapshot, "serverTime", Instant.now().toString()));
+            broadcastSnapshot(realtimeSessionId, snapshot);
             return;
         }
         if ("complete".equals(type)) {
             String summary = String.valueOf(payload.getOrDefault("summary", "")).trim();
             CopilotRealtimeSessionVO snapshot = interviewCopilotRealtimeService.complete(userId, realtimeSessionId, summary);
-            sendEnvelope(session, "snapshot", Map.of("session", snapshot, "serverTime", Instant.now().toString()));
+            broadcastSnapshot(realtimeSessionId, snapshot);
             return;
         }
 
@@ -87,10 +88,10 @@ public class CopilotRealtimeWebSocketHandler extends TextWebSocketHandler {
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         Long realtimeSessionId = attributeAsLong(session, "realtimeSessionId");
         Long userId = attributeAsLong(session, "userId");
-        Set<String> sessionIds = activeConnections.get(realtimeSessionId);
-        if (sessionIds != null) {
-            sessionIds.remove(session.getId());
-            if (sessionIds.isEmpty()) {
+        Map<String, WebSocketSession> sessions = activeConnections.get(realtimeSessionId);
+        if (sessions != null) {
+            sessions.remove(session.getId());
+            if (sessions.isEmpty()) {
                 activeConnections.remove(realtimeSessionId);
                 interviewCopilotRealtimeService.disconnect(userId, realtimeSessionId, "实时连接已断开，可以稍后重新连接。");
             }
@@ -126,6 +127,33 @@ public class CopilotRealtimeWebSocketHandler extends TextWebSocketHandler {
         envelope.put("type", type);
         envelope.putAll(payload);
         session.sendMessage(new TextMessage(objectMapper.writeValueAsString(envelope)));
+    }
+
+    private void broadcastSnapshot(Long realtimeSessionId, CopilotRealtimeSessionVO snapshot) {
+        Map<String, WebSocketSession> sessions = activeConnections.get(realtimeSessionId);
+        if (sessions == null || sessions.isEmpty()) {
+            return;
+        }
+        String serverTime = Instant.now().toString();
+        List<String> staleSessionIds = new ArrayList<>();
+        for (Map.Entry<String, WebSocketSession> entry : sessions.entrySet()) {
+            WebSocketSession targetSession = entry.getValue();
+            if (targetSession == null || !targetSession.isOpen()) {
+                staleSessionIds.add(entry.getKey());
+                continue;
+            }
+            try {
+                sendEnvelope(targetSession, "snapshot", Map.of("session", snapshot, "serverTime", serverTime));
+            } catch (IOException e) {
+                log.warn("Failed to broadcast realtime snapshot sessionId={} websocketSessionId={} error={}",
+                        realtimeSessionId, entry.getKey(), e.getMessage());
+                staleSessionIds.add(entry.getKey());
+            }
+        }
+        staleSessionIds.forEach(sessions::remove);
+        if (sessions.isEmpty()) {
+            activeConnections.remove(realtimeSessionId);
+        }
     }
 
     private Long extractSessionId(URI uri) {
