@@ -374,6 +374,40 @@ class AgentRunServiceImplTest {
     }
 
     @Test
+    void createRun_studyPlannerResolvesTopicDetailFromTopicNameContext() {
+        when(analyticsService.getAbilityProfile(1L)).thenReturn(AbilityProfileVO.builder()
+                .recommendedDifficulty("medium")
+                .suggestedFocus("JVM")
+                .categoryAbilities(List.of(
+                        CategoryAbilityVO.builder()
+                                .categoryId(12L)
+                                .categoryName("JVM")
+                                .abilityScore(61D)
+                                .isWeak(true)
+                                .recommendedDifficulty("medium")
+                                .build()))
+                .build());
+        when(analyticsService.getProfileTopicDetail(1L, 12L)).thenReturn(ProfileTopicDetailVO.builder()
+                .categoryId(12L)
+                .categoryName("JVM")
+                .abilityScore(61D)
+                .dueCount(2)
+                .focusRecommendations(List.of("先补 JVM 内存区域。", "补一轮 GC 追问。"))
+                .build());
+
+        AgentRunVO result = agentRunService.createRun(1L, request(
+                "study_planner",
+                "analytics",
+                List.of("analytics:profile", "analytics:topic-name:JVM"),
+                "围绕这个主题安排下轮训练"));
+
+        assertTrue(result.getSummary().contains("JVM"));
+        assertEquals("/analytics?topic=12", result.getNextActionPath());
+        assertTrue(result.getRecommendations().stream().anyMatch(item -> item.contains("当前重点领域是 JVM")));
+        verify(analyticsService).getProfileTopicDetail(1L, 12L);
+    }
+
+    @Test
     void createRun_studyPlannerUsesApplicationBoardFocus() {
         when(analyticsService.getAbilityProfile(1L)).thenReturn(AbilityProfileVO.builder()
                 .suggestedFocus("系统设计")

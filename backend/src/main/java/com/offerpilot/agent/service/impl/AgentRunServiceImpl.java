@@ -835,7 +835,11 @@ public class AgentRunServiceImpl implements AgentRunService {
             dashboardOverview = loadOptional("dashboard overview", dashboardService::overview);
         }
 
-        if (hasContext(contextRefs, "analytics:profile") || hasContext(contextRefs, "analytics:weak-topics")) {
+        String topicNameRef = findContextRefValue(contextRefs, "analytics:topic-name:");
+
+        if (hasContext(contextRefs, "analytics:profile")
+                || hasContext(contextRefs, "analytics:weak-topics")
+                || StringUtils.hasText(topicNameRef)) {
             abilityProfile = loadOptional("analytics profile", () -> analyticsService.getAbilityProfile(userId));
             if (abilityProfile != null && hasContext(contextRefs, "analytics:weak-topics")) {
                 weakTopicSnapshot = buildWeakTopicSnapshot(abilityProfile);
@@ -849,6 +853,14 @@ public class AgentRunServiceImpl implements AgentRunService {
         Long topicId = findContextRefId(contextRefs, "analytics:topic:");
         if (topicId != null) {
             topicDetail = loadOptional("analytics topic " + topicId, () -> analyticsService.getProfileTopicDetail(userId, topicId));
+        } else if (StringUtils.hasText(topicNameRef) && abilityProfile != null) {
+            Long resolvedTopicId = resolveTopicIdByName(abilityProfile, topicNameRef);
+            if (resolvedTopicId != null) {
+                Long targetTopicId = resolvedTopicId;
+                topicDetail = loadOptional(
+                        "analytics topic " + targetTopicId,
+                        () -> analyticsService.getProfileTopicDetail(userId, targetTopicId));
+            }
         }
 
         Long retrospectiveTopicId = findContextRefId(contextRefs, "analytics:retrospective:topic:");
@@ -2413,6 +2425,28 @@ public class AgentRunServiceImpl implements AgentRunService {
                 .map(ref -> ref.substring(prefix.length()))
                 .map(this::parseLong)
                 .filter(id -> id != null)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private String findContextRefValue(List<String> contextRefs, String prefix) {
+        return contextRefs.stream()
+                .filter(ref -> ref.regionMatches(true, 0, prefix, 0, prefix.length()))
+                .map(ref -> trimToNull(ref.substring(prefix.length())))
+                .filter(StringUtils::hasText)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private Long resolveTopicIdByName(AbilityProfileVO profile, String topicName) {
+        if (profile == null || !StringUtils.hasText(topicName)) {
+            return null;
+        }
+        String normalizedTopicName = topicName.trim();
+        return nullSafeList(profile.getCategoryAbilities()).stream()
+                .filter(item -> item != null && item.getCategoryId() != null)
+                .filter(item -> normalizedTopicName.equalsIgnoreCase(trimToNull(item.getCategoryName())))
+                .map(CategoryAbilityVO::getCategoryId)
                 .findFirst()
                 .orElse(null);
     }
