@@ -4,11 +4,11 @@
       class="inline-flex items-center gap-2 text-sm text-secondary transition-colors hover:text-ink"
       @click="$router.push('/community')"
     >
-      <span>&larr;</span> 返回社区
+      <UiIcon name="back" class="h-4 w-4" /> 返回社区
     </button>
 
-    <section v-if="loading" class="shell-section-card px-8 py-16 text-center text-tertiary">
-      正在加载帖子内容...
+    <section v-if="loading" class="shell-section-card p-5 sm:p-6">
+      <StateView variant="loading" :rows="4" />
     </section>
 
     <template v-else-if="question">
@@ -40,9 +40,7 @@
               :class="{ 'forum-inline-vote-active': question.hasVoted }"
               @click="voteQuestion"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
-              </svg>
+              <UiIcon name="top" class="h-4 w-4" />
               <span>{{ question.upvoteCount }}</span>
             </button>
             <button type="button" class="hard-button-primary" @click="focusAnswerComposer">写回复</button>
@@ -85,9 +83,7 @@
                 <div class="flex flex-wrap items-center gap-2 text-xs text-secondary">
                   <span>{{ formatTime(acceptedAnswer.createdAt) }}</span>
                   <span class="forum-inline-vote forum-inline-vote-static">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
-                    </svg>
+                    <UiIcon name="top" class="h-4 w-4" />
                     <span>{{ acceptedAnswer.upvoteCount }}</span>
                   </span>
                   <button
@@ -122,9 +118,7 @@
                     :class="{ 'forum-inline-vote-active': a.hasVoted }"
                     @click="voteAnswer(a.id)"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
-                    </svg>
+                    <UiIcon name="top" class="h-4 w-4" />
                     <span>{{ a.upvoteCount }}</span>
                   </button>
                   <button
@@ -150,9 +144,8 @@
             </div>
           </article>
 
-          <EmptyState
+          <StateView
             v-if="question.answers.length === 0"
-            class="empty-state-card"
             icon="chat"
             :title="EMPTY_STATE_COPY.communityReplies.title"
             :description="EMPTY_STATE_COPY.communityReplies.description"
@@ -195,8 +188,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import EmptyState from '@/components/EmptyState.vue'
 import { EMPTY_STATE_COPY } from '@/constants/productCopy'
+import { StateView, UiIcon } from '@/components/ui'
 import {
   acceptCommunityAnswerApi,
   deleteCommunityAnswerApi,

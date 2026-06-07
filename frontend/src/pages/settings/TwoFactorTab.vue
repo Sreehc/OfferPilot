@@ -1,17 +1,14 @@
 <template>
   <div class="space-y-4">
-    <div v-if="loading" class="flex items-center justify-center py-8">
-      <el-icon class="is-loading text-slate-400" :size="24"><i class="el-icon-loading" /></el-icon>
-      <span class="ml-3 text-sm text-slate-400">正在加载两步验证状态...</span>
+    <div v-if="loading" class="shell-section-card p-4">
+      <StateView variant="loading" :rows="2" compact />
     </div>
 
     <template v-else>
       <div v-if="status?.enabled" class="space-y-4">
         <div class="flex items-center gap-3 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 p-4">
           <div class="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 dark:bg-green-800/40">
-            <svg class="h-4 w-4 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
+            <UiIcon name="circleCheck" class="h-4 w-4 text-green-600 dark:text-green-400" />
           </div>
           <div>
             <p class="font-semibold text-green-800 dark:text-green-300">两步验证已启用</p>
@@ -70,6 +67,7 @@ import { onMounted, ref } from 'vue'
 import { disableTwoFactorApi, fetchTwoFactorStatusApi } from '@/api/auth'
 import type { TwoFactorStatus } from '@/types/api'
 import TwoFactorSetupPage from './TwoFactorSetupPage.vue'
+import { StateView, UiIcon } from '@/components/ui'
 
 const status = ref<TwoFactorStatus | null>(null)
 const loading = ref(false)

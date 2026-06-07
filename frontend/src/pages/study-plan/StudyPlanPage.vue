@@ -1,5 +1,10 @@
 <template>
-  <div v-loading="loading" class="space-y-5">
+  <div class="space-y-5">
+    <section v-if="loading" class="shell-section-card p-6">
+      <StateView variant="loading" :rows="6" />
+    </section>
+
+    <template v-else>
     <section class="shell-section-card plan-state-card p-4 sm:p-5">
       <div class="workspace-head__top">
         <div class="workspace-head__main">
@@ -40,20 +45,7 @@
         </div>
       </div>
 
-      <div class="plan-state-metrics mt-4">
-        <article class="plan-metric-card">
-          <span>{{ currentPlan ? '今日进度' : '计划模板' }}</span>
-          <strong>{{ currentPlan ? `${Math.round(currentPlan.progressRate || 0)}%` : '7 / 14 / 30 天' }}</strong>
-        </article>
-        <article class="plan-metric-card">
-          <span>{{ currentPlan ? '今日任务' : '主攻方向' }}</span>
-          <strong>{{ currentPlan ? `${currentPlan.todayTaskCount} 项` : topWeakPoint }}</strong>
-        </article>
-        <article class="plan-metric-card">
-          <span>{{ currentPlan ? '日均目标' : '计划入口' }}</span>
-          <strong>{{ currentPlan ? `${currentPlan.dailyTargetMinutes} 分钟` : '生成后直接执行' }}</strong>
-        </article>
-      </div>
+      <MetricStrip :items="planMetrics" class="mt-4" />
     </section>
 
     <section v-if="currentPlan" class="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
@@ -69,19 +61,19 @@
               }}
             </p>
           </div>
-          <div class="flex flex-wrap gap-2">
+          <div class="mode-switch">
             <button
               type="button"
-              class="plan-filter-button"
-              :class="taskFilter === 'today' ? 'plan-filter-button-active' : ''"
+              class="mode-switch__chip"
+              :class="taskFilter === 'today' ? 'mode-switch__chip-active' : ''"
               @click="taskFilter = 'today'"
             >
               今日任务
             </button>
             <button
               type="button"
-              class="plan-filter-button"
-              :class="taskFilter === 'all' ? 'plan-filter-button-active' : ''"
+              class="mode-switch__chip"
+              :class="taskFilter === 'all' ? 'mode-switch__chip-active' : ''"
               @click="taskFilter = 'all'"
             >
               全部任务
@@ -115,15 +107,12 @@
                   <span class="detail-pill">Day {{ task.dayIndex }}</span>
                   <span class="detail-pill">{{ moduleLabel(task.module) }}</span>
                   <span class="detail-pill">{{ task.estimatedMinutes }} 分钟</span>
-                  <span class="plan-priority" :class="priorityClass(task.priority)">{{
-                    priorityLabel(task.priority)
-                  }}</span>
-                  <span
-                    class="plan-task-status"
-                    :class="task.status === 'completed' ? 'plan-task-status-done' : 'plan-task-status-pending'"
-                  >
+                  <StatusBadge :tone="priorityTone(task.priority)" dot>
+                    {{ priorityLabel(task.priority) }}
+                  </StatusBadge>
+                  <StatusBadge :tone="task.status === 'completed' ? 'success' : 'warning'">
                     {{ task.status === 'completed' ? '已完成' : '待执行' }}
-                  </span>
+                  </StatusBadge>
                 </div>
                 <h4 class="mt-3 text-lg font-semibold text-ink">{{ task.title }}</h4>
                 <p class="mt-2 text-sm leading-7 text-secondary">{{ task.description }}</p>
@@ -268,6 +257,7 @@
         </article>
       </div>
     </section>
+    </template>
   </div>
 </template>
 
@@ -284,6 +274,7 @@ import {
 } from '@/api/plan'
 import { fetchReviewStatsApi } from '@/api/review'
 import type { DashboardOverview, ReviewStats, StudyPlan, StudyPlanTaskItem } from '@/types/api'
+import { MetricStrip, StateView, StatusBadge } from '@/components/ui'
 import { buildAgentWorkbenchLocation } from '@/utils/agent'
 import { markGuideSeenForCriticalAction } from '@/utils/guide'
 import { storage } from '@/utils/storage'
@@ -455,6 +446,48 @@ const planStateLabel = computed(() => {
   if (currentPlan.value.todayFocusSummary?.state === 'completed') return '今日已完成'
   return '今日可执行'
 })
+const planMetrics = computed(() => {
+  if (currentPlan.value) {
+    return [
+      {
+        label: '今日进度',
+        value: `${Math.round(currentPlan.value.progressRate || 0)}%`,
+        hint: `已完成 ${currentPlan.value.completedTaskCount} / ${currentPlan.value.totalTaskCount}`,
+        tone: 'accent' as const
+      },
+      {
+        label: '今日任务',
+        value: `${currentPlan.value.todayTaskCount} 项`,
+        hint: `${todayPendingTasks.value.length} 项待做`,
+        tone: todayPendingTasks.value.length ? 'warning' as const : 'success' as const
+      },
+      {
+        label: '日均目标',
+        value: `${currentPlan.value.dailyTargetMinutes} 分钟`,
+        hint: `第 ${currentPlan.value.currentDay} / ${currentPlan.value.durationDays} 天`
+      }
+    ]
+  }
+
+  return [
+    {
+      label: '计划模板',
+      value: '7 / 14 / 30 天',
+      hint: '按面试周期选择',
+      tone: 'accent' as const
+    },
+    {
+      label: '主攻方向',
+      value: topWeakPoint.value,
+      hint: '来自当前训练画像'
+    },
+    {
+      label: '计划入口',
+      value: '生成后执行',
+      hint: `${reviewPending.value} 个待复习项`
+    }
+  ]
+})
 const primaryActionPath = computed(() => {
   return appendSeedToPath(getStudyPlanPrimaryActionPath(overview.value, currentPlan.value, nextTask.value))
 })
@@ -623,10 +656,10 @@ const priorityLabel = (value: string) => {
   }
 }
 
-const priorityClass = (value: string) => {
-  if (value === 'high') return 'plan-priority-high'
-  if (value === 'medium') return 'plan-priority-medium'
-  return 'plan-priority-low'
+const priorityTone = (value: string) => {
+  if (value === 'high') return 'danger'
+  if (value === 'medium') return 'warning'
+  return 'muted'
 }
 
 const isFocusedTask = (taskId: string) => Boolean(focusedTaskId.value) && focusedTaskId.value === taskId
@@ -754,11 +787,6 @@ watch([focusedTaskId, currentPlan], () => {
     radial-gradient(circle at 86% 18%, rgba(var(--bc-cyan-rgb), 0.14), transparent 22%), var(--bc-surface-card);
 }
 
-.plan-state-metrics {
-  display: grid;
-  gap: 0.65rem;
-}
-
 .plan-side-card {
   display: grid;
   gap: 18px;
@@ -769,7 +797,6 @@ watch([focusedTaskId, currentPlan], () => {
   border-top: 1px solid var(--bc-border-subtle);
 }
 
-.plan-metric-card,
 .plan-signal-row {
   border-radius: calc(var(--radius-md) - 6px);
   border: 1px solid var(--bc-border-subtle);
@@ -778,14 +805,12 @@ watch([focusedTaskId, currentPlan], () => {
   backdrop-filter: blur(10px);
 }
 
-.plan-metric-card span,
 .plan-signal-row span {
   display: block;
   font-size: 0.8rem;
   color: var(--bc-ink-secondary);
 }
 
-.plan-metric-card strong,
 .plan-signal-row strong {
   display: block;
   margin-top: 0.35rem;
@@ -844,69 +869,4 @@ watch([focusedTaskId, currentPlan], () => {
   transform: translateY(-1px);
 }
 
-.plan-filter-button {
-  min-height: 42px;
-  border-radius: 999px;
-  border: 1px solid var(--bc-border-subtle);
-  padding: 0 1rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--bc-ink-secondary);
-  transition:
-    color 0.2s ease,
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.plan-filter-button:hover {
-  background: var(--interactive-hover);
-}
-
-.plan-filter-button-active {
-  border-color: rgba(var(--bc-accent-rgb), 0.35);
-  background: rgba(var(--bc-accent-rgb), 0.1);
-  color: var(--bc-ink);
-}
-
-.plan-priority,
-.plan-task-status {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  padding: 0.25rem 0.65rem;
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
-.plan-priority-high {
-  background: rgba(255, 107, 107, 0.12);
-  color: var(--bc-coral);
-}
-
-.plan-priority-medium {
-  background: rgba(240, 176, 67, 0.14);
-  color: #b7791f;
-}
-
-.plan-priority-low {
-  background: rgba(var(--bc-accent-rgb), 0.1);
-  color: var(--bc-accent);
-}
-
-.plan-task-status-done {
-  background: rgba(74, 122, 73, 0.12);
-  color: var(--bc-lime);
-}
-
-.plan-task-status-pending {
-  background: rgba(var(--bc-accent-rgb), 0.1);
-  color: var(--bc-accent);
-}
-
-@media (min-width: 1024px) {
-  .plan-state-metrics {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
 </style>

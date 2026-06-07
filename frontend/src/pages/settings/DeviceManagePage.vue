@@ -25,14 +25,11 @@
     </section>
 
     <section v-if="loading && devices.length === 0" class="shell-section-card p-6">
-      <div class="flex items-center justify-center py-8">
-        <el-icon class="is-loading text-tertiary" :size="24"><i class="el-icon-loading" /></el-icon>
-        <span class="ml-3 text-sm text-tertiary">正在加载登录设备...</span>
-      </div>
+      <StateView variant="loading" :rows="4" />
     </section>
 
     <section v-else-if="devices.length === 0" class="shell-section-card p-6">
-      <EmptyState
+      <StateView
         icon="bell"
         :title="EMPTY_STATE_COPY.deviceManage.title"
         :description="EMPTY_STATE_COPY.deviceManage.description"
@@ -52,15 +49,7 @@
               class="flex h-10 w-10 items-center justify-center rounded-lg"
               :class="device.current ? 'bg-accent/10 text-accent' : 'bg-[var(--panel-muted)] text-secondary'"
             >
-              <svg v-if="deviceIcon(device.deviceName) === 'phone'" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
-              </svg>
-              <svg v-else-if="deviceIcon(device.deviceName) === 'tablet'" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5h3m-6.75 2.25h10.5a2.25 2.25 0 002.25-2.25v-15a2.25 2.25 0 00-2.25-2.25H6.75A2.25 2.25 0 004.5 4.5v15a2.25 2.25 0 002.25 2.25z" />
-              </svg>
-              <svg v-else class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h13.5A2.25 2.25 0 0121 5.25z" />
-              </svg>
+              <UiIcon :name="deviceIcon(device.deviceName)" />
             </div>
             <div>
               <div class="flex items-center gap-2">
@@ -103,11 +92,11 @@
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, ref } from 'vue'
-import EmptyState from '@/components/EmptyState.vue'
 import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
 import { fetchDevicesApi, revokeDeviceApi, revokeAllDevicesApi } from '@/api/auth'
 import { localizeDeviceName } from '@/utils/device'
 import type { LoginDeviceItem } from '@/types/api'
+import { StateView, UiIcon } from '@/components/ui'
 
 const devices = ref<LoginDeviceItem[]>([])
 const loading = ref(false)

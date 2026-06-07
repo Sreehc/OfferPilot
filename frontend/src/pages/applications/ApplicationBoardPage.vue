@@ -29,37 +29,25 @@
           <RouterLink :to="applicationBoardAgentLink" class="hard-button-secondary">
             交给 Agent 推进
           </RouterLink>
-          <RouterLink v-if="currentFocus" :to="applicationJobPrepLink" class="hard-button-secondary">
-            去 JD 备面
-          </RouterLink>
-          <RouterLink v-if="currentFocus" :to="applicationRecordingReviewLink" class="hard-button-secondary">
-            去录音复盘
-          </RouterLink>
-          <RouterLink v-if="currentFocus" :to="applicationCopilotPrepLink" class="hard-button-secondary">
-            去 Copilot Prep
-          </RouterLink>
-          <RouterLink :to="applicationResumeLink" class="hard-button-secondary">检查简历版本</RouterLink>
-          <RouterLink v-if="currentFocus" :to="buildApplicationDetailLink(currentFocus.id)" class="hard-button-secondary">
-            查看当前时间线
-          </RouterLink>
         </div>
       </div>
 
-      <div class="application-state-metrics mt-4">
-        <article class="application-metric-card">
-          <span>当前重点</span>
-          <strong>{{ currentFocus ? '推进现有岗位' : '录入岗位信息' }}</strong>
-        </article>
-        <article class="application-metric-card">
-          <span>最高匹配度</span>
-          <strong>{{ topMatchScore }}</strong>
-        </article>
-        <article class="application-metric-card">
-          <span>Offer 数</span>
-          <strong>{{ statuses.offer.count }}</strong>
-        </article>
-      </div>
+      <MetricStrip :items="applicationMetrics" class="mt-4" />
     </section>
+
+    <ActionRail
+      v-if="currentFocus"
+      title="当前岗位动作"
+      description="围绕当前重点岗位继续推进备面、录音复盘、Copilot 和简历检查。"
+    >
+      <div class="flex flex-wrap gap-2">
+        <RouterLink :to="applicationJobPrepLink" class="hard-button-secondary">去 JD 备面</RouterLink>
+        <RouterLink :to="applicationRecordingReviewLink" class="hard-button-secondary">去录音复盘</RouterLink>
+        <RouterLink :to="applicationCopilotPrepLink" class="hard-button-secondary">去 Copilot Prep</RouterLink>
+        <RouterLink :to="applicationResumeLink" class="hard-button-secondary">检查简历版本</RouterLink>
+        <RouterLink :to="buildApplicationDetailLink(currentFocus.id)" class="hard-button-primary">查看当前时间线</RouterLink>
+      </div>
+    </ActionRail>
 
     <section class="grid gap-4 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
       <article v-if="seededFocusCard" class="shell-section-card p-5 sm:p-6 xl:col-span-2">
@@ -340,6 +328,7 @@ import { createJobApplicationApi, fetchApplicationBoardApi } from '@/api/applica
 import { EMPTY_STATE_COPY } from '@/constants/productCopy'
 import { fetchResumeListApi } from '@/api/resume'
 import type { JobApplicationItem, ResumeSummaryItem } from '@/types/api'
+import { ActionRail, MetricStrip } from '@/components/ui'
 import { buildAgentWorkbenchLocation } from '@/utils/agent'
 import { markGuideSeenForCriticalAction } from '@/utils/guide'
 import { storage } from '@/utils/storage'
@@ -478,6 +467,25 @@ const topMatchScore = computed(() => {
   if (!applications.value.length) return '--'
   return `${Math.round(Math.max(...applications.value.map((item) => item.matchScore || 0)))}`
 })
+const applicationMetrics = computed(() => [
+  {
+    label: '当前重点',
+    value: currentFocus.value ? '推进岗位' : '录入岗位',
+    hint: currentFocus.value ? `${currentFocus.value.company} · ${currentFocus.value.jobTitle}` : '从第一条岗位开始'
+  },
+  {
+    label: '最高匹配度',
+    value: topMatchScore.value,
+    hint: '来自 JD 与简历分析',
+    tone: applications.value.length ? 'accent' as const : undefined
+  },
+  {
+    label: 'Offer 数',
+    value: statuses.value.offer.count,
+    hint: `${activeCount.value} 条正在推进`,
+    tone: statuses.value.offer.count ? 'success' as const : undefined
+  }
+])
 const applicationBoardAgentLink = computed(() => {
   const contextRefs = ['application:board', 'analytics:profile', 'resume:latest']
   if (currentFocus.value?.id) {
@@ -655,34 +663,6 @@ onMounted(() => {
   border-top: 1px solid var(--bc-border-subtle);
 }
 
-.application-state-metrics {
-  display: grid;
-  gap: 0.65rem;
-  margin-top: 1rem;
-}
-
-.application-metric-card {
-  border-radius: calc(var(--radius-md) - 6px);
-  border: 1px solid var(--bc-border-subtle);
-  background: rgba(255, 255, 255, 0.38);
-  padding: 0.8rem 0.9rem;
-  backdrop-filter: blur(10px);
-}
-
-.application-metric-card span {
-  display: block;
-  font-size: 0.8rem;
-  color: var(--bc-ink-secondary);
-}
-
-.application-metric-card strong {
-  display: block;
-  margin-top: 0.35rem;
-  font-size: 1.05rem;
-  line-height: 1.25;
-  color: var(--bc-ink);
-}
-
 .focus-card {
   border-radius: calc(var(--radius-lg) - 2px);
   border: 1px solid rgba(var(--bc-accent-rgb), 0.16);
@@ -722,12 +702,6 @@ onMounted(() => {
   background: var(--bc-surface-card);
   padding: 0.95rem;
   text-decoration: none;
-}
-
-@media (min-width: 768px) {
-  .application-state-metrics {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 }
 
 @media (min-width: 1280px) {

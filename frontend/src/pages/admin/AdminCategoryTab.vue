@@ -1,3 +1,4 @@
+<!-- eslint-disable vue/no-mutating-props -->
 <template>
   <div class="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
     <div class="surface-muted p-4">

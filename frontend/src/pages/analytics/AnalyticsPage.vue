@@ -14,14 +14,11 @@
         </RouterLink>
       </div>
 
-      <div v-if="profileLoading" class="mt-5 flex h-[220px] items-center justify-center">
-        <div class="text-center">
-          <div class="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-          <p class="mt-3 text-sm text-secondary">正在加载训练画像...</p>
-        </div>
+      <div v-if="profileLoading" class="mt-5">
+        <StateView variant="loading" :rows="4" />
       </div>
       <div v-else-if="abilityProfile.evidenceStatus !== 'ready'" class="mt-5">
-        <EmptyState
+        <StateView
           icon="chart"
           :title="profileEvidenceTitle"
           :description="abilityProfile.evidenceSummary || '先完成几轮题库、复盘或模拟面试，这里会开始沉淀长期趋势。'"
@@ -47,7 +44,7 @@
         </article>
       </div>
       <div v-else-if="!abilityProfile.categoryAbilities.length" class="mt-5">
-        <EmptyState
+        <StateView
           icon="chart"
           title="训练画像暂时为空"
           description="当前画像已生成，但还没有可展示的主题详情。继续补几轮训练后再回来查看。"
@@ -164,11 +161,8 @@
           </div>
 
           <div v-if="topicDetailLoading || topicDetail" class="mt-5">
-            <div v-if="topicDetailLoading" class="topic-detail-shell flex h-[220px] items-center justify-center">
-              <div class="text-center">
-                <div class="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-                <p class="mt-3 text-sm text-secondary">正在加载领域详情...</p>
-              </div>
+            <div v-if="topicDetailLoading" class="topic-detail-shell">
+              <StateView variant="loading" :rows="3" compact />
             </div>
             <div v-else-if="topicDetail" class="topic-detail-shell">
               <div class="flex flex-wrap items-start justify-between gap-3">
@@ -306,11 +300,8 @@
                 </div>
               </article>
 
-              <div v-if="retrospectiveLoading" class="topic-retrospective-shell mt-5 flex h-[220px] items-center justify-center">
-                <div class="text-center">
-                  <div class="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-                  <p class="mt-3 text-sm text-secondary">正在生成领域回顾...</p>
-                </div>
+              <div v-if="retrospectiveLoading" class="topic-retrospective-shell mt-5">
+                <StateView variant="loading" :rows="3" compact />
               </div>
               <div v-else-if="topicRetrospective" class="topic-retrospective-shell mt-5">
                 <div class="flex flex-wrap items-start justify-between gap-3">
@@ -438,11 +429,8 @@
             </div>
           </div>
 
-          <div v-if="trendLoading" class="mt-4 flex h-[340px] items-center justify-center">
-            <div class="text-center">
-              <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-              <p class="mt-3 text-sm text-secondary">正在加载准备趋势...</p>
-            </div>
+          <div v-if="trendLoading" class="mt-4">
+            <StateView variant="loading" :rows="4" />
           </div>
           <div
             v-else-if="
@@ -454,7 +442,7 @@
             "
             class="mt-4 flex h-[340px] items-center justify-center"
           >
-            <EmptyState
+            <StateView
               icon="chart"
               :title="EMPTY_STATE_COPY.analyticsTrend.title"
               :description="EMPTY_STATE_COPY.analyticsTrend.description"
@@ -476,14 +464,11 @@
           </div>
         </div>
 
-        <div v-if="efficiencyLoading" class="mt-5 flex h-[260px] items-center justify-center">
-          <div class="text-center">
-            <div class="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-            <p class="mt-3 text-sm text-secondary">正在加载复盘强度...</p>
-          </div>
+        <div v-if="efficiencyLoading" class="mt-5">
+          <StateView variant="loading" :rows="3" />
         </div>
         <div v-else-if="!efficiencyData.efTrend?.length" class="mt-5 flex h-[260px] items-center justify-center">
-          <EmptyState
+          <StateView
             icon="review"
             :title="EMPTY_STATE_COPY.analyticsReviewIntensity.title"
             :description="EMPTY_STATE_COPY.analyticsReviewIntensity.description"
@@ -518,17 +503,14 @@
           </div>
         </div>
 
-        <div v-if="efficiencyLoading" class="mt-5 flex h-[260px] items-center justify-center">
-          <div class="text-center">
-            <div class="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-            <p class="mt-3 text-sm text-secondary">正在加载复盘稳定性...</p>
-          </div>
+        <div v-if="efficiencyLoading" class="mt-5">
+          <StateView variant="loading" :rows="3" />
         </div>
         <div
           v-else-if="!efficiencyData.forgettingRateTrend?.length"
           class="mt-5 flex h-[260px] items-center justify-center"
         >
-          <EmptyState
+          <StateView
             icon="review"
             :title="EMPTY_STATE_COPY.analyticsReviewStability.title"
             :description="EMPTY_STATE_COPY.analyticsReviewStability.description"
@@ -584,7 +566,7 @@
           </article>
         </div>
         <div v-else class="mt-5">
-          <EmptyState
+          <StateView
             icon="chart"
             :title="EMPTY_STATE_COPY.analyticsCategoryMastery.title"
             :description="EMPTY_STATE_COPY.analyticsCategoryMastery.description"
@@ -620,7 +602,7 @@
           </article>
         </div>
         <div v-else class="mt-5">
-          <EmptyState
+          <StateView
             icon="chart"
             :title="EMPTY_STATE_COPY.analyticsMasteryDistribution.title"
             :description="EMPTY_STATE_COPY.analyticsMasteryDistribution.description"
@@ -637,14 +619,11 @@
         </div>
       </div>
 
-      <div v-if="trendLoading" class="mt-5 flex h-[300px] items-center justify-center">
-        <div class="text-center">
-          <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-          <p class="mt-3 text-sm text-secondary">正在加载面试趋势...</p>
-        </div>
+      <div v-if="trendLoading" class="mt-5">
+        <StateView variant="loading" :rows="4" />
       </div>
       <div v-else-if="!trendData.overallTrend?.length" class="mt-5 flex h-[300px] items-center justify-center">
-        <EmptyState
+        <StateView
           icon="chart"
           :title="EMPTY_STATE_COPY.analyticsInterviewTrend.title"
           :description="EMPTY_STATE_COPY.analyticsInterviewTrend.description"
@@ -685,8 +664,8 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { LocationQueryRaw, RouteLocationRaw } from 'vue-router'
 import { fetchAgentRunsApi } from '@/api/agent'
-import EmptyState from '@/components/EmptyState.vue'
 import { EMPTY_STATE_COPY } from '@/constants/productCopy'
+import { StateView } from '@/components/ui'
 import { useTheme } from '@/composables/useTheme'
 import { readThemePalette } from '@/utils/theme'
 import { buildAgentWorkbenchLocation } from '@/utils/agent'

@@ -1,5 +1,11 @@
 <template>
-  <div v-loading="loading" class="space-y-5">
+  <div class="space-y-5">
+    <StateView
+      v-if="loading && !currentResume && !resumeList.length"
+      variant="loading"
+      :rows="5"
+    />
+
     <section class="shell-section-card resume-state-card p-4 sm:p-5">
       <div class="workspace-head__top">
         <div class="workspace-head__main">
@@ -69,22 +75,7 @@
         </div>
       </div>
 
-      <div class="resume-state-metrics mt-4">
-        <article class="resume-metric-card">
-          <span>{{ currentResume ? '当前状态' : '主目标' }}</span>
-          <strong>{{
-            currentResume ? parseStatusLabel(currentResume.parseStatus, currentResume.userFixStatus) : '上传简历'
-          }}</strong>
-        </article>
-        <article class="resume-metric-card">
-          <span>{{ currentResume ? '下一步' : '当前操作' }}</span>
-          <strong>{{ nextActionText }}</strong>
-        </article>
-        <article class="resume-metric-card">
-          <span>{{ currentResume ? '最后更新' : '支持格式' }}</span>
-          <strong>{{ currentResume ? formatDateTime(currentResume.updateTime) : 'PDF / DOC / DOCX' }}</strong>
-        </article>
-      </div>
+      <MetricStrip :items="resumeMetrics" class="mt-4" />
     </section>
 
       <section class="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
@@ -658,6 +649,7 @@ import {
   uploadResumeApi
 } from '@/api/resume'
 import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
+import { MetricStrip, StateView } from '@/components/ui'
 import type {
   EditableInterviewResume,
   ResumeFileDetail,
@@ -812,6 +804,26 @@ const nextActionText = computed(() => {
   }
   return '确认开场和面试提纲'
 })
+const resumeMetrics = computed(() => [
+  {
+    label: currentResume.value ? '当前状态' : '主目标',
+    value: currentResume.value
+      ? parseStatusLabel(currentResume.value.parseStatus, currentResume.value.userFixStatus)
+      : '上传简历',
+    hint: currentResume.value ? '解析与整理状态' : '先建立可训练素材',
+    tone: currentResume.value?.parseStatus === 'failed' ? 'danger' as const : 'accent' as const
+  },
+  {
+    label: currentResume.value ? '下一步' : '当前操作',
+    value: nextActionText.value,
+    hint: seededFocusLabel.value || '保持简历到面试的闭环'
+  },
+  {
+    label: currentResume.value ? '最后更新' : '支持格式',
+    value: currentResume.value ? formatDateTime(currentResume.value.updateTime) : 'PDF / DOC / DOCX',
+    hint: currentResume.value ? `${currentResume.value.projects.length} 个项目` : '单文件不超过 10MB'
+  }
+])
 const hasAgentFollowUpDraft = computed(() => Boolean(
   currentResume.value?.interviewResumeText?.trim() && currentResume.value?.userFixStatus === 'agent_draft'
 ))
@@ -1282,33 +1294,12 @@ onMounted(() => {
   border-top: 1px solid var(--bc-border-subtle);
 }
 
-.resume-state-metrics {
-  display: grid;
-  gap: 0.65rem;
-  margin-top: 1rem;
-}
-
-.resume-metric-card,
 .resume-step-row {
   border-radius: calc(var(--radius-md) - 6px);
   border: 1px solid var(--bc-border-subtle);
   background: rgba(255, 255, 255, 0.38);
   padding: 0.8rem 0.9rem;
   backdrop-filter: blur(10px);
-}
-
-.resume-metric-card span {
-  display: block;
-  font-size: 0.8rem;
-  color: var(--bc-ink-secondary);
-}
-
-.resume-metric-card strong {
-  display: block;
-  margin-top: 0.35rem;
-  font-size: 1.05rem;
-  line-height: 1.25;
-  color: var(--bc-ink);
 }
 
 .resume-list-card {
@@ -1383,12 +1374,6 @@ onMounted(() => {
   border-radius: 1rem;
   background: rgba(255, 255, 255, 0.72);
   padding: 0.9rem 1rem;
-}
-
-@media (min-width: 768px) {
-  .resume-state-metrics {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 }
 
 .resume-score-ring {

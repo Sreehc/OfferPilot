@@ -10,12 +10,7 @@
           <div class="flex flex-wrap gap-3">
             <button type="button" class="session-toggle" @click="toggleSessionPanel">
               <span class="session-toggle__icon" aria-hidden="true">
-                <svg v-if="desktopSessionVisible && isDesktopViewport" viewBox="0 0 24 24" fill="none">
-                  <path d="M8 4v16M12 4h8v16h-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                </svg>
-                <svg v-else viewBox="0 0 24 24" fill="none">
-                  <path d="M16 4v16M12 4H4v16h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                </svg>
+                <UiIcon :name="desktopSessionVisible && isDesktopViewport ? 'collapse' : 'expand'" />
               </span>
               <span>会话</span>
             </button>
@@ -89,7 +84,7 @@
                 </div>
               </div>
 
-              <EmptyState
+              <StateView
                 v-else
                 icon="chat"
                 :title="sessionEmptyState.title"
@@ -246,7 +241,7 @@
                   </div>
 
                   <div v-else-if="!messages.length && !streaming" class="chat-empty-wrap">
-                    <EmptyState icon="chat" :title="conversationEmptyState.title" :description="conversationEmptyState.description" compact />
+                    <StateView icon="chat" :title="conversationEmptyState.title" :description="conversationEmptyState.description" compact />
                     <div class="prompt-suggestions">
                       <button
                         v-for="suggestion in promptSuggestions"
@@ -429,7 +424,7 @@
             </button>
           </div>
 
-          <EmptyState
+          <StateView
             v-if="!filteredSessions.length"
             icon="chat"
             :title="sessionEmptyState.title"
@@ -497,10 +492,10 @@ import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, type LocationQueryRaw, type RouteLocationRaw } from 'vue-router'
-import EmptyState from '@/components/EmptyState.vue'
 import { deleteChatSessionApi, fetchChatMessagesApi, fetchChatSessionsApi } from '@/api/chat'
 import { ERROR_COPY } from '@/constants/productCopy'
 import { fetchResumeDetailApi, fetchResumeListApi } from '@/api/resume'
+import { StateView, UiIcon } from '@/components/ui'
 import type {
   ChatKnowledgeScope,
   ChatMessageItem,

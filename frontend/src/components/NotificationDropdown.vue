@@ -7,9 +7,7 @@
       title="通知"
       @click="toggleDropdown"
     >
-      <svg class="h-5 w-5 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
-      </svg>
+      <UiIcon name="bell" class="h-5 w-5 text-secondary" />
       <span
         v-if="unreadCount > 0"
         class="absolute -right-0.5 -top-0.5 flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white"
@@ -40,7 +38,7 @@
         <!-- Notification list -->
         <div class="max-h-80 overflow-y-auto">
           <div v-if="loading" class="py-8 text-center">
-            <div class="mx-auto h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+            <UiIcon name="loading" class="mx-auto h-5 w-5 animate-spin text-accent" />
             <p class="mt-3 text-xs text-secondary">正在加载通知...</p>
           </div>
 
@@ -106,6 +104,7 @@ import { ElMessage } from 'element-plus'
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
+import { UiIcon } from '@/components/ui'
 import { ERROR_COPY } from '@/constants/productCopy'
 import {
   fetchNotificationsApi,

@@ -6,22 +6,25 @@
         class="flex items-center gap-1 text-sm text-secondary transition hover:text-accent"
         @click="router.back()"
       >
-        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
+        <UiIcon name="back" />
         返回模拟面试
       </button>
     </div>
 
-    <section v-if="loading" class="shell-section-card p-8 text-center">
-      <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-      <p class="mt-4 text-sm text-secondary">正在加载这次面试记录...</p>
+    <section v-if="loading" class="shell-section-card p-6">
+      <StateView variant="loading" :rows="6" />
     </section>
 
-    <section v-else-if="!detail" class="shell-section-card p-8 text-center">
-      <p class="text-lg font-semibold text-ink">面试记录未找到</p>
-      <p class="mt-3 text-sm leading-7 text-secondary">这次面试记录暂时无法查看。请返回模拟面试重试。</p>
-      <RouterLink :to="mockInterviewWorkspaceLink" class="hard-button-primary mt-4 inline-flex">返回模拟面试</RouterLink>
+    <section v-else-if="!detail" class="shell-section-card p-6">
+      <StateView
+        icon="interview"
+        title="面试记录未找到"
+        description="这次面试记录暂时无法查看。请返回模拟面试重试。"
+      >
+        <template #action>
+          <RouterLink :to="mockInterviewWorkspaceLink" class="hard-button-primary">返回模拟面试</RouterLink>
+        </template>
+      </StateView>
     </section>
 
     <template v-else>
@@ -71,26 +74,7 @@
         </div>
       </section>
 
-      <section class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <article class="shell-section-card p-5">
-          <div class="text-xs uppercase tracking-[0.22em] text-tertiary">目标岗位</div>
-          <div class="mt-2 text-base font-semibold text-ink">{{ detail.jobRole || '未设置' }}</div>
-        </article>
-        <article class="shell-section-card p-5">
-          <div class="text-xs uppercase tracking-[0.22em] text-tertiary">经验阶段</div>
-          <div class="mt-2 text-base font-semibold text-ink">{{ experienceLabel(detail.experienceLevel) }}</div>
-        </article>
-        <article class="shell-section-card p-5">
-          <div class="text-xs uppercase tracking-[0.22em] text-tertiary">技术范围</div>
-          <div class="mt-2 text-sm font-semibold leading-6 text-ink">{{ detail.techStack || '未限定技术范围' }}</div>
-        </article>
-        <article class="shell-section-card p-5">
-          <div class="text-xs uppercase tracking-[0.22em] text-tertiary">面试策略</div>
-          <div class="mt-2 text-sm font-semibold leading-6 text-ink">
-            {{ detail.includeResumeProject ? '结合项目表达与工程权衡' : '聚焦基础原理与结构化表达' }}
-          </div>
-        </article>
-      </section>
+      <MetricStrip :items="interviewDetailMetrics" />
 
       <section
         v-for="(record, index) in sortedRecords"
@@ -221,6 +205,7 @@ import { useRoute, useRouter, type LocationQueryRaw, type RouteLocationRaw } fro
 import { interviewDetailApi } from '@/api/interview'
 import { ERROR_COPY } from '@/constants/productCopy'
 import type { InterviewDetail } from '@/types/api'
+import { MetricStrip, StateView, UiIcon } from '@/components/ui'
 import { buildAgentWorkbenchLocation } from '@/utils/agent'
 
 const route = useRoute()
@@ -234,6 +219,33 @@ const sortedRecords = computed(() => {
 })
 const firstWrongRecord = computed(() => {
   return sortedRecords.value.find((item) => item.wrongQuestionId) || null
+})
+const interviewDetailMetrics = computed(() => {
+  if (!detail.value) return []
+  return [
+    {
+      label: '目标岗位',
+      value: detail.value.jobRole || '未设置',
+      hint: experienceLabel(detail.value.experienceLevel)
+    },
+    {
+      label: '技术范围',
+      value: detail.value.techStack || '未限定',
+      hint: detail.value.direction,
+      tone: 'accent' as const
+    },
+    {
+      label: '面试策略',
+      value: detail.value.includeResumeProject ? '结合项目' : '基础表达',
+      hint: detail.value.includeResumeProject ? '项目表达与工程权衡' : '基础原理与结构化表达'
+    },
+    {
+      label: '低分题',
+      value: sortedRecords.value.filter((item) => item.isLowScore).length,
+      hint: '优先复盘',
+      tone: sortedRecords.value.some((item) => item.isLowScore) ? 'warning' as const : 'success' as const
+    }
+  ]
 })
 
 const formatScore = (score: number | undefined | null): string => {

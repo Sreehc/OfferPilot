@@ -18,24 +18,7 @@
           </div>
         </div>
 
-        <div class="wrong-book-metrics mt-4">
-          <article class="wrong-book-metric">
-            <span>总错题</span>
-            <strong>{{ total }}</strong>
-          </article>
-          <article class="wrong-book-metric">
-            <span>待复习</span>
-            <strong>{{ pendingCount }}</strong>
-          </article>
-          <article class="wrong-book-metric">
-            <span>已掌握</span>
-            <strong>{{ masteredCount }}</strong>
-          </article>
-          <article class="wrong-book-metric">
-            <span>当前页</span>
-            <strong>{{ wrongItems.length }}</strong>
-          </article>
-        </div>
+        <MetricStrip :items="wrongBookMetrics" class="mt-4" />
       </div>
 
       <div class="workspace-separator"></div>
@@ -50,14 +33,12 @@
           <span class="detail-pill">{{ total }} 题</span>
         </div>
 
-        <div v-if="loading" class="py-16 text-center">
-          <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-          <p class="mt-4 text-sm text-secondary">正在加载错题列表...</p>
+        <div v-if="loading" class="py-6">
+          <StateView variant="loading" :rows="5" />
         </div>
 
         <div v-else-if="wrongItems.length === 0" class="mt-6">
-          <EmptyState
-            class="empty-state-card"
+          <StateView
             icon="clipboard"
             :title="EMPTY_STATE_COPY.wrongBook.title"
             :description="EMPTY_STATE_COPY.wrongBook.description"
@@ -100,9 +81,8 @@
       </article>
 
       <aside class="wrong-book-detail">
-        <div v-if="detailLoading" class="py-16 text-center">
-          <div class="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-          <p class="mt-4 text-sm text-secondary">正在加载题目详情...</p>
+        <div v-if="detailLoading" class="py-6">
+          <StateView variant="loading" :rows="4" compact />
         </div>
 
         <template v-else-if="selectedWrong">
@@ -128,24 +108,7 @@
             </RouterLink>
           </div>
 
-          <div class="wrong-book-metrics mt-6">
-            <article class="wrong-book-metric">
-              <span>复盘系数</span>
-              <strong>{{ formatEaseFactor(selectedWrong.easeFactor) }}</strong>
-            </article>
-            <article class="wrong-book-metric">
-              <span>间隔天数</span>
-              <strong>{{ selectedWrong.intervalDays ?? 0 }}</strong>
-            </article>
-            <article class="wrong-book-metric">
-              <span>连续次数</span>
-              <strong>{{ selectedWrong.streak ?? 0 }}</strong>
-            </article>
-            <article class="wrong-book-metric">
-              <span>复习次数</span>
-              <strong>{{ selectedWrong.reviewCount ?? 0 }}</strong>
-            </article>
-          </div>
+          <MetricStrip :items="selectedWrongMetrics" class="mt-6" />
 
           <div class="mt-6 flex flex-wrap gap-3">
             <button
@@ -194,8 +157,7 @@
         </template>
 
         <div v-else class="py-16">
-          <EmptyState
-            class="empty-state-card"
+          <StateView
             icon="clipboard"
             :title="EMPTY_STATE_COPY.wrongDetailSelection.title"
             :description="EMPTY_STATE_COPY.wrongDetailSelection.description"
@@ -212,7 +174,6 @@
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter, type LocationQueryRaw, type RouteLocationRaw } from 'vue-router'
-import EmptyState from '@/components/EmptyState.vue'
 import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
 import {
   deleteWrongApi,
@@ -222,6 +183,7 @@ import {
   updateMasteryApi
 } from '@/api/wrong'
 import type { WrongQuestionItem } from '@/types/api'
+import { MetricStrip, StateView } from '@/components/ui'
 import { buildAgentWorkbenchLocation } from '@/utils/agent'
 
 const route = useRoute()
@@ -276,6 +238,56 @@ const masteryOptions: Array<{ value: WrongQuestionItem['masteryLevel']; label: s
 
 const pendingCount = computed(() => wrongItems.value.filter((item) => item.masteryLevel !== 'mastered').length)
 const masteredCount = computed(() => wrongItems.value.filter((item) => item.masteryLevel === 'mastered').length)
+const wrongBookMetrics = computed(() => [
+  {
+    label: '总错题',
+    value: total.value,
+    hint: '当前错题本'
+  },
+  {
+    label: '待复习',
+    value: pendingCount.value,
+    hint: '需要继续回看',
+    tone: pendingCount.value ? 'warning' as const : 'success' as const
+  },
+  {
+    label: '已掌握',
+    value: masteredCount.value,
+    hint: '当前页统计',
+    tone: 'success' as const
+  },
+  {
+    label: '当前页',
+    value: wrongItems.value.length,
+    hint: `${pageNum.value} / ${Math.max(totalPages.value, 1)} 页`
+  }
+])
+const selectedWrongMetrics = computed(() => {
+  if (!selectedWrong.value) return []
+  return [
+    {
+      label: '复盘系数',
+      value: formatEaseFactor(selectedWrong.value.easeFactor),
+      hint: '记忆间隔因子'
+    },
+    {
+      label: '间隔天数',
+      value: selectedWrong.value.intervalDays ?? 0,
+      hint: '下轮复习距离',
+      tone: 'accent' as const
+    },
+    {
+      label: '连续次数',
+      value: selectedWrong.value.streak ?? 0,
+      hint: '连续答对'
+    },
+    {
+      label: '复习次数',
+      value: selectedWrong.value.reviewCount ?? 0,
+      hint: '历史复习'
+    }
+  ]
+})
 const wrongPlanRefreshLink = computed(() => {
   if (!selectedWrong.value) return buildSeededAgentWorkbenchLocation({
     agentType: 'study_planner',
@@ -524,33 +536,6 @@ onMounted(() => {
   align-items: flex-start;
 }
 
-.wrong-book-metrics {
-  display: grid;
-  gap: 0.65rem;
-}
-
-.wrong-book-metric {
-  border-radius: 14px;
-  border: 1px solid var(--bc-border-subtle);
-  background: var(--panel-muted);
-  padding: 0.7rem 0.85rem;
-}
-
-.wrong-book-metric span {
-  display: block;
-  color: var(--bc-ink-secondary);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.wrong-book-metric strong {
-  display: block;
-  margin-top: 0.35rem;
-  color: var(--bc-ink);
-  font-size: 1.25rem;
-  font-weight: 780;
-}
-
 .wrong-book-section-head {
   display: flex;
   flex-wrap: wrap;
@@ -655,9 +640,4 @@ onMounted(() => {
   }
 }
 
-@media (min-width: 700px) {
-  .wrong-book-metrics {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
 </style>

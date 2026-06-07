@@ -59,18 +59,7 @@
               @click="openSearch"
             >
               <span class="app-topbar__search-icon">
-                <svg
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
+                <UiIcon name="search" />
               </span>
               <span class="app-topbar__search-text">搜索页面或操作</span>
               <span class="app-topbar__search-kbd hidden sm:inline-flex">/</span>
@@ -132,19 +121,10 @@
           @keydown.enter="handleSearchNavigate"
         >
           <template #prefix>
-            <svg
+            <UiIcon
+              name="search"
               class="h-4 w-4 text-tertiary"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
+            />
           </template>
         </el-input>
         <div class="mt-3 space-y-1">
@@ -190,6 +170,7 @@ import AvatarDropdown from '@/components/AvatarDropdown.vue'
 import { PRODUCT_PAGE_NAMES } from '@/constants/productCopy'
 import DashboardSidebar from '@/pages/dashboard/DashboardSidebar.vue'
 import { useAuthStore } from '@/stores/auth'
+import UiIcon from '@/components/ui/UiIcon.vue'
 import type { ComponentPublicInstance } from 'vue'
 
 const authStore = useAuthStore()
@@ -363,8 +344,8 @@ const handleLogout = async () => {
 <style scoped>
 .app-layout-root {
   background:
-    radial-gradient(circle at 0 0, rgba(var(--bc-accent-rgb), 0.08), transparent 24%),
-    linear-gradient(180deg, #f5f8ff 0%, #eff3fb 100%);
+    radial-gradient(circle at 0 0, rgba(var(--bc-accent-rgb), 0.055), transparent 22%),
+    linear-gradient(180deg, var(--bc-shell) 0%, var(--bc-void) 100%);
 }
 
 .app-shell {
@@ -377,7 +358,7 @@ const handleLogout = async () => {
 }
 
 .app-shell__content {
-  padding: 14px;
+  padding: 12px;
 }
 
 .app-shell__sidebar {
@@ -393,7 +374,7 @@ const handleLogout = async () => {
   gap: 16px;
   margin-inline: 0;
   width: 100%;
-  max-width: none;
+  max-width: 1680px;
 }
 
 .app-canvas-page {
@@ -433,7 +414,7 @@ const handleLogout = async () => {
   gap: 12px;
   padding: 10px 14px 6px;
   background:
-    linear-gradient(180deg, rgba(245, 248, 255, 0.92), rgba(245, 248, 255, 0.72) 72%, transparent);
+    linear-gradient(180deg, color-mix(in srgb, var(--bc-shell) 92%, transparent), color-mix(in srgb, var(--bc-shell) 66%, transparent) 72%, transparent);
   backdrop-filter: blur(16px);
 }
 
@@ -488,9 +469,9 @@ const handleLogout = async () => {
   gap: 10px;
   min-height: 48px;
   border-radius: 18px;
-  border: 1px solid rgba(84, 116, 198, 0.14);
-  background: rgba(255, 255, 255, 0.92);
-  color: #6f7d95;
+  border: 1px solid var(--bc-border-subtle);
+  background: var(--bc-surface-button);
+  color: var(--bc-ink-secondary);
   padding: 0.45rem 0.82rem;
   box-shadow: 0 8px 18px rgba(41, 62, 109, 0.05);
   transition:
@@ -500,15 +481,15 @@ const handleLogout = async () => {
 }
 
 .app-topbar__search:hover {
-  border-color: rgba(84, 116, 198, 0.22);
+  border-color: var(--bc-border-strong);
   box-shadow: 0 10px 20px rgba(41, 62, 109, 0.08);
   transform: translateY(-1px);
 }
 
 .app-topbar__search-icon {
   display: inline-flex;
-  width: 18px;
-  height: 18px;
+  width: 1.05rem;
+  height: 1.05rem;
   flex-shrink: 0;
 }
 

@@ -14,8 +14,8 @@
         "
         @click="item.action?.()"
       >
-        <component
-          :is="item.icon"
+        <UiIcon
+          :name="item.icon"
           class="mobile-nav-shell__icon"
         />
         <span class="mobile-nav-shell__label">{{ item.label }}</span>
@@ -25,58 +25,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { PRODUCT_PAGE_NAMES } from '@/constants/productCopy'
+import UiIcon from '@/components/ui/UiIcon.vue'
 
 const route = useRoute()
-
-// Simple SVG icon components
-const IconHome = () =>
-  h('svg', { class: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2' }, [
-    h('path', {
-      'stroke-linecap': 'round',
-      'stroke-linejoin': 'round',
-      d: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'
-    })
-  ])
-
-const IconQuestion = () =>
-  h('svg', { class: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2' }, [
-    h('path', {
-      'stroke-linecap': 'round',
-      'stroke-linejoin': 'round',
-      d: 'M8.25 8.25a3.75 3.75 0 117.5 0c0 1.345-.58 2.195-1.56 2.992-.74.602-1.44 1.25-1.44 2.258v.25'
-    }),
-    h('path', {
-      'stroke-linecap': 'round',
-      'stroke-linejoin': 'round',
-      d: 'M12 18h.01'
-    })
-  ])
-
-const IconChat = () =>
-  h('svg', { class: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2' }, [
-    h('path', {
-      'stroke-linecap': 'round',
-      'stroke-linejoin': 'round',
-      d: 'M8 10h8M8 14h4m-7 5l1.76-3.52A8 8 0 114 15.5V19z'
-    })
-  ])
-
-const IconInterview = () =>
-  h('svg', { class: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2' }, [
-    h('path', {
-      'stroke-linecap': 'round',
-      'stroke-linejoin': 'round',
-      d: 'M7 8h10M7 12h6m-6 4h10M5 5h14a2 2 0 012 2v10a2 2 0 01-2 2H9l-4 3v-3H5a2 2 0 01-2-2V7a2 2 0 012-2z'
-    })
-  ])
-
-const IconMore = () =>
-  h('svg', { class: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2' }, [
-    h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d: 'M12 6h.01M12 12h.01M12 18h.01' })
-  ])
 
 const openSidebar = () => {
   window.dispatchEvent(new CustomEvent('offerpilot:open-sidebar'))
@@ -111,11 +65,11 @@ const itemTarget = (path?: string) => {
 const primaryPaths = ['/dashboard', '/question', '/chat', '/interview']
 
 const items = [
-  { path: '/dashboard', label: '首页', icon: IconHome },
-  { path: '/question', label: PRODUCT_PAGE_NAMES.question, icon: IconQuestion },
-  { path: '/chat', label: PRODUCT_PAGE_NAMES.chat, icon: IconChat },
-  { path: '/interview', label: PRODUCT_PAGE_NAMES.interview, icon: IconInterview },
-  { path: '', label: '更多', icon: IconMore, action: openSidebar }
+  { path: '/dashboard', label: '首页', icon: 'dashboard' },
+  { path: '/question', label: PRODUCT_PAGE_NAMES.question, icon: 'question' },
+  { path: '/chat', label: PRODUCT_PAGE_NAMES.chat, icon: 'chat' },
+  { path: '/interview', label: PRODUCT_PAGE_NAMES.interview, icon: 'interview' },
+  { path: '', label: '更多', icon: 'more', action: openSidebar }
 ]
 
 const isRouteMatch = (path?: string) => Boolean(path) && (route.path === path || route.path.startsWith(`${path}/`))
@@ -144,7 +98,8 @@ const isActive = (path?: string) => {
 }
 
 .mobile-nav-shell {
-  background: var(--bc-surface-card);
+  background: color-mix(in srgb, var(--bc-surface-card) 94%, transparent);
+  box-shadow: 0 -10px 30px rgba(31, 43, 72, 0.08);
 }
 
 .mobile-nav-shell__grid {
@@ -163,7 +118,7 @@ const isActive = (path?: string) => {
   align-items: center;
   justify-content: center;
   gap: 0.22rem;
-  border-radius: 1rem;
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
   padding: 0.38rem 0.18rem;
   transition:
@@ -175,7 +130,7 @@ const isActive = (path?: string) => {
 }
 
 .mobile-nav-shell__item-active {
-  background: linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.16), rgba(var(--bc-accent-rgb), 0.08));
+  background: rgba(var(--bc-accent-rgb), 0.11);
   border-color: rgba(var(--bc-accent-rgb), 0.16);
   color: var(--bc-ink);
   box-shadow: 0 10px 22px rgba(var(--bc-accent-rgb), 0.12);
@@ -186,8 +141,8 @@ const isActive = (path?: string) => {
 }
 
 .mobile-nav-shell__icon {
-  height: 1.2rem;
-  width: 1.2rem;
+  height: 1.15rem;
+  width: 1.15rem;
   flex-shrink: 0;
 }
 

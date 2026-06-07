@@ -1,3 +1,4 @@
+<!-- eslint-disable vue/no-mutating-props -->
 <template>
   <div class="admin-tool-grid">
     <aside class="space-y-4">
@@ -174,7 +175,6 @@ const props = defineProps<{
   filter: QuestionFilter
   saving: boolean
   loading: boolean
-  currentPage: number
   pageSize: number
   total: number
   totalPages: number

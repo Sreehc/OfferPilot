@@ -8,28 +8,7 @@
           <p class="mt-2 text-sm text-secondary">收藏的资料、题目和回答都集中在这里。</p>
         </div>
       </div>
-      <div class="favorites-stats mt-4">
-        <div class="favorites-stat">
-          <span>全部收藏</span>
-          <strong>{{ stats.total }}</strong>
-        </div>
-        <div class="favorites-stat">
-          <span>知识资料</span>
-          <strong>{{ stats.knowledgeCount }}</strong>
-        </div>
-        <div class="favorites-stat">
-          <span>题目</span>
-          <strong>{{ stats.questionCount }}</strong>
-        </div>
-        <div class="favorites-stat">
-          <span>社区回答</span>
-          <strong>{{ stats.communityCount }}</strong>
-        </div>
-        <div class="favorites-stat">
-          <span>今日新增</span>
-          <strong>{{ stats.todayCount }}</strong>
-        </div>
-      </div>
+      <MetricStrip :items="favoriteMetrics" class="mt-4" />
     </section>
 
     <div class="favorites-workspace">
@@ -56,7 +35,7 @@
 
         <!-- List -->
         <div v-if="favorites.length === 0 && !loading" class="p-5">
-          <EmptyState
+          <StateView
             icon="inbox"
             :title="EMPTY_STATE_COPY.favorites.title"
             :description="EMPTY_STATE_COPY.favorites.description"
@@ -186,8 +165,7 @@
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import { onMounted, reactive, ref } from 'vue'
-import EmptyState from '@/components/EmptyState.vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
 import {
   batchRemoveFavoriteApi,
@@ -199,6 +177,7 @@ import {
   removeFavoriteApi
 } from '@/api/favorites'
 import type { FavoriteItem, FavoriteStats, FavoriteTagItem } from '@/types/api'
+import { MetricStrip, StateView } from '@/components/ui'
 
 const loading = ref(false)
 const favorites = ref<FavoriteItem[]>([])
@@ -221,6 +200,35 @@ const total = ref(0)
 const totalPages = ref(0)
 
 const newTagName = ref('')
+const favoriteMetrics = computed(() => [
+  {
+    label: '全部收藏',
+    value: stats.total,
+    hint: '所有已保存内容',
+    tone: stats.total ? 'accent' as const : undefined
+  },
+  {
+    label: '知识资料',
+    value: stats.knowledgeCount,
+    hint: '可回到知识库追问'
+  },
+  {
+    label: '题目',
+    value: stats.questionCount,
+    hint: '可进入题库复习'
+  },
+  {
+    label: '社区回答',
+    value: stats.communityCount,
+    hint: '来自社区讨论'
+  },
+  {
+    label: '今日新增',
+    value: stats.todayCount,
+    hint: '今天收藏',
+    tone: stats.todayCount ? 'success' as const : undefined
+  }
+])
 
 const loadStats = async () => {
   try {
@@ -372,33 +380,6 @@ onMounted(async () => {
   gap: 18px;
 }
 
-.favorites-stats {
-  display: grid;
-  gap: 10px;
-}
-
-.favorites-stat {
-  display: grid;
-  gap: 4px;
-  min-width: 108px;
-  padding: 9px 12px;
-  border-radius: 16px;
-  background: var(--panel-muted);
-}
-
-.favorites-stat span {
-  color: var(--bc-ink-secondary);
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-.favorites-stat strong {
-  color: var(--bc-ink);
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-}
-
 .favorites-side {
   min-width: 0;
 }
@@ -437,26 +418,10 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-@media (max-width: 767px) {
-  .favorites-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 768px) {
-  .favorites-stats {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
 @media (min-width: 1200px) {
   .favorites-workspace {
     grid-template-columns: minmax(0, 1.45fr) 320px;
     align-items: start;
-  }
-
-  .favorites-stats {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
   .favorites-side {

@@ -1,8 +1,7 @@
 <template>
   <div class="community-forum space-y-6">
     <section class="forum-panel shell-section-card p-4 sm:p-5">
-      <div class="forum-toolbar forum-toolbar-head">
-        <div class="forum-toolbar__filters">
+      <FilterBar class="forum-toolbar-head">
           <div class="forum-header-bar__tabs">
             <button
               v-for="board in boardOptions"
@@ -28,19 +27,18 @@
               {{ s.label }}
             </button>
           </div>
-        </div>
 
-        <div class="community-search">
-          <input
+        <template #actions>
+          <el-input
             v-model="keyword"
-            type="text"
+            clearable
             placeholder="搜索帖子"
             class="community-search__input"
             @keyup.enter="doSearch"
           />
-          <button type="button" class="community-search__button" @click="doSearch">搜索</button>
-        </div>
-      </div>
+          <button type="button" class="hard-button-secondary text-sm" @click="doSearch">搜索</button>
+        </template>
+      </FilterBar>
 
       <div class="mt-4 flex justify-end">
         <button class="hard-button-primary forum-header-bar__action text-sm" @click="$router.push('/community/submit')">
@@ -103,8 +101,7 @@
       </div>
 
       <div v-else class="mt-5">
-        <EmptyState
-          class="empty-state-card"
+        <StateView
           icon="chat"
           :title="EMPTY_STATE_COPY.communityBoard.title"
           :description="EMPTY_STATE_COPY.communityBoard.description"
@@ -112,7 +109,7 @@
           <template #action>
             <RouterLink to="/community/submit" class="hard-button-primary inline-flex"> 发起提问 </RouterLink>
           </template>
-        </EmptyState>
+        </StateView>
       </div>
 
       <div v-if="totalPages > 1" class="mt-6 flex justify-center gap-2">
@@ -134,9 +131,9 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { fetchCategoriesApi } from '@/api/category'
 import { fetchCommunityQuestionsApi } from '@/api/community'
-import EmptyState from '@/components/EmptyState.vue'
 import { EMPTY_STATE_COPY } from '@/constants/productCopy'
 import type { CategoryItem, CommunityQuestion } from '@/types/api'
+import { FilterBar, StateView } from '@/components/ui'
 
 type BoardOption = {
   id?: number
@@ -326,87 +323,12 @@ onMounted(async () => {
   background: rgba(var(--bc-accent-rgb), 0.14);
 }
 
-.forum-toolbar {
-  display: grid;
-  gap: 14px;
-}
-
 .forum-toolbar-head {
   grid-template-columns: minmax(0, 1fr);
 }
 
-.forum-toolbar__filters {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-}
-
-.mode-switch {
-  display: inline-grid;
-  gap: 6px;
-  grid-template-columns: repeat(2, minmax(0, auto));
-  width: fit-content;
-  border: 1px solid var(--bc-line);
-  border-radius: 16px;
-  background: var(--interactive-bg);
-  padding: 4px;
-}
-
-.mode-switch__item {
-  min-width: 82px;
-  min-height: 40px;
-  border: 0;
-  border-radius: 12px;
-  background: transparent;
-  color: var(--bc-ink-secondary);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  transition:
-    background-color var(--motion-base) var(--ease-hard),
-    color var(--motion-base) var(--ease-hard),
-    box-shadow var(--motion-base) var(--ease-hard);
-}
-
-.mode-switch__item-active {
-  background: linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.18), rgba(var(--bc-accent-rgb), 0.08));
-  color: var(--bc-ink);
-  box-shadow: inset 0 0 0 1px rgba(var(--bc-accent-rgb), 0.2);
-}
-
-.community-search {
-  display: grid;
-  gap: 10px;
-  grid-template-columns: minmax(0, 1fr) auto;
-}
-
 .community-search__input {
-  min-height: 46px;
   width: 100%;
-  border: 1px solid var(--bc-border-strong);
-  border-radius: 14px;
-  background: var(--bc-surface-input);
-  color: var(--bc-ink);
-  padding: 0 16px;
-  font-size: 14px;
-}
-
-.community-search__input:focus {
-  outline: 0;
-  box-shadow: 0 0 0 4px rgba(var(--bc-accent-rgb), 0.1);
-  border-color: rgba(var(--bc-accent-rgb), 0.42);
-}
-
-.community-search__button {
-  min-height: 46px;
-  border: 0;
-  border-radius: 14px;
-  padding: 0 18px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #101826;
-  background: linear-gradient(180deg, #ffd18a 0%, var(--bc-amber) 100%);
 }
 
 .forum-feed__meta {
@@ -585,11 +507,6 @@ onMounted(async () => {
 }
 
 @media (max-width: 1024px) {
-  .forum-toolbar__filters {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
   .forum-header-bar__tabs,
   .mode-switch {
     min-width: 0;
@@ -608,10 +525,6 @@ onMounted(async () => {
 }
 
 @media (max-width: 640px) {
-  .community-search {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .forum-header-bar__action {
     width: 100%;
   }

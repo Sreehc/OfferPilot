@@ -41,20 +41,7 @@
               </el-upload>
             </div>
           </div>
-          <div class="knowledge-table-head__stats">
-            <div class="knowledge-table-stat">
-              <span>当前文档数</span>
-              <strong>{{ total }}</strong>
-            </div>
-            <div class="knowledge-table-stat">
-              <span>可以提问</span>
-              <strong>{{ statusSummary.indexed }}</strong>
-            </div>
-            <div class="knowledge-table-stat">
-              <span>处理中</span>
-              <strong>{{ statusSummary.pending }}</strong>
-            </div>
-          </div>
+          <MetricStrip :items="knowledgeMetrics" class="knowledge-table-head__stats" />
         </div>
 
         <div class="workspace-separator"></div>
@@ -62,9 +49,12 @@
         <div class="knowledge-workspace">
           <section class="knowledge-table-shell">
 
-          <div v-if="docs.length === 0 && !loadingDocs" class="p-5">
-            <EmptyState
-              class="empty-state-card"
+          <div v-if="loadingDocs && docs.length === 0" class="p-5">
+            <StateView variant="loading" :rows="5" />
+          </div>
+
+          <div v-else-if="docs.length === 0" class="p-5">
+            <StateView
               icon="document"
               :title="activeTab === 'my' ? EMPTY_STATE_COPY.knowledgePersonal.title : EMPTY_STATE_COPY.knowledgeRecommended.title"
               :description="
@@ -119,44 +109,13 @@
                     class="doc-card__glyph"
                     :class="docType(doc.fileUrl) === 'pdf' ? 'doc-card__glyph-pdf' : 'doc-card__glyph-text'"
                   >
-                    <svg
-                      v-if="docType(doc.fileUrl) === 'pdf'"
-                      class="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-width="1.6"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-                      />
-                    </svg>
-                    <svg
-                      v-else
-                      class="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-width="1.6"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-                      />
-                    </svg>
+                    <UiIcon name="document" />
                   </div>
                   <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                      <span
-                        class="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em]"
-                        :class="statusTextClass(doc.status)"
-                      >
-                        <span class="h-2 w-2 rounded-full" :class="statusDotClass(doc.status)"></span>
+                      <StatusBadge :tone="statusBadgeTone(doc.status)" dot>
                         {{ statusLabel(doc.status) }}
-                      </span>
+                      </StatusBadge>
                       <span class="detail-pill">{{ libraryScopeLabel(doc.libraryScope) }}</span>
                       <span v-if="doc.businessType" class="detail-pill">{{ businessTypeLabel(doc.businessType) }}</span>
                       <span v-if="doc.fileType" class="detail-pill">{{ doc.fileType.toUpperCase() }}</span>
@@ -171,15 +130,10 @@
                     type="button"
                     class="favorites-toggle"
                     :class="isFavorited(doc.id) ? 'favorites-toggle-active' : ''"
+                    :aria-label="isFavorited(doc.id) ? '取消收藏资料' : '收藏资料'"
                     @click="toggleFavorite(doc)"
                   >
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                      />
-                    </svg>
+                    <UiIcon name="favorites" />
                   </button>
                   <el-popconfirm
                     v-if="activeTab === 'my'"
@@ -245,13 +199,7 @@
               <div class="upload-dropzone" @dragover.prevent @drop.prevent="handleDrop">
               <div class="upload-dropzone__copy">
                 <div class="upload-dropzone__icon" aria-hidden="true">
-                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M12 16V4m0 0l-4 4m4-4l4 4M4 15v2a3 3 0 003 3h10a3 3 0 003-3v-2"
-                    />
-                  </svg>
+                  <UiIcon name="upload" />
                 </div>
                 <div class="min-w-0">
                   <p class="text-sm font-semibold text-ink">把资料拖到这里，或点击右上角上传</p>
@@ -337,7 +285,6 @@
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter, type LocationQueryRaw, type RouteLocationRaw } from 'vue-router'
-import EmptyState from '@/components/EmptyState.vue'
 import { fetchCategoriesApi } from '@/api/category'
 import {
   deleteKnowledgeDocApi,
@@ -349,6 +296,7 @@ import {
 import { addFavoriteApi, removeFavoriteApi, fetchFavoriteListApi } from '@/api/favorites'
 import { EMPTY_STATE_COPY, ERROR_COPY, KNOWLEDGE_STATUS_NAMES } from '@/constants/productCopy'
 import type { CategoryItem, KnowledgeDocItem } from '@/types/api'
+import { MetricStrip, StateView, StatusBadge, UiIcon } from '@/components/ui'
 import { buildAgentWorkbenchLocation } from '@/utils/agent'
 import { buildKnowledgeChatTarget, buildKnowledgeJobPrepTarget, canAskWithKnowledgeDocument } from './knowledgeTargets'
 
@@ -425,6 +373,26 @@ const statusSummary = computed(() => {
   })
   return summary
 })
+
+const knowledgeMetrics = computed(() => [
+  {
+    label: '当前文档',
+    value: total.value,
+    hint: activeTabLabel.value
+  },
+  {
+    label: '可以提问',
+    value: statusSummary.value.indexed,
+    hint: '已完成解析和索引',
+    tone: 'success' as const
+  },
+  {
+    label: '处理中',
+    value: statusSummary.value.pending,
+    hint: '等待解析或索引',
+    tone: statusSummary.value.pending > 0 ? 'warning' as const : 'accent' as const
+  }
+])
 
 const activeTabLabel = computed(() => (activeTab.value === 'my' ? '我的文档' : '推荐资料'))
 const pinnedFocusedDoc = computed(() => {
@@ -567,20 +535,11 @@ const statusLabel = (status: KnowledgeDocItem['status']) => {
   return map[status]
 }
 
-const statusDotClass = (status: KnowledgeDocItem['status']) => {
-  const map: Record<KnowledgeDocItem['status'], string> = {
-    draft: 'bg-[var(--bc-coral)]',
-    parsed: 'bg-[var(--bc-amber)]',
-    indexed: 'bg-[var(--bc-cyan)]'
-  }
-  return map[status]
-}
-
-const statusTextClass = (status: KnowledgeDocItem['status']) => {
-  const map: Record<KnowledgeDocItem['status'], string> = {
-    draft: 'text-[var(--bc-coral)]',
-    parsed: 'text-[var(--bc-amber)]',
-    indexed: 'text-[var(--bc-cyan)]'
+const statusBadgeTone = (status: KnowledgeDocItem['status']) => {
+  const map: Record<KnowledgeDocItem['status'], 'danger' | 'warning' | 'success'> = {
+    draft: 'danger',
+    parsed: 'warning',
+    indexed: 'success'
   }
   return map[status]
 }
@@ -835,35 +794,7 @@ watch(
 }
 
 .knowledge-table-head__stats {
-  display: grid;
-  gap: 10px;
   margin-top: 14px;
-}
-
-.knowledge-table-stat {
-  display: grid;
-  gap: 4px;
-  min-width: 108px;
-  padding: 10px 14px;
-  border-radius: 16px;
-  background: var(--panel-muted);
-}
-
-.dark .knowledge-table-stat {
-  background: var(--panel-muted);
-}
-
-.knowledge-table-stat span {
-  color: var(--bc-ink-secondary);
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-.knowledge-table-stat strong {
-  color: var(--bc-ink);
-  font-size: 1.125rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
 }
 
 .knowledge-table-shell {
@@ -903,10 +834,6 @@ watch(
   padding-inline: 20px;
 }
 
-.knowledge-cockpit .mode-switch {
-  min-width: min(100%, 260px);
-}
-
 .docs-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -915,109 +842,9 @@ watch(
   gap: 12px;
 }
 
-.mode-switch {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  width: min(100%, 440px);
-}
-
 .mode-switch-compact {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  min-width: min(100%, 260px);
   width: auto;
-}
-
-.mode-switch__chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 40px;
-  border: 1px solid var(--bc-line);
-  border-radius: 999px;
-  background: var(--interactive-bg);
-  padding: 0 16px;
-  color: var(--bc-ink-secondary);
-  font-size: 13px;
-  font-weight: 600;
-  transition:
-    border-color var(--motion-base) var(--ease-hard),
-    color var(--motion-base) var(--ease-hard),
-    background-color var(--motion-base) var(--ease-hard);
-}
-
-.dark .mode-switch__chip {
-  background: var(--interactive-bg);
-}
-
-.mode-switch__chip-active {
-  border-color: rgba(var(--bc-accent-rgb), 0.28);
-  color: var(--bc-ink);
-  background: rgba(var(--bc-accent-rgb), 0.1);
-}
-
-.mode-switch__item {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 4px;
-  min-height: 92px;
-  padding: 14px 16px;
-  border: 1px solid rgba(var(--bc-accent-rgb), 0.12);
-  border-radius: 20px;
-  background: var(--interactive-bg);
-  color: var(--bc-ink-secondary);
-  text-align: left;
-  transition:
-    background-color var(--motion-base) var(--ease-hard),
-    border-color var(--motion-base) var(--ease-hard),
-    transform var(--motion-base) var(--ease-hard),
-    color var(--motion-base) var(--ease-hard),
-    box-shadow var(--motion-base) var(--ease-hard);
-}
-
-.dark .mode-switch__item {
-  background: var(--interactive-bg);
-}
-
-.mode-switch__item:hover {
-  transform: translateY(-1px);
-  border-color: rgba(var(--bc-accent-rgb), 0.2);
-  color: var(--bc-ink);
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
-}
-
-.mode-switch__item-active {
-  border-color: rgba(var(--bc-accent-rgb), 0.3);
-  background:
-    radial-gradient(circle at top right, rgba(var(--bc-accent-rgb), 0.18), transparent 48%), var(--interactive-hover);
-  color: var(--bc-ink);
-  box-shadow:
-    inset 0 0 0 1px rgba(var(--bc-accent-rgb), 0.14),
-    0 16px 28px rgba(var(--bc-accent-rgb), 0.12);
-}
-
-.mode-switch__eyebrow {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--bc-ink-tertiary);
-}
-
-.mode-switch__title {
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.3;
-  color: var(--bc-ink);
-}
-
-.mode-switch__hint {
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--bc-ink-secondary);
 }
 
 .upload-dropzone {
@@ -1267,10 +1094,6 @@ watch(
     width: 100%;
   }
 
-  .mode-switch {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .upload-dropzone {
     align-items: flex-start;
     padding-inline: 16px;
@@ -1287,12 +1110,6 @@ watch(
 
   .knowledge-tool-actions {
     grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@media (min-width: 768px) {
-  .knowledge-table-head__stats {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -1314,38 +1131,5 @@ watch(
     align-items: start;
   }
 
-  .knowledge-table-head__stats {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-.favorites-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--bc-ink-secondary);
-  cursor: pointer;
-  transition:
-    color 0.15s ease,
-    background-color 0.15s ease,
-    transform 0.15s ease;
-}
-
-.favorites-toggle:hover {
-  background: rgba(var(--bc-accent-rgb), 0.1);
-  color: var(--bc-accent);
-}
-
-.favorites-toggle-active {
-  color: var(--bc-accent);
-}
-
-.favorites-toggle-active svg {
-  fill: var(--bc-accent);
 }
 </style>

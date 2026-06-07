@@ -245,10 +245,7 @@
 
             <div class="job-prep-result-shell">
               <div v-if="jobPrepLoading" class="flex h-full min-h-[280px] items-center justify-center">
-                <div class="text-center">
-                  <div class="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-                  <p class="mt-3 text-sm text-secondary">正在生成定向备面结果...</p>
-                </div>
+                <StateView variant="loading" :rows="4" compact />
               </div>
               <div v-else-if="!jobPrepSession" class="flex h-full min-h-[280px] items-center justify-center">
                 <div v-if="jobPrepPendingApprovalRun" class="interview-approval-card interview-approval-card--warning">
@@ -267,9 +264,9 @@
                     </RouterLink>
                   </div>
                 </div>
-                <EmptyState
+                <StateView
                   v-else
-                  icon="clipboard"
+                  icon="document"
                   title="先生成一份 JD 备面结果"
                   description="这里会给出匹配度、缺口、项目表达重点和建议追问，供下一轮模拟和真实面试直接使用。"
                   compact
@@ -523,10 +520,7 @@
 
             <div class="copilot-prep-result-shell">
               <div v-if="copilotPrepLoading" class="flex h-full min-h-[280px] items-center justify-center">
-                <div class="text-center">
-                  <div class="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-                  <p class="mt-3 text-sm text-secondary">正在整理会前 Prep...</p>
-                </div>
+                <StateView variant="loading" :rows="4" compact />
               </div>
               <div v-else-if="!copilotPrepSession" class="flex h-full min-h-[280px] items-center justify-center">
                 <div v-if="copilotPrepPendingApprovalRun" class="interview-approval-card interview-approval-card--warning">
@@ -545,7 +539,7 @@
                     </RouterLink>
                   </div>
                 </div>
-                <EmptyState
+                <StateView
                   v-else
                   icon="chat"
                   title="先生成一份 Copilot Prep"
@@ -1063,13 +1057,10 @@
 
             <div class="recording-review-result-shell">
               <div v-if="recordingReviewLoading && !recordingReviewSession" class="flex h-full min-h-[280px] items-center justify-center">
-                <div class="text-center">
-                  <div class="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-                  <p class="mt-3 text-sm text-secondary">{{ recordingReviewMode === 'audio' ? '正在转写录音并生成复盘...' : '正在整理 transcript 并生成复盘...' }}</p>
-                </div>
+                <StateView variant="loading" :rows="4" compact />
               </div>
               <div v-else-if="!recordingReviewSession" class="flex h-full min-h-[280px] items-center justify-center">
-                <EmptyState
+                <StateView
                   icon="review"
                   title="先上传录音或粘贴 transcript"
                   description="这里会展示转写文本、片段信号、优点、薄弱点和下一步训练动作。"
@@ -1085,7 +1076,7 @@
                   {{ recordingReviewSession.statusMessage || recordingReviewSession.summary || '系统正在依次执行上传校验、转写和复盘整理。' }}
                 </p>
                 <div class="mt-5 flex items-center gap-3">
-                  <div class="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+                  <UiIcon name="loading" class="h-6 w-6 animate-spin text-accent" />
                   <span class="text-xs text-tertiary">页面会自动刷新状态，不需要重复上传。</span>
                 </div>
               </div>
@@ -1276,15 +1267,7 @@
                 </div>
                 <div class="text-xs text-tertiary">{{ formatRelativeTime(item.endTime || item.startTime) }}</div>
               </div>
-              <svg
-                class="h-4 w-4 shrink-0 text-tertiary"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-              </svg>
+              <UiIcon name="expand" class="h-4 w-4 shrink-0 text-tertiary" />
             </RouterLink>
           </div>
 
@@ -1449,7 +1432,7 @@
         <div v-else-if="phase === 'scoring'" class="flex flex-1 items-center justify-center">
           <div class="w-full max-w-sm text-center">
             <div class="scoring-scan mx-auto flex h-28 w-28 items-center justify-center rounded-full">
-              <div class="h-10 w-10 animate-spin rounded-full border-4 border-accent border-t-transparent"></div>
+              <UiIcon name="loading" class="h-10 w-10 animate-spin text-accent" />
             </div>
             <h4 class="mt-5 font-display text-3xl font-semibold leading-none text-ink">正在评分</h4>
           </div>
@@ -1610,16 +1593,11 @@
                   >
                     {{ record.score ?? '-' }}
                   </div>
-                  <svg
+                  <UiIcon
+                    name="expand"
                     class="h-3.5 w-3.5 text-tertiary transition-transform"
                     :class="expandedQuestions.has(record.questionId) ? 'rotate-180' : ''"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
+                  />
                 </div>
               </div>
 
@@ -1723,7 +1701,7 @@ import {
 import { fetchRecommendInterviewApi } from '@/api/adaptive'
 import { fetchResumeDetailApi, fetchResumeListApi } from '@/api/resume'
 import { fetchProviderConfigsApi } from '@/api/settings'
-import EmptyState from '@/components/EmptyState.vue'
+import { StateView, UiIcon } from '@/components/ui'
 import { isProviderStatusMissing } from '@/utils/providerReadiness'
 import type {
   AgentRun,

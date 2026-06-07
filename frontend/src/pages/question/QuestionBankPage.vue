@@ -15,7 +15,7 @@
           </div>
         </div>
 
-        <div class="question-toolbar__filters mt-4">
+        <FilterBar class="mt-4 question-filter-bar">
           <el-input
             v-model="filters.keyword"
             clearable
@@ -32,81 +32,92 @@
             <el-option label="中等" value="medium" />
             <el-option label="困难" value="hard" />
           </el-select>
-          <button type="button" class="filter-chip" @click="applyFilters">搜索</button>
-          <button type="button" class="filter-chip filter-chip--muted" @click="resetFilters">重置</button>
-          <button type="button" class="filter-chip filter-chip--muted" @click="showAdvancedFilters = !showAdvancedFilters">
-            {{ showAdvancedFilters ? '收起筛选' : '更多筛选' }}
-          </button>
-        </div>
+          <template #actions>
+            <button type="button" class="hard-button-primary text-sm" @click="applyFilters">搜索</button>
+            <button type="button" class="hard-button-secondary text-sm" @click="resetFilters">重置</button>
+            <button type="button" class="hard-button-secondary text-sm" @click="showAdvancedFilters = !showAdvancedFilters">
+              {{ showAdvancedFilters ? '收起筛选' : '更多筛选' }}
+            </button>
+          </template>
 
-        <div v-if="showAdvancedFilters" class="question-toolbar__advanced mt-3">
-          <el-select v-model="filters.type" clearable size="default" placeholder="题型" class="w-28">
-            <el-option label="八股题" value="concept" />
-            <el-option label="场景题" value="scenario" />
-            <el-option label="项目题" value="project" />
-            <el-option label="算法题" value="coding" />
-          </el-select>
-          <el-input
-            v-model="filters.jobDirection"
-            clearable
-            size="default"
-            placeholder="岗位方向"
-            class="w-36"
-            @keyup.enter="applyFilters"
-          />
-          <el-input
-            v-model="filters.tag"
-            clearable
-            size="default"
-            placeholder="标签，如 Redis / 并发"
-            class="w-44"
-            @keyup.enter="applyFilters"
-          />
-        </div>
+          <template #advanced v-if="showAdvancedFilters">
+            <el-select v-model="filters.type" clearable size="default" placeholder="题型" class="w-28">
+              <el-option label="八股题" value="concept" />
+              <el-option label="场景题" value="scenario" />
+              <el-option label="项目题" value="project" />
+              <el-option label="算法题" value="coding" />
+            </el-select>
+            <el-input
+              v-model="filters.jobDirection"
+              clearable
+              size="default"
+              placeholder="岗位方向"
+              class="w-36"
+              @keyup.enter="applyFilters"
+            />
+            <el-input
+              v-model="filters.tag"
+              clearable
+              size="default"
+              placeholder="标签，如 Redis / 并发"
+              class="w-44"
+              @keyup.enter="applyFilters"
+            />
+          </template>
+        </FilterBar>
       </div>
 
       <div class="workspace-separator"></div>
 
-      <div v-if="loading" class="workspace-section min-h-[260px] text-center">
-        <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-        <p class="mt-4 text-sm text-secondary">正在加载题目...</p>
+      <div v-if="loading" class="workspace-section min-h-[260px]">
+        <StateView variant="loading" :rows="5" />
       </div>
 
       <div v-else class="workspace-section question-list-section">
         <div v-if="questions.length" class="space-y-4">
-          <article
+          <ResourceRow
             v-for="item in questions"
             :key="item.id"
-            class="question-card p-5 sm:p-6"
+            icon="question"
+            clickable
+            class="question-row"
           >
-          <div class="flex flex-wrap items-start justify-between gap-4">
-            <div class="min-w-0 flex-1">
-              <div class="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-tertiary">
-                <span
-                  class="question-difficulty"
-                  :class="difficultyToneClass(item.difficulty)"
-                >
-                  {{ difficultyLabel(item.difficulty) }}
-                </span>
-                <span v-if="item.type">{{ questionTypeLabel(item.type) }}</span>
-                <span v-if="item.categoryName">{{ item.categoryName }}</span>
-                <span v-if="item.jobDirection">{{ item.jobDirection }}</span>
-              </div>
-              <h3 class="mt-3 text-xl font-semibold leading-8 text-ink">
-                {{ item.title }}
-              </h3>
-            </div>
+            <template #meta>
+              <StatusBadge :tone="difficultyTone(item.difficulty)" dot>
+                {{ difficultyLabel(item.difficulty) }}
+              </StatusBadge>
+              <span v-if="item.type" class="detail-pill">{{ questionTypeLabel(item.type) }}</span>
+              <span v-if="item.categoryName" class="detail-pill">{{ item.categoryName }}</span>
+              <span v-if="item.jobDirection" class="detail-pill">{{ item.jobDirection }}</span>
+            </template>
 
-            <div class="flex shrink-0 gap-2">
+            <template #title>
+              {{ item.title }}
+            </template>
+
+            <template #summary>
+              {{ answerPreview(item.standardAnswer) }}
+            </template>
+
+            <template v-if="tagList(item.tags).length" #tags>
+              <span
+                v-for="tag in tagList(item.tags).slice(0, 5)"
+                :key="tag"
+                class="detail-pill"
+              >
+                {{ tag }}
+              </span>
+            </template>
+
+            <template #actions>
               <button
                 type="button"
                 class="favorites-toggle"
                 :class="isFavorited(item.id) ? 'favorites-toggle-active' : ''"
+                :aria-label="isFavorited(item.id) ? '取消收藏题目' : '收藏题目'"
                 @click="toggleFavorite(item)"
               >
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                </svg>
+                <UiIcon name="favorites" />
               </button>
               <button
                 type="button"
@@ -115,28 +126,12 @@
               >
                 查看题目
               </button>
-            </div>
-          </div>
-
-          <div
-            v-if="tagList(item.tags).length"
-            class="mt-4 flex flex-wrap gap-2"
-          >
-            <span
-              v-for="tag in tagList(item.tags).slice(0, 5)"
-              :key="tag"
-              class="question-tag"
-            >{{ tag }}</span>
-          </div>
-
-          <p class="mt-5 text-sm leading-7 text-secondary">
-            {{ answerPreview(item.standardAnswer) }}
-          </p>
-          </article>
+            </template>
+          </ResourceRow>
         </div>
 
         <section v-else class="py-2">
-          <EmptyState
+          <StateView
             icon="search"
             title="没有找到匹配的题目"
             description="试试调整分类、标签或关键词。"
@@ -163,13 +158,13 @@
       <template v-if="selectedQuestion">
         <div class="space-y-5">
           <section>
-            <div class="flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-tertiary">
-              <span class="question-difficulty" :class="difficultyToneClass(selectedQuestion.difficulty)">
+            <div class="flex flex-wrap gap-2">
+              <StatusBadge :tone="difficultyTone(selectedQuestion.difficulty)" dot>
                 {{ difficultyLabel(selectedQuestion.difficulty) }}
-              </span>
-              <span v-if="selectedQuestion.type">{{ questionTypeLabel(selectedQuestion.type) }}</span>
-              <span v-if="selectedQuestion.categoryName">{{ selectedQuestion.categoryName }}</span>
-              <span v-if="selectedQuestion.jobDirection">{{ selectedQuestion.jobDirection }}</span>
+              </StatusBadge>
+              <span v-if="selectedQuestion.type" class="detail-pill">{{ questionTypeLabel(selectedQuestion.type) }}</span>
+              <span v-if="selectedQuestion.categoryName" class="detail-pill">{{ selectedQuestion.categoryName }}</span>
+              <span v-if="selectedQuestion.jobDirection" class="detail-pill">{{ selectedQuestion.jobDirection }}</span>
             </div>
             <h3 class="mt-3 text-2xl font-semibold leading-9 text-ink">
               {{ selectedQuestion.title }}
@@ -190,7 +185,7 @@
             <span
               v-for="tag in tagList(selectedQuestion.tags)"
               :key="tag"
-              class="question-tag"
+              class="detail-pill"
             >{{ tag }}</span>
           </section>
 
@@ -231,10 +226,10 @@
             <p>{{ selectedQuestion.scoreStandard }}</p>
           </section>
 
-          <section class="question-detail-block question-detail-block-action">
-            <span class="question-detail-title">下一步</span>
-            <p>你可以追问细节，或切到模拟面试练完整表达。</p>
-
+          <ActionRail
+            title="下一步"
+            description="你可以追问细节，或切到模拟面试练完整表达。"
+          >
             <div class="question-next-step mt-4">
               <RouterLink
                 :to="questionStudyPlannerTarget(selectedQuestion)"
@@ -264,7 +259,7 @@
                 </RouterLink>
               </div>
             </div>
-          </section>
+          </ActionRail>
         </div>
       </template>
     </el-drawer>
@@ -275,12 +270,12 @@
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter, type LocationQueryRaw, type RouteLocationRaw } from 'vue-router'
-import EmptyState from '@/components/EmptyState.vue'
 import { fetchCategoriesApi } from '@/api/category'
 import { fetchQuestionDetailApi, fetchQuestionsApi } from '@/api/question'
 import { addFavoriteApi, removeFavoriteApi, fetchFavoriteListApi } from '@/api/favorites'
 import { ERROR_COPY } from '@/constants/productCopy'
 import type { CategoryItem, QuestionItem } from '@/types/api'
+import { ActionRail, FilterBar, ResourceRow, StateView, StatusBadge, UiIcon } from '@/components/ui'
 import { buildAgentWorkbenchLocation } from '@/utils/agent'
 import { buildQuestionChatTarget, buildQuestionInterviewTarget, buildQuestionJobPrepTarget, questionTagList } from './questionTargets'
 
@@ -408,10 +403,10 @@ const difficultyLabel = (difficulty?: string) => {
   return '中等'
 }
 
-const difficultyToneClass = (difficulty?: string) => {
-  if (difficulty === 'easy') return 'question-difficulty-easy'
-  if (difficulty === 'hard') return 'question-difficulty-hard'
-  return 'question-difficulty-medium'
+const difficultyTone = (difficulty?: string) => {
+  if (difficulty === 'easy') return 'success'
+  if (difficulty === 'hard') return 'danger'
+  return 'accent'
 }
 
 const questionTypeLabel = (type?: string) => {
@@ -592,105 +587,14 @@ watch(detailVisible, (visible) => {
   gap: 10px 14px;
 }
 
-.question-toolbar__filters,
-.question-toolbar__advanced {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-}
-
 .question-toolbar__search {
   width: min(100%, 320px);
-}
-
-.filter-chip {
-  min-height: 2.5rem;
-  border-radius: 0.625rem;
-  border: 1px solid rgba(var(--bc-accent-rgb), 0.22);
-  background: rgba(var(--bc-accent-rgb), 0.06);
-  color: var(--bc-ink);
-  font-size: 0.8rem;
-  font-weight: 600;
-  padding: 0 0.95rem;
-  cursor: pointer;
-  transition:
-    background var(--motion-fast) var(--ease-hard),
-    border-color var(--motion-fast) var(--ease-hard),
-    box-shadow var(--motion-fast) var(--ease-hard);
-}
-
-.filter-chip:hover {
-  background: rgba(var(--bc-accent-rgb), 0.12);
-  box-shadow: 0 2px 8px rgba(var(--bc-accent-rgb), 0.1);
-}
-
-.filter-chip--muted {
-  border-color: var(--bc-line);
-  background: transparent;
-  color: var(--bc-ink-secondary);
-}
-
-.filter-chip--muted:hover {
-  background: var(--interactive-hover);
-  box-shadow: none;
-}
-
-.question-card {
-  border-radius: calc(var(--radius-md) - 4px);
-  border: 1px solid var(--bc-border-subtle);
-  background: var(--bc-surface-muted);
-  transition:
-    transform var(--motion-fast) var(--ease-hard),
-    box-shadow var(--motion-fast) var(--ease-hard);
-}
-
-.question-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--bc-shadow-hover);
-}
-
-.question-difficulty {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  padding: 0.38rem 0.7rem;
-  border: 1px solid transparent;
-}
-
-.question-difficulty-easy {
-  color: var(--bc-lime);
-  background: color-mix(in srgb, var(--bc-lime) 12%, transparent);
-  border-color: color-mix(in srgb, var(--bc-lime) 30%, transparent);
-}
-
-.question-difficulty-medium {
-  color: var(--bc-accent);
-  background: rgba(var(--bc-accent-rgb), 0.1);
-  border-color: rgba(var(--bc-accent-rgb), 0.24);
 }
 
 @media (max-width: 767px) {
   .question-toolbar__summary {
     justify-content: flex-start;
   }
-}
-
-.question-difficulty-hard {
-  color: var(--bc-coral);
-  background: color-mix(in srgb, var(--bc-coral) 12%, transparent);
-  border-color: color-mix(in srgb, var(--bc-coral) 28%, transparent);
-}
-
-.question-tag {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  padding: 0.36rem 0.7rem;
-  background: var(--bc-surface-muted);
-  border: 1px solid var(--bc-border-subtle);
-  font-size: 0.76rem;
-  color: var(--bc-ink-secondary);
 }
 
 .question-detail-block {
@@ -722,20 +626,9 @@ watch(detailVisible, (visible) => {
   background: color-mix(in srgb, var(--bc-coral) 8%, var(--bc-surface-muted));
 }
 
-.question-detail-block-action {
-  border-color: rgba(var(--bc-accent-rgb), 0.22);
-  background: rgba(var(--bc-accent-rgb), 0.06);
-}
-
 .question-next-step {
   display: grid;
   gap: 0.85rem;
-}
-
-.question-next-step__secondary {
-  display: grid;
-  gap: 0.65rem;
-  align-items: start;
 }
 
 .question-next-step__hint {

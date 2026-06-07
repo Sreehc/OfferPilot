@@ -1,8 +1,7 @@
 <template>
   <div class="repair-workbench space-y-5">
-    <section v-if="loading" class="shell-section-card p-8 text-center">
-      <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-      <p class="mt-4 text-sm text-slate-500">正在加载今天的复习任务...</p>
+    <section v-if="loading" class="shell-section-card p-6">
+      <StateView variant="loading" :rows="6" />
     </section>
 
     <template v-else>
@@ -33,24 +32,7 @@
             </div>
           </div>
 
-          <div class="review-launch__stats">
-            <article class="review-launch__metric">
-              <span>当前筛选</span>
-              <strong>{{ selectedFilterLabel }}</strong>
-            </article>
-            <article class="review-launch__metric">
-              <span>待复习</span>
-              <strong>{{ reviewItems.length }}</strong>
-            </article>
-            <article class="review-launch__metric">
-              <span>逾期</span>
-              <strong>{{ stats?.overdueCount ?? reviewData?.overdueCount ?? 0 }}</strong>
-            </article>
-            <article class="review-launch__metric">
-              <span>已完成</span>
-              <strong>{{ reviewData?.todayCompleted ?? 0 }}</strong>
-            </article>
-          </div>
+          <MetricStrip :items="reviewLaunchMetrics" class="review-launch__stats" />
         </div>
 
         <div class="workspace-separator"></div>
@@ -81,7 +63,7 @@
               <div class="flex items-start justify-between gap-4">
                 <div class="min-w-0 flex-1">
                   <div class="mb-2 flex flex-wrap items-center gap-2">
-                    <span class="hard-chip !bg-amber-100 !text-amber-700">错题复习</span>
+                    <StatusBadge tone="warning" dot>错题复习</StatusBadge>
                   </div>
                   <h4 class="repair-card__title text-lg font-semibold leading-snug text-ink">{{ item.title }}</h4>
                   <p class="repair-card__summary mt-2 text-sm text-secondary">
@@ -97,7 +79,7 @@
         </div>
 
         <div v-else class="workspace-section">
-          <EmptyState icon="review" :title="emptyStateTitle" :description="emptyStateDescription">
+          <StateView icon="review" :title="emptyStateTitle" :description="emptyStateDescription">
             <template #action>
               <div class="flex justify-center gap-3">
                 <RouterLink :to="reviewPlannerAgentLink" class="hard-button-primary">刷新学习计划</RouterLink>
@@ -108,7 +90,7 @@
                 <RouterLink :to="reviewKnowledgeLink" class="hard-button-secondary">去知识库</RouterLink>
               </div>
             </template>
-          </EmptyState>
+          </StateView>
         </div>
       </section>
 
@@ -118,7 +100,7 @@
             <div class="flex items-center justify-between text-sm text-secondary">
               <span class="font-mono">{{ currentIndex + 1 }} / {{ reviewItems.length }}</span>
               <div class="flex flex-wrap items-center gap-2">
-                <span class="hard-chip !bg-amber-100 !text-amber-700">错题复习</span>
+                <StatusBadge tone="warning" dot>错题复习</StatusBadge>
                 <span
                   v-if="currentReviewItem.overdueDays > 0"
                   class="rounded-full border border-coral/30 bg-coral/10 px-3 py-1 text-coral"
@@ -153,7 +135,7 @@
                   <span class="hard-chip">{{ masteryLabel(currentReviewItem.masteryLevel) }}</span>
                 </div>
                 <div class="mt-6 flex flex-wrap items-center gap-2">
-                  <span class="hard-chip !bg-amber-100 !text-amber-700">错题复习</span>
+                  <StatusBadge tone="warning" dot>错题复习</StatusBadge>
                 </div>
                 <h3 class="mt-8 text-xl font-semibold leading-relaxed text-ink sm:text-2xl">
                   {{ currentReviewItem.title }}
@@ -227,7 +209,7 @@
       </section>
 
       <section v-else-if="started && !currentReviewItem" class="shell-section-card p-8">
-        <EmptyState
+        <StateView
           icon="trophy"
           title="本轮复习已完成"
           :description="`已处理 ${reviewItems.length} 项 · 重来 ${againCount} 次`"
@@ -242,7 +224,7 @@
               </RouterLink>
             </div>
           </template>
-        </EmptyState>
+        </StateView>
       </section>
 
     </template>
@@ -253,10 +235,10 @@
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import EmptyState from '@/components/EmptyState.vue'
 import { ERROR_COPY } from '@/constants/productCopy'
 import { fetchReviewStatsApi, fetchReviewTodayApi, submitReviewRateApi } from '@/api/review'
 import type { ReviewContentType, ReviewStats, ReviewTodayData, UnifiedReviewItem } from '@/types/api'
+import { MetricStrip, StateView, StatusBadge } from '@/components/ui'
 import { buildAgentWorkbenchQuery } from '@/utils/agent'
 
 const route = useRoute()
@@ -375,6 +357,31 @@ const heroSummary = computed(() => {
 })
 
 const selectedFilterLabel = computed(() => '错题本')
+const reviewLaunchMetrics = computed(() => [
+  {
+    label: '当前筛选',
+    value: selectedFilterLabel.value,
+    hint: seededFocusLabel.value || '按到期顺序复习'
+  },
+  {
+    label: '待复习',
+    value: reviewItems.value.length,
+    hint: '今天需要处理',
+    tone: reviewItems.value.length ? 'warning' as const : 'success' as const
+  },
+  {
+    label: '逾期',
+    value: stats.value?.overdueCount ?? reviewData.value?.overdueCount ?? 0,
+    hint: '优先回看',
+    tone: (stats.value?.overdueCount ?? reviewData.value?.overdueCount ?? 0) > 0 ? 'danger' as const : undefined
+  },
+  {
+    label: '已完成',
+    value: reviewData.value?.todayCompleted ?? 0,
+    hint: '今日复习结果',
+    tone: 'success' as const
+  }
+])
 
 const ratingButtons = [
   { rating: 1 as const, label: '重来', symbol: '↺', class: 'border-coral/30 bg-coral/10 text-coral hover:bg-coral/15' },
@@ -632,33 +639,7 @@ onMounted(() => {
 }
 
 .review-launch__stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.review-launch__metric {
-  border-radius: 14px;
-  border: 1px solid var(--bc-border-subtle);
-  background: var(--panel-muted);
-  padding: 9px 11px;
-}
-
-.review-launch__metric span,
-.review-launch__metric small {
-  display: block;
-  color: var(--bc-ink-secondary);
-  font-size: 12px;
-}
-
-.review-launch__metric strong {
-  display: block;
-  margin-top: 6px;
-  color: var(--bc-ink);
-  font-size: 1.1rem;
-  font-weight: 780;
-  letter-spacing: 0;
-  font-variant-numeric: tabular-nums;
+  margin-top: 1rem;
 }
 
 .review-launch__actions {

@@ -18,23 +18,7 @@
         :class="{ 'dashboard-sidebar__item--active': isRouteMatch({ path: '/dashboard' }) }"
       >
         <span class="dashboard-sidebar__item-icon">
-          <svg
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="1.7"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M3.75 10.5 12 3.75l8.25 6.75V19.5A1.5 1.5 0 0 1 18.75 21h-13.5a1.5 1.5 0 0 1-1.5-1.5V10.5Z"
-            />
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M9 21v-6.75h6V21"
-            />
-          </svg>
+          <UiIcon name="dashboard" />
         </span>
         <span class="truncate">首页</span>
       </RouterLink>
@@ -51,84 +35,11 @@
         >
           <span class="dashboard-sidebar__group-label">
             <span class="dashboard-sidebar__group-icon">
-              <svg
-                v-if="group.icon === 'interview'"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="1.7"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M7.5 8.25h9m-9 3h5.25m-6.75 7.5 1.462-2.435a1.5 1.5 0 0 1 1.286-.73H18A2.25 2.25 0 0 0 20.25 13.5v-6A2.25 2.25 0 0 0 18 5.25H6A2.25 2.25 0 0 0 3.75 7.5v6A2.25 2.25 0 0 0 6 15.75h.75v3Z"
-                />
-              </svg>
-              <svg
-                v-else-if="group.icon === 'knowledge'"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="1.7"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M12 6.253c-1.168-.776-2.754-1.253-4.5-1.253S4.168 5.477 3 6.253v13c1.168-.776 2.754-1.253 4.5-1.253s3.332.477 4.5 1.253m0-13c1.168-.776 2.754-1.253 4.5-1.253 1.747 0 3.332.477 4.5 1.253v13c-1.168-.776-2.753-1.253-4.5-1.253-1.746 0-3.332.477-4.5 1.253"
-                />
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M12 6.25V19.25"
-                />
-              </svg>
-              <svg
-                v-else-if="group.icon === 'tools'"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="1.7"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M9 6.75V6a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 6v.75m-10.5 3h15m-13.5 0v7.5A1.5 1.5 0 0 0 7.5 18.75h9a1.5 1.5 0 0 0 1.5-1.5v-7.5"
-                />
-              </svg>
-              <svg
-                v-else-if="group.icon === 'resume'"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="1.7"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M15.75 3.75H7.5A2.25 2.25 0 0 0 5.25 6v12A2.25 2.25 0 0 0 7.5 20.25h9A2.25 2.25 0 0 0 18.75 18V6.75l-3-3Z"
-                />
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M15.75 3.75V7.5h3M8.25 12h7.5M8.25 15.75h4.5"
-                />
-              </svg>
+              <UiIcon :name="group.icon" />
             </span>
             <span>{{ group.label }}</span>
           </span>
-          <svg
-            class="dashboard-sidebar__group-chevron"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="1.45"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="m9 6 6 6-6 6"
-            />
-          </svg>
+          <UiIcon name="arrowRight" class="dashboard-sidebar__group-chevron" />
         </div>
 
         <div class="dashboard-sidebar__group-items">
@@ -152,18 +63,7 @@
       :class="{ 'dashboard-sidebar__item--active': isRouteMatch({ path: '/settings' }) }"
     >
       <span class="dashboard-sidebar__item-icon">
-        <svg
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="1.7"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M15.75 6.75a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 19.125a7.5 7.5 0 0 1 15 0"
-          />
-        </svg>
+        <UiIcon name="settings" />
       </span>
       <span class="truncate">{{ PRODUCT_PAGE_NAMES.settings }}</span>
     </RouterLink>
@@ -175,6 +75,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { PRODUCT_PAGE_NAMES } from '@/constants/productCopy'
 import AppBrandGlyph from '@/components/AppBrandGlyph.vue'
+import UiIcon from '@/components/ui/UiIcon.vue'
 
 const route = useRoute()
 
@@ -187,7 +88,7 @@ type SidebarItem = {
 
 type SidebarGroup = {
   label: string
-  icon: 'interview' | 'knowledge' | 'tools' | 'resume'
+  icon: 'interview' | 'knowledge' | 'applications' | 'resume'
   items: SidebarItem[]
 }
 
@@ -213,7 +114,7 @@ const primaryGroups: SidebarGroup[] = [
   },
   {
     label: '求职进展',
-    icon: 'tools',
+    icon: 'applications',
     items: [
       { label: '学习计划', path: '/study-plan' },
       { label: '投递管理', path: '/applications' }
@@ -315,7 +216,7 @@ const isGroupActive = (group: SidebarGroup) => group.items.some((item) => isRout
   flex-direction: column;
   gap: 1rem;
   overflow: hidden;
-  border-right: 1px solid rgba(18, 41, 76, 0.08);
+  border-right: 1px solid var(--bc-border-subtle);
   background: transparent;
   padding: 1rem 1rem 0.95rem 0.12rem;
   box-shadow: none;
@@ -329,7 +230,7 @@ const isGroupActive = (group: SidebarGroup) => group.items.some((item) => isRout
 }
 
 .dashboard-sidebar__brand-name {
-  color: #142746;
+  color: var(--bc-ink);
   font-size: 19px;
   font-weight: 800;
   letter-spacing: 0;
@@ -337,7 +238,7 @@ const isGroupActive = (group: SidebarGroup) => group.items.some((item) => isRout
 
 .dashboard-sidebar__brand-subtitle {
   margin-top: 0.08rem;
-  color: #8a96ab;
+  color: var(--bc-ink-secondary);
   font-size: 12px;
   font-weight: 500;
   line-height: 1.35;
@@ -354,8 +255,8 @@ const isGroupActive = (group: SidebarGroup) => group.items.some((item) => isRout
 }
 
 .dashboard-sidebar__item:hover {
-  background: rgba(83, 109, 169, 0.052);
-  color: #16325d;
+  background: rgba(var(--bc-accent-rgb), 0.065);
+  color: var(--bc-ink);
 }
 
 .dashboard-sidebar__group-icon {
@@ -369,7 +270,7 @@ const isGroupActive = (group: SidebarGroup) => group.items.some((item) => isRout
   opacity: 0.82;
 }
 
-.dashboard-sidebar__group-icon svg {
+.dashboard-sidebar__group-icon :deep(.ui-icon) {
   width: 17px;
   height: 17px;
 }
@@ -390,7 +291,7 @@ const isGroupActive = (group: SidebarGroup) => group.items.some((item) => isRout
   align-items: center;
   gap: 12px;
   border-radius: 16px;
-  color: #6e7d94;
+  color: var(--bc-ink-secondary);
   font-size: 15px;
   font-weight: 650;
   line-height: 1.35;
@@ -403,8 +304,8 @@ const isGroupActive = (group: SidebarGroup) => group.items.some((item) => isRout
 }
 
 .dashboard-sidebar__item--root:hover {
-  background: rgba(83, 109, 169, 0.052);
-  color: #16325d;
+  background: rgba(var(--bc-accent-rgb), 0.065);
+  color: var(--bc-ink);
 }
 
 .dashboard-sidebar__item-icon {
@@ -418,13 +319,13 @@ const isGroupActive = (group: SidebarGroup) => group.items.some((item) => isRout
   opacity: 0.9;
 }
 
-.dashboard-sidebar__item-icon svg {
+.dashboard-sidebar__item-icon :deep(.ui-icon) {
   width: 18px;
   height: 18px;
 }
 
 .dashboard-sidebar__group + .dashboard-sidebar__group {
-  border-top: 1px solid rgba(18, 41, 76, 0.06);
+  border-top: 1px solid var(--bc-border-subtle);
   padding-top: 14px;
 }
 
@@ -438,7 +339,7 @@ const isGroupActive = (group: SidebarGroup) => group.items.some((item) => isRout
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #8694aa;
+  color: var(--bc-ink-tertiary);
   font-size: 12.5px;
   font-weight: 700;
   letter-spacing: 0.032em;
@@ -450,7 +351,7 @@ const isGroupActive = (group: SidebarGroup) => group.items.some((item) => isRout
 }
 
 .dashboard-sidebar__group-head--active {
-  color: #40526f;
+  color: var(--bc-ink);
 }
 
 .dashboard-sidebar__group-label {
@@ -466,7 +367,7 @@ const isGroupActive = (group: SidebarGroup) => group.items.some((item) => isRout
 .dashboard-sidebar__group-chevron {
   width: 11px;
   height: 11px;
-  color: #c2cada;
+  color: var(--bc-ink-tertiary);
   opacity: 0.32;
   transform: scale(0.88);
 }
@@ -477,7 +378,7 @@ const isGroupActive = (group: SidebarGroup) => group.items.some((item) => isRout
   align-items: center;
   gap: 10px;
   border-radius: 16px;
-  color: #6e7d94;
+  color: var(--bc-ink-secondary);
   font-size: 15px;
   font-weight: 600;
   line-height: 1.35;
@@ -490,11 +391,11 @@ const isGroupActive = (group: SidebarGroup) => group.items.some((item) => isRout
 }
 
 .dashboard-sidebar__item--active {
-  background: linear-gradient(180deg, rgba(103, 134, 214, 0.082), rgba(103, 134, 214, 0.036));
+  background: linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.11), rgba(var(--bc-accent-rgb), 0.045));
   box-shadow:
-    inset 2px 0 0 rgba(90, 122, 206, 0.8),
-    0 10px 24px rgba(71, 102, 176, 0.034);
-  color: #2d4f98;
+    inset 2px 0 0 rgba(var(--bc-accent-rgb), 0.82),
+    0 10px 24px rgba(var(--bc-accent-rgb), 0.06);
+  color: var(--bc-accent);
   font-weight: 750;
 }
 
@@ -506,7 +407,7 @@ const isGroupActive = (group: SidebarGroup) => group.items.some((item) => isRout
   height: 18px;
   width: 2px;
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(90, 122, 206, 0.92), rgba(136, 160, 224, 0.82));
+  background: linear-gradient(180deg, rgba(var(--bc-accent-rgb), 0.92), rgba(var(--bc-accent-rgb), 0.56));
   transform: translateY(-50%);
 }
 

@@ -2,24 +2,18 @@
   <div class="dashboard-home">
     <div class="dashboard-home__body">
       <template v-if="loading">
-        <section class="dashboard-home__loading-grid">
-          <div class="shell-section-card p-6 sm:p-7">
-            <div class="dashboard-home__skeleton-line h-5 w-40" />
-            <div class="dashboard-home__skeleton-line mt-4 h-11 w-3/4" />
-            <div class="dashboard-home__skeleton-line mt-3 h-4 w-full" />
-            <div class="dashboard-home__skeleton-line mt-6 h-[220px] w-full rounded-[28px]" />
-          </div>
-          <div class="shell-section-card min-h-[360px] p-6 sm:p-7">
-            <div class="dashboard-home__skeleton-line h-5 w-28" />
-            <div class="dashboard-home__skeleton-line mt-6 h-[260px] w-full rounded-[24px]" />
-          </div>
-        </section>
+        <StateView
+          variant="loading"
+          :rows="6"
+          avatar
+          actions
+        />
       </template>
 
       <template v-else>
         <div v-if="showFirstVisitGuide" class="dashboard-home__first-visit">
           <section class="dashboard-home__welcome">
-            <h1 class="dashboard-home__welcome-title">{{ greetingText }} 👋</h1>
+            <h1 class="dashboard-home__welcome-title">{{ greetingText }}</h1>
             <p class="dashboard-home__welcome-kicker">从这里开始你的求职训练。</p>
           </section>
 
@@ -59,7 +53,7 @@
         <div v-else class="dashboard-home__body-grid">
           <div class="dashboard-home__content">
             <section class="dashboard-home__welcome">
-              <h1 class="dashboard-home__welcome-title">{{ greetingText }} 👋</h1>
+              <h1 class="dashboard-home__welcome-title">{{ greetingText }}</h1>
               <p class="dashboard-home__welcome-kicker">今天重点完成这一项。</p>
             </section>
 
@@ -79,12 +73,10 @@
                   </RouterLink>
                 </div>
 
-                <div class="dashboard-hero__signals">
-                  <span class="dashboard-hero__signal">任务等级 {{ dashboardNextActionPriority }}</span>
-                  <span class="dashboard-hero__signal">连续 {{ overview.studyStreak ?? 0 }} 天训练</span>
-                  <span class="dashboard-hero__signal">待巩固 {{ overview.reviewDebtCount ?? 0 }} 项</span>
-                  <span class="dashboard-hero__signal">进行中 {{ overview.applicationSummary?.activeCount ?? 0 }} 条</span>
-                </div>
+                <MetricStrip
+                  class="dashboard-hero__metrics"
+                  :items="dashboardHeroMetrics"
+                />
               </div>
 
               <div class="dashboard-hero__visual" aria-hidden="true">
@@ -115,88 +107,7 @@
                   class="dashboard-quick-card"
                 >
                   <span class="dashboard-quick-card__icon" :class="`dashboard-quick-card__icon--${entry.tone}`">
-                    <svg
-                      v-if="entry.icon === 'interview'"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-width="1.9"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M7.5 8.25h9m-9 3h5.25m-6.75 7.5 1.462-2.435a1.5 1.5 0 0 1 1.286-.73H18A2.25 2.25 0 0 0 20.25 13.5v-6A2.25 2.25 0 0 0 18 5.25H6A2.25 2.25 0 0 0 3.75 7.5v6A2.25 2.25 0 0 0 6 15.75h.75v3Z"
-                      />
-                    </svg>
-                    <svg
-                      v-else-if="entry.icon === 'knowledge'"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-width="1.9"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M4.5 6.75A2.25 2.25 0 0 1 6.75 4.5h9A2.25 2.25 0 0 1 18 6.75v8.25A2.25 2.25 0 0 1 15.75 17.25h-4.5l-3.75 2.25v-2.25h-.75A2.25 2.25 0 0 1 4.5 15V6.75Z"
-                      />
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 8.625h6m-6 3h4.5" />
-                    </svg>
-                    <svg
-                      v-else-if="entry.icon === 'resume'"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-width="1.9"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M15.75 3.75H7.5A2.25 2.25 0 0 0 5.25 6v12A2.25 2.25 0 0 0 7.5 20.25h9A2.25 2.25 0 0 0 18.75 18V6.75l-3-3Z"
-                      />
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 3.75V7.5h3M8.25 11.25h7.5m-7.5 3h5.25" />
-                    </svg>
-                    <svg
-                      v-else-if="entry.icon === 'plan'"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-width="1.9"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M8.25 3.75v2.25m7.5-2.25v2.25M5.25 8.25h13.5M6.75 5.25h10.5A1.5 1.5 0 0 1 18.75 6.75v10.5a1.5 1.5 0 0 1-1.5 1.5H6.75a1.5 1.5 0 0 1-1.5-1.5V6.75a1.5 1.5 0 0 1 1.5-1.5Z"
-                      />
-                      <path stroke-linecap="round" stroke-linejoin="round" d="m8.625 12 1.875 1.875L15.375 9" />
-                    </svg>
-                    <svg
-                      v-else-if="entry.icon === 'applications'"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-width="1.9"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M9 6.75V5.625A1.875 1.875 0 0 1 10.875 3.75h2.25A1.875 1.875 0 0 1 15 5.625V6.75m-9 1.5h12A2.25 2.25 0 0 1 20.25 10.5v6.75A2.25 2.25 0 0 1 18 19.5H6A2.25 2.25 0 0 1 3.75 17.25V10.5A2.25 2.25 0 0 1 6 8.25Z"
-                      />
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 12h3" />
-                    </svg>
-                    <svg
-                      v-else
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-width="1.9"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M8.25 6.75h7.5M8.25 10.5h7.5M8.25 14.25h4.5M6 3.75h12A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25H6A2.25 2.25 0 0 1 3.75 18V6A2.25 2.25 0 0 1 6 3.75Z"
-                      />
-                    </svg>
+                    <UiIcon :name="entry.icon === 'plan' ? 'study' : entry.icon" />
                   </span>
                   <div class="min-w-0">
                     <div class="dashboard-quick-card__title">{{ entry.label }}</div>
@@ -312,9 +223,7 @@
                         class="dashboard-interview-card__detail-link touch-link"
                       >
                         查看详细分析
-                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="m13.5 4.5 6 7.5-6 7.5M19.5 12H4.5" />
-                        </svg>
+                        <UiIcon name="arrowRight" />
                       </RouterLink>
                     </div>
                   </div>
@@ -467,6 +376,9 @@ import type {
 } from '@/types/api'
 import { buildAgentWorkbenchLocation } from '@/utils/agent'
 import { storage } from '@/utils/storage'
+import MetricStrip from '@/components/ui/MetricStrip.vue'
+import StateView from '@/components/ui/StateView.vue'
+import UiIcon from '@/components/ui/UiIcon.vue'
 import DashboardApplicationDonut from './DashboardApplicationDonut.vue'
 import heroIllustrationUrl from '@/assets/dashboard-hero-illustration.svg'
 
@@ -826,6 +738,12 @@ const dashboardNextActionDescription = computed(
 const dashboardNextActionReason = computed(() => dashboardNextAction.value?.reason || '')
 const dashboardNextActionPath = computed<string>(() => appendDashboardSeedToPath(dashboardNextAction.value?.path || '/dashboard'))
 const dashboardNextActionPriority = computed(() => dashboardNextAction.value?.priority || 'P1')
+const dashboardHeroMetrics = computed(() => [
+  { label: '任务等级', value: dashboardNextActionPriority.value, tone: 'accent' as const },
+  { label: '连续训练', value: `${overview.value.studyStreak ?? 0} 天` },
+  { label: '待巩固', value: `${overview.value.reviewDebtCount ?? 0} 项`, tone: (overview.value.reviewDebtCount ?? 0) > 0 ? 'warning' as const : undefined },
+  { label: '投递推进', value: `${overview.value.applicationSummary?.activeCount ?? 0} 条` }
+])
 const parsePathQuery = (path: string) => {
   const [rawPathname, queryString = ''] = path.split('?')
   return {
@@ -1647,21 +1565,24 @@ onMounted(() => {
   padding: 0 1.2rem;
 }
 
-.dashboard-hero__signals {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.65rem;
-  margin-top: 0.7rem;
+.dashboard-hero__metrics {
+  margin-top: 0.85rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.dashboard-hero__signal {
-  border-radius: var(--dashboard-pill-radius);
-  background: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 0.74rem;
-  font-weight: 600;
-  padding: 0.36rem 0.64rem;
-  font-variant-numeric: tabular-nums;
+.dashboard-hero__metrics :deep(.ui-metric-tile) {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dashboard-hero__metrics :deep(.ui-metric-tile__label),
+.dashboard-hero__metrics :deep(.ui-metric-tile__hint) {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.dashboard-hero__metrics :deep(.ui-metric-tile__value) {
+  color: #fff;
+  font-size: 1.05rem;
 }
 
 .dashboard-hero__visual {
@@ -1829,7 +1750,7 @@ onMounted(() => {
   box-shadow: 0 8px 16px rgba(64, 98, 188, 0.14);
 }
 
-.dashboard-quick-card__icon svg {
+.dashboard-quick-card__icon :deep(.ui-icon) {
   width: 1.2rem;
   height: 1.2rem;
 }
@@ -2421,6 +2342,10 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
 
+  .dashboard-hero__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .dashboard-hero__visual {
     min-height: 220px;
   }
@@ -2499,13 +2424,9 @@ onMounted(() => {
     font-size: 0.72rem;
   }
 
-  .dashboard-hero__signals {
-    margin-top: 0.6rem;
-    gap: 0.5rem;
-  }
-
-  .dashboard-hero__signal:nth-child(n + 3) {
-    display: none;
+  .dashboard-hero__metrics {
+    margin-top: 0.65rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .dashboard-hero__visual {

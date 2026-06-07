@@ -21,10 +21,7 @@
         class="flex h-14 w-14 items-center justify-center rounded-full bg-red-500 text-white shadow-lg transition hover:bg-red-600 active:scale-95"
         @click="startRecording"
       >
-        <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-          <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-        </svg>
+        <UiIcon name="microphone" class="h-6 w-6" />
       </button>
 
       <button
@@ -33,9 +30,7 @@
         class="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--interactive-bg)] text-primary shadow-lg transition hover:bg-[var(--interactive-hover)] active:scale-95"
         @click="stopRecording"
       >
-        <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-          <rect x="6" y="6" width="12" height="12" rx="2"/>
-        </svg>
+        <UiIcon name="stop" class="h-6 w-6" />
       </button>
 
       <!-- Playback (after recording) -->
@@ -45,12 +40,7 @@
           class="flex h-12 w-12 items-center justify-center rounded-full bg-accent text-white shadow transition hover:opacity-90 active:scale-95"
           @click="togglePlayback"
         >
-          <svg v-if="!isPlaying" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M8 5v14l11-7z"/>
-          </svg>
-          <svg v-else class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-            <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
-          </svg>
+          <UiIcon :name="isPlaying ? 'stop' : 'videoPlay'" class="h-5 w-5" />
         </button>
 
         <button
@@ -59,10 +49,7 @@
           title="重新录制"
           @click="resetRecording"
         >
-          <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path d="M1 4v6h6M23 20v-6h-6" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+          <UiIcon name="refreshRight" class="h-4 w-4" />
         </button>
       </template>
     </div>
@@ -76,6 +63,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { UiIcon } from '@/components/ui'
 
 const props = defineProps<{
   disabled?: boolean

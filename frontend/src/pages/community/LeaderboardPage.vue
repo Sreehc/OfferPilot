@@ -4,7 +4,7 @@
       class="inline-flex items-center gap-2 text-sm text-secondary transition-colors hover:text-ink"
       @click="$router.push('/community')"
     >
-      <span>&larr;</span> 返回社区
+      <UiIcon name="back" class="h-4 w-4" /> 返回社区
     </button>
 
     <section class="shell-section-card p-5 sm:p-6">
@@ -54,9 +54,9 @@
         </article>
       </div>
 
-      <EmptyState
+      <StateView
         v-else
-        class="empty-state-card mt-6"
+        class="mt-6"
         icon="trophy"
         :title="EMPTY_STATE_COPY.leaderboard.title"
         :description="EMPTY_STATE_COPY.leaderboard.description"
@@ -68,10 +68,10 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import EmptyState from '@/components/EmptyState.vue'
 import { fetchLeaderboardApi } from '@/api/community'
 import { EMPTY_STATE_COPY } from '@/constants/productCopy'
 import type { LeaderboardEntry } from '@/types/api'
+import { StateView, UiIcon } from '@/components/ui'
 
 const leaderboard = ref<LeaderboardEntry[]>([])
 

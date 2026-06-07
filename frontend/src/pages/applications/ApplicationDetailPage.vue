@@ -2,17 +2,21 @@
   <div class="space-y-6">
     <div>
       <button type="button" class="flex items-center gap-1 text-sm text-secondary transition hover:text-accent" @click="router.back()">
-        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
+        <UiIcon name="back" />
         返回投递看板
       </button>
     </div>
 
-    <section v-if="!detail" class="shell-section-card p-8 text-center">
-      <p class="text-lg font-semibold text-ink">投递记录未找到</p>
-      <p class="mt-3 text-sm leading-7 text-secondary">这条投递记录暂时无法查看。请返回投递管理重试。</p>
-      <RouterLink :to="applicationBoardLink" class="hard-button-primary mt-4 inline-flex">返回看板</RouterLink>
+    <section v-if="!detail" class="shell-section-card p-6">
+      <StateView
+        icon="applications"
+        title="投递记录未找到"
+        description="这条投递记录暂时无法查看。请返回投递管理重试。"
+      >
+        <template #action>
+          <RouterLink :to="applicationBoardLink" class="hard-button-primary">返回看板</RouterLink>
+        </template>
+      </StateView>
     </section>
 
     <template v-else>
@@ -33,15 +37,6 @@
 
             <div class="mt-6 flex flex-wrap gap-3">
               <button type="button" class="hard-button-primary" @click="scrollToStatus">更新这条投递</button>
-              <RouterLink :to="applicationJobPrepLink" class="hard-button-secondary">
-                去 JD 备面
-              </RouterLink>
-              <RouterLink :to="applicationRecordingReviewLink" class="hard-button-secondary">
-                去录音复盘
-              </RouterLink>
-              <RouterLink :to="applicationCopilotPrepLink" class="hard-button-secondary">
-                去 Copilot Prep
-              </RouterLink>
               <RouterLink :to="applicationAgentLink" class="hard-button-secondary">
                 交给 Agent 推进
               </RouterLink>
@@ -49,22 +44,21 @@
             </div>
           </div>
 
-          <div class="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-            <article class="application-detail-metric">
-              <span>匹配度</span>
-              <strong>{{ Math.round(detail.matchScore || 0) }}</strong>
-            </article>
-            <article class="application-detail-metric">
-              <span>绑定简历</span>
-              <strong>{{ detail.resumeTitle || '未绑定' }}</strong>
-            </article>
-            <article class="application-detail-metric">
-              <span>下一节点</span>
-              <strong>{{ detail.nextStepDate || '待安排' }}</strong>
-            </article>
-          </div>
+          <MetricStrip :items="applicationDetailMetrics" />
         </div>
       </section>
+
+      <ActionRail
+        title="跨模块动作"
+        description="把这条岗位带去备面、录音复盘、Copilot 或模拟面试。"
+      >
+        <div class="flex flex-wrap gap-2">
+          <RouterLink :to="applicationJobPrepLink" class="hard-button-secondary">去 JD 备面</RouterLink>
+          <RouterLink :to="applicationRecordingReviewLink" class="hard-button-secondary">去录音复盘</RouterLink>
+          <RouterLink :to="applicationCopilotPrepLink" class="hard-button-secondary">去 Copilot Prep</RouterLink>
+          <RouterLink :to="applicationMockInterviewLink" class="hard-button-primary">去模拟面试</RouterLink>
+        </div>
+      </ActionRail>
 
       <section id="application-next-step" class="shell-section-card application-primary-zone p-5 sm:p-6">
         <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -339,6 +333,7 @@ import {
 } from '@/api/applications'
 import { EMPTY_STATE_COPY, ERROR_COPY } from '@/constants/productCopy'
 import type { JobApplicationDetail } from '@/types/api'
+import { ActionRail, MetricStrip, StateView, UiIcon } from '@/components/ui'
 import { buildAgentWorkbenchLocation } from '@/utils/agent'
 
 const route = useRoute()
@@ -495,6 +490,28 @@ const applicationJobPrepLink = computed(() => buildInterviewWorkspaceLink('job-p
 const applicationRecordingReviewLink = computed(() => buildInterviewWorkspaceLink('recording-review'))
 const applicationCopilotPrepLink = computed(() => buildInterviewWorkspaceLink('copilot-prep'))
 const applicationMockInterviewLink = computed(() => buildInterviewWorkspaceLink('mock-interview'))
+const applicationDetailMetrics = computed(() => {
+  if (!detail.value) return []
+  return [
+    {
+      label: '匹配度',
+      value: Math.round(detail.value.matchScore || 0),
+      hint: 'JD 与简历分析',
+      tone: (detail.value.matchScore || 0) >= 75 ? 'success' as const : 'accent' as const
+    },
+    {
+      label: '绑定简历',
+      value: detail.value.resumeTitle || '未绑定',
+      hint: '当前材料版本'
+    },
+    {
+      label: '下一节点',
+      value: detail.value.nextStepDate || '待安排',
+      hint: statusLabel(detail.value.status),
+      tone: detail.value.nextStepDate ? 'warning' as const : undefined
+    }
+  ]
+})
 
 const loadData = async () => {
   const id = applicationId()
@@ -597,28 +614,6 @@ onMounted(() => {
     radial-gradient(circle at top left, rgba(var(--bc-accent-rgb), 0.11), transparent 28%),
     radial-gradient(circle at 88% 20%, rgba(var(--bc-cyan-rgb), 0.11), transparent 20%),
     var(--bc-surface-card);
-}
-
-.application-detail-metric {
-  border-radius: calc(var(--radius-md) - 6px);
-  border: 1px solid var(--bc-border-subtle);
-  background: rgba(255, 255, 255, 0.38);
-  padding: 0.95rem 1rem;
-  backdrop-filter: blur(10px);
-}
-
-.application-detail-metric span {
-  display: block;
-  font-size: 0.8rem;
-  color: var(--bc-ink-secondary);
-}
-
-.application-detail-metric strong {
-  display: block;
-  margin-top: 0.45rem;
-  font-size: 1.15rem;
-  line-height: 1.25;
-  color: var(--bc-ink);
 }
 
 .application-primary-zone {

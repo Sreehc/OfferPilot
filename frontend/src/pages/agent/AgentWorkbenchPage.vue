@@ -30,23 +30,7 @@
           </RouterLink>
         </div>
 
-        <div class="mt-5 grid gap-3 md:grid-cols-3">
-          <article class="agent-summary-card agent-summary-card--warning">
-            <p class="agent-summary-card__label">待审批</p>
-            <p class="agent-summary-card__value">{{ pendingApprovalRunCount }}</p>
-            <p class="mt-2 text-xs leading-5 text-secondary">需要人工确认后才会把草案写回训练、备面或投递链路。</p>
-          </article>
-          <article class="agent-summary-card agent-summary-card--danger">
-            <p class="agent-summary-card__label">依赖阻断</p>
-            <p class="agent-summary-card__value">{{ blockedRunCount }}</p>
-            <p class="mt-2 text-xs leading-5 text-secondary">关键 provider 未就绪，run 继续推进前建议先补配置。</p>
-          </article>
-          <article class="agent-summary-card agent-summary-card--accent">
-            <p class="agent-summary-card__label">降级运行</p>
-            <p class="agent-summary-card__value">{{ degradedRunCount }}</p>
-            <p class="mt-2 text-xs leading-5 text-secondary">可以继续，但研究、转写或实时增强能力可能不完整。</p>
-          </article>
-        </div>
+        <MetricStrip :items="agentRunMetrics" class="mt-5" />
       </article>
 
       <article class="shell-section-card p-5 sm:p-6">
@@ -78,7 +62,7 @@
             <p class="mt-3 text-sm leading-6 text-secondary">{{ run.approvalSummary || run.summary }}</p>
           </button>
         </div>
-        <EmptyState
+        <StateView
           v-else
           class="mt-5"
           icon="clipboard"
@@ -255,14 +239,11 @@
           </div>
         </div>
 
-        <div v-if="loading" class="mt-6 flex h-[280px] items-center justify-center">
-          <div class="text-center">
-            <div class="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-            <p class="mt-3 text-sm text-secondary">正在加载 run 列表...</p>
-          </div>
+        <div v-if="loading" class="mt-6">
+          <StateView variant="loading" :rows="5" />
         </div>
         <div v-else-if="!runs.length" class="mt-6">
-          <EmptyState
+          <StateView
             icon="clipboard"
             :title="hasActiveFilters ? '当前筛选下没有 Run' : '还没有 Agent Run'"
             :description="hasActiveFilters ? '换一个筛选条件，或者先清空筛选再查看全部 run。' : '先从上面的统一入口发起一个任务，这里会开始沉淀最近执行记录。'"
@@ -531,7 +512,7 @@
           </div>
         </div>
         <div v-else class="flex min-h-[360px] items-center justify-center">
-          <EmptyState
+          <StateView
             icon="chart"
             title="选择一个 Run 查看详情"
             description="这里会显示结果摘要、建议动作、待审批状态和下一步跳转。"
@@ -557,9 +538,9 @@ import {
   type AgentRunListQuery
 } from '@/api/agent'
 import { fetchProviderConfigsApi } from '@/api/settings'
-import EmptyState from '@/components/EmptyState.vue'
 import { PRODUCT_PAGE_NAMES } from '@/constants/productCopy'
 import type { AgentRun, ProviderScope, UserProviderConfigItem } from '@/types/api'
+import { MetricStrip, StateView } from '@/components/ui'
 
 const route = useRoute()
 const router = useRouter()
@@ -816,6 +797,26 @@ const pendingApprovalRuns = computed(() => runs.value.filter((run) => run.status
 const pendingApprovalRunCount = computed(() => runs.value.filter((run) => run.status === 'pending_approval').length)
 const blockedRunCount = computed(() => runs.value.filter((run) => run.providerGateStatus === 'blocked').length)
 const degradedRunCount = computed(() => runs.value.filter((run) => run.providerGateStatus === 'degraded').length)
+const agentRunMetrics = computed(() => [
+  {
+    label: '待审批',
+    value: pendingApprovalRunCount.value,
+    hint: '等待人工确认写回',
+    tone: pendingApprovalRunCount.value ? 'warning' as const : 'success' as const
+  },
+  {
+    label: '依赖阻断',
+    value: blockedRunCount.value,
+    hint: '需要补齐关键 provider',
+    tone: blockedRunCount.value ? 'danger' as const : 'success' as const
+  },
+  {
+    label: '降级运行',
+    value: degradedRunCount.value,
+    hint: '可继续但能力不完整',
+    tone: degradedRunCount.value ? 'accent' as const : undefined
+  }
+])
 
 const providerConfigMap = computed<Record<ProviderScope, UserProviderConfigItem | undefined>>(() => {
   const entries = providerConfigs.value.map((item) => [item.scope, item] as const)
@@ -1657,48 +1658,6 @@ watch(() => route.fullPath, () => {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-}
-
-.agent-summary-card {
-  border-radius: calc(var(--radius-md) - 4px);
-  border: 1px solid var(--bc-border-subtle);
-  background: var(--panel-bg);
-  padding: 16px;
-}
-
-.agent-summary-card--warning {
-  background:
-    linear-gradient(180deg, rgba(var(--bc-amber-rgb), 0.09), transparent 58%),
-    var(--panel-bg);
-}
-
-.agent-summary-card--danger {
-  background:
-    linear-gradient(180deg, rgba(224, 73, 73, 0.08), transparent 58%),
-    var(--panel-bg);
-}
-
-.agent-summary-card--accent {
-  background:
-    linear-gradient(180deg, rgba(var(--bc-cyan-rgb), 0.08), transparent 58%),
-    var(--panel-bg);
-}
-
-.agent-summary-card__label {
-  font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--bc-ink-tertiary);
-}
-
-.agent-summary-card__value {
-  margin-top: 10px;
-  font-family: theme('fontFamily.mono');
-  font-size: 2rem;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--bc-ink);
 }
 
 .agent-queue-card {
