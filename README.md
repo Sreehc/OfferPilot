@@ -1,18 +1,22 @@
 # OfferPilot
 
-OfferPilot 是一个面向 Java 求职者的 AI 面试训练与求职管理平台。它把题库训练、知识问答、模拟面试、学习计划、简历整理和投递管理串成一条连续工作流，让用户进入首页后就能判断“现在先做什么”。
+OfferPilot 是一个面向 Java 求职者的 AI 面试训练与求职管理平台。当前项目采用 Spring Boot 单体后端 + Vue 3 SPA 前端，把题库训练、知识问答、模拟面试、学习计划、简历整理、投递管理、复习收藏和管理治理串成一条连续工作流。
 
-## 核心功能
+## 当前能力
 
-- **求职训练工作台**：首页集中展示当前主任务、训练摘要、计划进度、简历状态和投递推进情况
+- **求职训练工作台**：首页展示训练概览、弱项、最近面试、计划进度、简历状态和投递推进情况
 - **题库训练**：按关键字、分类、题型、难度、岗位方向和标签筛题，查看题目详情、追问建议和常见错误
-- **知识库与问答**：上传资料、检索文档、基于知识库或简历项目继续提问，获得带引用来源的回答
-- **模拟面试**：通过文字或语音模式验证表达、追问和答题质量，查看评分、点评和历史复盘
+- **知识库与 RAG 问答**：上传 Markdown / TXT / PDF / Word 文档，解析切片后支持检索、引用回答和流式问答
+- **模拟面试**：支持文字面试、语音面试、岗位准备、Copilot 准备、实时 Copilot 会话和录屏复盘
 - **学习计划**：生成 7 / 14 / 30 天计划，执行每日任务并刷新后续节奏
-- **简历助手**：上传并解析简历，查看项目拆分、项目追问、自我介绍和面试简历提纲
+- **简历助手**：上传并解析简历，维护版本，查看项目拆分、项目追问、自我介绍、面试简历提纲和简历评分
 - **投递管理**：记录岗位、分析 JD、更新状态、维护事件时间线
-- **数据分析**：回看训练趋势、计划执行、简历准备和投递相关洞察
-- **管理后台**：查看用户、题库、文档、AI 日志、系统配置和面试治理
+- **复习与收藏**：管理错题、SM-2 复习队列、收藏内容和收藏标签
+- **社区与通知**：支持提问、回答、投票、排行榜和站内通知
+- **自适应推荐**：基于训练信号输出能力画像、推荐题目和推荐面试方向
+- **Agent 工作台**：维护用户模型提供商配置，创建、审批、拒绝和取消 Agent 运行
+- **数据分析与导出**：查看趋势、效率、学习洞察、能力主题回顾，导出个人数据
+- **管理后台**：管理用户、题库、分类、知识文档、社区内容、AI 日志、系统配置、登录日志和面试治理
 
 ## 主线流程
 
@@ -24,7 +28,8 @@ OfferPilot 是一个面向 Java 求职者的 AI 面试训练与求职管理平�
   -> 学习计划安排接下来几天的训练
   -> 简历助手整理项目与自我介绍
   -> 投递管理记录和推进岗位
-  -> 数据分析与后台治理辅助复盘
+  -> 复习、收藏、推荐和数据分析辅助复盘
+  -> 后台治理内容、AI 调用和系统配置
 ```
 
 ## 技术栈
@@ -32,20 +37,22 @@ OfferPilot 是一个面向 Java 求职者的 AI 面试训练与求职管理平�
 | 层级 | 技术 |
 |------|------|
 | 后端 | Spring Boot 3.3.5、Java 17、MyBatis-Plus 3.5.7、MySQL 8、Redis Stack |
-| 安全 | Spring Security、JWT 无状态认证、Redis Token 黑名单、CORS 白名单 |
-| AI | OpenAI-compatible LLM + Embedding 网关抽象 |
-| 文档解析 | Apache Tika（Markdown / TXT / PDF） |
+| 安全 | Spring Security、JWT 无状态认证、Redis Token 黑名单、CORS 白名单、2FA、设备管理 |
+| AI | OpenAI-compatible LLM / Embedding 网关、用户 Provider 配置、AI 调用日志与配额 |
+| 文档解析 | Apache Tika（Markdown / TXT / PDF / Word） |
 | 前端 | Vue 3、Vite、TypeScript、Pinia、Vue Router、Axios、Element Plus、Tailwind CSS 3、ECharts |
-| 部署 | Docker Compose、Nginx 反向代理 |
+| 部署 | Docker Compose、Nginx、GitHub Actions、GHCR |
 
 ## 目录结构
 
 ```text
 OfferPilot
-├── backend/       Spring Boot 单体后端
+├── backend/       Spring Boot 后端
 ├── frontend/      Vue 3 前端应用
-├── sql/           数据库初始化与迁移脚本
-└── deploy/        Docker Compose + Nginx 部署配置
+├── sql/           数据库初始化与增量迁移脚本
+├── deploy/        生产部署 Compose、Nginx 与重部署脚本
+├── docs/          当前蓝图与历史归档文档
+└── docker-compose.yml
 ```
 
 ## 环境要求
@@ -54,21 +61,30 @@ OfferPilot
 - Maven 3.9+
 - Node.js 20+
 - MySQL 8.x
-- Redis 7.x（需启用 RediSearch 模块）
+- Redis 7.x with RediSearch / RedisJSON，推荐直接使用 Redis Stack
 
-## 快速启动
+## 本地启动
 
-### 1. 初始化数据库
+### 1. 启动本地依赖
 
-执行 `sql/init.sql` 创建表结构，再执行 `sql/initdata.sql` 插入测试数据。  
-如果数据库是在两步验证字段加入前初始化的，再额外执行 `sql/migrate_2fa_user_columns.sql` 补齐 `user` 表字段。
-
-### 2. 启动本地依赖
+仓库根目录的 `docker-compose.yml` 会启动 MySQL、Redis Stack、后端和前端；如果只想本机运行后端/前端，建议先用 Compose 或本机服务提供 MySQL 与 Redis。
 
 ```bash
-cd deploy
-docker compose up -d
+docker compose up -d mysql redis
 ```
+
+`deploy/docker-compose.yml` 是另一套从 `deploy/` 目录运行的本地/服务器构建配置；两套 Compose 的相对路径不同，不要混用执行目录。
+
+### 2. 初始化数据库
+
+第一次创建数据库时执行：
+
+```bash
+mysql -h 127.0.0.1 -P 3306 -u root -p offerpilot < sql/init.sql
+mysql -h 127.0.0.1 -P 3306 -u root -p offerpilot < sql/initdata.sql
+```
+
+如果数据库来自旧版本，再按需要执行 `sql/migrate_*.sql` 中的增量脚本，例如 Agent、Provider、录屏复盘、Copilot 会话和用户 Provider 配置相关迁移。
 
 ### 3. 启动后端
 
@@ -77,7 +93,13 @@ cd backend
 mvn spring-boot:run
 ```
 
-默认端口 `8080`，Swagger 文档：<http://localhost:8080/doc.html>
+默认端口：`8080`。
+
+常用入口：
+
+- Knife4j：`http://localhost:8080/doc.html`
+- Swagger UI：`http://localhost:8080/swagger-ui.html`
+- 健康检查：`http://localhost:8080/actuator/health`
 
 ### 4. 启动前端
 
@@ -87,9 +109,11 @@ npm install
 npm run dev
 ```
 
-默认端口 `5173`
+默认端口：`5173`。Vite 已配置 `/api` 代理到 `http://localhost:8080`。
 
 ## 默认测试账号
+
+初始化数据包含演示账号，常用本地登录信息：
 
 - 用户名：`demo`
 - 密码：`123456`
@@ -98,72 +122,106 @@ npm run dev
 
 ### 后端
 
-| 变量 | 说明 | 默认值 |
-|------|------|--------|
-| `OFFERPILOT_DB_HOST` | MySQL 主机 | localhost |
-| `OFFERPILOT_DB_PORT` | MySQL 端口 | 3306 |
-| `OFFERPILOT_DB_NAME` | 数据库名 | offerpilot |
-| `OFFERPILOT_DB_USERNAME` | 数据库用户 | root |
-| `OFFERPILOT_DB_PASSWORD` | 数据库密码 | 123456 |
-| `OFFERPILOT_REDIS_HOST` | Redis 主机 | localhost |
-| `OFFERPILOT_REDIS_PORT` | Redis 端口 | 6379 |
-| `OFFERPILOT_JWT_SECRET` | JWT 密钥 | — |
-| `OFFERPILOT_LLM_BASE_URL` | LLM API 地址 | — |
-| `OFFERPILOT_LLM_API_KEY` | LLM API Key | — |
-| `OFFERPILOT_LLM_MODEL` | 模型名称 | — |
-| `OFFERPILOT_EMBEDDING_ENABLED` | 向量检索开关 | false |
-| `OFFERPILOT_EMBEDDING_BASE_URL` | Embedding API 地址 | 同 `OFFERPILOT_LLM_BASE_URL` |
-| `OFFERPILOT_EMBEDDING_API_KEY` | Embedding API Key | 同 `OFFERPILOT_LLM_API_KEY` |
-| `OFFERPILOT_EMBEDDING_MODEL` | Embedding 模型 | text-embedding-3-small |
-| `OFFERPILOT_EMBEDDING_DIMENSIONS` | 向量维度 | 1536 |
-| `OFFERPILOT_VECTOR_THRESHOLD` | 向量相似度阈值 | 0.3 |
-| `OFFERPILOT_CORS_ORIGINS` | CORS 允许域名 | http://localhost:5173 |
+| 变量 | 说明 | dev 默认值 | prod 默认值 |
+|------|------|------------|-------------|
+| `OFFERPILOT_DB_HOST` | MySQL 主机 | `127.0.0.1` | `mysql` 或部署文件指定值 |
+| `OFFERPILOT_DB_PORT` | MySQL 端口 | `3306` | `3306` |
+| `OFFERPILOT_DB_NAME` | 数据库名 | `offerpilot` | `offerpilot` |
+| `OFFERPILOT_DB_USERNAME` | 数据库用户 | `root` | `offerpilot` |
+| `OFFERPILOT_DB_PASSWORD` | 数据库密码 | `root` | 必填 |
+| `OFFERPILOT_REDIS_HOST` | Redis 主机 | `127.0.0.1` | `redis` 或部署文件指定值 |
+| `OFFERPILOT_REDIS_PORT` | Redis 端口 | `6379` | `6379` 或 `6380` |
+| `OFFERPILOT_REDIS_PASSWORD` | Redis 密码 | 空 | 空 |
+| `OFFERPILOT_JWT_SECRET` | JWT 密钥，至少 32 字符 | 开发默认值 | 必填 |
+| `OFFERPILOT_JWT_EXPIRE_SECONDS` | JWT 有效期秒数 | `86400` | `86400` |
+| `OFFERPILOT_CORS_ORIGINS` | CORS 允许域名 | `http://localhost:5173` | 必填 |
+| `OFFERPILOT_LLM_ENABLED` | LLM 开关 | `false` | `true` |
+| `OFFERPILOT_LLM_BASE_URL` | LLM API 地址 | `https://api.openai.com/v1` | `https://api.openai.com/v1` |
+| `OFFERPILOT_LLM_API_KEY` | LLM API Key | 空 | 启用 LLM 时必填 |
+| `OFFERPILOT_LLM_MODEL` | LLM 模型 | `gpt-4.1-mini` | `gpt-4.1-mini` |
+| `OFFERPILOT_EMBEDDING_ENABLED` | Embedding 开关 | `false` | `false` |
+| `OFFERPILOT_EMBEDDING_BASE_URL` | Embedding API 地址 | 同 LLM 地址 | 同 LLM 地址 |
+| `OFFERPILOT_EMBEDDING_API_KEY` | Embedding API Key | 同 LLM Key | 同 LLM Key |
+| `OFFERPILOT_EMBEDDING_MODEL` | Embedding 模型 | `text-embedding-3-small` | `text-embedding-3-small` |
+| `OFFERPILOT_EMBEDDING_DIMENSIONS` | 向量维度 | `1536` | `1536` |
+| `OFFERPILOT_VECTOR_THRESHOLD` | 向量相似度阈值 | `0.3` | `0.3` |
+| `OFFERPILOT_RATE_LIMIT` | 限流窗口内最大请求数 | `60` | `60` |
+| `OFFERPILOT_RATE_WINDOW` | 限流窗口秒数 | `60` | `60` |
+| `OFFERPILOT_AI_QUOTA` | 每用户每日 AI 调用配额 | `100` | `100` |
+| `OFFERPILOT_AUTH_EXPOSE_DEBUG_CODES` | 是否返回调试验证码 | `true` | `false` |
+| `OFFERPILOT_STORAGE_LOCAL_ROOT` | 本地文件存储根目录 | `./data/storage` | `/var/lib/offerpilot/storage` |
+
+完整生产模板见 `.env.example` 和 `deploy/.env.example`。
 
 ### 前端
 
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
-| `VITE_API_BASE_URL` | API 基础路径 | /api |
-| `VITE_APP_TITLE` | 应用标题 | OfferPilot |
+| `VITE_API_BASE_URL` | API 基础路径 | `/api` |
+| `VITE_APP_TITLE` | 应用标题 | `OfferPilot` |
 
 ## 生产部署
 
-```bash
-export OFFERPILOT_JWT_SECRET=your-secret-key
-export OFFERPILOT_DB_PASSWORD=your-db-password
-export OFFERPILOT_CORS_ORIGINS=https://your-domain.com
-export OFFERPILOT_LLM_BASE_URL=https://api.openai.com/v1
-export OFFERPILOT_LLM_API_KEY=your-api-key
-export OFFERPILOT_LLM_MODEL=gpt-4o
+### 仓库根目录一体化部署
 
-cd deploy
-docker compose -f docker-compose.prod.yml up -d
+```bash
+cp .env.example .env
+# 编辑 .env，至少填写 MYSQL_ROOT_PASSWORD、OFFERPILOT_DB_PASSWORD、OFFERPILOT_JWT_SECRET、OFFERPILOT_CORS_ORIGINS
+
+docker compose --env-file .env up -d --build
 ```
 
-前端通过 Nginx 反向代理，访问 `http://localhost` 即可。健康检查：`http://localhost:8080/actuator/health`
+这套 Compose 会同时启动 MySQL、Redis Stack、后端和前端，并自动挂载 `sql/init.sql` 与 `sql/initdata.sql` 作为首次初始化脚本。
 
-## 运行测试
+### deploy 目录生产部署
+
+```bash
+cp deploy/.env.example deploy/.env
+# 编辑 deploy/.env
+
+cd deploy
+docker compose --env-file .env -f docker-compose.prod.yml up -d --build
+```
+
+`deploy/docker-compose.prod.yml` 默认假设 MySQL 在宿主机或外部服务上，Compose 内只管理 Redis、后端和前端。线上自动发布相关文件为 `.github/workflows/deploy.yml`、`deploy/docker-compose.release.yml` 和 `deploy/redeploy.sh`。
+
+## 运行测试与质量检查
 
 ```bash
 # 后端测试
 cd backend
 mvn test
 
-# 前端测试
+# 前端单元测试
 cd frontend
 npm run test
+
+# 前端类型检查与构建
+npm run build
+
+# 前端 lint
+npm run lint
 ```
 
 ## 技术亮点
 
-- **工作台主线**：首页围绕当前主任务、计划进度、简历状态和投递推进组织，不让辅助模块抢占主叙事
-- **AI 网关抽象**：`LlmGateway` / `EmbeddingGateway` 接口 + OpenAI-compatible 实现，可切换不同兼容提供商
+- **主线工作台**：首页围绕当前主任务、计划进度、简历状态和投递推进组织
+- **AI 网关抽象**：`LlmGateway` / `EmbeddingGateway` 接口 + OpenAI-compatible 实现，可切换兼容提供商
+- **用户 Provider 配置**：支持按用户维护模型服务配置，并在 Agent 工作台中检查可用性
 - **RAG 检索**：Redis Stack 向量检索 + 关键词混合检索，Apache Tika 解析多格式文档后自动切分向量化
-- **事务管理**：LLM 调用与数据库事务分离，避免长事务占用连接；通过 `@Lazy` self-injection 解决 Spring 代理自调用问题
-- **安全设计**：JWT 无状态认证 + Redis Token 黑名单 + CORS 白名单 + XSS 防护
-- **速率与配额**：Redis 滑动窗口限流（`RateLimitInterceptor`）+ 每用户每日 LLM 调用配额
-- **可观测性**：请求日志拦截器、Actuator 健康检查、Redis 缓存与治理日志
-- **前端质量**：TypeScript strict 模式、组件拆分、ErrorBoundary 全局错误捕获、路由懒加载、主题切换
+- **面试链路扩展**：文字、语音、岗位准备、Copilot 准备、实时 Copilot 和录屏复盘共用面试域模型
+- **安全设计**：JWT 无状态认证 + Redis Token 黑名单 + CORS 白名单 + 2FA + 设备撤销 + 登录日志
+- **速率与配额**：Redis 滑动窗口限流 + 每用户每日 LLM 调用配额
+- **可观测与治理**：请求日志、Actuator 健康检查、AI 调用日志、运行治理和后台配置覆盖
+- **前端质量**：TypeScript strict、路由懒加载、ErrorBoundary、主题切换、Vitest 测试和 Lighthouse 配置
+
+## 文档
+
+- 当前文档入口：[docs/README.md](./docs/README.md)
+- 接口速查：[docs/archive/api/README.md](./docs/archive/api/README.md)
+- 架构说明：[docs/archive/architecture/README.md](./docs/archive/architecture/README.md)
+- 部署指南：[docs/archive/deployment/README.md](./docs/archive/deployment/README.md)
+- 数据库说明：[docs/archive/database/README.md](./docs/archive/database/README.md)
 
 ## License
 

@@ -13,7 +13,6 @@ permissions:
 env:
   REGISTRY: ghcr.io
   BACKEND_IMAGE: ghcr.io/sreehc/offerpilot-backend
-  FRONTEND_IMAGE: ghcr.io/sreehc/offerpilot-frontend
 
 jobs:
   build-and-deploy:
@@ -25,6 +24,13 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -47,15 +53,16 @@ jobs:
             ${{ env.BACKEND_IMAGE }}:latest
             ${{ env.BACKEND_IMAGE }}:${{ steps.meta.outputs.sha_tag }}
 
-      - name: Build and push frontend image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./frontend
-          file: ./frontend/Dockerfile
-          push: true
-          tags: |
-            ${{ env.FRONTEND_IMAGE }}:latest
-            ${{ env.FRONTEND_IMAGE }}:${{ steps.meta.outputs.sha_tag }}
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Package frontend dist
+        run: |
+          tar --exclude='.DS_Store' --exclude='._*' -C frontend/dist -czf frontend-dist.tgz .
+          cp frontend-dist.tgz deploy/frontend-dist.tgz
 
       - name: Sync deploy files to server
         uses: appleboy/scp-action@v0.1.7
@@ -64,7 +71,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT || 22 }}
-          source: "deploy/docker-compose.release.yml,deploy/redeploy.sh"
+          source: "deploy/docker-compose.release.yml,deploy/redeploy.sh,deploy/nginx/offerpilot.conf,deploy/frontend-dist.tgz"
           target: "/srv/offerpilot/deploy"
           strip_components: 1
 
