@@ -12,6 +12,7 @@ frontend/dist/
 deploy/.env
 
 # Internal planning docs — not for repo
+docs/
 三期规划.md
 四期规划.md
 CONFIG_GUIDE.md
