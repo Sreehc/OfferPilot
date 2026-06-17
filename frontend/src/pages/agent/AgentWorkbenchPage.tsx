@@ -3,7 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { App as AntApp, Button, Card, Descriptions, Form, Input, List, Modal, Select, Space, Tag, Typography } from 'antd'
 import { approveAgentRunApi, cancelAgentRunApi, createAgentRunApi, fetchAgentRunDetailApi, fetchAgentRunsApi, rejectAgentRunApi } from '@/api/modules/agent'
 import { getErrorMessage } from '@/api/client'
-import { AgentComposer, AgentMessage, GeneratedArtifactCard, HumanApprovalBar, ThoughtTimeline, ToolCallCard } from '@/components/agent/AgentComponents'
+import { AgentComposer, GeneratedArtifactCard, HumanApprovalBar, ThoughtTimeline, ToolCallCard } from '@/components/agent/AgentComponents'
+import { mapAgentArtifacts, mapAgentMessages, mapAgentSteps, mapToolCalls } from '@/components/agent/agentModel'
 import { AgentVendorsPanel } from '@/components/agent/AgentVendors'
 import { DataListCard, EntitySummary, formatDateTime, normalizeRecords, pickArray, pickText, StatusTag } from '@/modules/common'
 import { ModulePage } from '@/modules/common'
@@ -38,9 +39,9 @@ export function AgentWorkbenchPage() {
     enabled: Boolean(selectedRunId)
   })
   const currentRun = selectedRun.data as any
-  const runThoughts = pickArray<Record<string, unknown>>(currentRun, ['thoughts', 'steps', 'timeline'])
-  const runToolCalls = pickArray<Record<string, unknown>>(currentRun, ['toolCalls', 'tools', 'actions'])
-  const runArtifacts = pickArray<Record<string, unknown>>(currentRun, ['artifacts', 'outputs', 'generatedArtifacts'])
+  const runThoughts = mapAgentSteps(pickArray<Record<string, unknown>>(currentRun, ['thoughts', 'steps', 'timeline']))
+  const runToolCalls = mapToolCalls(pickArray<Record<string, unknown>>(currentRun, ['toolCalls', 'tools', 'actions']))
+  const runArtifacts = mapAgentArtifacts(pickArray<Record<string, unknown>>(currentRun, ['artifacts', 'outputs', 'generatedArtifacts']))
   const pendingRuns = useMemo(() => runs.filter((run: any) => String(run.status || '').includes('PENDING') || String(run.status || '').includes('APPROVAL')), [runs])
 
   const createRun = useMutation({
@@ -81,12 +82,7 @@ export function AgentWorkbenchPage() {
     onError: (error) => message.error(getErrorMessage(error, '取消失败'))
   })
 
-  const currentMessages: AgentMessage[] = normalizeRecords(currentRun?.messages || currentRun?.chatMessages).map((item, index) => ({
-    id: String(item.id || item.messageId || index),
-    role: (item.role || item.senderRole || 'assistant') as AgentMessage['role'],
-    content: pickText(item, ['content', 'message', 'text'], ''),
-    status: item.status
-  }))
+  const currentMessages = mapAgentMessages(currentRun?.messages || currentRun?.chatMessages)
 
   const detailBlocks = currentRun ? (
     <Space direction="vertical" style={{ width: '100%' }} size={16}>
@@ -110,11 +106,13 @@ export function AgentWorkbenchPage() {
         ]} />
       </Card>
       <HumanApprovalBar
+        visible={String(currentRun.status || currentRun.approvalStatus || '').toUpperCase().includes('APPROVAL')}
+        loading={approveRun.isPending || rejectRun.isPending || cancelRun.isPending}
         onApprove={() => approveRun.mutate(String(currentRun.id || currentRun.runId))}
         onReject={() => setRejectOpen(true)}
         onCancel={() => cancelRun.mutate(String(currentRun.id || currentRun.runId))}
       />
-      <GeneratedArtifactCard title="产出" items={runArtifacts.length ? runArtifacts.map((item) => pickText(item, ['title', 'name', 'summary', 'content'])) : [pickText(currentRun, ['outputTitle', 'summary'], '暂无产出')]} />
+      <GeneratedArtifactCard title="产出" items={runArtifacts.length ? runArtifacts : [{ id: 'fallback', title: pickText(currentRun, ['outputTitle', 'summary'], '暂无产出'), content: pickText(currentRun, ['resultSummary', 'summary'], '等待后端返回运行结果') }]} />
     </Space>
   ) : null
 
@@ -187,19 +185,9 @@ export function AgentWorkbenchPage() {
             <Card title="当前选中" className="surface-card">
               {currentRun ? (
                 <Space direction="vertical" style={{ width: '100%' }} size={12}>
-                  <ThoughtTimeline steps={runThoughts.length ? runThoughts.map((step) => ({
-                    title: pickText(step, ['title', 'name', 'step'], '执行步骤'),
-                    description: pickText(step, ['description', 'summary', 'content'], ''),
-                    status: String(step.status || '').toLowerCase().includes('done') ? 'done' : String(step.status || '').toLowerCase().includes('run') ? 'active' : 'wait'
-                  })) : [{ title: '暂无步骤', description: '等待后端返回 run steps', status: 'wait' }]} />
-                  {runToolCalls.length ? runToolCalls.map((call, index) => (
-                    <ToolCallCard key={String(call.id || call.name || index)} call={{
-                      id: String(call.id || index),
-                      name: pickText(call, ['name', 'toolName', 'type'], 'tool'),
-                      status: String(call.status || '').toUpperCase().includes('APPROVAL') ? 'approval_required' : String(call.status || '').toUpperCase().includes('FAIL') ? 'failed' : String(call.status || '').toUpperCase().includes('SUCCESS') ? 'success' : 'running',
-                      summary: pickText(call, ['summary', 'result', 'description'], '等待工具调用结果'),
-                      params: (call.params || call.arguments || call.input) as Record<string, any> | undefined
-                    }} />
+                  <ThoughtTimeline steps={runThoughts.length ? runThoughts : [{ title: '暂无步骤', description: '等待后端返回 run steps', status: 'wait' }]} />
+                  {runToolCalls.length ? runToolCalls.map((call) => (
+                    <ToolCallCard key={call.id} call={call} />
                   )) : <ToolCallCard call={{
                     id: 'agent-tool',
                     name: pickText(currentRun, ['agentType'], 'agent-tool'),

@@ -382,3 +382,47 @@ npm run build
 
 - `docs/frontend-react-route-map.md`：逐路由迁移清单
 - `docs/frontend-agent-ui-spec.md`：Agent UI 交互、状态和异常规格
+
+## 10. 完成审计
+
+本轮收口已经把上一版“未 100% 完成”的部分推进到可验收状态。
+
+### 10.1 已完成项
+
+| 范围 | 完成证据 |
+|---|---|
+| Agent 状态模型 | 已新增 `frontend/src/components/agent/agentModel.ts`，统一 `run / step / tool_call / approval / artifact / message` 映射 |
+| Agent streaming | 已新增 `frontend/src/components/agent/useAgentStreaming.ts`，`/chat` 具备 `/api/chat/stream` 优先、普通发送兜底的链路 |
+| 工具调用 UI | `ToolCallCard` 已展示状态、参数、耗时和错误信息 |
+| 人工审批 UI | `HumanApprovalBar` 已接入审批可见性、loading、批准、拒绝、取消 |
+| Agent 产物 UI | `GeneratedArtifactCard` 已支持复制、打开链接、类型标签和长内容展开 |
+| Chat 页面 | 已统一使用 Agent 状态模型和 streaming hook |
+| Agent Workbench | 已统一使用 Agent 状态模型，run、step、tool、artifact、approval 展示不再各自硬编码 |
+| 题库 | 已补关键词、分类、难度筛选和删除确认 |
+| 知识库 | 已补关键词、分类、索引状态筛选、上传分类、重索引确认和删除确认 |
+| 投递看板 | 已补关键词、状态筛选、刷新分析确认，API 支持查询参数 |
+| 管理后台 | 已补用户封禁/解封确认、内容审核确认、AI 日志 provider/model/error 字段 |
+| 权限门禁 | 已补 `RequireAuth` admin / anonymous route guard 测试 |
+| API helper | 已补错误消息提取测试 |
+| 页面 smoke | 已补 dashboard、chat、agent、interview、resume、applications、admin 渲染 smoke |
+| 测试环境 | 已补 `matchMedia` 和 `ResizeObserver` mock，保证 Ant Design 组件能在 jsdom 下稳定测试 |
+
+### 10.2 验收命令
+
+本轮完成后以下命令均已通过：
+
+```bash
+cd frontend
+npm run lint
+npm run test
+npm run build
+```
+
+### 10.3 非阻断说明
+
+`npm run build` 仍会输出两类依赖层面的警告：
+
+- `node-fetch` 触发的浏览器外部化提示，来源是 Agent 相关依赖链。
+- `antd`、`agent-ui`、`echarts` 等 chunk 大小提示。
+
+当前已经使用路由级 lazy load 和 `manualChunks` 做了基础分包；这些警告不阻断构建，也不影响本轮 UI 重构完成验收。后续如果要继续压首屏包体积，应单独做依赖替换、按页面动态引入或移除未使用 Agent 依赖的专项优化。

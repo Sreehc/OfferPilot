@@ -3,7 +3,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { App as AntApp, Button, Card, Modal, Space, Tag } from 'antd'
 import { deleteChatSessionApi, fetchChatMessagesApi, fetchChatSessionsApi, sendChatApi } from '@/api/modules/chat'
 import { getErrorMessage } from '@/api/client'
-import { AgentChatPanel, type AgentMessage, GeneratedArtifactCard, ThoughtTimeline, ToolCallCard } from '@/components/agent/AgentComponents'
+import { AgentChatPanel, GeneratedArtifactCard, ThoughtTimeline, ToolCallCard } from '@/components/agent/AgentComponents'
+import { mapAgentArtifacts, mapAgentMessages, mapToolCalls } from '@/components/agent/agentModel'
+import { useAgentStreaming } from '@/components/agent/useAgentStreaming'
 import { DataListCard, formatDateTime, normalizeRecords, pickArray, pickText, StatusTag } from '@/modules/common'
 import { ModulePage } from '@/modules/common'
 
@@ -12,6 +14,7 @@ export function ChatPage() {
   const queryClient = useQueryClient()
   const [sessionId, setSessionId] = useState<number | null>(null)
   const [deleteId, setDeleteId] = useState<number | null>(null)
+  const { streaming, stop, sendStreamingMessage } = useAgentStreaming()
   const sessions = useQuery({ queryKey: ['chat', 'sessions'], queryFn: () => fetchChatSessionsApi().then((response) => response.data) })
   const messages = useQuery({
     queryKey: ['chat', 'messages', sessionId],
@@ -37,15 +40,10 @@ export function ChatPage() {
   const sessionRows = normalizeRecords(sessions.data)
   const messageRows = normalizeRecords(messages.data)
   const selectedSession = sessionRows.find((item) => Number(item.id || item.sessionId) === sessionId)
-  const toolCalls = messageRows.flatMap((item) => normalizeRecords(item.toolCalls || item.tools || item.actions))
+  const toolCalls = mapToolCalls(messageRows.flatMap((item) => normalizeRecords(item.toolCalls || item.tools || item.actions)))
   const thoughtSteps = pickArray<Record<string, unknown>>(selectedSession, ['thoughts', 'steps', 'timeline'])
-  const artifacts = messageRows.flatMap((item) => normalizeRecords(item.artifacts || item.outputs || item.generatedArtifacts))
-  const agentMessages: AgentMessage[] = messageRows.map((item, index) => ({
-    id: String(item.id || item.messageId || index),
-    role: (item.role || item.senderRole || 'assistant') as AgentMessage['role'],
-    content: pickText(item, ['content', 'message', 'text'], ''),
-    status: item.status
-  }))
+  const artifacts = mapAgentArtifacts(messageRows.flatMap((item) => normalizeRecords(item.artifacts || item.outputs || item.generatedArtifacts)))
+  const agentMessages = mapAgentMessages(messageRows)
 
   return (
     <ModulePage
@@ -61,7 +59,26 @@ export function ChatPage() {
       <div className="workspace-grid two">
         <AgentChatPanel
           messages={agentMessages}
-          onSend={(value) => sendMessage.mutate({ sessionId: sessionId || undefined, message: value })}
+          streaming={streaming}
+          onStop={stop}
+          onSend={async (value) => {
+            const payload = { sessionId: sessionId || undefined, message: value }
+            try {
+              await sendStreamingMessage(payload, (delta) => {
+                queryClient.setQueryData(['chat', 'messages', sessionId], (current: unknown) => {
+                  const currentRows = normalizeRecords(current)
+                  const last = currentRows.at(-1)
+                  const nextRows = last && last.role === delta.role
+                    ? [...currentRows.slice(0, -1), { ...last, content: `${pickText(last as Record<string, unknown>, ['content', 'message', 'text'], '')}${delta.content}` }]
+                    : [...currentRows, delta]
+                  return nextRows
+                })
+              })
+            } catch {
+              sendMessage.mutate(payload)
+              await queryClient.invalidateQueries({ queryKey: ['chat', 'messages', sessionId] })
+            }
+          }}
         />
         <div className="agent-timeline">
           <Card title="当前会话" className="surface-card">
@@ -81,16 +98,10 @@ export function ChatPage() {
               status: String(step.status || '').toLowerCase().includes('done') ? 'done' as const : String(step.status || '').toLowerCase().includes('run') ? 'active' as const : 'wait' as const
             }))
           ]} />
-          {toolCalls.map((call, index) => (
-            <ToolCallCard key={String(call.id || call.name || index)} call={{
-              id: String(call.id || index),
-              name: pickText(call, ['name', 'toolName', 'type'], 'tool'),
-              status: String(call.status || '').toUpperCase().includes('FAIL') ? 'failed' : String(call.status || '').toUpperCase().includes('SUCCESS') ? 'success' : 'running',
-              summary: pickText(call, ['summary', 'result', 'description'], ''),
-              params: call.params || call.arguments || call.input
-            }} />
+          {toolCalls.map((call) => (
+            <ToolCallCard key={call.id} call={call} />
           ))}
-          <GeneratedArtifactCard title="可交付结果" items={artifacts.map((item) => pickText(item, ['title', 'name', 'summary', 'content']))} />
+          <GeneratedArtifactCard title="可交付结果" items={artifacts} />
           <DataListCard
             title="会话列表"
             data={sessions.data}
