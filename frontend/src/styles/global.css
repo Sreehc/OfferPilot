@@ -59,7 +59,7 @@ button, [role='button'] { cursor: pointer; }
 .skip-link:focus { transform: translateY(0); }
 .app-shell { min-height: 100dvh; }
 .app-logo-mark { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--op-primary), var(--op-success)); color: #fff; font-family: 'JetBrains Mono', monospace; font-weight: 800; letter-spacing: 0; }
-.shell-side { border-right: 1px solid var(--op-border); background: var(--op-surface); }
+.shell-side { position: sticky; top: 0; align-self: flex-start; height: 100dvh; overflow-y: auto; overflow-x: hidden; border-right: 1px solid var(--op-border); background: var(--op-surface); }
 .shell-header { position: sticky; top: 0; z-index: 20; height: 64px; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--op-border); background: color-mix(in srgb, var(--op-surface) 88%, transparent); backdrop-filter: blur(16px); }
 .shell-content { min-height: calc(100dvh - 64px); padding: 24px; min-width: 0; overflow-x: hidden; }
 .workspace-page { display: grid; gap: 20px; max-width: 1440px; min-width: 0; margin: 0 auto; }
