@@ -1,24 +1,35 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { App as AntApp, Button, Card, Form, Input, Modal, Space } from 'antd'
 import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { createCopilotPrepSessionApi, createCopilotRealtimeSessionApi, createJobPrepSessionApi, fetchInterviewHistoryApi, fetchInterviewTrendApi, fetchLatestCopilotRealtimeSessionApi, startInterviewApi } from '@/api/modules/interview'
 import { getErrorMessage } from '@/api/client'
 import { DataTableCard, formatDateTime, normalizeRecords, pickText, StatusTag } from '@/modules/common'
 import { EChartCard } from '@/components/charts/EChartCard'
 import { ModulePage } from '@/modules/common'
 
+type ApiLike = { data?: Record<string, unknown> } | undefined
+
 export function InterviewPage() {
   const { message } = AntApp.useApp()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const history = useQuery({ queryKey: ['interview', 'history'], queryFn: () => fetchInterviewHistoryApi().then((response) => response.data) })
   const trend = useQuery({ queryKey: ['interview', 'trend'], queryFn: () => fetchInterviewTrendApi().then((response) => response.data) })
   const latestRealtime = useQuery({ queryKey: ['interview', 'copilot', 'latest'], queryFn: () => fetchLatestCopilotRealtimeSessionApi().then((response) => response.data) })
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['interview'] })
-  const start = useMutation({ mutationFn: startInterviewApi, onSuccess: () => { message.success('已开始模拟面试'); invalidate() }, onError: (error) => message.error(getErrorMessage(error, '开始失败')) })
-  const prep = useMutation({ mutationFn: createJobPrepSessionApi, onSuccess: () => { message.success('已创建 JD 备面会话'); invalidate() }, onError: (error) => message.error(getErrorMessage(error, '创建失败')) })
-  const copilotPrep = useMutation({ mutationFn: createCopilotPrepSessionApi, onSuccess: () => { message.success('已创建 Copilot 备面会话'); invalidate() }, onError: (error) => message.error(getErrorMessage(error, '创建失败')) })
-  const copilotRealtime = useMutation({ mutationFn: createCopilotRealtimeSessionApi, onSuccess: () => { message.success('已创建实时会话'); invalidate() }, onError: (error) => message.error(getErrorMessage(error, '创建失败')) })
+  const goToSession = (resp: ApiLike, successText: string) => {
+    message.success(successText)
+    invalidate()
+    const payload = (resp?.data || {}) as Record<string, unknown>
+    const sessionId = payload.sessionId || payload.id
+    if (sessionId) navigate(`/interview/detail/${sessionId}`)
+  }
+  const start = useMutation({ mutationFn: startInterviewApi, onSuccess: (resp) => goToSession(resp, '已开始模拟面试'), onError: (error) => message.error(getErrorMessage(error, '开始失败')) })
+  const prep = useMutation({ mutationFn: createJobPrepSessionApi, onSuccess: (resp) => goToSession(resp, '已创建 JD 备面会话'), onError: (error) => message.error(getErrorMessage(error, '创建失败')) })
+  const copilotPrep = useMutation({ mutationFn: createCopilotPrepSessionApi, onSuccess: (resp) => goToSession(resp, '已创建 Copilot 备面会话'), onError: (error) => message.error(getErrorMessage(error, '创建失败')) })
+  const copilotRealtime = useMutation({ mutationFn: createCopilotRealtimeSessionApi, onSuccess: (resp) => goToSession(resp, '已创建实时会话'), onError: (error) => message.error(getErrorMessage(error, '创建失败')) })
   const rows = normalizeRecords(history.data)
   const trendRows = normalizeRecords(trend.data)
   const trendOption = {
@@ -48,7 +59,7 @@ export function InterviewPage() {
             error={history.error}
             onRetry={() => history.refetch()}
             columns={[
-              { title: '会话', render: (_, row) => pickText(row, ['title', 'sessionTitle'], '面试会话') },
+              { title: '会话', render: (_, row) => <Link to={`/interview/detail/${row.id || row.sessionId}`}>{pickText(row, ['title', 'sessionTitle'], '面试会话')}</Link> },
               { title: '模式', render: (_, row) => pickText(row, ['mode'], 'standard') },
               { title: '状态', render: (_, row) => <StatusTag value={pickText(row, ['status'])} /> },
               { title: '时间', render: (_, row) => formatDateTime(row.time || row.createTime) }
@@ -56,7 +67,7 @@ export function InterviewPage() {
           />
         </div>
         <Card title="实时 Copilot" className="surface-card">
-          <Space direction="vertical">
+          <Space orientation="vertical">
             <div>{latestRealtime.data ? '当前存在实时 Copilot 会话，可继续跟进。' : '当前没有实时 Copilot 会话。'}</div>
             <Button onClick={() => start.mutate({ mode: 'standard' })}>进入 Copilot</Button>
           </Space>

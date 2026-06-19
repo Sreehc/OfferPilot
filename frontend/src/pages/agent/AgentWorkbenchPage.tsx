@@ -5,7 +5,6 @@ import { approveAgentRunApi, cancelAgentRunApi, createAgentRunApi, fetchAgentRun
 import { getErrorMessage } from '@/api/client'
 import { AgentComposer, GeneratedArtifactCard, HumanApprovalBar, ThoughtTimeline, ToolCallCard } from '@/components/agent/AgentComponents'
 import { mapAgentArtifacts, mapAgentMessages, mapAgentSteps, mapToolCalls } from '@/components/agent/agentModel'
-import { AgentVendorsPanel } from '@/components/agent/AgentVendors'
 import { DataListCard, EntitySummary, formatDateTime, normalizeRecords, pickArray, pickText, StatusTag } from '@/modules/common'
 import { ModulePage } from '@/modules/common'
 
@@ -26,7 +25,7 @@ const triggerOptions = [
 
 export function AgentWorkbenchPage() {
   const queryClient = useQueryClient()
-  const { message } = AntApp.useApp()
+  const { message, modal } = AntApp.useApp()
   const [createForm] = Form.useForm()
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null)
   const [rejectOpen, setRejectOpen] = useState(false)
@@ -47,16 +46,16 @@ export function AgentWorkbenchPage() {
   const createRun = useMutation({
     mutationFn: createAgentRunApi,
     onSuccess: async (response) => {
-      message.success('Agent Run 已创建')
+      message.success('AI 任务已创建')
       createForm.resetFields()
       await queryClient.invalidateQueries({ queryKey: ['agent', 'runs'] })
       const nextId = String((response.data as any)?.id || (response.data as any)?.runId || '')
       if (nextId) setSelectedRunId(nextId)
     },
-    onError: (error) => message.error(getErrorMessage(error, '创建 Agent Run 失败'))
+    onError: (error) => message.error(getErrorMessage(error, '创建 AI 任务失败'))
   })
   const approveRun = useMutation({
-    mutationFn: (runId: string) => approveAgentRunApi(runId, { reason: 'approved from workbench' }),
+    mutationFn: (runId: string) => approveAgentRunApi(runId, { reason: '工作台批准' }),
     onSuccess: () => {
       message.success('已批准')
       queryClient.invalidateQueries({ queryKey: ['agent'] })
@@ -74,7 +73,7 @@ export function AgentWorkbenchPage() {
     onError: (error) => message.error(getErrorMessage(error, '拒绝失败'))
   })
   const cancelRun = useMutation({
-    mutationFn: (runId: string) => cancelAgentRunApi(runId, { reason: 'cancelled from workbench' }),
+    mutationFn: (runId: string) => cancelAgentRunApi(runId, { reason: '工作台取消' }),
     onSuccess: () => {
       message.success('已取消')
       queryClient.invalidateQueries({ queryKey: ['agent'] })
@@ -85,10 +84,10 @@ export function AgentWorkbenchPage() {
   const currentMessages = mapAgentMessages(currentRun?.messages || currentRun?.chatMessages)
 
   const detailBlocks = currentRun ? (
-    <Space direction="vertical" style={{ width: '100%' }} size={16}>
-      <Card title="Run 详情" className="surface-card">
+    <Space orientation="vertical" style={{ width: '100%' }} size={16}>
+      <Card title="任务详情" className="surface-card">
         <EntitySummary record={currentRun} fields={[
-          { label: 'Run ID', keys: ['id', 'runId'] },
+          { label: '任务 ID', keys: ['id', 'runId'] },
           { label: '类型', keys: ['agentType'] },
           { label: '状态', keys: ['status'], tag: true },
           { label: '来源', keys: ['triggerSource'] },
@@ -110,7 +109,7 @@ export function AgentWorkbenchPage() {
         loading={approveRun.isPending || rejectRun.isPending || cancelRun.isPending}
         onApprove={() => approveRun.mutate(String(currentRun.id || currentRun.runId))}
         onReject={() => setRejectOpen(true)}
-        onCancel={() => cancelRun.mutate(String(currentRun.id || currentRun.runId))}
+        onCancel={() => modal.confirm({ title: '取消该任务？', content: '取消后该任务将停止执行，且不可恢复。', okText: '取消任务', okButtonProps: { danger: true }, cancelText: '再想想', onOk: () => cancelRun.mutate(String(currentRun.id || currentRun.runId)) })}
       />
       <GeneratedArtifactCard title="产出" items={runArtifacts.length ? runArtifacts : [{ id: 'fallback', title: pickText(currentRun, ['outputTitle', 'summary'], '暂无产出'), content: pickText(currentRun, ['resultSummary', 'summary'], '等待后端返回运行结果') }]} />
     </Space>
@@ -119,15 +118,14 @@ export function AgentWorkbenchPage() {
   return (
     <ModulePage
       title="Agent 工作台"
-      description="统一发起任务、查看 run、处理审批、追踪工具调用并消费结果。"
-      actions={<Space><Button type="primary" onClick={() => createForm.submit()}>发起 Run</Button></Space>}
+      description="统一发起 AI 任务、查看进度、处理审批、追踪工具调用并消费结果。"
+      actions={<Space><Button type="primary" onClick={() => createForm.submit()}>发起任务</Button></Space>}
       metrics={[
-        { label: 'Run 总数', value: runs.length, hint: '最近执行记录' },
+        { label: '任务总数', value: runs.length, hint: '最近执行记录' },
         { label: '待审批', value: pendingRuns.length, hint: '需要人工确认的动作' },
         { label: '运行中', value: runs.filter((run: any) => String(run.status || '').includes('RUN')).length, hint: '正在处理' },
         { label: '已完成', value: runs.filter((run: any) => String(run.status || '').includes('SUCCESS') || String(run.status || '').includes('DONE')).length, hint: '可消费结果' }
       ]}
-      side={<AgentVendorsPanel />}
     >
       <div className="workspace-grid">
         <Card title="快速发起" className="surface-card">
@@ -150,10 +148,10 @@ export function AgentWorkbenchPage() {
               <Form.Item label="Agent 类型" name="agentType"><Select options={agentOptions} /></Form.Item>
               <Form.Item label="触发来源" name="triggerSource"><Select options={triggerOptions} /></Form.Item>
             </div>
-            <Form.Item label="上下文引用" name="contextRefs" extra="多个值用英文逗号分隔，例如 interview:latest, resume:current"><Input /></Form.Item>
-            <Form.Item label="输入内容" name="input" extra="可填写 JSON。后端会收到结构化 input。"><Input.TextArea rows={4} /></Form.Item>
+            <Form.Item label="上下文引用" name="contextRefs" extra="可选，多个值用英文逗号分隔，例如 interview:latest, resume:current"><Input /></Form.Item>
+            <Form.Item label="补充信息" name="input" extra="可选，描述你的具体需求或填写结构化内容。"><Input.TextArea rows={4} /></Form.Item>
             <Space>
-              <Button type="primary" htmlType="submit" loading={createRun.isPending}>创建 Run</Button>
+              <Button type="primary" htmlType="submit" loading={createRun.isPending}>创建任务</Button>
               <Button onClick={() => createForm.resetFields()}>重置</Button>
             </Space>
           </Form>
@@ -166,10 +164,10 @@ export function AgentWorkbenchPage() {
             loading={runsQuery.isLoading}
             error={runsQuery.error}
             onRetry={() => runsQuery.refetch()}
-            emptyTitle="当前没有 Agent Run"
+            emptyTitle="当前没有 AI 任务"
             actions={<Tag color="blue">按最新结果排序</Tag>}
             renderItem={(item) => (
-              <button type="button" className="agent-queue-card" onClick={() => setSelectedRunId(String(item.id || item.runId))}>
+              <div role="button" tabIndex={0} className="agent-queue-card" onClick={() => setSelectedRunId(String(item.id || item.runId))} onKeyDown={(event) => { if (event.key === 'Enter') setSelectedRunId(String(item.id || item.runId)) }}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold text-ink">{pickText(item, ['title', 'agentType'], 'agent')}</p>
@@ -178,13 +176,13 @@ export function AgentWorkbenchPage() {
                   <StatusTag value={pickText(item, ['status'])} />
                 </div>
                 <p className="mt-3 text-sm leading-6 text-secondary">{pickText(item, ['summary', 'approvalSummary', 'resultSummary'], '等待详情')}</p>
-              </button>
+              </div>
             )}
           />
           <div className="agent-timeline">
             <Card title="当前选中" className="surface-card">
               {currentRun ? (
-                <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                <Space orientation="vertical" style={{ width: '100%' }} size={12}>
                   <ThoughtTimeline steps={runThoughts.length ? runThoughts : [{ title: '暂无步骤', description: '等待后端返回 run steps', status: 'wait' }]} />
                   {runToolCalls.length ? runToolCalls.map((call) => (
                     <ToolCallCard key={call.id} call={call} />
@@ -197,7 +195,7 @@ export function AgentWorkbenchPage() {
                   }} />}
                   <Card title="运行详情" className="surface-card">
                     <Descriptions column={1} items={[
-                      { label: 'Run ID', children: String(currentRun.id || currentRun.runId || '-') },
+                      { label: '任务 ID', children: String(currentRun.id || currentRun.runId || '-') },
                       { label: '类型', children: pickText(currentRun, ['agentType']) },
                       { label: '创建时间', children: formatDateTime(currentRun.createTime || currentRun.createdAt) }
                     ]} />
@@ -209,7 +207,7 @@ export function AgentWorkbenchPage() {
             </Card>
             {detailBlocks}
             <Card title="对话 / 工具回流" className="surface-card">
-              <AgentComposer onSend={(value) => createRun.mutate({ agentType: 'resume', triggerSource: 'manual', input: { prompt: value } })} />
+              <AgentComposer onSend={(value) => createRun.mutate({ agentType: createForm.getFieldValue('agentType') || 'resume', triggerSource: 'manual', input: { prompt: value } })} />
               <List style={{ marginTop: 16 }} dataSource={currentMessages} renderItem={(item) => <List.Item>{item.role}：{item.content}</List.Item>} />
             </Card>
           </div>
@@ -218,7 +216,7 @@ export function AgentWorkbenchPage() {
 
       <Modal
         open={rejectOpen}
-        title="拒绝 Run"
+        title="拒绝任务"
         okText="确认拒绝"
         onCancel={() => setRejectOpen(false)}
         onOk={() => currentRun && rejectRun.mutate({ runId: String(currentRun.id || currentRun.runId), reason: rejectReason })}

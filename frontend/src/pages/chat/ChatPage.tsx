@@ -23,7 +23,7 @@ export function ChatPage() {
   })
   const sendMessage = useMutation({
     mutationFn: sendChatApi,
-    onSuccess: () => message.success('消息已发送'),
+    onSuccess: () => { message.success('消息已发送'); queryClient.invalidateQueries({ queryKey: ['chat', 'messages', sessionId] }) },
     onError: (error) => message.error(getErrorMessage(error, '发送消息失败'))
   })
   const removeSession = useMutation({
@@ -49,11 +49,12 @@ export function ChatPage() {
     <ModulePage
       title="AI 问答"
       description="把聊天做成可解释、可追踪、可落地的 Agent 对话界面。"
+      actions={<Button type="primary" onClick={() => setSessionId(null)}>新建对话</Button>}
       metrics={[
         { label: '会话数', value: sessionRows.length, hint: '历史对话' },
         { label: '当前消息', value: messageRows.length, hint: '当前会话内容' },
-        { label: '运行状态', value: sessionId ? '活跃' : '未选中', hint: '选中会话后查看消息' },
-        { label: 'Agent 输出', value: artifacts.length, hint: '计划、动作、结果' }
+        { label: '运行状态', value: sessionId ? '活跃' : '新对话', hint: '选中会话后查看消息' },
+        { label: '可交付结果', value: artifacts.length, hint: '计划、动作、结果' }
       ]}
     >
       <div className="workspace-grid two">
@@ -83,12 +84,12 @@ export function ChatPage() {
         <div className="agent-timeline">
           <Card title="当前会话" className="surface-card">
             {sessionId ? (
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <Tag color="blue">Session #{sessionId}</Tag>
+              <Space orientation="vertical" style={{ width: '100%' }}>
+                <Tag color="blue">{pickText(selectedSession as Record<string, unknown>, ['title', 'sessionTitle'], '当前会话')}</Tag>
                 <Button onClick={() => setSessionId(null)}>取消选中</Button>
               </Space>
             ) : (
-              <Tag>未选择会话</Tag>
+              <Tag>新对话（直接在左侧输入即可开始）</Tag>
             )}
           </Card>
           <ThoughtTimeline steps={[
@@ -110,7 +111,7 @@ export function ChatPage() {
             onRetry={() => sessions.refetch()}
             emptyTitle="暂无会话"
             renderItem={(item) => (
-              <button type="button" className="agent-queue-card" onClick={() => setSessionId(Number(item.id || item.sessionId))}>
+              <div role="button" tabIndex={0} className="agent-queue-card" onClick={() => setSessionId(Number(item.id || item.sessionId))} onKeyDown={(event) => { if (event.key === 'Enter') setSessionId(Number(item.id || item.sessionId)) }}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold text-ink">{pickText(item, ['title', 'sessionTitle'], '未命名会话')}</p>
@@ -120,10 +121,9 @@ export function ChatPage() {
                 </div>
                 <p className="mt-3 text-sm text-secondary">{pickText(item, ['summary', 'contextSummary'], '等待详情')}</p>
                 <Space className="mt-3" size={8}>
-                  <Button size="small" onClick={() => setSessionId(Number(item.id || item.sessionId))}>查看</Button>
                   <Button size="small" danger onClick={(event) => { event.stopPropagation(); setDeleteId(Number(item.id || item.sessionId)); }}>删除</Button>
                 </Space>
-              </button>
+              </div>
             )}
           />
         </div>

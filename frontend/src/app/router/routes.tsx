@@ -12,6 +12,7 @@ const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage').then(
 const ChatPage = lazy(() => import('@/pages/chat/ChatPage').then((m) => ({ default: m.ChatPage })))
 const AgentWorkbenchPage = lazy(() => import('@/pages/agent/AgentWorkbenchPage').then((m) => ({ default: m.AgentWorkbenchPage })))
 const QuestionBankPage = lazy(() => import('@/pages/question/QuestionBankPage').then((m) => ({ default: m.QuestionBankPage })))
+const QuestionDetailPage = lazy(() => import('@/pages/question/QuestionDetailPage').then((m) => ({ default: m.QuestionDetailPage })))
 const KnowledgePage = lazy(() => import('@/pages/knowledge/KnowledgePage').then((m) => ({ default: m.KnowledgePage })))
 const InterviewPage = lazy(() => import('@/pages/interview/InterviewPage').then((m) => ({ default: m.InterviewPage })))
 const InterviewDetailPage = lazy(() => import('@/pages/interview/InterviewDetailPage').then((m) => ({ default: m.InterviewDetailPage })))
@@ -48,6 +49,7 @@ export const router = createBrowserRouter([
     { path: '/chat', element: withSuspense(<ChatPage />) },
     { path: '/agent', element: withSuspense(<AgentWorkbenchPage />) },
     { path: '/question', element: withSuspense(<QuestionBankPage />) },
+    { path: '/question/:id', element: withSuspense(<QuestionDetailPage />) },
     { path: '/knowledge', element: withSuspense(<KnowledgePage />) },
     { path: '/knowledge/java-basics', element: <Navigate to="/knowledge" replace /> },
     { path: '/interview', element: withSuspense(<InterviewPage />) },

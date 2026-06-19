@@ -1,4 +1,4 @@
-import { BellOutlined, LogoutOutlined, MenuOutlined, MoonOutlined, SearchOutlined, SunOutlined, UserOutlined } from '@ant-design/icons'
+import { AppstoreOutlined, BellOutlined, LogoutOutlined, MenuOutlined, MoonOutlined, SearchOutlined, SunOutlined, UserOutlined } from '@ant-design/icons'
 import { Avatar, Badge, Button, Drawer, Dropdown, Input, Layout, Menu, Modal, Space } from 'antd'
 import { useMemo, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
@@ -8,7 +8,7 @@ import { NotificationCenter } from '@/components/feedback/NotificationCenter'
 import { OfflineBanner } from '@/components/feedback/OfflineBanner'
 import { useAuthStore } from '@/features/auth/authStore'
 import { useThemeStore } from '@/features/theme/themeStore'
-import { navItems } from './navigation'
+import { mobileNavPaths, navGroups, navItems } from './navigation'
 
 const { Sider, Content } = Layout
 
@@ -19,14 +19,27 @@ export function AppShell() {
   const { mode, toggleTheme } = useThemeStore()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [query, setQuery] = useState('')
-  const { data: unread } = useQuery({ queryKey: ['notifications', 'unread'], queryFn: () => fetchUnreadCountApi().then((r) => r.data), enabled: Boolean(user) })
+  const { data: unread } = useQuery({ queryKey: ['notifications', 'unread'], queryFn: () => fetchUnreadCountApi().then((r) => r.data), enabled: Boolean(user), staleTime: 60_000 })
 
-  const visibleNav = useMemo(() => navItems.filter((item) => !item.adminOnly || user?.role === 'ADMIN'), [user?.role])
+  const isAdmin = user?.role === 'ADMIN'
+  const visibleNav = useMemo(() => navItems.filter((item) => !item.adminOnly || isAdmin), [isAdmin])
   const selected = '/' + (pathname.split('/')[1] || 'dashboard')
   const filtered = visibleNav.filter((item) => item.label.toLowerCase().includes(query.toLowerCase()) || item.path.includes(query))
-  const menuItems = visibleNav.map((item) => ({ key: item.path, icon: item.icon, label: <Link to={item.path}>{item.label}</Link> }))
+  const menuItems = useMemo(() => navGroups
+    .map((group) => ({
+      key: group.key,
+      type: 'group' as const,
+      label: group.label,
+      children: group.items.filter((item) => !item.adminOnly || isAdmin).map((item) => ({ key: item.path, icon: item.icon, label: <Link to={item.path}>{item.label}</Link> }))
+    }))
+    .filter((group) => group.children.length > 0), [isAdmin])
+
+  const mobileItems = mobileNavPaths
+    .map((path) => visibleNav.find((item) => item.path === path))
+    .filter((item): item is (typeof visibleNav)[number] => Boolean(item))
 
   const side = (
     <>
@@ -49,7 +62,7 @@ export function AppShell() {
         <header className="shell-header">
           <Space>
             <Button icon={<MenuOutlined />} onClick={() => setDrawerOpen(true)} className="lg-menu" />
-            <Button icon={<SearchOutlined />} onClick={() => setSearchOpen(true)}>搜索页面或操作</Button>
+            <Button icon={<SearchOutlined />} onClick={() => setSearchOpen(true)}>搜索页面</Button>
           </Space>
           <Space>
             <Button aria-label="切换主题" icon={mode === 'dark' ? <SunOutlined /> : <MoonOutlined />} onClick={toggleTheme} />
@@ -69,8 +82,29 @@ export function AppShell() {
         <Content id="main-content" tabIndex={-1} className="shell-content"><OfflineBanner /><Outlet /></Content>
       </Layout>
       <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} placement="left" width={280}>{side}</Drawer>
-      <div className="mobile-nav">{visibleNav.slice(0, 5).map((item) => <Button key={item.path} type={selected === item.path ? 'primary' : 'text'} icon={item.icon} onClick={() => navigate(item.path)} />)}</div>
-      <Modal open={searchOpen} title="搜索页面或操作" footer={null} onCancel={() => setSearchOpen(false)}>
+      <nav className="mobile-nav" aria-label="主导航">
+        {mobileItems.map((item) => (
+          <button key={item.path} type="button" className={'mobile-nav-item' + (selected === item.path ? ' active' : '')} onClick={() => navigate(item.path)}>
+            <span className="mobile-nav-icon">{item.icon}</span>
+            <span className="mobile-nav-label">{item.label}</span>
+          </button>
+        ))}
+        <button type="button" className="mobile-nav-item" onClick={() => setMoreOpen(true)}>
+          <span className="mobile-nav-icon"><AppstoreOutlined /></span>
+          <span className="mobile-nav-label">更多</span>
+        </button>
+      </nav>
+      <Drawer open={moreOpen} onClose={() => setMoreOpen(false)} placement="bottom" height="auto" title="全部功能">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+          {visibleNav.map((item) => (
+            <button key={item.path} type="button" className={'mobile-nav-item' + (selected === item.path ? ' active' : '')} onClick={() => { setMoreOpen(false); navigate(item.path) }}>
+              <span className="mobile-nav-icon">{item.icon}</span>
+              <span className="mobile-nav-label">{item.label}</span>
+            </button>
+          ))}
+        </div>
+      </Drawer>
+      <Modal open={searchOpen} title="搜索页面" footer={null} onCancel={() => setSearchOpen(false)}>
         <Input autoFocus prefix={<SearchOutlined />} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="输入页面名称" />
         <div style={{ marginTop: 12, display: 'grid', gap: 6 }}>{filtered.map((item) => <Button key={item.path} block style={{ textAlign: 'left' }} onClick={() => { setSearchOpen(false); navigate(item.path) }}>{item.label}<span className="muted-text" style={{ float: 'right' }}>{item.path}</span></Button>)}</div>
       </Modal>
