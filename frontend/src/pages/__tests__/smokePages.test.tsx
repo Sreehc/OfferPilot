@@ -73,7 +73,7 @@ vi.mock('@/api/modules/category', () => ({ fetchCategoriesApi: vi.fn(() => Promi
 describe('page smoke', () => {
   it('renders dashboard', async () => {
     renderWithProviders(<DashboardPage />)
-    expect(await screen.findByText('Dashboard')).toBeInTheDocument()
+    expect(await screen.findByText('今日工作台')).toBeInTheDocument()
   })
 
   it('renders chat', async () => {

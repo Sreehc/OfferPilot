@@ -1,4 +1,5 @@
 import { CheckCircleOutlined, CloudDownloadOutlined, DesktopOutlined, MailOutlined, SafetyOutlined, UploadOutlined } from '@ant-design/icons'
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { App as AntApp, Avatar, Button, Card, Form, Input, Popconfirm, QRCode, Space, Switch, Tabs, Tag, Typography, Upload } from 'antd'
 import type { UploadProps } from 'antd'
@@ -17,7 +18,7 @@ import {
   uploadAvatarApi,
   verifyEmailCodeApi
 } from '@/api/modules/auth'
-import { checkProviderConfigsApi, fetchProviderConfigsApi, updateProviderConfigsApi } from '@/api/modules/settings'
+import { checkProviderConfigsApi, fetchProviderConfigsApi } from '@/api/modules/settings'
 import { getErrorMessage } from '@/api/client'
 import { ModulePage, DataTableCard, EntitySummary, downloadBlob, formatDateTime, normalizeRecords, pickText, StatusTag } from '@/modules/common'
 import { useAuthStore } from '@/features/auth/authStore'
@@ -26,11 +27,12 @@ export function SettingsPage() {
   const queryClient = useQueryClient()
   const { message } = AntApp.useApp()
   const { user, persistFromResponse } = useAuthStore()
+  const [activeKey, setActiveKey] = useState('profile')
   const profile = useQuery({ queryKey: ['auth', 'me'], queryFn: () => fetchCurrentUserApi().then((response) => response.data) })
   const devices = useQuery({ queryKey: ['auth', 'devices'], queryFn: () => fetchDevicesApi().then((response) => response.data) })
-  const loginLogs = useQuery({ queryKey: ['auth', 'login-logs'], queryFn: () => fetchLoginLogsApi({ pageNum: 1, pageSize: 20 }).then((response) => response.data) })
+  const loginLogs = useQuery({ queryKey: ['auth', 'login-logs'], queryFn: () => fetchLoginLogsApi({ pageNum: 1, pageSize: 20 }).then((response) => response.data), enabled: activeKey === 'login-history' })
   const twoFactor = useQuery({ queryKey: ['auth', '2fa'], queryFn: () => fetchTwoFactorStatusApi().then((response) => response.data) })
-  const providers = useQuery({ queryKey: ['settings', 'providers'], queryFn: () => fetchProviderConfigsApi().then((response) => response.data) })
+  const providers = useQuery({ queryKey: ['settings', 'providers'], queryFn: () => fetchProviderConfigsApi().then((response) => response.data), enabled: activeKey === 'providers' })
   const currentUser = profile.data || user
 
   const invalidateSecurity = () => {
@@ -105,18 +107,10 @@ export function SettingsPage() {
   const checkProviders = useMutation({
     mutationFn: checkProviderConfigsApi,
     onSuccess: () => {
-      message.success('Provider 状态已刷新')
+      message.success('服务配置状态已刷新')
       queryClient.invalidateQueries({ queryKey: ['settings', 'providers'] })
     },
-    onError: (error) => message.error(getErrorMessage(error, 'Provider 检查失败'))
-  })
-  const saveProviders = useMutation({
-    mutationFn: () => updateProviderConfigsApi(normalizeRecords(providers.data)),
-    onSuccess: () => {
-      message.success('Provider 配置已保存')
-      queryClient.invalidateQueries({ queryKey: ['settings', 'providers'] })
-    },
-    onError: (error) => message.error(getErrorMessage(error, '保存 Provider 失败'))
+    onError: (error) => message.error(getErrorMessage(error, '检测失败'))
   })
   const exportData = useMutation({
     mutationFn: exportMyDataApi,
@@ -133,16 +127,18 @@ export function SettingsPage() {
   return (
     <ModulePage
       title="设置"
-      description="账号资料、安全认证、设备、Provider readiness 和个人数据导出。"
+      description="账号资料、安全认证、登录设备、服务配置状态和个人数据导出。"
       metrics={[
         { label: '邮箱状态', value: emailVerified ? '已验证' : '待验证', hint: pickText(currentUser as any, ['email'], '未绑定邮箱') },
         { label: '两步验证', value: (twoFactor.data as any)?.enabled ? '已启用' : '未启用', hint: `恢复码 ${(twoFactor.data as any)?.recoveryCodesRemaining ?? '-'}` },
         { label: '登录设备', value: normalizeRecords(devices.data).length, hint: '当前账号设备' },
-        { label: 'Provider', value: providerRows.length, hint: 'AI 与外部服务配置' }
+        { label: '服务配置', value: providerRows.length || '-', hint: 'AI 与外部服务状态' }
       ]}
     >
       <Card className="surface-card">
         <Tabs
+          activeKey={activeKey}
+          onChange={setActiveKey}
           items={[
             {
               key: 'profile',
@@ -152,7 +148,7 @@ export function SettingsPage() {
                   <Card title="当前账号" className="surface-card">
                     <Space align="start" size={16}>
                       <Avatar size={72} src={(currentUser as any)?.avatarUrl || (currentUser as any)?.avatar}>{pickText(currentUser as any, ['nickname', 'username'], 'U').slice(0, 1)}</Avatar>
-                      <Space direction="vertical" size={8}>
+                      <Space orientation="vertical" size={8}>
                         <Typography.Title level={4} style={{ margin: 0 }}>{pickText(currentUser as any, ['nickname', 'username'], 'OfferPilot 用户')}</Typography.Title>
                         <Space wrap>
                           <Tag color={(currentUser as any)?.role === 'ADMIN' ? 'purple' : 'blue'}>{pickText(currentUser as any, ['role'], 'USER')}</Tag>
@@ -180,7 +176,7 @@ export function SettingsPage() {
               children: (
                 <div className="workspace-grid two">
                   <Card title="邮箱验证" className="surface-card">
-                    <Space direction="vertical" style={{ width: '100%' }}>
+                    <Space orientation="vertical" style={{ width: '100%' }}>
                       <Typography.Paragraph className="muted-text">用于找回密码、安全通知和高风险操作确认。</Typography.Paragraph>
                       <Button icon={<MailOutlined />} loading={sendEmail.isPending} onClick={() => sendEmail.mutate()} disabled={!currentUser?.email || emailVerified}>发送验证码</Button>
                       <Form layout="inline" onFinish={({ code }) => verifyEmail.mutate(code)}>
@@ -190,7 +186,7 @@ export function SettingsPage() {
                     </Space>
                   </Card>
                   <Card title="两步验证" className="surface-card">
-                    <Space direction="vertical" style={{ width: '100%' }}>
+                    <Space orientation="vertical" style={{ width: '100%' }}>
                       <Space><Switch checked={Boolean((twoFactor.data as any)?.enabled)} disabled /><span>{(twoFactor.data as any)?.enabled ? '已启用' : '未启用'}</span></Space>
                       {setup2fa.data?.data?.otpauthUri && <QRCode value={setup2fa.data.data.otpauthUri} />}
                       {setup2fa.data?.data?.secret && <Typography.Text copyable code>{setup2fa.data.data.secret}</Typography.Text>}
@@ -225,7 +221,7 @@ export function SettingsPage() {
                     { title: '设备', render: (_, row) => <Space><DesktopOutlined /><span>{pickText(row, ['deviceName'], '未知设备')}</span>{row.current && <Tag color="green">当前</Tag>}</Space> },
                     { title: 'IP / 城市', render: (_, row) => `${pickText(row, ['ip'])} / ${pickText(row, ['city'])}` },
                     { title: '最后活跃', render: (_, row) => formatDateTime(row.lastActiveTime) },
-                    { title: '操作', render: (_, row) => row.current ? <Tag>当前设备</Tag> : <Button danger size="small" loading={revokeDevice.isPending} onClick={() => revokeDevice.mutate(Number(row.id))}>撤销</Button> }
+                    { title: '操作', render: (_, row) => row.current ? <Tag>当前设备</Tag> : <Popconfirm title="撤销该设备？" description="该设备将需要重新登录。" okText="撤销" okButtonProps={{ danger: true }} cancelText="取消" onConfirm={() => revokeDevice.mutate(Number(row.id))}><Button danger size="small" loading={revokeDevice.isPending}>撤销</Button></Popconfirm> }
                   ]}
                 />
               )
@@ -253,15 +249,16 @@ export function SettingsPage() {
             },
             {
               key: 'providers',
-              label: 'Provider',
+              label: '服务配置',
               children: (
                 <DataTableCard
-                  title="Provider readiness"
+                  title="服务配置状态"
                   data={providers.data}
                   loading={providers.isLoading}
                   error={providers.error}
                   onRetry={() => providers.refetch()}
-                  actions={<Space><Button loading={checkProviders.isPending} onClick={() => checkProviders.mutate()}>重新检测</Button><Button type="primary" loading={saveProviders.isPending} onClick={() => saveProviders.mutate()}>保存当前配置</Button></Space>}
+                  emptyTitle="暂无服务配置状态"
+                  actions={<Button loading={checkProviders.isPending} onClick={() => checkProviders.mutate()}>重新检测</Button>}
                   columns={[
                     { title: '范围', render: (_, row) => pickText(row, ['label', 'scope']) },
                     { title: '状态', render: (_, row) => <StatusTag value={pickText(row, ['status'])} /> },
@@ -278,7 +275,7 @@ export function SettingsPage() {
               label: '数据导出',
               children: (
                 <Card title="个人数据导出" className="surface-card">
-                  <Space direction="vertical">
+                  <Space orientation="vertical">
                     <Typography.Paragraph className="muted-text">导出面试记录、错题、复习数据和账号相关资料，便于本地留存或迁移。</Typography.Paragraph>
                     <Button type="primary" icon={<CloudDownloadOutlined />} loading={exportData.isPending} onClick={() => exportData.mutate()}>导出个人数据</Button>
                   </Space>

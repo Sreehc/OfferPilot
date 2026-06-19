@@ -1,13 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { App as AntApp, Button, Card, Form, Input, InputNumber, Modal, Progress, Space } from 'antd'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { fetchCurrentStudyPlanApi, generateStudyPlanApi, refreshStudyPlanApi, updateStudyPlanTaskStatusApi } from '@/api/modules/plan'
 import { getErrorMessage } from '@/api/client'
 import { DataTableCard, normalizeRecords, pickText, StatusTag } from '@/modules/common'
 import { ModulePage } from '@/modules/common'
 
+function taskRoute(row: Record<string, any>): string {
+  const hint = `${pickText(row, ['category', 'focusDirection', 'type', 'title', 'name'], '')}`
+  if (/面试|interview/i.test(hint)) return '/interview'
+  if (/复习|review/i.test(hint)) return '/review'
+  if (/简历|resume/i.test(hint)) return '/resume'
+  return '/question'
+}
+
 export function StudyPlanPage() {
   const { message } = AntApp.useApp()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const plan = useQuery({ queryKey: ['study-plan'], queryFn: () => fetchCurrentStudyPlanApi().then((response) => response.data) })
@@ -38,11 +48,12 @@ export function StudyPlanPage() {
           loading={plan.isLoading}
           error={plan.error}
           onRetry={() => plan.refetch()}
+          emptyTitle="还没有学习计划，点击右上角“生成计划”开始"
           columns={[
             { title: '任务', render: (_, row) => pickText(row, ['title', 'name', 'taskName'], '学习任务') },
             { title: '方向', render: (_, row) => pickText(row, ['category', 'focusDirection', 'type']) },
             { title: '状态', render: (_, row) => <StatusTag value={pickText(row, ['status'])} /> },
-            { title: '操作', render: (_, row) => <Space><Button size="small" onClick={() => updateTask.mutate({ id: String(row.id || row.taskId), status: 'completed' })}>完成</Button><Button size="small" onClick={() => updateTask.mutate({ id: String(row.id || row.taskId), status: 'in_progress' })}>进行中</Button></Space> }
+            { title: '操作', render: (_, row) => <Space wrap><Button size="small" type="primary" onClick={() => navigate(taskRoute(row))}>去练习</Button><Button size="small" onClick={() => updateTask.mutate({ id: String(row.id || row.taskId), status: 'completed' })}>完成</Button><Button size="small" onClick={() => updateTask.mutate({ id: String(row.id || row.taskId), status: 'in_progress' })}>进行中</Button><Button size="small" onClick={() => updateTask.mutate({ id: String(row.id || row.taskId), status: 'not_started' })}>重置</Button></Space> }
           ]}
         />
       </div>

@@ -24,14 +24,14 @@ export function DashboardPage() {
     { label: '今日训练', value: overview?.todayTasks ?? overview?.todayTaskCount ?? '-', hint: '待完成动作' },
     { label: '能力画像', value: overview?.profileScore ?? overview?.abilityScore ?? '-', hint: '综合画像得分' },
     { label: '待复盘', value: overview?.reviewCount ?? overview?.pendingReviewCount ?? '-', hint: '需要回顾的条目' },
-    { label: 'Agent 建议', value: overview?.agentHints ?? overview?.agentSuggestionCount ?? agentOutputs.length, hint: '可直接执行' }
+    { label: '智能建议', value: overview?.agentHints ?? overview?.agentSuggestionCount ?? agentOutputs.length, hint: '可直接执行' }
   ]
   return (
     <ModulePage
-      title="Dashboard"
-      description="把训练、复盘、投递、面试和 Agent 建议收拢到统一工作台。"
+      title="今日工作台"
+      description="把训练、复盘、投递、面试和智能建议收拢到统一工作台。"
       metrics={metrics}
-      actions={<Space><Link to="/interview"><Button type="primary">开始面试</Button></Link><Link to="/study-plan"><Button>查看计划</Button></Link></Space>}
+      actions={<Space wrap><Link to="/interview"><Button type="primary">开始面试</Button></Link><Link to="/study-plan"><Button>查看计划</Button></Link><Link to="/resume"><Button>上传简历</Button></Link></Space>}
     >
       <div className="workspace-grid two">
         <div className="workspace-grid">
@@ -39,12 +39,16 @@ export function DashboardPage() {
           <DataListCard
             title="最近行动"
             data={activities}
+            loading={query.isLoading}
+            error={query.error}
+            onRetry={() => query.refetch()}
+            emptyTitle="还没有训练记录，先开始一次模拟面试或练习"
             renderItem={(item) => <List.Item.Meta title={pickText(item, ['name', 'title'], '行动')} description={pickText(item, ['time', 'description'], '')} />}
           />
         </div>
         <div className="workspace-grid">
           <Card title="下一步行动" className="surface-card">
-            <Space direction="vertical" style={{ width: '100%' }}>
+            <Space orientation="vertical" style={{ width: '100%' }}>
               <Progress percent={Number(overview?.progress ?? overview?.completionRate ?? 0)} />
               <Typography.Paragraph className="muted-text">系统会根据答题、面试、简历和投递行为持续刷新建议。</Typography.Paragraph>
             </Space>
@@ -52,13 +56,20 @@ export function DashboardPage() {
           <DataListCard
             title="弱点与提醒"
             data={weakPoints.map((item, index) => typeof item === 'string' ? { id: index, name: item } : item)}
-            renderItem={(item) => <List.Item>{pickText(item, ['name'])}</List.Item>}
+            loading={query.isLoading}
+            error={query.error}
+            onRetry={() => query.refetch()}
+            emptyTitle="暂无弱点提醒，继续练习以生成画像"
+            renderItem={(item) => <Link to="/question">{pickText(item, ['name', 'title'])}</Link>}
           />
           <DataListCard
-            title="Agent 输出"
+            title="智能建议"
             data={agentOutputs.map((item, index) => typeof item === 'string' ? { id: index, name: item } : item)}
-            emptyTitle="暂无 Agent 输出"
-            renderItem={(item) => <List.Item>{pickText(item, ['title', 'name', 'summary'])}</List.Item>}
+            loading={query.isLoading}
+            error={query.error}
+            onRetry={() => query.refetch()}
+            emptyTitle="暂无智能建议"
+            renderItem={(item) => <Link to="/agent">{pickText(item, ['title', 'name', 'summary'])}</Link>}
           />
         </div>
       </div>

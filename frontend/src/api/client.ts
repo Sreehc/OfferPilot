@@ -9,6 +9,9 @@ export const http = axios.create({
 })
 
 http.interceptors.request.use((config) => {
+  if (config.baseURL && config.url?.startsWith(config.baseURL)) {
+    config.baseURL = ''
+  }
   const token = storage.getToken()
   if (token) config.headers.Authorization = 'Bearer ' + token
   const deviceId = getStoredDeviceId()
