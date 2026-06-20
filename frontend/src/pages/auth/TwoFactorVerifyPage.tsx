@@ -35,7 +35,7 @@ export function TwoFactorVerifyPage() {
   }
   return (
     <AuthFrame title="双因素验证" description="输入认证器中的 6 位验证码">
-      <Form layout="vertical" onFinish={onFinish}>
+      <Form layout="vertical" size="large" onFinish={onFinish}>
         <Form.Item label="验证码" name="code" rules={[{ required: true, message: '请输入验证码' }]}><Input.OTP length={6} /></Form.Item>
         <Button type="primary" htmlType="submit" block loading={submitting}>验证并进入</Button>
         <p style={{ marginTop: 12, marginBottom: 0 }}><a onClick={() => navigate('/login', { replace: true })}>返回登录</a></p>

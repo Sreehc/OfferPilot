@@ -8,6 +8,7 @@ import { NotificationCenter } from '@/components/feedback/NotificationCenter'
 import { OfflineBanner } from '@/components/feedback/OfflineBanner'
 import { useAuthStore } from '@/features/auth/authStore'
 import { useThemeStore } from '@/features/theme/themeStore'
+import { BrandGlyph } from '@/components/brand/BrandGlyph'
 import { mobileNavPaths, navGroups, navItems } from './navigation'
 
 const { Sider, Content } = Layout
@@ -33,31 +34,35 @@ export function AppShell() {
       key: group.key,
       type: 'group' as const,
       label: group.label,
-      children: group.items.filter((item) => !item.adminOnly || isAdmin).map((item) => ({ key: item.path, icon: item.icon, label: <Link to={item.path}>{item.label}</Link> }))
+      children: group.items.filter((item) => !item.adminOnly || isAdmin).map((item) => ({
+        key: item.path,
+        icon: item.icon,
+        label: <Link to={item.path} aria-current={selected === item.path ? 'page' : undefined}>{item.label}</Link>
+      }))
     }))
-    .filter((group) => group.children.length > 0), [isAdmin])
+    .filter((group) => group.children.length > 0), [isAdmin, selected])
 
   const mobileItems = mobileNavPaths
     .map((path) => visibleNav.find((item) => item.path === path))
     .filter((item): item is (typeof visibleNav)[number] => Boolean(item))
 
-  const side = (
-    <>
+  const renderSide = (label: string) => (
+    <nav aria-label={label}>
       <div style={{ height: 64, display: 'flex', alignItems: 'center', gap: 10, padding: '0 18px' }}>
-        <span className="app-logo-mark">OP</span>
+        <BrandGlyph size={34} />
         <div>
           <strong>OfferPilot</strong>
           <div className="muted-text" style={{ fontSize: 12 }}>职业训练平台</div>
         </div>
       </div>
       <Menu mode="inline" selectedKeys={[selected]} items={menuItems} style={{ borderInlineEnd: 0 }} />
-    </>
+    </nav>
   )
 
   return (
     <Layout className="app-shell">
       <a href="#main-content" className="skip-link">跳到主要内容</a>
-      <Sider className="shell-side" width={248} breakpoint="lg" collapsedWidth={0} trigger={null}>{side}</Sider>
+      <Sider className="shell-side" width={248} breakpoint="lg" collapsedWidth={0} trigger={null}>{renderSide('桌面主导航')}</Sider>
       <Layout>
         <header className="shell-header">
           <Space>
@@ -81,7 +86,7 @@ export function AppShell() {
         </header>
         <Content id="main-content" tabIndex={-1} className="shell-content"><OfflineBanner /><Outlet /></Content>
       </Layout>
-      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} placement="left" width={280}>{side}</Drawer>
+      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} placement="left" size={280}>{renderSide('抽屉主导航')}</Drawer>
       <nav className="mobile-nav" aria-label="主导航">
         {mobileItems.map((item) => (
           <button key={item.path} type="button" className={'mobile-nav-item' + (selected === item.path ? ' active' : '')} onClick={() => navigate(item.path)}>
@@ -94,7 +99,7 @@ export function AppShell() {
           <span className="mobile-nav-label">更多</span>
         </button>
       </nav>
-      <Drawer open={moreOpen} onClose={() => setMoreOpen(false)} placement="bottom" height="auto" title="全部功能">
+      <Drawer open={moreOpen} onClose={() => setMoreOpen(false)} placement="bottom" size="auto" title="全部功能">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
           {visibleNav.map((item) => (
             <button key={item.path} type="button" className={'mobile-nav-item' + (selected === item.path ? ' active' : '')} onClick={() => { setMoreOpen(false); navigate(item.path) }}>

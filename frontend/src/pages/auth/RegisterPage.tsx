@@ -24,7 +24,7 @@ export function RegisterPage() {
   }
   return (
     <AuthFrame title="创建账号" description="建立你的训练记录和能力画像">
-      <Form layout="vertical" onFinish={onFinish}>
+      <Form layout="vertical" size="large" onFinish={onFinish}>
         <Form.Item label="用户名" name="username" rules={[{ required: true, message: '请输入用户名' }]}><Input autoComplete="username" /></Form.Item>
         <Form.Item label="邮箱（选填，用于找回密码）" name="email" rules={[{ type: 'email', message: '请输入有效的邮箱地址' }]}><Input type="email" autoComplete="email" /></Form.Item>
         <Form.Item label="昵称（选填）" name="nickname"><Input /></Form.Item>

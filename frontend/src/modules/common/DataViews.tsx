@@ -12,6 +12,8 @@ export function DataListCard({
   error,
   onRetry,
   emptyTitle = '暂无数据',
+  emptyDescription,
+  emptyAction,
   renderItem,
   actions
 }: {
@@ -21,13 +23,23 @@ export function DataListCard({
   error?: unknown
   onRetry?: () => void
   emptyTitle?: string
+  emptyDescription?: string
+  emptyAction?: ReactNode
   renderItem: (item: AnyRecord) => ReactNode
   actions?: ReactNode
 }) {
   const rows = normalizeRecords(data)
   return (
     <Card title={title} extra={actions} className="surface-card">
-      <StateView loading={loading} error={error} empty={!loading && !error && rows.length === 0} emptyTitle={emptyTitle} onRetry={onRetry}>
+      <StateView
+        loading={loading}
+        error={error}
+        empty={!loading && !error && rows.length === 0}
+        emptyTitle={emptyTitle}
+        emptyDescription={emptyDescription}
+        emptyAction={emptyAction}
+        onRetry={onRetry}
+      >
         <List dataSource={rows} renderItem={(item) => <List.Item key={getRecordId(item)}>{renderItem(item)}</List.Item>} />
       </StateView>
     </Card>
@@ -43,6 +55,8 @@ export function DataTableCard<T extends AnyRecord>({
   columns,
   actions,
   emptyTitle = '暂无数据',
+  emptyDescription,
+  emptyAction,
   rowSelection
 }: {
   title: string
@@ -53,12 +67,22 @@ export function DataTableCard<T extends AnyRecord>({
   columns: TableProps<T>['columns']
   actions?: ReactNode
   emptyTitle?: string
+  emptyDescription?: string
+  emptyAction?: ReactNode
   rowSelection?: TableProps<T>['rowSelection']
 }) {
   const rows = normalizeRecords<T>(data)
   return (
     <Card title={title} extra={actions} className="surface-card">
-      <StateView loading={loading} error={error} empty={!loading && !error && rows.length === 0} emptyTitle={emptyTitle} onRetry={onRetry}>
+      <StateView
+        loading={loading}
+        error={error}
+        empty={!loading && !error && rows.length === 0}
+        emptyTitle={emptyTitle}
+        emptyDescription={emptyDescription}
+        emptyAction={emptyAction}
+        onRetry={onRetry}
+      >
         <Table<T>
           rowKey={(row) => getRecordId(row)}
           columns={columns}

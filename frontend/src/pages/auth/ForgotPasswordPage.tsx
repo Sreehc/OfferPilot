@@ -55,7 +55,7 @@ export function ForgotPasswordPage() {
 
   return (
     <AuthFrame title="找回密码" description="通过邮箱验证码重置登录密码">
-      <Form form={form} layout="vertical" onFinish={onReset}>
+      <Form form={form} layout="vertical" size="large" onFinish={onReset}>
         <Form.Item label="邮箱" name="email" rules={[{ required: true, message: '请输入邮箱' }, { type: 'email', message: '请输入有效的邮箱地址' }]}>
           <Space.Compact style={{ width: '100%' }}>
             <Input style={{ flex: 1 }} placeholder="注册时使用的邮箱" />

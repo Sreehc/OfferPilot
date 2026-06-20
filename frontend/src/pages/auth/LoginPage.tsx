@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Button, Form, Input, Typography, App as AntApp } from 'antd'
+import { LockOutlined, UserOutlined } from '@ant-design/icons'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { AuthFrame } from './AuthFrame'
 import { useAuthStore } from '@/features/auth/authStore'
@@ -26,5 +27,5 @@ export function LoginPage() {
       setSubmitting(false)
     }
   }
-  return <AuthFrame title="登录 OfferPilot" description="继续你的求职训练闭环"><Form layout="vertical" onFinish={onFinish}><Form.Item label="用户名" name="username" rules={[{ required: true, message: '请输入用户名' }]}><Input autoComplete="username" /></Form.Item><Form.Item label="密码" name="password" rules={[{ required: true, message: '请输入密码' }]}><Input.Password autoComplete="current-password" /></Form.Item><Button type="primary" htmlType="submit" block loading={submitting}>登录</Button><Typography.Paragraph style={{ marginTop: 16, marginBottom: 0 }}><Link to="/register">注册账号</Link><span style={{ margin: '0 8px' }} /> <Link to="/forgot-password">忘记密码</Link></Typography.Paragraph></Form></AuthFrame>
+  return <AuthFrame title="登录 OfferPilot" description="继续你的求职训练闭环"><Form layout="vertical" size="large" onFinish={onFinish}><Form.Item label="用户名" name="username" rules={[{ required: true, message: '请输入用户名' }]}><Input prefix={<UserOutlined />} autoComplete="username" placeholder="用户名" /></Form.Item><Form.Item label="密码" name="password" rules={[{ required: true, message: '请输入密码' }]}><Input.Password prefix={<LockOutlined />} autoComplete="current-password" placeholder="密码" /></Form.Item><Button type="primary" htmlType="submit" block loading={submitting}>登录</Button><Typography.Paragraph style={{ marginTop: 16, marginBottom: 0 }}><Link to="/register">注册账号</Link><span style={{ margin: '0 8px' }} /> <Link to="/forgot-password">忘记密码</Link></Typography.Paragraph></Form></AuthFrame>
 }
