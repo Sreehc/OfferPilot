@@ -6,7 +6,7 @@ import { addQuestionApi, deleteQuestionApi, fetchQuestionsApi } from '@/api/modu
 import { fetchCategoriesApi } from '@/api/modules/category'
 import { getErrorMessage } from '@/api/client'
 import { useAuthStore } from '@/features/auth/authStore'
-import { difficultyLabel, DataTableCard, normalizeRecords, pickText } from '@/modules/common'
+import { difficultyLabel, DataTableCard, getTotal, normalizeRecords, pickText } from '@/modules/common'
 import { ModulePage } from '@/modules/common'
 
 export function QuestionBankPage() {
@@ -34,9 +34,9 @@ export function QuestionBankPage() {
       title="题库"
       description="点击题目进入详情，可练习并查看解析。"
       metrics={[
-        { label: '题目数', value: rows.length, hint: '当前页' },
+        { label: '题目数', value: getTotal(query.data, rows.length), hint: '全部匹配' },
         { label: '分类', value: categoryRows.length, hint: '可筛选方向' },
-        { label: '高频题', value: rows.filter((row) => Number(row.frequency || 0) >= 4).length, hint: '重点复习' },
+        { label: '高频题', value: rows.filter((row) => Number(row.frequency || 0) >= 4).length, hint: '当前页重点' },
         { label: '状态', value: query.isFetching ? '刷新中' : '已同步', hint: '题库列表' }
       ]}
       actions={<Space wrap><Input.Search allowClear placeholder="搜索题目" onSearch={(keyword) => setFilters((current) => ({ ...current, keyword }))} /><Select allowClear placeholder="分类" style={{ width: 140 }} options={categoryRows.map((item) => ({ value: item.id, label: pickText(item, ['name']) }))} onChange={(categoryId) => setFilters((current) => ({ ...current, categoryId }))} /><Select allowClear placeholder="难度" style={{ width: 120 }} options={[{ value: 'easy', label: '简单' }, { value: 'medium', label: '中等' }, { value: 'hard', label: '困难' }]} onChange={(difficulty) => setFilters((current) => ({ ...current, difficulty }))} />{isAdmin && <Button type="primary" onClick={() => setOpen(true)}>新增题目</Button>}</Space>}

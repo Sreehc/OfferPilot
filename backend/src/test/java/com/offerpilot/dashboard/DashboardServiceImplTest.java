@@ -4,8 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -19,6 +21,7 @@ import com.offerpilot.adaptive.service.AdaptiveService;
 import com.offerpilot.adaptive.vo.AbilityProfileVO;
 import com.offerpilot.agent.mapper.AgentRunMapper;
 import com.offerpilot.application.entity.JobApplication;
+import com.offerpilot.application.mapper.JobApplicationEventMapper;
 import com.offerpilot.application.mapper.JobApplicationMapper;
 import com.offerpilot.common.config.OfferPilotProperties;
 import com.offerpilot.dashboard.dto.DashboardOverviewVO;
@@ -43,6 +46,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -77,6 +81,8 @@ class DashboardServiceImplTest {
     @Mock
     private JobApplicationMapper jobApplicationMapper;
     @Mock
+    private JobApplicationEventMapper jobApplicationEventMapper;
+    @Mock
     private ReviewLogMapper reviewLogMapper;
     @Mock
     private StudyPlanMapper studyPlanMapper;
@@ -97,6 +103,11 @@ class DashboardServiceImplTest {
 
     @InjectMocks
     private DashboardServiceImpl dashboardService;
+
+    @BeforeEach
+    void setUp() {
+        lenient().when(jobApplicationEventMapper.selectList(any())).thenReturn(List.of());
+    }
 
     @Test
     void overview_emptyData_marksFirstVisitAndBuildsEmptyApplicationSummary() throws Exception {
@@ -254,7 +265,7 @@ class DashboardServiceImplTest {
     }
 
     @Test
-    void overview_prefersFollowApplicationWhenTodayPlanIsDone() throws Exception {
+    void overview_prefersJobPrepWhenTodayPlanIsDoneAndApplicationActive() throws Exception {
         OfferPilotProperties.Dashboard dashboardProps = new OfferPilotProperties.Dashboard();
         dashboardProps.setCacheTtlMinutes(5);
 
@@ -297,8 +308,8 @@ class DashboardServiceImplTest {
 
             DashboardOverviewVO result = dashboardService.overview();
 
-            assertEquals("follow_application", result.getNextAction().getKey());
-            assertEquals("/applications", result.getNextAction().getPath());
+            assertEquals("job_prep", result.getNextAction().getKey());
+            assertEquals("/interview?workspace=job-prep", result.getNextAction().getPath());
         }
     }
 

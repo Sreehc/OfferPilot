@@ -9,9 +9,11 @@ import lombok.Data;
 @Builder
 public class ChatMessageVO {
     private Long id;
+    private String clientMessageId;
     private String role;
     private String messageType;
     private String content;
+    private String feedback;
     private LocalDateTime createTime;
     private List<ChatMessageReferenceVO> references;
 }

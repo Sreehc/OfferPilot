@@ -13,9 +13,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.MybatisMapperBuilderAssistant;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.offerpilot.adaptive.service.impl.AdaptiveServiceImpl;
 import com.offerpilot.adaptive.vo.AbilityProfileVO;
+import com.offerpilot.adaptive.vo.AdaptiveRecommendationVO;
 import com.offerpilot.adaptive.vo.CategoryAbilityVO;
 import com.offerpilot.adaptive.vo.RecommendInterviewVO;
 import com.offerpilot.application.entity.JobApplication;
@@ -46,6 +50,7 @@ import java.math.BigDecimal;
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,6 +62,15 @@ import org.springframework.data.redis.core.ValueOperations;
 
 @ExtendWith(MockitoExtension.class)
 class AdaptiveServiceImplTest {
+
+    @BeforeAll
+    static void initMybatisMetadata() {
+        MybatisMapperBuilderAssistant assistant =
+                new MybatisMapperBuilderAssistant(new MybatisConfiguration(), "test");
+        TableInfoHelper.initTableInfo(assistant, InterviewRecord.class);
+        TableInfoHelper.initTableInfo(assistant, Question.class);
+        TableInfoHelper.initTableInfo(assistant, com.offerpilot.wrong.entity.WrongQuestion.class);
+    }
 
     @Mock
     private InterviewSessionMapper sessionMapper;
@@ -109,6 +123,7 @@ class AdaptiveServiceImplTest {
         lenient().doReturn("{}").when(objectMapper).writeValueAsString(any());
         lenient().when(resumeFileMapper.selectList(any())).thenReturn(List.of());
         lenient().when(resumeProjectMapper.selectList(any())).thenReturn(List.of());
+        lenient().when(copilotRealtimeSessionMapper.selectList(any())).thenReturn(List.of());
     }
 
     @Test
@@ -273,6 +288,41 @@ class AdaptiveServiceImplTest {
 
         assertEquals("Java基础", result.getDirection());
         assertEquals(5, result.getQuestionCount());
+    }
+
+    @Test
+    void getRecommendations_returnsUnifiedRankedFeedFromBackendSignals() {
+        mockCacheMiss();
+        mockCategories(makeCategory(100L, "Redis"), makeCategory(200L, "Spring"));
+        when(recordingReviewSessionMapper.selectList(any())).thenReturn(List.of());
+        when(jobPrepSessionMapper.selectList(any())).thenReturn(List.of());
+        when(copilotPrepSessionMapper.selectList(any())).thenReturn(List.of());
+        when(jobApplicationMapper.selectList(any())).thenReturn(List.of());
+
+        when(sessionMapper.selectList(any())).thenReturn(List.of(makeSession(1L, LocalDateTime.now().minusDays(1))));
+        when(recordMapper.selectList(any())).thenReturn(List.of(makeRecord(1L, 10L, new BigDecimal("35"))));
+        when(questionMapper.selectBatchIds(any())).thenReturn(List.of(makeQuestion(10L, 100L)));
+        when(wrongQuestionMapper.selectCount(any())).thenReturn(0L);
+
+        Question recommendedQuestion = makeQuestion(20L, 100L);
+        recommendedQuestion.setTitle("Redis 缓存穿透怎么处理");
+        recommendedQuestion.setDifficulty("medium");
+        when(questionMapper.selectList(any())).thenReturn(List.of(recommendedQuestion), List.of());
+
+        List<AdaptiveRecommendationVO> recommendations = service.getRecommendations(1L, 4);
+
+        assertEquals(4, recommendations.size());
+        assertEquals(List.of(1, 2, 3, 4), recommendations.stream().map(AdaptiveRecommendationVO::getRank).toList());
+        assertTrue(recommendations.stream().anyMatch(item ->
+                "question".equals(item.getType())
+                        && "Redis 缓存穿透怎么处理".equals(item.getTitle())
+                        && "/question/20".equals(item.getTargetPath())
+                        && item.getSourceIds().contains("question:20")));
+        assertTrue(recommendations.stream().anyMatch(item ->
+                "interview".equals(item.getType())
+                        && "Redis".equals(item.getWeakPoint())
+                        && item.getPriority() >= 80));
+        assertTrue(recommendations.stream().allMatch(item -> item.getPriority() != null && item.getRank() != null));
     }
 
     @Test

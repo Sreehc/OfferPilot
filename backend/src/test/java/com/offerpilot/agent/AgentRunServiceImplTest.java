@@ -50,6 +50,7 @@ import com.offerpilot.resume.vo.ResumeFileVO;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -109,6 +110,56 @@ class AgentRunServiceImplTest {
             lastInsertedRun = run;
             return 1;
         }).when(agentRunMapper).updateById(any(AgentRun.class));
+        lenient().when(userProviderConfigService.listCurrentUserConfigs()).thenReturn(List.of(
+                readyProvider("llm", "主模型"),
+                readyProvider("search", "联网搜索"),
+                readyProvider("asr", "语音识别"),
+                readyProvider("oss", "对象存储"),
+                readyProvider("voiceprint", "声纹识别")));
+    }
+
+    @Test
+    void detail_exposesStableRunContractAndPersistedToolTelemetry() throws Exception {
+        AgentRun run = new AgentRun();
+        run.setId(3001L);
+        run.setUserId(1L);
+        run.setAgentType("study_planner");
+        run.setTriggerSource("manual");
+        run.setStatus("pending_approval");
+        run.setTitle("学习计划代理");
+        run.setSummary("已整理训练建议。");
+        run.setContextRefsJson("[\"analytics:profile\"]");
+        run.setResultPayloadJson("{\"recommendations\":[\"补 JVM\"],\"checkpoints\":[\"确认计划\"]}");
+        run.setRequiresApproval(1);
+        run.setApprovalActionType("refresh_study_plan");
+        run.setApprovalSummary("审批后写回学习计划。");
+        run.setToolCallTelemetryJson(objectMapper.writeValueAsString(List.of(Map.ofEntries(
+                Map.entry("id", "tool-1"),
+                Map.entry("name", "plan.refresh"),
+                Map.entry("status", "failed"),
+                Map.entry("startedAt", "2026-06-02T10:00:00"),
+                Map.entry("endedAt", "2026-06-02T10:00:02"),
+                Map.entry("totalDurationMs", 2000),
+                Map.entry("phaseDurations", Map.of("loadContext", 300, "writePlan", 1700)),
+                Map.entry("retryCount", 2),
+                Map.entry("inputSummary", "基于画像刷新学习计划"),
+                Map.entry("outputSummary", "写回失败"),
+                Map.entry("errorType", "TimeoutException"),
+                Map.entry("errorMessage", "计划服务超时"),
+                Map.entry("rawErrorStack", "java.util.concurrent.TimeoutException: timeout")
+        ))));
+        run.setUpdateTime(LocalDateTime.of(2026, 6, 2, 10, 0));
+        when(agentRunMapper.selectById(3001L)).thenReturn(run);
+
+        AgentRunVO result = agentRunService.detail(1L, 3001L);
+
+        assertEquals("waiting", result.getApprovalStatus());
+        assertTrue(result.getSteps().size() >= 3);
+        assertTrue(result.getArtifacts().size() >= 2);
+        assertEquals("计划服务超时", result.getToolCalls().get(0).getErrorMessage());
+        assertEquals(2, result.getToolCalls().get(0).getRetryCount());
+        assertEquals(1700, result.getToolCalls().get(0).getPhaseDurations().get("writePlan"));
+        assertEquals("java.util.concurrent.TimeoutException: timeout", result.getToolCalls().get(0).getRawErrorStack());
     }
 
     @Test
@@ -1602,5 +1653,14 @@ class AgentRunServiceImplTest {
         request.setStreamMode("sync");
         request.setUserPrompt(prompt);
         return request;
+    }
+
+    private UserProviderConfigItemVO readyProvider(String scope, String label) {
+        return UserProviderConfigItemVO.builder()
+                .scope(scope)
+                .label(label)
+                .status("ready")
+                .statusMessage("配置完整，可供对应能力使用。")
+                .build();
     }
 }

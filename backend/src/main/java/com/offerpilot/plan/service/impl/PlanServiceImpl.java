@@ -625,15 +625,51 @@ public class PlanServiceImpl implements PlanService {
                         .dayIndex(task.getDayIndex())
                         .taskDate(task.getTaskDate())
                         .module(task.getModule())
+                        .targetType(resolveTaskTargetType(task))
                         .title(task.getTitle())
                         .description(task.getDescription())
-                        .actionPath(task.getActionPath())
+                        .actionPath(resolveTaskActionPath(task))
                         .estimatedMinutes(task.getEstimatedMinutes())
                         .priority(task.getPriority())
                         .status(task.getStatus())
                         .completedAt(task.getCompletedAt())
                         .build()).toList())
                 .build();
+    }
+
+    private String resolveTaskTargetType(StudyPlanTask task) {
+        String module = task.getModule() == null ? "" : task.getModule().trim().toLowerCase(Locale.ROOT);
+        if (!module.isBlank()) {
+            return module;
+        }
+        String path = task.getActionPath() == null ? "" : task.getActionPath();
+        if (path.startsWith("/interview")) {
+            return "interview";
+        }
+        if (path.startsWith("/review")) {
+            return "review";
+        }
+        if (path.startsWith("/resume")) {
+            return "resume";
+        }
+        if (path.startsWith("/chat")) {
+            return "chat";
+        }
+        return "question";
+    }
+
+    private String resolveTaskActionPath(StudyPlanTask task) {
+        if (task.getActionPath() != null && !task.getActionPath().isBlank()) {
+            return task.getActionPath();
+        }
+        return switch (resolveTaskTargetType(task)) {
+            case "interview", "interview_review", "recording_review" -> "/interview";
+            case "review" -> "/review";
+            case "resume" -> "/resume";
+            case "chat" -> "/chat";
+            case "topic_retrospective" -> "/analytics";
+            default -> "/question";
+        };
     }
 
     private StudyPlanCurrentVO.PlanReasonSummaryVO buildPlanReasonSummary(

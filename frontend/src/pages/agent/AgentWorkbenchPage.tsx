@@ -3,9 +3,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { App as AntApp, Button, Card, Descriptions, Form, Input, List, Modal, Select, Space, Tag, Typography } from 'antd'
 import { approveAgentRunApi, cancelAgentRunApi, createAgentRunApi, fetchAgentRunDetailApi, fetchAgentRunsApi, rejectAgentRunApi } from '@/api/modules/agent'
 import { getErrorMessage } from '@/api/client'
-import { AgentComposer, GeneratedArtifactCard, HumanApprovalBar, ThoughtTimeline, ToolCallCard } from '@/components/agent/AgentComponents'
-import { mapAgentArtifacts, mapAgentMessages, mapAgentSteps, mapToolCalls } from '@/components/agent/agentModel'
-import { DataListCard, EntitySummary, formatDateTime, normalizeRecords, pickArray, pickText, StatusTag } from '@/modules/common'
+import { AgentComposer, AgentStatusTag, GeneratedArtifactCard, HumanApprovalBar, ThoughtTimeline, ToolCallList } from '@/components/agent/AgentComponents'
+import { getAgentApprovalStatusMeta, mapAgentArtifacts, mapAgentMessages, mapAgentSteps, mapToolCalls, normalizeAgentStatus } from '@/components/agent/agentModel'
+import { DataListCard, formatDateTime, normalizeRecords, pickArray, pickText } from '@/modules/common'
 import { ModulePage } from '@/modules/common'
 
 const agentOptions = [
@@ -23,6 +23,22 @@ const triggerOptions = [
   { label: '待审批动作', value: 'approval-flow' }
 ]
 
+type QueueStatusFilter = 'all' | 'approval_required' | 'running' | 'failed' | 'success'
+
+const queueStatusFilters: Array<{ label: string; value: QueueStatusFilter }> = [
+  { label: '全部', value: 'all' },
+  { label: '待审批', value: 'approval_required' },
+  { label: '运行中', value: 'running' },
+  { label: '失败', value: 'failed' },
+  { label: '已完成', value: 'success' }
+]
+
+function resolveQueueRunStatus(run: any) {
+  const approvalStatus = getAgentApprovalStatusMeta(run?.approvalStatus).status
+  if (approvalStatus === 'approval_required') return approvalStatus
+  return normalizeAgentStatus(run?.status || run?.runStatus)
+}
+
 export function AgentWorkbenchPage() {
   const queryClient = useQueryClient()
   const { message, modal } = AntApp.useApp()
@@ -30,6 +46,8 @@ export function AgentWorkbenchPage() {
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null)
   const [rejectOpen, setRejectOpen] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
+  const [rejectReasonError, setRejectReasonError] = useState('')
+  const [queueStatusFilter, setQueueStatusFilter] = useState<QueueStatusFilter>('all')
   const runsQuery = useQuery({ queryKey: ['agent', 'runs'], queryFn: () => fetchAgentRunsApi({ pageNum: 1, pageSize: 20 }).then((response) => response.data) })
   const runs = normalizeRecords(runsQuery.data)
   const selectedRun = useQuery({
@@ -41,7 +59,13 @@ export function AgentWorkbenchPage() {
   const runThoughts = mapAgentSteps(pickArray<Record<string, unknown>>(currentRun, ['thoughts', 'steps', 'timeline']))
   const runToolCalls = mapToolCalls(pickArray<Record<string, unknown>>(currentRun, ['toolCalls', 'tools', 'actions']))
   const runArtifacts = mapAgentArtifacts(pickArray<Record<string, unknown>>(currentRun, ['artifacts', 'outputs', 'generatedArtifacts']))
-  const pendingRuns = useMemo(() => runs.filter((run: any) => String(run.status || '').includes('PENDING') || String(run.status || '').includes('APPROVAL')), [runs])
+  const pendingRuns = useMemo(() => runs.filter((run: any) => resolveQueueRunStatus(run) === 'approval_required'), [runs])
+  const runningRuns = useMemo(() => runs.filter((run: any) => resolveQueueRunStatus(run) === 'running'), [runs])
+  const completedRuns = useMemo(() => runs.filter((run: any) => resolveQueueRunStatus(run) === 'success'), [runs])
+  const filteredRuns = useMemo(() => {
+    if (queueStatusFilter === 'all') return runs
+    return runs.filter((run: any) => resolveQueueRunStatus(run) === queueStatusFilter)
+  }, [queueStatusFilter, runs])
 
   const createRun = useMutation({
     mutationFn: createAgentRunApi,
@@ -52,7 +76,9 @@ export function AgentWorkbenchPage() {
       const nextId = String((response.data as any)?.id || (response.data as any)?.runId || '')
       if (nextId) setSelectedRunId(nextId)
     },
-    onError: (error) => message.error(getErrorMessage(error, '创建 AI 任务失败'))
+    onError: (error) => {
+      message.error(getErrorMessage(error, '创建 AI 任务失败'))
+    }
   })
   const approveRun = useMutation({
     mutationFn: (runId: string) => approveAgentRunApi(runId, { reason: '工作台批准' }),
@@ -60,7 +86,9 @@ export function AgentWorkbenchPage() {
       message.success('已批准')
       queryClient.invalidateQueries({ queryKey: ['agent'] })
     },
-    onError: (error) => message.error(getErrorMessage(error, '批准失败'))
+    onError: (error) => {
+      message.error(getErrorMessage(error, '批准失败'))
+    }
   })
   const rejectRun = useMutation({
     mutationFn: ({ runId, reason }: { runId: string; reason?: string }) => rejectAgentRunApi(runId, { reason }),
@@ -68,9 +96,12 @@ export function AgentWorkbenchPage() {
       message.success('已拒绝')
       setRejectOpen(false)
       setRejectReason('')
+      setRejectReasonError('')
       queryClient.invalidateQueries({ queryKey: ['agent'] })
     },
-    onError: (error) => message.error(getErrorMessage(error, '拒绝失败'))
+    onError: (error) => {
+      message.error(getErrorMessage(error, '拒绝失败'))
+    }
   })
   const cancelRun = useMutation({
     mutationFn: (runId: string) => cancelAgentRunApi(runId, { reason: '工作台取消' }),
@@ -78,20 +109,25 @@ export function AgentWorkbenchPage() {
       message.success('已取消')
       queryClient.invalidateQueries({ queryKey: ['agent'] })
     },
-    onError: (error) => message.error(getErrorMessage(error, '取消失败'))
+    onError: (error) => {
+      message.error(getErrorMessage(error, '取消失败'))
+    }
   })
 
   const currentMessages = mapAgentMessages(currentRun?.messages || currentRun?.chatMessages)
+  const currentApprovalMeta = getAgentApprovalStatusMeta(currentRun?.approvalStatus)
+  const currentRunStatus = normalizeAgentStatus(currentRun?.status || currentRun?.runStatus)
+  const currentNeedsApproval = currentApprovalMeta.status === 'approval_required' || currentRunStatus === 'approval_required'
 
   const detailBlocks = currentRun ? (
     <Space orientation="vertical" style={{ width: '100%' }} size={16}>
       <Card title="任务详情" className="surface-card">
-        <EntitySummary record={currentRun} fields={[
-          { label: '任务 ID', keys: ['id', 'runId'] },
-          { label: '类型', keys: ['agentType'] },
-          { label: '状态', keys: ['status'], tag: true },
-          { label: '来源', keys: ['triggerSource'] },
-          { label: '创建时间', keys: ['createTime', 'createdAt'] }
+        <Descriptions column={1} items={[
+          { label: '任务 ID', children: String(currentRun.id || currentRun.runId || '-') },
+          { label: '类型', children: pickText(currentRun, ['agentType']) },
+          { label: '状态', children: <AgentStatusTag value={currentRun.status || currentRun.runStatus} /> },
+          { label: '来源', children: pickText(currentRun, ['triggerSource']) },
+          { label: '创建时间', children: formatDateTime(currentRun.createTime || currentRun.createdAt) }
         ]} />
       </Card>
       <Card title="运行说明" className="surface-card">
@@ -99,19 +135,30 @@ export function AgentWorkbenchPage() {
       </Card>
       <Card title="结构化信息" className="surface-card">
         <Descriptions column={1} items={[
-          { label: '审批状态', children: <StatusTag value={pickText(currentRun, ['approvalStatus'])} /> },
+          { label: '审批状态', children: <Tag color={currentApprovalMeta.color}>{currentApprovalMeta.label}</Tag> },
           { label: '触发上下文', children: pickText(currentRun, ['contextSummary', 'contextRefs'], '-') },
           { label: '更新时间', children: formatDateTime(currentRun.updateTime || currentRun.lastUpdatedAt) }
         ]} />
       </Card>
       <HumanApprovalBar
-        visible={String(currentRun.status || currentRun.approvalStatus || '').toUpperCase().includes('APPROVAL')}
+        visible={currentNeedsApproval}
         loading={approveRun.isPending || rejectRun.isPending || cancelRun.isPending}
         onApprove={() => approveRun.mutate(String(currentRun.id || currentRun.runId))}
-        onReject={() => setRejectOpen(true)}
-        onCancel={() => modal.confirm({ title: '取消该任务？', content: '取消后该任务将停止执行，且不可恢复。', okText: '取消任务', okButtonProps: { danger: true }, cancelText: '再想想', onOk: () => cancelRun.mutate(String(currentRun.id || currentRun.runId)) })}
+        onReject={() => {
+          setRejectReason('')
+          setRejectReasonError('')
+          setRejectOpen(true)
+        }}
+        onCancel={() => modal.confirm({
+          title: '取消该任务？',
+          content: '取消后该任务将停止执行，且不可恢复。',
+          okText: '取消任务',
+          okButtonProps: { danger: true },
+          cancelText: '再想想',
+          onOk: () => cancelRun.mutateAsync(String(currentRun.id || currentRun.runId))
+        })}
       />
-      <GeneratedArtifactCard title="产出" items={runArtifacts.length ? runArtifacts : [{ id: 'fallback', title: pickText(currentRun, ['outputTitle', 'summary'], '暂无产出'), content: pickText(currentRun, ['resultSummary', 'summary'], '等待后端返回运行结果') }]} />
+      <GeneratedArtifactCard title="产出" items={runArtifacts} />
     </Space>
   ) : null
 
@@ -123,8 +170,8 @@ export function AgentWorkbenchPage() {
       metrics={[
         { label: '任务总数', value: runs.length, hint: '最近执行记录' },
         { label: '待审批', value: pendingRuns.length, hint: '需要人工确认的动作' },
-        { label: '运行中', value: runs.filter((run: any) => String(run.status || '').includes('RUN')).length, hint: '正在处理' },
-        { label: '已完成', value: runs.filter((run: any) => String(run.status || '').includes('SUCCESS') || String(run.status || '').includes('DONE')).length, hint: '可消费结果' }
+        { label: '运行中', value: runningRuns.length, hint: '正在处理' },
+        { label: '已完成', value: completedRuns.length, hint: '可消费结果' }
       ]}
     >
       <div className="workspace-grid">
@@ -160,39 +207,62 @@ export function AgentWorkbenchPage() {
         <div className="workspace-grid two">
           <DataListCard
             title="运行列表"
-            data={runsQuery.data}
+            data={filteredRuns}
             loading={runsQuery.isLoading}
             error={runsQuery.error}
             onRetry={() => runsQuery.refetch()}
-            emptyTitle="当前没有 AI 任务"
-            actions={<Tag color="blue">按最新结果排序</Tag>}
-            renderItem={(item) => (
-              <div role="button" tabIndex={0} className="agent-queue-card" onClick={() => setSelectedRunId(String(item.id || item.runId))} onKeyDown={(event) => { if (event.key === 'Enter') setSelectedRunId(String(item.id || item.runId)) }}>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-ink">{pickText(item, ['title', 'agentType'], 'agent')}</p>
-                    <p className="mt-1 text-xs uppercase tracking-[0.18em] text-tertiary">{pickText(item, ['triggerSource'], 'manual')}</p>
-                  </div>
-                  <StatusTag value={pickText(item, ['status'])} />
-                </div>
-                <p className="mt-3 text-sm leading-6 text-secondary">{pickText(item, ['summary', 'approvalSummary', 'resultSummary'], '等待详情')}</p>
-              </div>
+            emptyTitle={queueStatusFilter === 'all' ? '当前没有 AI 任务' : '没有符合筛选的 AI 任务'}
+            actions={(
+              <Space size={4} wrap aria-label="运行状态筛选">
+                {queueStatusFilters.map((filter) => (
+                  <Button
+                    key={filter.value}
+                    size="small"
+                    type={queueStatusFilter === filter.value ? 'primary' : 'default'}
+                    aria-pressed={queueStatusFilter === filter.value}
+                    onClick={() => setQueueStatusFilter(filter.value)}
+                  >
+                    {filter.label}
+                  </Button>
+                ))}
+              </Space>
             )}
+            renderItem={(item) => {
+              const runStatus = resolveQueueRunStatus(item)
+              const updateTime = formatDateTime(item.updateTime || item.lastUpdatedAt || item.updatedAt)
+              return (
+                <div
+                  role="button"
+                  tabIndex={0}
+                  className={`agent-queue-card ${runStatus === 'approval_required' ? 'is-approval-required' : ''} ${runStatus === 'failed' ? 'is-failed' : ''}`}
+                  onClick={() => setSelectedRunId(String(item.id || item.runId))}
+                  onKeyDown={(event) => { if (event.key === 'Enter') setSelectedRunId(String(item.id || item.runId)) }}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-ink">{pickText(item, ['title', 'agentType'], 'agent')}</p>
+                      <Space size={6} wrap className="mt-1">
+                        <span className="agent-queue-source">{pickText(item, ['triggerSource'], 'manual')}</span>
+                        <span className="agent-queue-time">{updateTime}</span>
+                      </Space>
+                    </div>
+                    <AgentStatusTag value={runStatus} />
+                  </div>
+                  <Space size={6} wrap className="mt-3">
+                    {runStatus === 'approval_required' ? <Tag color="warning">需要人工确认</Tag> : null}
+                    {runStatus === 'failed' ? <Tag color="error">执行失败</Tag> : null}
+                  </Space>
+                  <p className="mt-3 text-sm leading-6 text-secondary">{pickText(item, ['summary', 'approvalSummary', 'resultSummary'], '等待详情')}</p>
+                </div>
+              )
+            }}
           />
           <div className="agent-timeline">
             <Card title="当前选中" className="surface-card">
               {currentRun ? (
                 <Space orientation="vertical" style={{ width: '100%' }} size={12}>
-                  <ThoughtTimeline steps={runThoughts.length ? runThoughts : [{ title: '暂无步骤', description: '等待后端返回 run steps', status: 'wait' }]} />
-                  {runToolCalls.length ? runToolCalls.map((call) => (
-                    <ToolCallCard key={call.id} call={call} />
-                  )) : <ToolCallCard call={{
-                    id: 'agent-tool',
-                    name: pickText(currentRun, ['agentType'], 'agent-tool'),
-                    status: String(currentRun.status || '').includes('APPROVAL') ? 'approval_required' : String(currentRun.status || '').includes('FAIL') ? 'failed' : 'running',
-                    summary: pickText(currentRun, ['approvalSummary', 'summary', 'resultSummary'], '等待工具调用结果'),
-                    params: (currentRun.input || { contextRefs: currentRun.contextRefs || [] }) as Record<string, any>
-                  }} />}
+                  <ThoughtTimeline steps={runThoughts} />
+                  <ToolCallList calls={runToolCalls} />
                   <Card title="运行详情" className="surface-card">
                     <Descriptions column={1} items={[
                       { label: '任务 ID', children: String(currentRun.id || currentRun.runId || '-') },
@@ -218,10 +288,32 @@ export function AgentWorkbenchPage() {
         open={rejectOpen}
         title="拒绝任务"
         okText="确认拒绝"
-        onCancel={() => setRejectOpen(false)}
-        onOk={() => currentRun && rejectRun.mutate({ runId: String(currentRun.id || currentRun.runId), reason: rejectReason })}
+        confirmLoading={rejectRun.isPending}
+        onCancel={() => {
+          setRejectOpen(false)
+          setRejectReason('')
+          setRejectReasonError('')
+        }}
+        onOk={() => {
+          const reason = rejectReason.trim()
+          if (!reason) {
+            setRejectReasonError('请填写拒绝原因')
+            return
+          }
+          if (currentRun) rejectRun.mutate({ runId: String(currentRun.id || currentRun.runId), reason })
+        }}
       >
-        <Input.TextArea value={rejectReason} onChange={(event) => setRejectReason(event.target.value)} rows={4} placeholder="填写拒绝原因" />
+        <Input.TextArea
+          value={rejectReason}
+          status={rejectReasonError ? 'error' : undefined}
+          onChange={(event) => {
+            setRejectReason(event.target.value)
+            if (rejectReasonError) setRejectReasonError('')
+          }}
+          rows={4}
+          placeholder="填写拒绝原因"
+        />
+        {rejectReasonError ? <Typography.Text type="danger">{rejectReasonError}</Typography.Text> : null}
       </Modal>
     </ModulePage>
   )

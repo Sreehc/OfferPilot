@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Button, Card, Space, Typography } from 'antd'
 import { fetchAnalyticsProfileApi, fetchAbilityTrendApi, fetchEfficiencyApi, fetchLearningInsightsApi } from '@/api/modules/analytics'
+import { AdaptiveRecommendationsPanel } from '@/components/adaptive/AdaptiveRecommendationsPanel'
 import { EChartCard } from '@/components/charts/EChartCard'
 import { buildCategorySeries, DataListCard, normalizeRecords, pickArray, pickText } from '@/modules/common'
 import { ModulePage } from '@/modules/common'
@@ -39,6 +40,7 @@ export function AnalyticsPage() {
         { label: '洞察', value: normalizeRecords(insights.data).length, hint: '分析结果' }
       ]}
     >
+      <AdaptiveRecommendationsPanel />
       <div className="workspace-grid two">
         {profile.isLoading ? <Card title="能力画像" className="surface-card" loading /> : <EChartCard title="能力画像" option={radarOption} />}
         {trend.isLoading ? <Card title="能力趋势" className="surface-card" loading /> : <EChartCard title="能力趋势" option={trendOption} />}

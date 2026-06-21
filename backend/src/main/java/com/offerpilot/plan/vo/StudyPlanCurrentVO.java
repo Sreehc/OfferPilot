@@ -43,6 +43,7 @@ public class StudyPlanCurrentVO {
         private Integer dayIndex;
         private LocalDate taskDate;
         private String module;
+        private String targetType;
         private String title;
         private String description;
         private String actionPath;

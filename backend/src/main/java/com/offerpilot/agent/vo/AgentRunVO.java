@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import lombok.Builder;
 import lombok.Data;
 
@@ -32,9 +33,13 @@ public class AgentRunVO {
     private String executionActionLabel;
     private String executionActionPath;
     private String approvalStage;
+    private String approvalStatus;
     private String providerGateStatus;
     private String providerGateSummary;
     private List<TimelineItemVO> timeline;
+    private List<TimelineItemVO> steps;
+    private List<ToolCallVO> toolCalls;
+    private List<ArtifactVO> artifacts;
     private List<ProviderGateVO> providerGates;
     private LocalDateTime updateTime;
 
@@ -57,5 +62,33 @@ public class AgentRunVO {
         private String status;
         private String statusMessage;
         private Boolean required;
+    }
+
+    @Data
+    @Builder
+    public static class ToolCallVO {
+        private String id;
+        private String name;
+        private String status;
+        private String startedAt;
+        private String endedAt;
+        private Long totalDurationMs;
+        private Map<String, Long> phaseDurations;
+        private Integer retryCount;
+        private String inputSummary;
+        private String outputSummary;
+        private String errorType;
+        private String errorMessage;
+        private String rawErrorStack;
+    }
+
+    @Data
+    @Builder
+    public static class ArtifactVO {
+        private String id;
+        private String title;
+        private String content;
+        private String type;
+        private String actionUrl;
     }
 }

@@ -28,6 +28,8 @@ const STATUS_MAP: Record<string, string> = {
   SOLVED: '已解决',
   CLOSED: '已关闭',
   DRAFT: '草稿',
+  SAVED: '待投递',
+  WRITTEN: '笔试 / 作业',
   STANDARD: '标准',
   UNKNOWN: '未知'
 }
@@ -61,14 +63,17 @@ const TARGET_TYPE_MAP: Record<string, string> = {
 }
 
 const APPLICATION_STATUS_MAP: Record<string, string> = {
+  SAVED: '待投递',
   DRAFT: '草稿',
   APPLIED: '已投递',
   SCREENING: '筛选中',
+  WRITTEN: '笔试 / 作业',
   INTERVIEW: '面试中',
   INTERVIEWING: '面试中',
   OFFER: 'Offer',
   REJECTED: '已拒绝',
-  CLOSED: '已关闭'
+  CLOSED: '已关闭',
+  UNKNOWN: '未知状态'
 }
 
 function lookup(map: Record<string, string>, value?: string | null, fallback?: string): string {

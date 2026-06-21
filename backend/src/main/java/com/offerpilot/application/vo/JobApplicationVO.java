@@ -23,12 +23,17 @@ public class JobApplicationVO {
     private String source;
     private String jdText;
     private String status;
+    private String kanbanStatus;
+    private String statusLabel;
     private BigDecimal matchScore;
+    private String matchScoreDisplay;
     private List<String> jdKeywords;
     private List<String> missingKeywords;
     private String analysisSummary;
     private String reviewSuggestion;
     private String nextStepSuggestion;
+    private String nextAction;
+    private JobApplicationEventVO latestEvent;
     private Boolean hasStrategyDraft;
     private String strategyDraftSummary;
     private List<String> strategyDraftActions;

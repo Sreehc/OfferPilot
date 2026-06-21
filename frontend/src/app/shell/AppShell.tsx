@@ -1,5 +1,5 @@
 import { AppstoreOutlined, BellOutlined, LogoutOutlined, MenuOutlined, MoonOutlined, SearchOutlined, SunOutlined, UserOutlined } from '@ant-design/icons'
-import { Avatar, Badge, Button, Drawer, Dropdown, Input, Layout, Menu, Modal, Space } from 'antd'
+import { Avatar, Badge, Button, Drawer, Dropdown, Empty, Input, Layout, Menu, Modal, Space, Typography } from 'antd'
 import { useMemo, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { fetchUnreadCountApi } from '@/api/modules/notification'
@@ -12,6 +12,13 @@ import { BrandGlyph } from '@/components/brand/BrandGlyph'
 import { mobileNavPaths, navGroups, navItems } from './navigation'
 
 const { Sider, Content } = Layout
+
+const commandActions = [
+  { key: 'start-interview', label: '开始面试', description: '进入面试模式启动器', path: '/interview' },
+  { key: 'upload-resume', label: '上传简历', description: '进入简历工作台管理版本', path: '/resume' },
+  { key: 'create-agent-run', label: '创建 Agent 任务', description: '进入 Agent 工作台创建运行', path: '/agent' },
+  { key: 'ask-question', label: '发起提问', description: '进入 AI 问答继续追问', path: '/chat' }
+]
 
 export function AppShell() {
   const { pathname } = useLocation()
@@ -28,7 +35,14 @@ export function AppShell() {
   const isAdmin = user?.role === 'ADMIN'
   const visibleNav = useMemo(() => navItems.filter((item) => !item.adminOnly || isAdmin), [isAdmin])
   const selected = '/' + (pathname.split('/')[1] || 'dashboard')
-  const filtered = visibleNav.filter((item) => item.label.toLowerCase().includes(query.toLowerCase()) || item.path.includes(query))
+  const normalizedQuery = query.trim().toLowerCase()
+  const filtered = visibleNav.filter((item) => item.label.toLowerCase().includes(normalizedQuery) || item.path.includes(normalizedQuery))
+  const filteredActions = commandActions.filter((item) => item.label.toLowerCase().includes(normalizedQuery) || item.description.toLowerCase().includes(normalizedQuery) || item.path.includes(normalizedQuery))
+  const runCommand = (path: string) => {
+    setSearchOpen(false)
+    setQuery('')
+    navigate(path)
+  }
   const menuItems = useMemo(() => navGroups
     .map((group) => ({
       key: group.key,
@@ -45,6 +59,12 @@ export function AppShell() {
   const mobileItems = mobileNavPaths
     .map((path) => visibleNav.find((item) => item.path === path))
     .filter((item): item is (typeof visibleNav)[number] => Boolean(item))
+  const mobileGroups = useMemo(() => navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !item.adminOnly || isAdmin)
+    }))
+    .filter((group) => group.items.length > 0), [isAdmin])
 
   const renderSide = (label: string) => (
     <nav aria-label={label}>
@@ -67,7 +87,7 @@ export function AppShell() {
         <header className="shell-header">
           <Space>
             <Button icon={<MenuOutlined />} onClick={() => setDrawerOpen(true)} className="lg-menu" />
-            <Button icon={<SearchOutlined />} onClick={() => setSearchOpen(true)}>搜索页面</Button>
+            <Button icon={<SearchOutlined />} onClick={() => setSearchOpen(true)}>命令面板</Button>
           </Space>
           <Space>
             <Button aria-label="切换主题" icon={mode === 'dark' ? <SunOutlined /> : <MoonOutlined />} onClick={toggleTheme} />
@@ -89,29 +109,63 @@ export function AppShell() {
       <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} placement="left" size={280}>{renderSide('抽屉主导航')}</Drawer>
       <nav className="mobile-nav" aria-label="主导航">
         {mobileItems.map((item) => (
-          <button key={item.path} type="button" className={'mobile-nav-item' + (selected === item.path ? ' active' : '')} onClick={() => navigate(item.path)}>
+          <button key={item.path} type="button" className={'mobile-nav-item' + (selected === item.path ? ' active' : '')} aria-current={selected === item.path ? 'page' : undefined} onClick={() => navigate(item.path)}>
             <span className="mobile-nav-icon">{item.icon}</span>
             <span className="mobile-nav-label">{item.label}</span>
           </button>
         ))}
-        <button type="button" className="mobile-nav-item" onClick={() => setMoreOpen(true)}>
+        <button type="button" className="mobile-nav-item" aria-expanded={moreOpen} onClick={() => setMoreOpen(true)}>
           <span className="mobile-nav-icon"><AppstoreOutlined /></span>
           <span className="mobile-nav-label">更多</span>
         </button>
       </nav>
       <Drawer open={moreOpen} onClose={() => setMoreOpen(false)} placement="bottom" size="auto" title="全部功能">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-          {visibleNav.map((item) => (
-            <button key={item.path} type="button" className={'mobile-nav-item' + (selected === item.path ? ' active' : '')} onClick={() => { setMoreOpen(false); navigate(item.path) }}>
-              <span className="mobile-nav-icon">{item.icon}</span>
-              <span className="mobile-nav-label">{item.label}</span>
-            </button>
+        <div className="mobile-more-panel">
+          {mobileGroups.map((group) => (
+            <section key={group.key} className="mobile-more-group" aria-labelledby={`mobile-more-${group.key}`}>
+              <h3 id={`mobile-more-${group.key}`} className="mobile-more-title">{group.label}</h3>
+              <div className="mobile-more-grid">
+                {group.items.map((item) => (
+                  <button key={item.path} type="button" className={'mobile-nav-item mobile-more-item' + (selected === item.path ? ' active' : '')} aria-current={selected === item.path ? 'page' : undefined} onClick={() => { setMoreOpen(false); navigate(item.path) }}>
+                    <span className="mobile-nav-icon">{item.icon}</span>
+                    <span className="mobile-nav-label">{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
           ))}
         </div>
       </Drawer>
-      <Modal open={searchOpen} title="搜索页面" footer={null} onCancel={() => setSearchOpen(false)}>
-        <Input autoFocus prefix={<SearchOutlined />} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="输入页面名称" />
-        <div style={{ marginTop: 12, display: 'grid', gap: 6 }}>{filtered.map((item) => <Button key={item.path} block style={{ textAlign: 'left' }} onClick={() => { setSearchOpen(false); navigate(item.path) }}>{item.label}<span className="muted-text" style={{ float: 'right' }}>{item.path}</span></Button>)}</div>
+      <Modal open={searchOpen} title="命令面板" footer={null} width={640} onCancel={() => setSearchOpen(false)}>
+        <div className="command-panel">
+          <Input autoFocus prefix={<SearchOutlined />} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索页面或输入动作关键词" />
+          <section className="command-section" aria-labelledby="command-actions-title">
+            <Typography.Text id="command-actions-title" className="command-section-title">关键动作</Typography.Text>
+            {filteredActions.length > 0 ? (
+              <div className="command-grid">
+                {filteredActions.map((item) => (
+                  <button key={item.key} type="button" className="command-item" onClick={() => runCommand(item.path)}>
+                    <span className="command-item-title">{item.label}</span>
+                    <span className="command-item-description">{item.description}</span>
+                  </button>
+                ))}
+              </div>
+            ) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="没有匹配动作" />}
+          </section>
+          <section className="command-section" aria-labelledby="command-pages-title">
+            <Typography.Text id="command-pages-title" className="command-section-title">页面</Typography.Text>
+            {filtered.length > 0 ? (
+              <div className="command-list">
+                {filtered.map((item) => (
+                  <button key={item.path} type="button" className="command-item command-page-item" onClick={() => runCommand(item.path)}>
+                    <span className="command-item-title">{item.label}</span>
+                    <span className="command-item-description">{item.path}</span>
+                  </button>
+                ))}
+              </div>
+            ) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="没有匹配页面" />}
+          </section>
+        </div>
       </Modal>
       <NotificationCenter open={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
     </Layout>

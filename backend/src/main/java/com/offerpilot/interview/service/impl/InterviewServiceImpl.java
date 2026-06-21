@@ -45,6 +45,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -334,6 +335,10 @@ public class InterviewServiceImpl implements InterviewService {
                             .build();
                 })
                 .toList();
+        BigDecimal wrongThreshold = BigDecimal.valueOf(props.getInterview().getWrongThreshold());
+        List<InterviewDetailVO.AbilityItemVO> abilityItems = buildAbilityItems(recordVOs, wrongThreshold);
+        List<InterviewDetailVO.WeakRecordVO> weakRecords = buildWeakRecords(recordVOs, wrongThreshold);
+        List<String> nextTasks = buildNextTasks(recordVOs, weakRecords);
 
         return InterviewDetailVO.builder()
                 .sessionId(sessionId)
@@ -348,9 +353,14 @@ public class InterviewServiceImpl implements InterviewService {
                 .status(session.getStatus())
                 .mode(session.getMode())
                 .totalScore(session.getTotalScore())
+                .isLowScore(scoreLessThan(session.getTotalScore(), wrongThreshold))
+                .scoreLevel(resolveScoreLevel(session.getTotalScore(), wrongThreshold))
                 .questionCount(session.getQuestionCount())
                 .startTime(session.getStartTime())
                 .endTime(session.getEndTime())
+                .abilityItems(abilityItems)
+                .weakRecords(weakRecords)
+                .nextTasks(nextTasks)
                 .records(recordVOs)
                 .build();
     }
@@ -604,6 +614,144 @@ public class InterviewServiceImpl implements InterviewService {
         return session.getIncludeResumeProject() != null && session.getIncludeResumeProject() == 1;
     }
 
+    private List<InterviewDetailVO.AbilityItemVO> buildAbilityItems(
+            List<InterviewDetailVO.InterviewRecordVO> records, BigDecimal wrongThreshold) {
+        LinkedHashMap<String, AbilityAccumulator> groups = new LinkedHashMap<>();
+        for (InterviewDetailVO.InterviewRecordVO record : records) {
+            if (record.getScoreBreakdown() == null || record.getScoreBreakdown().isEmpty()) {
+                continue;
+            }
+            for (InterviewAnswerVO.ScoreDimensionVO item : record.getScoreBreakdown()) {
+                if (item == null || !StringUtils.hasText(item.getDimension()) || item.getScore() == null) {
+                    continue;
+                }
+                AbilityAccumulator accumulator = groups.computeIfAbsent(item.getDimension().trim(), key -> new AbilityAccumulator());
+                accumulator.total += item.getScore();
+                accumulator.count += 1;
+                if (StringUtils.hasText(item.getSummary())) {
+                    accumulator.summaries.add(item.getSummary().trim());
+                }
+                if (record.getQuestionId() != null) {
+                    accumulator.sourceQuestionIds.add(String.valueOf(record.getQuestionId()));
+                }
+            }
+        }
+        if (groups.isEmpty()) {
+            List<BigDecimal> scores = records.stream()
+                    .map(InterviewDetailVO.InterviewRecordVO::getScore)
+                    .filter(Objects::nonNull)
+                    .toList();
+            if (scores.isEmpty()) {
+                return List.of();
+            }
+            BigDecimal average = scores.stream()
+                    .reduce(BigDecimal.ZERO, BigDecimal::add)
+                    .divide(BigDecimal.valueOf(scores.size()), 0, RoundingMode.HALF_UP);
+            return List.of(InterviewDetailVO.AbilityItemVO.builder()
+                    .dimension("综合表现")
+                    .score(average)
+                    .summary("基于问答得分自动汇总。")
+                    .isLowScore(scoreLessThan(average, wrongThreshold))
+                    .sourceQuestionIds(records.stream()
+                            .map(InterviewDetailVO.InterviewRecordVO::getQuestionId)
+                            .filter(Objects::nonNull)
+                            .map(String::valueOf)
+                            .toList())
+                    .build());
+        }
+        return groups.entrySet().stream()
+                .map(entry -> {
+                    AbilityAccumulator accumulator = entry.getValue();
+                    BigDecimal score = BigDecimal.valueOf(Math.round((double) accumulator.total / Math.max(1, accumulator.count)));
+                    return InterviewDetailVO.AbilityItemVO.builder()
+                            .dimension(entry.getKey())
+                            .score(score)
+                            .summary(accumulator.summaries.isEmpty() ? "暂无维度说明" : accumulator.summaries.get(0))
+                            .isLowScore(scoreLessThan(score, wrongThreshold))
+                            .sourceQuestionIds(new ArrayList<>(accumulator.sourceQuestionIds))
+                            .build();
+                })
+                .toList();
+    }
+
+    private List<InterviewDetailVO.WeakRecordVO> buildWeakRecords(
+            List<InterviewDetailVO.InterviewRecordVO> records, BigDecimal wrongThreshold) {
+        return records.stream()
+                .filter(record -> Boolean.TRUE.equals(record.getIsLowScore())
+                        || scoreLessThan(record.getScore(), wrongThreshold)
+                        || (record.getWeakPointTags() != null && !record.getWeakPointTags().isEmpty()))
+                .map(record -> InterviewDetailVO.WeakRecordVO.builder()
+                        .questionId(record.getQuestionId())
+                        .wrongQuestionId(record.getWrongQuestionId())
+                        .title(firstNonBlank(record.getQuestionTitle(), "当前题目"))
+                        .score(record.getScore())
+                        .comment(firstNonBlank(record.getComment(), "暂无点评"))
+                        .summary(firstNonBlank(record.getReviewSummary(), record.getComment()))
+                        .tags(record.getWeakPointTags() == null ? List.of() : record.getWeakPointTags())
+                        .isLowScore(Boolean.TRUE.equals(record.getIsLowScore()) || scoreLessThan(record.getScore(), wrongThreshold))
+                        .actionPath(record.getWrongQuestionId() == null
+                                ? (record.getQuestionId() == null ? "/question" : "/question/" + record.getQuestionId())
+                                : "/wrong")
+                        .build())
+                .toList();
+    }
+
+    private List<String> buildNextTasks(List<InterviewDetailVO.InterviewRecordVO> records,
+                                        List<InterviewDetailVO.WeakRecordVO> weakRecords) {
+        LinkedHashSet<String> tasks = new LinkedHashSet<>();
+        for (InterviewDetailVO.InterviewRecordVO record : records) {
+            if (StringUtils.hasText(record.getFollowUp())) {
+                tasks.add(record.getFollowUp().trim());
+            }
+            if (tasks.size() >= 5) {
+                return new ArrayList<>(tasks);
+            }
+        }
+        if (!tasks.isEmpty()) {
+            return new ArrayList<>(tasks);
+        }
+        for (InterviewDetailVO.WeakRecordVO weakRecord : weakRecords) {
+            if (weakRecord.getTags() != null && !weakRecord.getTags().isEmpty()) {
+                tasks.add("围绕「" + weakRecord.getTags().get(0) + "」补一轮专项训练。");
+            } else if (StringUtils.hasText(weakRecord.getTitle())) {
+                tasks.add("重做「" + weakRecord.getTitle() + "」并整理标准回答。");
+            }
+            if (tasks.size() >= 5) {
+                break;
+            }
+        }
+        return new ArrayList<>(tasks);
+    }
+
+    private boolean scoreLessThan(BigDecimal score, BigDecimal threshold) {
+        return score != null && threshold != null && score.compareTo(threshold) < 0;
+    }
+
+    private String resolveScoreLevel(BigDecimal score, BigDecimal wrongThreshold) {
+        if (score == null) {
+            return "no_score";
+        }
+        if (scoreLessThan(score, wrongThreshold)) {
+            return "low";
+        }
+        if (score.compareTo(BigDecimal.valueOf(80)) < 0) {
+            return "medium";
+        }
+        return "high";
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return "";
+        }
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value.trim();
+            }
+        }
+        return "";
+    }
+
     private String mergeTechStack(String requestTechStack, String contextTechStack) {
         if (!StringUtils.hasText(requestTechStack)) {
             return contextTechStack;
@@ -783,4 +931,10 @@ public class InterviewServiceImpl implements InterviewService {
         }
     }
 
+    private static class AbilityAccumulator {
+        private int total;
+        private int count;
+        private final List<String> summaries = new ArrayList<>();
+        private final LinkedHashSet<String> sourceQuestionIds = new LinkedHashSet<>();
+    }
 }

@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS agent_run (
     context_refs_json TEXT DEFAULT NULL,
     stream_mode VARCHAR(32) DEFAULT NULL,
     result_payload_json TEXT DEFAULT NULL,
+    tool_call_telemetry_json TEXT DEFAULT NULL,
     next_action_path VARCHAR(255) DEFAULT NULL,
     requires_approval TINYINT NOT NULL DEFAULT 0,
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

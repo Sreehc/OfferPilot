@@ -2,6 +2,7 @@ package com.offerpilot.adaptive.controller;
 
 import com.offerpilot.adaptive.service.AdaptiveService;
 import com.offerpilot.adaptive.vo.AbilityProfileVO;
+import com.offerpilot.adaptive.vo.AdaptiveRecommendationVO;
 import com.offerpilot.adaptive.vo.RecommendInterviewVO;
 import com.offerpilot.adaptive.vo.RecommendQuestionsVO;
 import com.offerpilot.common.api.Result;
@@ -37,6 +38,13 @@ public class RecommendController {
     public Result<List<RecommendQuestionsVO>> questions(
             @Parameter(description = "数量限制") @RequestParam(defaultValue = "10") int limit) {
         return Result.success(adaptiveService.getRecommendQuestions(currentUserId(), limit));
+    }
+
+    @Operation(summary = "统一推荐", description = "返回后端统一排序的训练、面试、计划和画像推荐")
+    @GetMapping("/recommendations")
+    public Result<List<AdaptiveRecommendationVO>> recommendations(
+            @Parameter(description = "数量限制") @RequestParam(defaultValue = "6") int limit) {
+        return Result.success(adaptiveService.getRecommendations(currentUserId(), limit));
     }
 
     @Operation(summary = "推荐面试", description = "返回推荐面试方向和题目数量")

@@ -15,4 +15,6 @@ public class ChatMessage extends BaseEntity {
     private String messageType;
     private String content;
     private String referenceJson;
+    private String feedback;
+    private String clientMessageId;
 }

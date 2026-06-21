@@ -298,20 +298,11 @@ public class JobApplicationServiceImpl implements JobApplicationService {
         List<JobApplicationEvent> rawEvents = loadEvents(application.getId());
         List<JobApplicationEventVO> events = includeEvents
                 ? rawEvents.stream()
-                        .map(event -> JobApplicationEventVO.builder()
-                                .id(event.getId())
-                                .eventType(event.getEventType())
-                                .title(event.getTitle())
-                                .content(event.getContent())
-                                .eventTime(event.getEventTime())
-                                .result(event.getResult())
-                                .interviewRound(event.getInterviewRound())
-                                .interviewer(event.getInterviewer())
-                                .feedbackTags(splitComma(event.getFeedbackTags()))
-                                .build())
+                        .map(this::toEventVO)
                         .toList()
                 : List.of();
         StrategyDraftSnapshot strategyDraft = extractStrategyDraft(rawEvents);
+        JobApplicationEventVO latestEvent = rawEvents.isEmpty() ? null : toEventVO(rawEvents.get(0));
 
         return JobApplicationVO.builder()
                 .id(application.getId())
@@ -323,12 +314,17 @@ public class JobApplicationServiceImpl implements JobApplicationService {
                 .source(application.getSource())
                 .jdText(application.getJdText())
                 .status(application.getStatus())
+                .kanbanStatus(kanbanStatus(application.getStatus()))
+                .statusLabel(statusLabel(application.getStatus()))
                 .matchScore(application.getMatchScore())
+                .matchScoreDisplay(matchScoreDisplay(application.getMatchScore()))
                 .jdKeywords(splitComma(application.getJdKeywords()))
                 .missingKeywords(splitComma(application.getMissingKeywords()))
                 .analysisSummary(application.getAnalysisSummary())
                 .reviewSuggestion(application.getReviewSuggestion())
                 .nextStepSuggestion(application.getNextStepSuggestion())
+                .nextAction(firstNonBlank(application.getNextStepSuggestion(), application.getReviewSuggestion(), application.getAnalysisSummary()))
+                .latestEvent(latestEvent)
                 .hasStrategyDraft(strategyDraft != null)
                 .strategyDraftSummary(strategyDraft == null ? null : strategyDraft.summary())
                 .strategyDraftActions(strategyDraft == null ? List.of() : strategyDraft.actions())
@@ -337,6 +333,20 @@ public class JobApplicationServiceImpl implements JobApplicationService {
                 .nextStepDate(application.getNextStepDate())
                 .updateTime(application.getUpdateTime())
                 .events(events)
+                .build();
+    }
+
+    private JobApplicationEventVO toEventVO(JobApplicationEvent event) {
+        return JobApplicationEventVO.builder()
+                .id(event.getId())
+                .eventType(event.getEventType())
+                .title(event.getTitle())
+                .content(event.getContent())
+                .eventTime(event.getEventTime())
+                .result(event.getResult())
+                .interviewRound(event.getInterviewRound())
+                .interviewer(event.getInterviewer())
+                .feedbackTags(splitComma(event.getFeedbackTags()))
                 .build();
     }
 
@@ -457,14 +467,35 @@ public class JobApplicationServiceImpl implements JobApplicationService {
 
     private String normalizeStatus(String status) {
         String normalized = status == null ? "" : status.trim().toLowerCase(Locale.ROOT);
+        normalized = switch (normalized) {
+            case "saved", "draft" -> "saved";
+            case "applied" -> "applied";
+            case "screening", "written" -> "written";
+            case "interview", "interviewing" -> "interview";
+            case "offer" -> "offer";
+            case "rejected", "closed" -> "rejected";
+            default -> normalized;
+        };
         if (!List.of("saved", "applied", "written", "interview", "offer", "rejected").contains(normalized)) {
             throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "unsupported application status");
         }
         return normalized;
     }
 
+    private String kanbanStatus(String status) {
+        return switch (status == null ? "" : status.trim().toLowerCase(Locale.ROOT)) {
+            case "saved" -> "SAVED";
+            case "applied" -> "APPLIED";
+            case "written" -> "SCREENING";
+            case "interview" -> "INTERVIEW";
+            case "offer" -> "OFFER";
+            case "rejected" -> "REJECTED";
+            default -> "UNKNOWN";
+        };
+    }
+
     private String statusLabel(String status) {
-        return switch (status) {
+        return switch (status == null ? "" : status) {
             case "saved" -> "待投递";
             case "applied" -> "已投递";
             case "written" -> "笔试 / 作业";
@@ -473,6 +504,10 @@ public class JobApplicationServiceImpl implements JobApplicationService {
             case "rejected" -> "已淘汰";
             default -> status;
         };
+    }
+
+    private String matchScoreDisplay(BigDecimal matchScore) {
+        return matchScore == null ? "-" : matchScore.stripTrailingZeros().toPlainString();
     }
 
     private List<String> splitComma(String raw) {

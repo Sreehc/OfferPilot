@@ -9,6 +9,7 @@ import lombok.Data;
 @Builder
 public class ChatSendVO {
     private Long sessionId;
+    private String clientMessageId;
     private String sessionTitle;
     private String answer;
     private String answerMode;

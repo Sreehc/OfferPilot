@@ -44,7 +44,7 @@ class UserProviderConfigServiceImplTest {
         llmConfig.setUserId(1L);
         llmConfig.setProviderScope("llm");
         llmConfig.setEnabled(Boolean.TRUE);
-        llmConfig.setBaseUrl("https://api.example.com/v1");
+        llmConfig.setBaseUrl("not-a-valid-url");
         llmConfig.setModel("gpt-4.1-mini");
         llmConfig.setApiKeyCiphertext(crypto.encrypt("secret-key"));
 
@@ -68,8 +68,8 @@ class UserProviderConfigServiceImplTest {
                     .filter(item -> "llm".equals(item.getScope()))
                     .findFirst()
                     .orElseThrow();
-            assertEquals("ready", llm.getStatus());
-            assertTrue(llm.getStatusMessage().contains("可供对应能力使用"));
+            assertEquals("failed", llm.getStatus());
+            assertTrue(llm.getStatusMessage().contains("无法连接"));
 
             UserProviderConfigItemVO asr = result.stream()
                     .filter(item -> "asr".equals(item.getScope()))

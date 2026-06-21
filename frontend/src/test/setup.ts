@@ -14,6 +14,9 @@ Object.defineProperty(window, 'matchMedia', {
   })
 })
 
+const originalGetComputedStyle = window.getComputedStyle.bind(window)
+window.getComputedStyle = ((element: Element) => originalGetComputedStyle(element)) as typeof window.getComputedStyle
+
 class ResizeObserverMock {
   observe() {}
   unobserve() {}
@@ -21,3 +24,14 @@ class ResizeObserverMock {
 }
 
 window.ResizeObserver = ResizeObserverMock
+
+class IntersectionObserverMock {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() {
+    return []
+  }
+}
+
+window.IntersectionObserver = IntersectionObserverMock as unknown as typeof window.IntersectionObserver

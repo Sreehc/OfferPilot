@@ -373,7 +373,7 @@ class AnalyticsServiceImplTest {
         assertTrue(detail.getFocusRecommendations().stream()
                 .anyMatch(item -> item.contains("岗位化表达")));
         assertTrue(detail.getFocusRecommendations().stream()
-                .anyMatch(item -> item.contains("实时 Copilot") || item.contains("实时追问")));
+                .anyMatch(item -> item.contains("JD 备面") || item.contains("Copilot Prep")));
         assertTrue(detail.getFocusRecommendations().stream()
                 .anyMatch(item -> item.contains("投递反馈缺口")));
         assertTrue(detail.getFocusRecommendations().stream()

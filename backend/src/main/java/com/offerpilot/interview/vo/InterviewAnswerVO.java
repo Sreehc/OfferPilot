@@ -2,8 +2,10 @@ package com.offerpilot.interview.vo;
 
 import java.math.BigDecimal;
 import java.util.List;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
@@ -20,6 +22,8 @@ public class InterviewAnswerVO {
 
     @Data
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class ScoreDimensionVO {
         private String dimension;
         private Integer score;

@@ -3,6 +3,7 @@ package com.offerpilot.adaptive.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.offerpilot.adaptive.service.AdaptiveService;
 import com.offerpilot.adaptive.vo.AbilityProfileVO;
+import com.offerpilot.adaptive.vo.AdaptiveRecommendationVO;
 import com.offerpilot.adaptive.vo.CategoryAbilityVO;
 import com.offerpilot.adaptive.vo.RecommendInterviewVO;
 import com.offerpilot.adaptive.vo.RecommendQuestionsVO;
@@ -32,6 +33,8 @@ import com.offerpilot.resume.mapper.ResumeProjectMapper;
 import com.offerpilot.wrong.mapper.WrongQuestionMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -216,6 +219,98 @@ public class AdaptiveServiceImpl implements AdaptiveService {
         }
 
         return recommendations;
+    }
+
+    @Override
+    public List<AdaptiveRecommendationVO> getRecommendations(Long userId, int limit) {
+        int normalizedLimit = Math.max(1, Math.min(limit, 20));
+        AbilityProfileVO profile = getAbilityProfile(userId);
+        List<String> weakCategories = profile.getWeakCategories() == null ? List.of() : profile.getWeakCategories();
+        String focus = firstNonBlank(profile.getSuggestedFocus(), weakCategories.isEmpty() ? null : weakCategories.get(0));
+        String difficulty = profile.getRecommendedDifficulty();
+        List<AdaptiveRecommendationVO> items = new ArrayList<>();
+
+        List<RecommendQuestionsVO> questions = getRecommendQuestions(userId, Math.min(3, normalizedLimit));
+        for (int index = 0; index < questions.size(); index++) {
+            RecommendQuestionsVO question = questions.get(index);
+            String weakPoint = firstNonBlank(question.getCategoryName(), focus, "能力画像");
+            String targetPath = question.getQuestionId() == null ? "/question" : "/question/" + question.getQuestionId();
+            int priority = isWeakPoint(weakPoint, weakCategories) ? 100 - index : 78 - index;
+            items.add(AdaptiveRecommendationVO.builder()
+                    .id("question-" + firstNonBlank(stringValue(question.getQuestionId()), String.valueOf(index + 1)))
+                    .type("question")
+                    .title(firstNonBlank(question.getTitle(), "推荐题目"))
+                    .reason(firstNonBlank(question.getReason(), "基于能力画像和近期训练记录推荐这道题。"))
+                    .weakPoint(weakPoint)
+                    .priority(priority)
+                    .actionPath(targetPath)
+                    .targetPath(targetPath)
+                    .actionLabel("去刷题")
+                    .tone(question.getDifficulty())
+                    .sourceIds(sourceIds(
+                            question.getQuestionId() == null ? null : "question:" + question.getQuestionId(),
+                            question.getCategoryId() == null ? null : "category:" + question.getCategoryId()))
+                    .build());
+        }
+
+        RecommendInterviewVO interview = getRecommendInterview(userId);
+        if (org.springframework.util.StringUtils.hasText(interview.getDirection())) {
+            String direction = interview.getDirection();
+            String targetPath = "/interview?direction=" + encode(direction);
+            items.add(AdaptiveRecommendationVO.builder()
+                    .id("interview-" + encode(direction))
+                    .type("interview")
+                    .title(direction)
+                    .reason(firstNonBlank(interview.getReason(), "基于当前薄弱项推荐一次专项模拟面试。"))
+                    .weakPoint(firstNonBlank(focus, direction))
+                    .priority(isWeakPoint(direction, weakCategories) || isWeakPoint(focus, weakCategories) ? 92 : 72)
+                    .actionPath(targetPath)
+                    .targetPath(targetPath)
+                    .actionLabel("启动面试")
+                    .tone(interview.getDifficulty())
+                    .sourceIds(sourceIds("interview:" + direction))
+                    .build());
+        }
+
+        if (org.springframework.util.StringUtils.hasText(focus) || !weakCategories.isEmpty()) {
+            String weakPoint = firstNonBlank(focus, weakCategories.isEmpty() ? null : weakCategories.get(0), "能力画像");
+            items.add(AdaptiveRecommendationVO.builder()
+                    .id("study-plan")
+                    .type("study_plan")
+                    .title("生成专项学习计划")
+                    .reason("围绕 " + weakPoint + " 更新今日训练任务。")
+                    .weakPoint(weakPoint)
+                    .priority(86)
+                    .actionPath("/study-plan")
+                    .targetPath("/study-plan")
+                    .actionLabel("查看计划")
+                    .tone(difficulty)
+                    .sourceIds(sourceIds("profile:" + weakPoint))
+                    .build());
+            items.add(AdaptiveRecommendationVO.builder()
+                    .id("profile")
+                    .type("profile")
+                    .title("查看能力画像")
+                    .reason(firstNonBlank(profile.getEvidenceSummary(), "查看长期能力画像，确认推荐依据和薄弱项变化。"))
+                    .weakPoint(weakPoint)
+                    .priority(68)
+                    .actionPath("/analytics")
+                    .targetPath("/analytics")
+                    .actionLabel("查看画像")
+                    .tone(difficulty)
+                    .sourceIds(sourceIds("profile:ability"))
+                    .build());
+        }
+
+        List<AdaptiveRecommendationVO> ranked = items.stream()
+                .sorted(Comparator.comparing(AdaptiveRecommendationVO::getPriority, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(AdaptiveRecommendationVO::getId, Comparator.nullsLast(String::compareTo)))
+                .limit(normalizedLimit)
+                .toList();
+        for (int index = 0; index < ranked.size(); index++) {
+            ranked.get(index).setRank(index + 1);
+        }
+        return ranked;
     }
 
     @Override
@@ -767,6 +862,47 @@ public class AdaptiveServiceImpl implements AdaptiveService {
 
     private String normalize(String value) {
         return value == null ? "" : value.trim().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    private boolean isWeakPoint(String value, List<String> weakCategories) {
+        if (!org.springframework.util.StringUtils.hasText(value) || weakCategories == null) {
+            return false;
+        }
+        String normalized = normalize(value);
+        return weakCategories.stream()
+                .filter(org.springframework.util.StringUtils::hasText)
+                .map(this::normalize)
+                .anyMatch(item -> item.equals(normalized));
+    }
+
+    private String encode(String value) {
+        return URLEncoder.encode(value == null ? "" : value, StandardCharsets.UTF_8).replace("+", "%20");
+    }
+
+    private String stringValue(Object value) {
+        return value == null ? null : String.valueOf(value);
+    }
+
+    private List<String> sourceIds(String... values) {
+        if (values == null) {
+            return List.of();
+        }
+        return java.util.Arrays.stream(values)
+                .filter(org.springframework.util.StringUtils::hasText)
+                .distinct()
+                .toList();
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return "";
+        }
+        for (String value : values) {
+            if (org.springframework.util.StringUtils.hasText(value)) {
+                return value.trim();
+            }
+        }
+        return "";
     }
 
     private String nullSafe(String value) {

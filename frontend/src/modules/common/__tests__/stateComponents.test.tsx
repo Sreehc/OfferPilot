@@ -1,11 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
 import { Button, Space } from 'antd'
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { useLocation } from 'react-router-dom'
 import { StateView } from '@/components/feedback/StateView'
 import { ModulePage } from '../ModulePage'
-import { DataListCard } from '../DataViews'
+import { DataListCard, DataTableCard } from '../DataViews'
 import { renderWithProviders } from '@/test/renderWithProviders'
+
+function LocationProbe() {
+  const location = useLocation()
+  return <div data-testid="location-search">{location.search}</div>
+}
 
 describe('common page state components', () => {
   it('renders an empty state with a business next action', () => {
@@ -94,5 +100,49 @@ describe('common page state components', () => {
     expect(screen.getByText('暂无行动')).toBeInTheDocument()
     expect(screen.getByText('完成一次刷题或面试后会出现在这里。')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '去刷题' })).toBeInTheDocument()
+  })
+
+  it('syncs table pagination to URL and renders a mobile card alternative', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(
+      <>
+        <LocationProbe />
+        <DataTableCard
+          title="训练记录"
+          data={[
+            { id: 1, title: 'Redis 缓存击穿', status: 'reviewing', owner: '小陈' },
+            { id: 2, title: '线程池参数', status: 'done', owner: '小李' },
+            { id: 3, title: 'JVM GC 日志', status: 'pending', owner: '小王' }
+          ]}
+          columns={[
+            { title: '题目', dataIndex: 'title' },
+            { title: '状态', dataIndex: 'status' },
+            { title: '负责人', dataIndex: 'owner' }
+          ]}
+          urlStateKey="training"
+          mobilePrimaryKey="title"
+          mobileFieldKeys={['status', 'owner']}
+          pageSize={2}
+        />
+      </>,
+      { route: '/review?trainingPage=2' }
+    )
+
+    expect(screen.getAllByText('JVM GC 日志')).toHaveLength(2)
+    expect(screen.queryByText('Redis 缓存击穿')).not.toBeInTheDocument()
+
+    await user.click(screen.getByTitle('上一页'))
+
+    expect(screen.getByTestId('location-search')).toHaveTextContent('trainingPage=1')
+    expect(screen.getAllByText('Redis 缓存击穿')).toHaveLength(2)
+
+    const mobileRegion = screen.getByRole('region', { name: '训练记录移动端卡片视图' })
+    const cards = within(mobileRegion).getAllByRole('article')
+    expect(cards).toHaveLength(2)
+    expect(within(cards[0]).getByText('Redis 缓存击穿')).toBeInTheDocument()
+    expect(within(cards[0]).getByText('状态')).toBeInTheDocument()
+    expect(within(cards[0]).getByText('reviewing')).toBeInTheDocument()
+    expect(within(cards[0]).getByText('负责人')).toBeInTheDocument()
+    expect(within(cards[0]).getByText('小陈')).toBeInTheDocument()
   })
 })

@@ -3,6 +3,7 @@ package com.offerpilot.admin.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.offerpilot.admin.dto.AdminErrorReasonBucketVO;
 import com.offerpilot.admin.dto.AdminAiLogSummaryVO;
 import com.offerpilot.admin.dto.AdminAiLogVO;
 import com.offerpilot.admin.dto.AdminSystemConfigHistoryVO;
@@ -112,6 +113,22 @@ public class AdminAiGovernanceServiceImpl implements AdminAiGovernanceService {
                         .mapToLong(Long::longValue)
                         .average()
                         .orElse(0));
+        long latencyP95 = percentileLatency(recentLogs, 0.95);
+        List<AdminErrorReasonBucketVO> errorReasonBuckets = allLogs.stream()
+                .filter(logEntry -> Integer.valueOf(0).equals(logEntry.getSuccess()))
+                .map(AiCallLog::getErrorMessage)
+                .filter(StringUtils::hasText)
+                .map(String::trim)
+                .collect(java.util.stream.Collectors.groupingBy(Function.identity(), LinkedHashMap::new, java.util.stream.Collectors.counting()))
+                .entrySet()
+                .stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .limit(6)
+                .map(entry -> AdminErrorReasonBucketVO.builder()
+                        .reason(entry.getKey())
+                        .count(entry.getValue())
+                        .build())
+                .toList();
         long promptTokens = allLogs.stream().mapToLong(this::readPromptTokens).sum();
         long completionTokens = allLogs.stream().mapToLong(this::readCompletionTokens).sum();
         long totalTokens = allLogs.stream().mapToLong(this::readTotalTokens).sum();
@@ -119,19 +136,24 @@ public class AdminAiGovernanceServiceImpl implements AdminAiGovernanceService {
                 .map(AiCallLog::getEstimatedCost)
                 .filter(java.util.Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+        AdminUsageSummaryVO usageSummary = AdminUsageSummaryVO.builder()
+                .promptTokens(promptTokens)
+                .completionTokens(completionTokens)
+                .totalTokens(totalTokens)
+                .estimatedCost(estimatedCost)
+                .build();
         return AdminAiLogSummaryVO.builder()
                 .totalCalls(total)
                 .successCalls(success)
                 .failedCalls(failed)
+                .failureRate(total == 0 ? 0.0 : Math.round((failed * 10000.0 / total)) / 100.0)
                 .avgLatencyMs(avgLatency)
+                .latencyP95Ms(latencyP95)
                 .chatCalls(chatCalls)
                 .embeddingCalls(embeddingCalls)
-                .usageSummary(AdminUsageSummaryVO.builder()
-                        .promptTokens(promptTokens)
-                        .completionTokens(completionTokens)
-                        .totalTokens(totalTokens)
-                        .estimatedCost(estimatedCost)
-                        .build())
+                .errorReasonBuckets(errorReasonBuckets)
+                .usageSummary(usageSummary)
+                .costSummary(usageSummary)
                 .build();
     }
 
@@ -253,6 +275,19 @@ public class AdminAiGovernanceServiceImpl implements AdminAiGovernanceService {
             return logEntry.getTotalTokens();
         }
         return readPromptTokens(logEntry) + readCompletionTokens(logEntry);
+    }
+
+    private long percentileLatency(List<AiCallLog> logs, double percentile) {
+        List<Long> latencies = logs.stream()
+                .map(AiCallLog::getLatencyMs)
+                .filter(value -> value != null && value >= 0)
+                .sorted()
+                .toList();
+        if (latencies.isEmpty()) {
+            return 0;
+        }
+        int index = Math.min(latencies.size() - 1, Math.max(0, (int) Math.ceil(latencies.size() * percentile) - 1));
+        return latencies.get(index);
     }
 
     private Map<String, ConfigDefinition> knownConfigs() {

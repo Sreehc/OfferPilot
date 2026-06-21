@@ -1,14 +1,17 @@
 package com.offerpilot.chat.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import java.util.List;
 import lombok.Data;
 
 @Data
 public class ChatSendRequest {
     private Long sessionId;
 
+    private String clientMessageId;
+
     @NotBlank(message = "cannot be blank")
-    private String mode;
+    private String mode = "chat";
 
     @NotBlank(message = "cannot be blank")
     private String answerMode = "learning";
@@ -30,4 +33,6 @@ public class ChatSendRequest {
 
     @NotBlank(message = "cannot be blank")
     private String message;
+
+    private List<String> attachmentIds;
 }

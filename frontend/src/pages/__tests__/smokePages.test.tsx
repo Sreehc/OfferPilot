@@ -10,6 +10,11 @@ import { ApplicationBoardPage } from '@/pages/applications/ApplicationBoardPage'
 import { AdminPage } from '@/pages/admin/AdminPage'
 
 vi.mock('@/api/modules/dashboard', () => ({ fetchDashboardOverviewApi: vi.fn(() => Promise.resolve({ data: {} })) }))
+vi.mock('@/api/modules/adaptive', () => ({
+  fetchAbilityProfileApi: vi.fn(() => Promise.resolve({ data: {} })),
+  fetchRecommendQuestionsApi: vi.fn(() => Promise.resolve({ data: [] })),
+  fetchRecommendInterviewApi: vi.fn(() => Promise.resolve({ data: {} }))
+}))
 vi.mock('@/api/modules/chat', () => ({
   fetchChatSessionsApi: vi.fn(() => Promise.resolve({ data: [] })),
   fetchChatMessagesApi: vi.fn(() => Promise.resolve({ data: [] })),
@@ -31,7 +36,9 @@ vi.mock('@/api/modules/interview', () => ({
   startInterviewApi: vi.fn(() => Promise.resolve({ data: {} })),
   createJobPrepSessionApi: vi.fn(() => Promise.resolve({ data: {} })),
   createCopilotPrepSessionApi: vi.fn(() => Promise.resolve({ data: {} })),
-  createCopilotRealtimeSessionApi: vi.fn(() => Promise.resolve({ data: {} }))
+  createCopilotRealtimeSessionApi: vi.fn(() => Promise.resolve({ data: {} })),
+  startVoiceInterviewApi: vi.fn(() => Promise.resolve({ data: {} })),
+  createRecordingReviewApi: vi.fn(() => Promise.resolve({ data: {} }))
 }))
 vi.mock('@/api/modules/resume', () => ({
   fetchResumeListApi: vi.fn(() => Promise.resolve({ data: [] })),

@@ -101,6 +101,9 @@ class InterviewServiceImplTest {
         Field selfField = InterviewServiceImpl.class.getDeclaredField("self");
         selfField.setAccessible(true);
         selfField.set(interviewService, interviewService);
+
+        lenient().when(wrongQuestionMapper.selectList(any())).thenReturn(List.of());
+        lenient().when(voiceRecordMapper.selectList(any())).thenReturn(List.of());
     }
 
     @Test
@@ -224,6 +227,12 @@ class InterviewServiceImplTest {
         InterviewRecord record = makeRecord(100L, 1L, 10L);
         record.setScore(new BigDecimal("75"));
         record.setComment("Good");
+        record.setFollowUp("补一轮 IOC 生命周期复盘。");
+        record.setWeakPointTags("表达结构");
+        record.setScoreDimensionsJson("""
+                [{"dimension":"表达结构","score":72,"summary":"结构基本完整"},
+                 {"dimension":"工程深度","score":78,"summary":"能结合项目说明"}]
+                """);
         when(recordMapper.selectList(any())).thenReturn(List.of(record));
 
         Question question = new Question();
@@ -238,6 +247,14 @@ class InterviewServiceImplTest {
         assertEquals(new BigDecimal("75"), result.getTotalScore());
         assertEquals(1, result.getRecords().size());
         assertEquals("What is Spring IOC?", result.getRecords().get(0).getQuestionTitle());
+        assertEquals("medium", result.getScoreLevel());
+        assertFalse(result.getIsLowScore());
+        assertEquals(2, result.getAbilityItems().size());
+        assertEquals("表达结构", result.getAbilityItems().get(0).getDimension());
+        assertEquals(new BigDecimal("72"), result.getAbilityItems().get(0).getScore());
+        assertEquals(1, result.getWeakRecords().size());
+        assertEquals("表达结构", result.getWeakRecords().get(0).getTags().get(0));
+        assertEquals(List.of("补一轮 IOC 生命周期复盘。"), result.getNextTasks());
     }
 
     private InterviewSession makeSession(String status, int questionCount, int currentIndex) {

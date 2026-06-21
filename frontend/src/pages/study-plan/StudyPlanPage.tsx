@@ -4,10 +4,19 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchCurrentStudyPlanApi, generateStudyPlanApi, refreshStudyPlanApi, updateStudyPlanTaskStatusApi } from '@/api/modules/plan'
 import { getErrorMessage } from '@/api/client'
+import { AdaptiveRecommendationsPanel } from '@/components/adaptive/AdaptiveRecommendationsPanel'
 import { DataTableCard, normalizeRecords, pickText, StatusTag } from '@/modules/common'
 import { ModulePage } from '@/modules/common'
 
 function taskRoute(row: Record<string, any>): string {
+  const actionPath = pickText(row, ['actionPath', 'targetPath', 'path'], '')
+  if (actionPath && actionPath !== '-') return actionPath
+  const targetType = pickText(row, ['targetType', 'module', 'type'], '').toLowerCase()
+  if (targetType.includes('interview') || targetType.includes('recording')) return '/interview'
+  if (targetType.includes('review')) return '/review'
+  if (targetType.includes('resume')) return '/resume'
+  if (targetType.includes('chat')) return '/chat'
+  if (targetType.includes('analytics') || targetType.includes('topic')) return '/analytics'
   const hint = `${pickText(row, ['category', 'focusDirection', 'type', 'title', 'name'], '')}`
   if (/面试|interview/i.test(hint)) return '/interview'
   if (/复习|review/i.test(hint)) return '/review'
@@ -40,6 +49,7 @@ export function StudyPlanPage() {
       ]}
       actions={<Space><Button type="primary" onClick={() => setOpen(true)}>生成计划</Button><Button loading={refresh.isPending} disabled={!(plan.data as any)?.id && !(plan.data as any)?.planId} onClick={() => refresh.mutate()}>刷新</Button></Space>}
     >
+      <AdaptiveRecommendationsPanel />
       <div className="workspace-grid two">
         <Card title="完成进度" className="surface-card"><Progress percent={percent} /><p className="muted-text">完成 {done} / {tasks.length} 个任务。</p></Card>
         <DataTableCard
@@ -51,9 +61,9 @@ export function StudyPlanPage() {
           emptyTitle="还没有学习计划，点击右上角“生成计划”开始"
           columns={[
             { title: '任务', render: (_, row) => pickText(row, ['title', 'name', 'taskName'], '学习任务') },
-            { title: '方向', render: (_, row) => pickText(row, ['category', 'focusDirection', 'type']) },
+            { title: '方向', render: (_, row) => pickText(row, ['targetType', 'module', 'category', 'focusDirection', 'type']) },
             { title: '状态', render: (_, row) => <StatusTag value={pickText(row, ['status'])} /> },
-            { title: '操作', render: (_, row) => <Space wrap><Button size="small" type="primary" onClick={() => navigate(taskRoute(row))}>去练习</Button><Button size="small" onClick={() => updateTask.mutate({ id: String(row.id || row.taskId), status: 'completed' })}>完成</Button><Button size="small" onClick={() => updateTask.mutate({ id: String(row.id || row.taskId), status: 'in_progress' })}>进行中</Button><Button size="small" onClick={() => updateTask.mutate({ id: String(row.id || row.taskId), status: 'not_started' })}>重置</Button></Space> }
+            { title: '操作', render: (_, row) => <Space wrap><Button size="small" type="primary" onClick={() => navigate(taskRoute(row))}>去练习</Button><Button size="small" onClick={() => updateTask.mutate({ id: String(row.id || row.taskId), status: 'completed' })}>完成</Button><Button size="small" onClick={() => updateTask.mutate({ id: String(row.id || row.taskId), status: 'pending' })}>重置</Button></Space> }
           ]}
         />
       </div>

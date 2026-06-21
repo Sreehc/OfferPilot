@@ -8,6 +8,7 @@ import com.offerpilot.chat.entity.ChatSession;
 import com.offerpilot.chat.mapper.ChatMessageMapper;
 import com.offerpilot.chat.mapper.ChatSessionMapper;
 import com.offerpilot.chat.service.ChatService;
+import com.offerpilot.chat.vo.ChatAttachmentVO;
 import com.offerpilot.chat.vo.ChatMessageReferenceVO;
 import com.offerpilot.chat.vo.ChatMessageVO;
 import com.offerpilot.chat.vo.ChatSendVO;
@@ -16,6 +17,10 @@ import com.offerpilot.common.vo.ContextSourceVO;
 import com.offerpilot.common.api.ResultCode;
 import com.offerpilot.common.dto.PageResult;
 import com.offerpilot.common.exception.BusinessException;
+import com.offerpilot.common.storage.FileStorageService;
+import com.offerpilot.common.storage.StorageDirectory;
+import com.offerpilot.common.storage.StoredFile;
+import com.offerpilot.common.storage.UploadPolicyService;
 import com.offerpilot.resume.entity.ResumeFile;
 import com.offerpilot.resume.entity.ResumeProject;
 import com.offerpilot.resume.mapper.ResumeFileMapper;
@@ -23,9 +28,11 @@ import com.offerpilot.resume.mapper.ResumeProjectMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -35,6 +42,7 @@ import org.springframework.util.StringUtils;
 @Service
 @RequiredArgsConstructor
 public class ChatServiceImpl implements ChatService {
+    private static final int CLIENT_MESSAGE_LOCK_STRIPES = 256;
 
     private final ChatSessionMapper chatSessionMapper;
     private final ChatMessageMapper chatMessageMapper;
@@ -42,6 +50,9 @@ public class ChatServiceImpl implements ChatService {
     private final ObjectMapper objectMapper;
     private final ResumeFileMapper resumeFileMapper;
     private final ResumeProjectMapper resumeProjectMapper;
+    private final FileStorageService fileStorageService;
+    private final UploadPolicyService uploadPolicyService;
+    private final Object[] clientMessageLocks = createClientMessageLocks();
 
     @Lazy
     @org.springframework.beans.factory.annotation.Autowired
@@ -49,20 +60,28 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public ChatSendVO send(Long userId, ChatSendRequest request) {
+        return withClientMessageLock(userId, request, () -> sendInternal(userId, request));
+    }
+
+    private ChatSendVO sendInternal(Long userId, ChatSendRequest request) {
         request.setUserId(userId);
         ChatContextSnapshot contextSnapshot = resolveContext(userId, request.getMode(), request.getKnowledgeScope(),
                 request.getResumeId(), request.getProjectId());
         applyResolvedContext(request, contextSnapshot);
         // Phase 1: persist user message in its own transaction (via proxy)
-        ChatSession session = self.persistUserMessage(userId, request);
+        PersistedChatTurn turn = self.persistUserMessage(userId, request);
+        if (turn.existingAssistantMessage() != null) {
+            return toExistingSendVO(turn.session(), request, contextSnapshot, turn.existingAssistantMessage());
+        }
 
         // Phase 2: call LLM outside any transaction
         ChatSendVO result = aiOrchestratorService.answerChat(request);
 
         // Phase 3: persist assistant message and update session (via proxy)
-        self.persistAssistantMessage(session, userId, result);
-        result.setSessionId(session.getId());
-        result.setSessionTitle(session.getTitle());
+        self.persistAssistantMessage(turn.session(), userId, result, request.getClientMessageId());
+        result.setSessionId(turn.session().getId());
+        result.setClientMessageId(request.getClientMessageId());
+        result.setSessionTitle(turn.session().getTitle());
         result.setContextType(contextSnapshot.type());
         result.setContextSource(contextSnapshot.source());
         return result;
@@ -70,12 +89,23 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public ChatSendVO streamChat(Long userId, ChatSendRequest request, Consumer<String> onToken) {
+        return withClientMessageLock(userId, request, () -> streamChatInternal(userId, request, onToken));
+    }
+
+    private ChatSendVO streamChatInternal(Long userId, ChatSendRequest request, Consumer<String> onToken) {
         request.setUserId(userId);
         ChatContextSnapshot contextSnapshot = resolveContext(userId, request.getMode(), request.getKnowledgeScope(),
                 request.getResumeId(), request.getProjectId());
         applyResolvedContext(request, contextSnapshot);
         // Phase 1: persist user message
-        ChatSession session = self.persistUserMessage(userId, request);
+        PersistedChatTurn turn = self.persistUserMessage(userId, request);
+        if (turn.existingAssistantMessage() != null) {
+            ChatSendVO existing = toExistingSendVO(turn.session(), request, contextSnapshot, turn.existingAssistantMessage());
+            if (StringUtils.hasText(existing.getAnswer())) {
+                onToken.accept(existing.getAnswer());
+            }
+            return existing;
+        }
 
         // Phase 2: stream LLM response, accumulating full answer
         StringBuilder fullAnswer = new StringBuilder();
@@ -88,8 +118,9 @@ public class ChatServiceImpl implements ChatService {
 
         // Phase 3: persist the complete assistant message
         ChatSendVO result = ChatSendVO.builder()
-                .sessionId(session.getId())
-                .sessionTitle(session.getTitle())
+                .sessionId(turn.session().getId())
+                .clientMessageId(request.getClientMessageId())
+                .sessionTitle(turn.session().getTitle())
                 .answer(fullAnswer.toString())
                 .answerMode(request.getAnswerMode())
                 .knowledgeScope(request.getKnowledgeScope())
@@ -97,26 +128,55 @@ public class ChatServiceImpl implements ChatService {
                 .contextSource(contextSnapshot.source())
                 .references(references)
                 .build();
-        self.persistAssistantMessage(session, userId, result);
+        self.persistAssistantMessage(turn.session(), userId, result, request.getClientMessageId());
 
         return result;
     }
 
+    private ChatSendVO withClientMessageLock(Long userId, ChatSendRequest request, Supplier<ChatSendVO> operation) {
+        String clientMessageId = normalizeClientMessageId(request.getClientMessageId());
+        request.setClientMessageId(clientMessageId);
+        if (!StringUtils.hasText(clientMessageId)) {
+            return operation.get();
+        }
+        String lockKey = userId + ":" + clientMessageId;
+        Object lock = clientMessageLocks[Math.floorMod(lockKey.hashCode(), clientMessageLocks.length)];
+        synchronized (lock) {
+            return operation.get();
+        }
+    }
+
+    private static Object[] createClientMessageLocks() {
+        Object[] locks = new Object[CLIENT_MESSAGE_LOCK_STRIPES];
+        for (int index = 0; index < locks.length; index++) {
+            locks[index] = new Object();
+        }
+        return locks;
+    }
+
     @Transactional
-    public ChatSession persistUserMessage(Long userId, ChatSendRequest request) {
+    public PersistedChatTurn persistUserMessage(Long userId, ChatSendRequest request) {
+        String clientMessageId = normalizeClientMessageId(request.getClientMessageId());
+        request.setClientMessageId(clientMessageId);
+        if (StringUtils.hasText(clientMessageId)) {
+            ChatMessage existingUserMessage = chatMessageMapper.selectOne(new LambdaQueryWrapper<ChatMessage>()
+                    .eq(ChatMessage::getUserId, userId)
+                    .eq(ChatMessage::getRole, "user")
+                    .eq(ChatMessage::getClientMessageId, clientMessageId)
+                    .orderByDesc(ChatMessage::getId)
+                    .last("LIMIT 1"));
+            if (existingUserMessage != null) {
+                ChatSession existingSession = getOwnedSession(userId, existingUserMessage.getSessionId());
+                applySessionDefaults(request, existingSession);
+                ChatMessage existingAssistant = findExistingAssistantMessage(userId, existingSession.getId(), existingUserMessage);
+                return new PersistedChatTurn(existingSession, existingUserMessage, existingAssistant);
+            }
+        }
         ChatSession session = request.getSessionId() == null
                 ? createSession(userId, request.getMessage(), request.getMode())
                 : getOwnedSession(userId, request.getSessionId());
-        if (!StringUtils.hasText(request.getKnowledgeScope()) && StringUtils.hasText(session.getKnowledgeScope())) {
-            request.setKnowledgeScope(session.getKnowledgeScope());
-        }
-        if (request.getResumeId() == null && session.getResumeFileId() != null) {
-            request.setResumeId(session.getResumeFileId());
-        }
-        if (request.getProjectId() == null && session.getResumeProjectId() != null) {
-            request.setProjectId(session.getResumeProjectId());
-        }
-        if (!session.getMode().equals(request.getMode())) {
+        applySessionDefaults(request, session);
+        if (!java.util.Objects.equals(session.getMode(), request.getMode())) {
             session.setMode(request.getMode());
         }
         session.setContextType(request.getContextType());
@@ -124,15 +184,20 @@ public class ChatServiceImpl implements ChatService {
         session.setResumeFileId(request.getResumeId());
         session.setResumeProjectId(request.getProjectId());
         chatSessionMapper.updateById(session);
-        persistMessage(session.getId(), userId, "user", "text", request.getMessage(), null);
-        return session;
+        ChatMessage userMessage = persistMessage(session.getId(), userId, "user", "text", request.getMessage(), null, clientMessageId);
+        return new PersistedChatTurn(session, userMessage, null);
     }
 
     @Transactional
     public void persistAssistantMessage(ChatSession session, Long userId, ChatSendVO result) {
+        persistAssistantMessage(session, userId, result, null);
+    }
+
+    @Transactional
+    public void persistAssistantMessage(ChatSession session, Long userId, ChatSendVO result, String clientMessageId) {
         persistMessage(session.getId(), userId, "assistant",
                 result.getReferences() == null || result.getReferences().isEmpty() ? "text" : "reference",
-                result.getAnswer(), result.getReferences());
+                result.getAnswer(), result.getReferences(), normalizeClientMessageId(clientMessageId));
         session.setTitle(refreshTitleIfNeeded(session.getTitle(), result.getAnswer()));
         session.setLastMessageTime(LocalDateTime.now());
         chatSessionMapper.updateById(session);
@@ -150,16 +215,7 @@ public class ChatServiceImpl implements ChatService {
                 .last("LIMIT " + Math.max(pageSize, 1) + " OFFSET " + offset));
 
         List<ChatSessionVO> voList = sessions.stream()
-                .map(session -> ChatSessionVO.builder()
-                        .id(session.getId())
-                        .title(session.getTitle())
-                        .mode(session.getMode())
-                        .contextType(inferContextType(session))
-                        .knowledgeScope(session.getKnowledgeScope())
-                        .contextSource(buildContextSource(session))
-                        .lastMessageTime(session.getLastMessageTime())
-                        .updateTime(session.getUpdateTime())
-                        .build())
+                .map(this::toSessionVO)
                 .toList();
 
         return PageResult.<ChatSessionVO>builder()
@@ -183,6 +239,100 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
+    public ChatSendVO regenerateMessage(Long userId, Long messageId) {
+        ChatMessage assistantMessage = getOwnedMessage(userId, messageId);
+        if (!"assistant".equalsIgnoreCase(assistantMessage.getRole())) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "only assistant messages can be regenerated");
+        }
+        ChatSession session = getOwnedSession(userId, assistantMessage.getSessionId());
+        ChatMessage userMessage = chatMessageMapper.selectOne(new LambdaQueryWrapper<ChatMessage>()
+                .eq(ChatMessage::getSessionId, session.getId())
+                .eq(ChatMessage::getUserId, userId)
+                .eq(ChatMessage::getRole, "user")
+                .lt(ChatMessage::getId, assistantMessage.getId())
+                .orderByDesc(ChatMessage::getId)
+                .last("LIMIT 1"));
+        if (userMessage == null || !StringUtils.hasText(userMessage.getContent())) {
+            throw new BusinessException(ResultCode.NOT_FOUND.getCode(), "source user message not found");
+        }
+
+        ChatSendRequest request = new ChatSendRequest();
+        request.setSessionId(session.getId());
+        request.setUserId(userId);
+        request.setMessage(userMessage.getContent());
+        request.setMode(StringUtils.hasText(session.getMode()) ? session.getMode() : "chat");
+        request.setAnswerMode("learning");
+        request.setKnowledgeScope(session.getKnowledgeScope());
+        request.setResumeId(session.getResumeFileId());
+        request.setProjectId(session.getResumeProjectId());
+
+        ChatContextSnapshot contextSnapshot = resolveContext(userId, request.getMode(), request.getKnowledgeScope(),
+                request.getResumeId(), request.getProjectId());
+        applyResolvedContext(request, contextSnapshot);
+
+        ChatSendVO result = aiOrchestratorService.answerChat(request);
+        result.setSessionId(session.getId());
+        result.setSessionTitle(session.getTitle());
+        result.setContextType(contextSnapshot.type());
+        result.setContextSource(contextSnapshot.source());
+        self.persistAssistantMessage(session, userId, result);
+        return result;
+    }
+
+    @Override
+    @Transactional
+    public ChatMessageVO feedbackMessage(Long userId, Long messageId, String feedback) {
+        String normalized = StringUtils.hasText(feedback) ? feedback.trim().toLowerCase() : "";
+        if (!"positive".equals(normalized) && !"negative".equals(normalized)) {
+            throw new BusinessException(ResultCode.VALIDATION_ERROR.getCode(), "feedback must be positive or negative");
+        }
+        ChatMessage message = getOwnedMessage(userId, messageId);
+        if (!"assistant".equalsIgnoreCase(message.getRole())) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "only assistant messages accept feedback");
+        }
+        message.setFeedback(normalized);
+        chatMessageMapper.updateById(message);
+        return toVO(message);
+    }
+
+    @Override
+    @Transactional
+    public ChatSessionVO renameSession(Long userId, Long sessionId, String title) {
+        if (!StringUtils.hasText(title)) {
+            throw new BusinessException(ResultCode.VALIDATION_ERROR.getCode(), "session title cannot be blank");
+        }
+        ChatSession session = getOwnedSession(userId, sessionId);
+        session.setTitle(title.trim());
+        chatSessionMapper.updateById(session);
+        return toSessionVO(session);
+    }
+
+    @Override
+    public ChatAttachmentVO uploadAttachment(Long userId, org.springframework.web.multipart.MultipartFile file) {
+        if (userId == null) {
+            throw new BusinessException(ResultCode.UNAUTHORIZED.getCode(), "login required");
+        }
+        String originalFilename = file.getOriginalFilename();
+        uploadPolicyService.validate(StorageDirectory.ATTACHMENT, originalFilename, file.getContentType(), file.getSize());
+        try {
+            StoredFile storedFile = fileStorageService.store(
+                    StorageDirectory.ATTACHMENT,
+                    originalFilename,
+                    file.getBytes(),
+                    file.getContentType());
+            return ChatAttachmentVO.builder()
+                    .id(storedFile.getStorageKey())
+                    .fileId(storedFile.getStorageKey())
+                    .filename(originalFilename)
+                    .contentType(storedFile.getContentType())
+                    .size(storedFile.getSize())
+                    .build();
+        } catch (IOException e) {
+            throw new BusinessException(ResultCode.SERVER_ERROR.getCode(), "附件上传失败: " + e.getMessage());
+        }
+    }
+
+    @Override
     @Transactional
     public void deleteSession(Long userId, Long sessionId) {
         getOwnedSession(userId, sessionId);
@@ -200,6 +350,66 @@ public class ChatServiceImpl implements ChatService {
         return session;
     }
 
+    private void applySessionDefaults(ChatSendRequest request, ChatSession session) {
+        if (!StringUtils.hasText(request.getKnowledgeScope()) && StringUtils.hasText(session.getKnowledgeScope())) {
+            request.setKnowledgeScope(session.getKnowledgeScope());
+        }
+        if (request.getResumeId() == null && session.getResumeFileId() != null) {
+            request.setResumeId(session.getResumeFileId());
+        }
+        if (request.getProjectId() == null && session.getResumeProjectId() != null) {
+            request.setProjectId(session.getResumeProjectId());
+        }
+    }
+
+    private ChatMessage findExistingAssistantMessage(Long userId, Long sessionId, ChatMessage userMessage) {
+        if (StringUtils.hasText(userMessage.getClientMessageId())) {
+            ChatMessage byClientMessageId = chatMessageMapper.selectOne(new LambdaQueryWrapper<ChatMessage>()
+                    .eq(ChatMessage::getUserId, userId)
+                    .eq(ChatMessage::getSessionId, sessionId)
+                    .eq(ChatMessage::getRole, "assistant")
+                    .eq(ChatMessage::getClientMessageId, userMessage.getClientMessageId())
+                    .orderByAsc(ChatMessage::getId)
+                    .last("LIMIT 1"));
+            if (byClientMessageId != null) {
+                return byClientMessageId;
+            }
+        }
+        if (userMessage.getId() == null) {
+            return null;
+        }
+        return chatMessageMapper.selectOne(new LambdaQueryWrapper<ChatMessage>()
+                .eq(ChatMessage::getUserId, userId)
+                .eq(ChatMessage::getSessionId, sessionId)
+                .eq(ChatMessage::getRole, "assistant")
+                .gt(ChatMessage::getId, userMessage.getId())
+                .orderByAsc(ChatMessage::getId)
+                .last("LIMIT 1"));
+    }
+
+    private ChatSendVO toExistingSendVO(ChatSession session, ChatSendRequest request,
+                                        ChatContextSnapshot contextSnapshot, ChatMessage assistantMessage) {
+        return ChatSendVO.builder()
+                .sessionId(session.getId())
+                .clientMessageId(request.getClientMessageId())
+                .sessionTitle(session.getTitle())
+                .answer(assistantMessage.getContent())
+                .answerMode(request.getAnswerMode())
+                .knowledgeScope(request.getKnowledgeScope())
+                .contextType(contextSnapshot.type())
+                .contextSource(contextSnapshot.source())
+                .references(parseReferences(assistantMessage.getReferenceJson()))
+                .build();
+    }
+
+    private String normalizeClientMessageId(String clientMessageId) {
+        if (!StringUtils.hasText(clientMessageId)) {
+            return null;
+        }
+        String normalized = clientMessageId.trim();
+        return normalized.length() > 128 ? normalized.substring(0, 128) : normalized;
+    }
+
     private ChatSession getOwnedSession(Long userId, Long sessionId) {
         ChatSession session = chatSessionMapper.selectById(sessionId);
         if (session == null || !session.getUserId().equals(userId)) {
@@ -208,8 +418,21 @@ public class ChatServiceImpl implements ChatService {
         return session;
     }
 
+    private ChatMessage getOwnedMessage(Long userId, Long messageId) {
+        ChatMessage message = chatMessageMapper.selectById(messageId);
+        if (message == null || !message.getUserId().equals(userId)) {
+            throw new BusinessException(ResultCode.NOT_FOUND.getCode(), "chat message not found");
+        }
+        return message;
+    }
+
     private void persistMessage(Long sessionId, Long userId, String role, String messageType, String content,
                                 List<ChatMessageReferenceVO> references) {
+        persistMessage(sessionId, userId, role, messageType, content, references, null);
+    }
+
+    private ChatMessage persistMessage(Long sessionId, Long userId, String role, String messageType, String content,
+                                       List<ChatMessageReferenceVO> references, String clientMessageId) {
         ChatMessage message = new ChatMessage();
         message.setSessionId(sessionId);
         message.setUserId(userId);
@@ -217,17 +440,34 @@ public class ChatServiceImpl implements ChatService {
         message.setMessageType(messageType);
         message.setContent(content);
         message.setReferenceJson(toReferenceJson(references));
+        message.setClientMessageId(normalizeClientMessageId(clientMessageId));
         chatMessageMapper.insert(message);
+        return message;
     }
 
     private ChatMessageVO toVO(ChatMessage message) {
         return ChatMessageVO.builder()
                 .id(message.getId())
+                .clientMessageId(message.getClientMessageId())
                 .role(message.getRole())
                 .messageType(message.getMessageType())
                 .content(message.getContent())
+                .feedback(message.getFeedback())
                 .createTime(message.getCreateTime())
                 .references(parseReferences(message.getReferenceJson()))
+                .build();
+    }
+
+    private ChatSessionVO toSessionVO(ChatSession session) {
+        return ChatSessionVO.builder()
+                .id(session.getId())
+                .title(session.getTitle())
+                .mode(session.getMode())
+                .contextType(inferContextType(session))
+                .knowledgeScope(session.getKnowledgeScope())
+                .contextSource(buildContextSource(session))
+                .lastMessageTime(session.getLastMessageTime())
+                .updateTime(session.getUpdateTime())
                 .build();
     }
 
@@ -435,5 +675,11 @@ public class ChatServiceImpl implements ChatService {
             String knowledgeScope,
             Long resumeId,
             Long projectId) {
+    }
+
+    public record PersistedChatTurn(
+            ChatSession session,
+            ChatMessage userMessage,
+            ChatMessage existingAssistantMessage) {
     }
 }

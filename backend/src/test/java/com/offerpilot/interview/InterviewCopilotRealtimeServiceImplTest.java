@@ -96,12 +96,12 @@ class InterviewCopilotRealtimeServiceImplTest {
             storedEvents.add(event);
             return 1;
         }).when(copilotEventMapper).insert(any(CopilotEvent.class));
-        when(copilotEventMapper.selectList(any())).thenAnswer(invocation -> new ArrayList<>(storedEvents));
+        lenient().when(copilotEventMapper.selectList(any())).thenAnswer(invocation -> new ArrayList<>(storedEvents));
 
         ResumeFile resumeFile = new ResumeFile();
         resumeFile.setId(9L);
         resumeFile.setTitle("Java 后端简历");
-        when(resumeFileMapper.selectById(9L)).thenReturn(resumeFile);
+        lenient().when(resumeFileMapper.selectById(9L)).thenReturn(resumeFile);
     }
 
     @Test
@@ -196,6 +196,7 @@ class InterviewCopilotRealtimeServiceImplTest {
     @Test
     void connect_rejectsBlockedRealtimeSession() {
         storedSession.setStatus("awaiting_connection");
+        storedSession.setProviderStatus("blocked");
 
         BusinessException exception = assertThrows(BusinessException.class, () -> service.connect(1L, 45L));
 

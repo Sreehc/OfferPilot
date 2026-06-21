@@ -105,6 +105,7 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
                             .docTitle(docTitle)
                             .snippet(snippet)
                             .score(hit.score())
+                            .scorePercent(scorePercent(hit.score()))
                             .libraryScope(doc.getLibraryScope())
                             .businessType(doc.getBusinessType())
                             .fileType(doc.getFileType())
@@ -166,6 +167,7 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
                             .docTitle(docTitle)
                             .snippet(snippet(chunk.getContent(), keywords))
                             .score(normalizedScore)
+                            .scorePercent(scorePercent(normalizedScore))
                             .libraryScope(doc.getLibraryScope())
                             .businessType(doc.getBusinessType())
                             .fileType(doc.getFileType())
@@ -237,6 +239,10 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
         return userId != null
                 && "personal".equalsIgnoreCase(doc.getLibraryScope())
                 && userId.equals(doc.getUserId());
+    }
+
+    private int scorePercent(float score) {
+        return Math.max(0, Math.min(100, Math.round(score * 100)));
     }
 
     private List<String> extractKeywords(String query) {

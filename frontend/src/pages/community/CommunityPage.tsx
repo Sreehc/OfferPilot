@@ -3,7 +3,7 @@ import { Button, Input, Select, Space, Tag } from 'antd'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { fetchCommunityQuestionsApi } from '@/api/modules/community'
-import { DataTableCard, formatDateTime, normalizeRecords, pickText, StatusTag } from '@/modules/common'
+import { DataTableCard, formatDateTime, getTotal, normalizeRecords, pickText, StatusTag } from '@/modules/common'
 import { ModulePage } from '@/modules/common'
 
 export function CommunityPage() {
@@ -15,9 +15,9 @@ export function CommunityPage() {
       title="社区"
       description="提问、回答、采纳，与同行交流求职经验。"
       metrics={[
-        { label: '问题数', value: rows.length, hint: '当前列表' },
-        { label: '待回答', value: rows.filter((row) => !row.acceptedAnswerId).length, hint: '需要参与' },
-        { label: '已解决', value: rows.filter((row) => row.acceptedAnswerId).length, hint: '已有采纳' },
+        { label: '问题数', value: getTotal(query.data, rows.length), hint: '全部匹配' },
+        { label: '待回答', value: rows.filter((row) => !row.acceptedAnswerId).length, hint: '当前页' },
+        { label: '已解决', value: rows.filter((row) => row.acceptedAnswerId).length, hint: '当前页' },
         { label: '状态', value: query.isFetching ? '刷新中' : '已同步', hint: '社区列表' }
       ]}
       actions={<Space wrap>

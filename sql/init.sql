@@ -105,10 +105,13 @@ CREATE TABLE IF NOT EXISTS chat_message (
     message_type VARCHAR(32) NOT NULL,
     content TEXT NOT NULL,
     reference_json JSON DEFAULT NULL,
+    feedback VARCHAR(16) DEFAULT NULL COMMENT 'positive / negative',
+    client_message_id VARCHAR(128) DEFAULT NULL COMMENT 'frontend idempotency key',
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     KEY idx_chat_message_session_id (session_id),
-    KEY idx_chat_message_user_id (user_id)
+    KEY idx_chat_message_user_id (user_id),
+    UNIQUE KEY uk_chat_message_client_message_role (user_id, role, client_message_id)
 );
 
 -- ============================================================

@@ -117,7 +117,7 @@ class PlanServiceImplTest {
             }
             return 1;
         }).when(studyPlanTaskMapper).updateById(any(StudyPlanTask.class));
-        when(dashboardService.overview()).thenReturn(DashboardOverviewVO.builder()
+        when(dashboardService.overview(1L)).thenReturn(DashboardOverviewVO.builder()
                 .reviewDebtCount(0)
                 .recentInterviews(List.of())
                 .weakPoints(List.of())
@@ -141,6 +141,7 @@ class PlanServiceImplTest {
         assertEquals(2, result.getTodayTaskCount());
         assertTrue(result.getTasks().stream().anyMatch(task ->
                 "recording_review".equals(task.getModule())
+                        && "recording_review".equals(task.getTargetType())
                         && "录音复盘专项 | 表达结构".equals(task.getTitle())
                         && "/interview?workspace=recording-review&recordingReviewSessionId=55".equals(task.getActionPath())));
     }

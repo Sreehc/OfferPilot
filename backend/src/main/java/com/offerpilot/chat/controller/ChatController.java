@@ -1,7 +1,10 @@
 package com.offerpilot.chat.controller;
 
+import com.offerpilot.chat.dto.ChatMessageFeedbackRequest;
+import com.offerpilot.chat.dto.ChatRenameSessionRequest;
 import com.offerpilot.chat.dto.ChatSendRequest;
 import com.offerpilot.chat.service.ChatService;
+import com.offerpilot.chat.vo.ChatAttachmentVO;
 import com.offerpilot.chat.vo.ChatMessageVO;
 import com.offerpilot.chat.vo.ChatSendVO;
 import com.offerpilot.chat.vo.ChatSessionVO;
@@ -26,10 +29,12 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Slf4j
@@ -47,6 +52,12 @@ public class ChatController {
     @PostMapping("/send")
     public Result<ChatSendVO> send(@Valid @RequestBody ChatSendRequest request) {
         return Result.success(chatService.send(currentUserId(), request));
+    }
+
+    @Operation(summary = "上传聊天附件", description = "上传聊天中作为上下文使用的附件")
+    @PostMapping(value = "/attachments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Result<ChatAttachmentVO> uploadAttachment(@RequestParam("file") MultipartFile file) {
+        return Result.success(chatService.uploadAttachment(currentUserId(), file));
     }
 
     @Operation(summary = "流式发送消息", description = "SSE 流式返回 AI 回答，逐 token 推送，支持 knowledgeScope、resumeId、projectId 上下文绑定")
@@ -117,11 +128,33 @@ public class ChatController {
         return Result.success(chatService.listMessages(currentUserId(), sessionId));
     }
 
+    @Operation(summary = "重新生成消息")
+    @PostMapping("/messages/{messageId}/regenerate")
+    public Result<ChatSendVO> regenerate(@Parameter(description = "消息 ID") @PathVariable Long messageId) {
+        return Result.success(chatService.regenerateMessage(currentUserId(), messageId));
+    }
+
+    @Operation(summary = "反馈消息质量")
+    @PostMapping("/messages/{messageId}/feedback")
+    public Result<ChatMessageVO> feedback(
+            @Parameter(description = "消息 ID") @PathVariable Long messageId,
+            @Valid @RequestBody ChatMessageFeedbackRequest request) {
+        return Result.success(chatService.feedbackMessage(currentUserId(), messageId, request.getFeedback()));
+    }
+
     @Operation(summary = "删除会话")
     @DeleteMapping("/session/{sessionId}")
     public Result<Void> delete(@Parameter(description = "会话 ID") @PathVariable Long sessionId) {
         chatService.deleteSession(currentUserId(), sessionId);
         return Result.success();
+    }
+
+    @Operation(summary = "重命名会话")
+    @PutMapping("/session/{sessionId}")
+    public Result<ChatSessionVO> rename(
+            @Parameter(description = "会话 ID") @PathVariable Long sessionId,
+            @Valid @RequestBody ChatRenameSessionRequest request) {
+        return Result.success(chatService.renameSession(currentUserId(), sessionId, request.getTitle()));
     }
 
     private Long currentUserId() {

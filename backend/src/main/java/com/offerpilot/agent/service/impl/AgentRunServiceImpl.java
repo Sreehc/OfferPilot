@@ -51,7 +51,10 @@ import com.offerpilot.resume.service.ResumeService;
 import com.offerpilot.resume.vo.ResumeFileVO;
 import com.offerpilot.wrong.service.WrongService;
 import com.offerpilot.wrong.vo.WrongQuestionVO;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -152,10 +155,29 @@ public class AgentRunServiceImpl implements AgentRunService {
             throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "当前 run 不处于待审批状态");
         }
 
-        ExecutionResult result = executeApprovalAction(userId, run);
+        LocalDateTime startedAt = LocalDateTime.now();
+        ExecutionResult result;
+        try {
+            result = executeApprovalAction(userId, run);
+        } catch (RuntimeException ex) {
+            LocalDateTime endedAt = LocalDateTime.now();
+            result = new ExecutionResult("审批执行失败：" + defaultText(ex.getMessage(), ex.getClass().getSimpleName()), null, null);
+            run.setStatus("failed");
+            run.setDecisionNote(trimToNull(note));
+            run.setExecutionResultJson(writeObject(result, "{}"));
+            run.setToolCallTelemetryJson(appendToolCallTelemetry(
+                    run.getToolCallTelemetryJson(),
+                    buildApprovalToolCall(run, startedAt, endedAt, null, ex)));
+            agentRunMapper.updateById(run);
+            return buildVo(run);
+        }
+        LocalDateTime endedAt = LocalDateTime.now();
         run.setStatus("approved");
         run.setDecisionNote(trimToNull(note));
         run.setExecutionResultJson(writeObject(result, "{}"));
+        run.setToolCallTelemetryJson(appendToolCallTelemetry(
+                run.getToolCallTelemetryJson(),
+                buildApprovalToolCall(run, startedAt, endedAt, result, null)));
         if (result != null && StringUtils.hasText(result.nextActionPath())) {
             run.setNextActionPath(result.nextActionPath());
         }
@@ -1916,6 +1938,8 @@ public class AgentRunServiceImpl implements AgentRunService {
         ExecutionResult executionResult = readObject(run.getExecutionResultJson(), ExecutionResult.class);
         List<AgentRunVO.ProviderGateVO> providerGates = resolveProviderGates(run);
         String providerGateStatus = resolveProviderGateStatus(providerGates);
+        List<AgentRunVO.TimelineItemVO> timeline = buildTimeline(run, executionResult);
+        String approvalStatus = resolveApprovalStage(run);
         return AgentRunVO.builder()
                 .id(run.getId())
                 .agentType(run.getAgentType())
@@ -1937,13 +1961,172 @@ public class AgentRunServiceImpl implements AgentRunService {
                 .executionSummary(executionResult == null ? null : executionResult.summary())
                 .executionActionLabel(executionResult == null ? null : executionResult.actionLabel())
                 .executionActionPath(executionResult == null ? null : executionResult.nextActionPath())
-                .approvalStage(resolveApprovalStage(run))
+                .approvalStage(approvalStatus)
+                .approvalStatus(approvalStatus)
                 .providerGateStatus(providerGateStatus)
                 .providerGateSummary(buildProviderGateSummary(providerGates, providerGateStatus))
-                .timeline(buildTimeline(run, executionResult))
+                .timeline(timeline)
+                .steps(timeline)
+                .toolCalls(readToolCalls(run.getToolCallTelemetryJson()))
+                .artifacts(buildArtifacts(payload, executionResult, run))
                 .providerGates(providerGates)
                 .updateTime(run.getUpdateTime())
                 .build();
+    }
+
+    private List<AgentRunVO.ToolCallVO> readToolCalls(String raw) {
+        if (!StringUtils.hasText(raw)) {
+            return List.of();
+        }
+        try {
+            JsonNode root = objectMapper.readTree(raw);
+            JsonNode array = root.isArray() ? root : objectMapper.createArrayNode().add(root);
+            List<AgentRunVO.ToolCallVO> calls = new ArrayList<>();
+            for (JsonNode node : array) {
+                if (node == null || node.isNull()) {
+                    continue;
+                }
+                calls.add(AgentRunVO.ToolCallVO.builder()
+                        .id(firstJsonText(node, "id", "toolCallId"))
+                        .name(defaultText(firstJsonText(node, "name", "toolName", "type"), "tool"))
+                        .status(defaultText(firstJsonText(node, "status", "state"), "pending"))
+                        .startedAt(firstJsonText(node, "startedAt", "startTime", "startAt"))
+                        .endedAt(firstJsonText(node, "endedAt", "endTime", "endAt"))
+                        .totalDurationMs(firstJsonLong(node, "totalDurationMs", "durationMs", "latencyMs"))
+                        .phaseDurations(readPhaseDurations(node))
+                        .retryCount(firstJsonInt(node, "retryCount", "retries"))
+                        .inputSummary(firstJsonText(node, "inputSummary"))
+                        .outputSummary(firstJsonText(node, "outputSummary"))
+                        .errorType(firstJsonText(node, "errorType"))
+                        .errorMessage(firstJsonText(node, "errorMessage", "error", "failReason"))
+                        .rawErrorStack(firstJsonText(node, "rawErrorStack", "errorStack", "stackTrace"))
+                        .build());
+            }
+            return calls;
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to parse agent tool call telemetry", e);
+            return List.of();
+        }
+    }
+
+    private Map<String, Long> readPhaseDurations(JsonNode node) {
+        JsonNode durations = node.get("phaseDurations");
+        if (durations == null || !durations.isObject()) {
+            durations = node.get("phaseDurationMs");
+        }
+        if (durations == null || !durations.isObject()) {
+            return Map.of();
+        }
+        Map<String, Long> result = new LinkedHashMap<>();
+        durations.fields().forEachRemaining(entry -> {
+            if (entry.getValue() != null && entry.getValue().isNumber()) {
+                result.put(entry.getKey(), entry.getValue().asLong());
+            }
+        });
+        return result;
+    }
+
+    private String firstJsonText(JsonNode node, String... fields) {
+        for (String field : fields) {
+            JsonNode value = node.get(field);
+            if (value != null && !value.isNull()) {
+                String text = value.asText(null);
+                if (StringUtils.hasText(text)) {
+                    return text;
+                }
+            }
+        }
+        return null;
+    }
+
+    private Long firstJsonLong(JsonNode node, String... fields) {
+        for (String field : fields) {
+            JsonNode value = node.get(field);
+            if (value != null && value.isNumber()) {
+                return value.asLong();
+            }
+        }
+        return null;
+    }
+
+    private Integer firstJsonInt(JsonNode node, String... fields) {
+        for (String field : fields) {
+            JsonNode value = node.get(field);
+            if (value != null && value.isNumber()) {
+                return value.asInt();
+            }
+        }
+        return null;
+    }
+
+    private List<AgentRunVO.ArtifactVO> buildArtifacts(JsonNode payload, ExecutionResult executionResult, AgentRun run) {
+        List<AgentRunVO.ArtifactVO> artifacts = new ArrayList<>();
+        List<String> recommendations = readPayloadArray(payload, "recommendations");
+        if (!recommendations.isEmpty()) {
+            artifacts.add(AgentRunVO.ArtifactVO.builder()
+                    .id("recommendations")
+                    .title("Agent 建议")
+                    .content(String.join("\n", recommendations))
+                    .type("recommendation")
+                    .actionUrl(run.getNextActionPath())
+                    .build());
+        }
+        List<String> checkpoints = readPayloadArray(payload, "checkpoints");
+        if (!checkpoints.isEmpty()) {
+            artifacts.add(AgentRunVO.ArtifactVO.builder()
+                    .id("checkpoints")
+                    .title("执行检查点")
+                    .content(String.join("\n", checkpoints))
+                    .type("checkpoint")
+                    .actionUrl(run.getNextActionPath())
+                    .build());
+        }
+        if (executionResult != null && StringUtils.hasText(executionResult.summary())) {
+            artifacts.add(AgentRunVO.ArtifactVO.builder()
+                    .id("execution_result")
+                    .title("执行结果")
+                    .content(executionResult.summary())
+                    .type("execution_result")
+                    .actionUrl(executionResult.nextActionPath())
+                    .build());
+        }
+        return artifacts;
+    }
+
+    private String appendToolCallTelemetry(String raw, AgentRunVO.ToolCallVO call) {
+        List<AgentRunVO.ToolCallVO> calls = new ArrayList<>(readToolCalls(raw));
+        calls.add(call);
+        return writeObject(calls, raw);
+    }
+
+    private AgentRunVO.ToolCallVO buildApprovalToolCall(
+            AgentRun run,
+            LocalDateTime startedAt,
+            LocalDateTime endedAt,
+            ExecutionResult result,
+            RuntimeException exception) {
+        long durationMs = Math.max(0L, Duration.between(startedAt, endedAt).toMillis());
+        return AgentRunVO.ToolCallVO.builder()
+                .id("approval-" + defaultText(String.valueOf(run.getId()), "run"))
+                .name(defaultText(run.getApprovalActionType(), defaultText(run.getAgentType(), "agent_action")))
+                .status(exception == null ? "success" : "failed")
+                .startedAt(startedAt.toString())
+                .endedAt(endedAt.toString())
+                .totalDurationMs(durationMs)
+                .phaseDurations(Map.of("execution", durationMs))
+                .retryCount(0)
+                .inputSummary(defaultText(run.getApprovalSummary(), run.getSummary()))
+                .outputSummary(result == null ? null : result.summary())
+                .errorType(exception == null ? null : exception.getClass().getSimpleName())
+                .errorMessage(exception == null ? null : defaultText(exception.getMessage(), exception.getClass().getSimpleName()))
+                .rawErrorStack(exception == null ? null : stackTrace(exception))
+                .build();
+    }
+
+    private String stackTrace(RuntimeException exception) {
+        StringWriter writer = new StringWriter();
+        exception.printStackTrace(new PrintWriter(writer));
+        return writer.toString();
     }
 
     private String resolveApprovalStage(AgentRun run) {
@@ -2361,7 +2544,7 @@ public class AgentRunServiceImpl implements AgentRunService {
                 merged.addAll(group);
             }
         }
-        return merged.stream().limit(5).toList();
+        return merged.stream().limit(7).toList();
     }
 
     private List<String> contextRefsText(List<String> contextRefs, String prefix) {

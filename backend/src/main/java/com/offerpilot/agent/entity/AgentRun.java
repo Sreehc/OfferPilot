@@ -25,5 +25,6 @@ public class AgentRun extends BaseEntity {
     private String approvalSummary;
     private String approvalPayloadJson;
     private String executionResultJson;
+    private String toolCallTelemetryJson;
     private String decisionNote;
 }
