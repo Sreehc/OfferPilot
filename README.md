@@ -1,6 +1,6 @@
 # OfferPilot
 
-OfferPilot 是一个面向 Java 求职者的 AI 面试训练与求职管理平台。当前项目采用 Spring Boot 单体后端 + Vue 3 SPA 前端，把题库训练、知识问答、模拟面试、学习计划、简历整理、投递管理、复习收藏和管理治理串成一条连续工作流。
+OfferPilot 是一个面向 Java 求职者的 AI 面试训练与求职管理平台。当前项目采用 Spring Boot 单体后端 + React SPA 前端，把题库训练、知识问答、模拟面试、学习计划、简历整理、投递管理、复习收藏和管理治理串成一条连续工作流。
 
 ## 当前能力
 
@@ -36,11 +36,11 @@ OfferPilot 是一个面向 Java 求职者的 AI 面试训练与求职管理平�
 
 | 层级 | 技术 |
 |------|------|
-| 后端 | Spring Boot 3.3.5、Java 17、MyBatis-Plus 3.5.7、MySQL 8、Redis Stack |
+| 后端 | Spring Boot 3.3.5、Java 17、MyBatis-Plus 3.5.7、MySQL 8、Redis 8 |
 | 安全 | Spring Security、JWT 无状态认证、Redis Token 黑名单、CORS 白名单、2FA、设备管理 |
-| AI | OpenAI-compatible LLM / Embedding 网关、用户 Provider 配置、AI 调用日志与配额 |
+| AI | Spring AI 兼容层、`LlmGateway` / `EmbeddingGateway` 抽象、用户 Provider 配置、AI 调用日志与配额 |
 | 文档解析 | Apache Tika（Markdown / TXT / PDF / Word） |
-| 前端 | Vue 3、Vite、TypeScript、Pinia、Vue Router、Axios、Element Plus、Tailwind CSS 3、ECharts |
+| 前端 | React、Vite、TypeScript、Ant Design、Ant Design X、React Router、Zustand、TanStack Query、ECharts |
 | 部署 | Docker Compose、Nginx、GitHub Actions、GHCR |
 
 ## 目录结构
@@ -48,10 +48,10 @@ OfferPilot 是一个面向 Java 求职者的 AI 面试训练与求职管理平�
 ```text
 OfferPilot
 ├── backend/       Spring Boot 后端
-├── frontend/      Vue 3 前端应用
+├── frontend/      React 前端应用
 ├── sql/           数据库初始化与增量迁移脚本
 ├── deploy/        生产部署 Compose、Nginx 与重部署脚本
-├── docs/          当前蓝图与历史归档文档
+├── docs/          当前产品、技术、API 与迁移文档
 └── docker-compose.yml
 ```
 
@@ -61,19 +61,22 @@ OfferPilot
 - Maven 3.9+
 - Node.js 20+
 - MySQL 8.x
-- Redis 7.x with RediSearch / RedisJSON，推荐直接使用 Redis Stack
+- Redis 7.x+
 
 ## 本地启动
 
-### 1. 启动本地依赖
+### 1. 准备共享基础设施
 
-仓库根目录的 `docker-compose.yml` 会启动 MySQL、Redis Stack、后端和前端；如果只想本机运行后端/前端，建议先用 Compose 或本机服务提供 MySQL 与 Redis。
+当前工作区已经统一使用外部共享基础设施，不再建议由 `OfferPilot` 自己拉起 MySQL / Redis。
 
-```bash
-docker compose up -d mysql redis
-```
+默认对接：
 
-`deploy/docker-compose.yml` 是另一套从 `deploy/` 目录运行的本地/服务器构建配置；两套 Compose 的相对路径不同，不要混用执行目录。
+- MySQL: `127.0.0.1:3306`
+- Redis: `127.0.0.1:6379`
+
+如果你已经按工作区统一方案启动了 `/Users/cheers/Desktop/workspace/infrastructure`，这里不需要再额外启动数据库或缓存。
+
+`deploy/docker-compose.yml` 和 `deploy/docker-compose.prod.yml` 现在只负责启动 `OfferPilot` 前后端，并连接到现有共享基础设施。
 
 ### 2. 初始化数据库
 
@@ -129,8 +132,8 @@ npm run dev
 | `OFFERPILOT_DB_NAME` | 数据库名 | `offerpilot` | `offerpilot` |
 | `OFFERPILOT_DB_USERNAME` | 数据库用户 | `root` | `offerpilot` |
 | `OFFERPILOT_DB_PASSWORD` | 数据库密码 | `root` | 必填 |
-| `OFFERPILOT_REDIS_HOST` | Redis 主机 | `127.0.0.1` | `redis` 或部署文件指定值 |
-| `OFFERPILOT_REDIS_PORT` | Redis 端口 | `6379` | `6379` 或 `6380` |
+| `OFFERPILOT_REDIS_HOST` | Redis 主机 | `127.0.0.1` | `127.0.0.1` |
+| `OFFERPILOT_REDIS_PORT` | Redis 端口 | `6379` | `6379` |
 | `OFFERPILOT_REDIS_PASSWORD` | Redis 密码 | 空 | 空 |
 | `OFFERPILOT_JWT_SECRET` | JWT 密钥，至少 32 字符 | 开发默认值 | 必填 |
 | `OFFERPILOT_JWT_EXPIRE_SECONDS` | JWT 有效期秒数 | `86400` | `86400` |
@@ -150,6 +153,9 @@ npm run dev
 | `OFFERPILOT_AI_QUOTA` | 每用户每日 AI 调用配额 | `100` | `100` |
 | `OFFERPILOT_AUTH_EXPOSE_DEBUG_CODES` | 是否返回调试验证码 | `true` | `false` |
 | `OFFERPILOT_STORAGE_LOCAL_ROOT` | 本地文件存储根目录 | `./data/storage` | `/var/lib/offerpilot/storage` |
+| `OFFERPILOT_HTTP_BIND_HOST` | 前端监听地址 | - | `127.0.0.1` |
+| `OFFERPILOT_HTTP_PORT` | 前端 HTTP 端口 | - | `8092` |
+| `OFFERPILOT_BACKEND_PORT` | 后端 HTTP 端口 | `8080` | `8080` |
 
 完整生产模板见 `.env.example` 和 `deploy/.env.example`。
 
@@ -162,16 +168,16 @@ npm run dev
 
 ## 生产部署
 
-### 仓库根目录一体化部署
+### 仓库根目录构建部署
 
 ```bash
 cp .env.example .env
-# 编辑 .env，至少填写 MYSQL_ROOT_PASSWORD、OFFERPILOT_DB_PASSWORD、OFFERPILOT_JWT_SECRET、OFFERPILOT_CORS_ORIGINS
+# 编辑 .env，至少填写 OFFERPILOT_DB_PASSWORD、OFFERPILOT_JWT_SECRET、OFFERPILOT_CORS_ORIGINS
 
 docker compose --env-file .env up -d --build
 ```
 
-这套 Compose 会同时启动 MySQL、Redis Stack、后端和前端，并自动挂载 `sql/init.sql` 与 `sql/initdata.sql` 作为首次初始化脚本。
+这套 Compose 现在只启动 `OfferPilot` 前后端，并直接连接共享 MySQL / Redis。
 
 ### deploy 目录生产部署
 
@@ -183,7 +189,7 @@ cd deploy
 docker compose --env-file .env -f docker-compose.prod.yml up -d --build
 ```
 
-`deploy/docker-compose.prod.yml` 默认假设 MySQL 在宿主机或外部服务上，Compose 内只管理 Redis、后端和前端。线上自动发布相关文件为 `.github/workflows/deploy.yml`、`deploy/docker-compose.release.yml` 和 `deploy/redeploy.sh`。
+`deploy/docker-compose.prod.yml` 和 `deploy/docker-compose.release.yml` 默认假设 MySQL / Redis 都由宿主机上的共享基础设施提供。线上自动发布相关文件为 `.github/workflows/deploy.yml`、`deploy/docker-compose.release.yml` 和 `deploy/redeploy.sh`。
 
 ## 运行测试与质量检查
 
@@ -206,8 +212,9 @@ npm run lint
 ## 技术亮点
 
 - **主线工作台**：首页围绕当前主任务、计划进度、简历状态和投递推进组织
-- **AI 网关抽象**：`LlmGateway` / `EmbeddingGateway` 接口 + OpenAI-compatible 实现，可切换兼容提供商
+- **AI 运行时抽象**：`LlmGateway` / `EmbeddingGateway` 接口 + Spring AI 兼容层，逐步承接 chat、embedding 和 agent runtime 能力
 - **用户 Provider 配置**：支持按用户维护模型服务配置，并在 Agent 工作台中检查可用性
+- **Agent Runtime 演进**：已具备 run、审批、provider gating、结果消费以及初始 definition/runtime skeleton
 - **RAG 检索**：Redis Stack 向量检索 + 关键词混合检索，Apache Tika 解析多格式文档后自动切分向量化
 - **面试链路扩展**：文字、语音、岗位准备、Copilot 准备、实时 Copilot 和录屏复盘共用面试域模型
 - **安全设计**：JWT 无状态认证 + Redis Token 黑名单 + CORS 白名单 + 2FA + 设备撤销 + 登录日志
@@ -218,10 +225,12 @@ npm run lint
 ## 文档
 
 - 当前文档入口：[docs/README.md](./docs/README.md)
-- 接口速查：[docs/archive/api/README.md](./docs/archive/api/README.md)
-- 架构说明：[docs/archive/architecture/README.md](./docs/archive/architecture/README.md)
-- 部署指南：[docs/archive/deployment/README.md](./docs/archive/deployment/README.md)
-- 数据库说明：[docs/archive/database/README.md](./docs/archive/database/README.md)
+- 产品需求：[docs/prd.md](./docs/prd.md)
+- 技术方案：[docs/tech-design.md](./docs/tech-design.md)
+- API 规范：[docs/api-spec.md](./docs/api-spec.md)
+- 数据库设计：[docs/database-design.md](./docs/database-design.md)
+- UX 规格：[docs/ux-spec.md](./docs/ux-spec.md)
+- 迁移历史：[docs/history.md](./docs/history.md)
 
 ## License
 

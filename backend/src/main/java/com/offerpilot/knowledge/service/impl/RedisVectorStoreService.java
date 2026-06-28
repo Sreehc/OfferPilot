@@ -24,9 +24,10 @@ import redis.clients.jedis.params.ScanParams;
 import redis.clients.jedis.resps.ScanResult;
 
 @Slf4j
-@Service
 @RequiredArgsConstructor
 public class RedisVectorStoreService implements VectorStoreService {
+
+    private static final String LEGACY_INDEX_NAME = "offerpilot_chunks";
 
     private final EmbeddingProperties embeddingProperties;
     private final VectorProperties vectorProperties;
@@ -65,7 +66,7 @@ public class RedisVectorStoreService implements VectorStoreService {
 
     @Override
     public void ensureIndex() {
-        String indexName = vectorProperties.getIndexName();
+        String indexName = LEGACY_INDEX_NAME;
         try {
             ProtocolCommand ftInfo = () -> SafeEncoder.encode("FT.INFO");
             try (Connection conn = jedis.getPool().getResource()) {
@@ -162,7 +163,7 @@ public class RedisVectorStoreService implements VectorStoreService {
         if (jedis == null) {
             return List.of();
         }
-        String indexName = vectorProperties.getIndexName();
+        String indexName = LEGACY_INDEX_NAME;
         byte[] queryBytes = floatArrayToBytes(queryEmbedding);
         String query = "*=>[KNN " + limit + " @embedding $BLOB AS score]";
 

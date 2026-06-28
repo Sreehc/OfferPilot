@@ -36,8 +36,15 @@ offerpilot:
       model: ${OFFERPILOT_EMBEDDING_MODEL:text-embedding-3-small}
       dimensions: ${OFFERPILOT_EMBEDDING_DIMENSIONS:1536}
     vector:
-      index-name: offerpilot_chunks
+      provider: ${OFFERPILOT_VECTOR_PROVIDER:postgres}
+      dimensions: ${OFFERPILOT_EMBEDDING_DIMENSIONS:1536}
       similarity-threshold: ${OFFERPILOT_VECTOR_THRESHOLD:0.3}
+      postgres:
+        url: jdbc:postgresql://${OFFERPILOT_VECTOR_PG_HOST:127.0.0.1}:${OFFERPILOT_VECTOR_PG_PORT:5432}/${OFFERPILOT_VECTOR_PG_DATABASE:offerpilot_rag}
+        username: ${OFFERPILOT_VECTOR_PG_USERNAME:offerpilot}
+        password: ${OFFERPILOT_VECTOR_PG_PASSWORD:offerpilot}
+        schema: ${OFFERPILOT_VECTOR_PG_SCHEMA:public}
+        table: ${OFFERPILOT_VECTOR_PG_TABLE:knowledge_embedding}
   review:
     init-fixed-rate-ms: ${OFFERPILOT_REVIEW_INIT_RATE_MS:600000}
     init-batch-limit: ${OFFERPILOT_REVIEW_INIT_BATCH:500}

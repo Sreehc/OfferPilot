@@ -11,8 +11,15 @@ frontend/dist/
 .env.local
 deploy/.env
 
-# Internal planning docs — not for repo
-docs/
+# Internal planning docs — only keep curated docs entry set
+docs/*
+!docs/README.md
+!docs/prd.md
+!docs/tech-design.md
+!docs/api-spec.md
+!docs/database-design.md
+!docs/ux-spec.md
+!docs/history.md
 三期规划.md
 四期规划.md
 CONFIG_GUIDE.md

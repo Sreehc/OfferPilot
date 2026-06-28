@@ -22,6 +22,8 @@ public interface KnowledgeService extends IService<KnowledgeDoc> {
 
     KnowledgeDocVO reindex(Long docId);
 
+    List<KnowledgeDocVO> reindexAll();
+
     List<KnowledgeDocVO> batchRechunk(List<Long> docIds);
 
     List<KnowledgeDocVO> batchReindex(List<Long> docIds);

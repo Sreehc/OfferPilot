@@ -178,6 +178,23 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
 
     @Override
     @Transactional
+    public List<KnowledgeDocVO> reindexAll() {
+        List<Long> docIds = lambdaQuery()
+                .in(KnowledgeDoc::getStatus, List.of("parsed", "indexed"))
+                .list()
+                .stream()
+                .map(KnowledgeDoc::getId)
+                .toList();
+        if (docIds.isEmpty()) {
+            return List.of();
+        }
+        return docIds.stream()
+                .map(this::reindex)
+                .toList();
+    }
+
+    @Override
+    @Transactional
     public List<KnowledgeDocVO> batchRechunk(List<Long> docIds) {
         return distinctDocIds(docIds).stream()
                 .map(this::rechunk)
@@ -405,9 +422,7 @@ public class KnowledgeServiceImpl extends ServiceImpl<KnowledgeDocMapper, Knowle
             for (int i = 0; i < chunks.size(); i++) {
                 float[] embedding = embeddings.get(i);
                 if (embedding.length > 0) {
-                    String key = vectorStoreService.store(chunks.get(i).getId(), chunks.get(i).getDocId(), texts.get(i), embedding);
-                    chunks.get(i).setVectorId(key);
-                    knowledgeChunkMapper.updateById(chunks.get(i));
+                    vectorStoreService.store(chunks.get(i).getId(), chunks.get(i).getDocId(), texts.get(i), embedding);
                 }
             }
             lambdaUpdate()

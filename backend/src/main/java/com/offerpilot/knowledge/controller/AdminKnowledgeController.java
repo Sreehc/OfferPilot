@@ -41,6 +41,12 @@ public class AdminKnowledgeController {
         return Result.success(knowledgeService.reindex(docId));
     }
 
+    @Operation(summary = "全量重建索引", description = "重新为所有已切分文档生成向量索引，用于向量库切换后的全量回填")
+    @PostMapping("/reindex/all")
+    public Result<java.util.List<KnowledgeDocVO>> reindexAll() {
+        return Result.success(knowledgeService.reindexAll());
+    }
+
     @Operation(summary = "批量重新切分", description = "针对当前失败文档批量重新切分")
     @PostMapping("/rechunk/batch")
     public Result<java.util.List<KnowledgeDocVO>> batchRechunk(@Valid @RequestBody AdminKnowledgeBatchActionRequest request) {

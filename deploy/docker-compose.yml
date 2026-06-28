@@ -1,61 +1,22 @@
 version: '3.8'
 
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: offerpilot-mysql
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
-      MYSQL_DATABASE: ${OFFERPILOT_DB_NAME:-offerpilot}
-      MYSQL_USER: ${OFFERPILOT_DB_USERNAME:-offerpilot}
-      MYSQL_PASSWORD: ${OFFERPILOT_DB_PASSWORD:-offerpilot}
-    ports:
-      - "${OFFERPILOT_DB_PORT:-3306}:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    image: redis/redis-stack-server:latest
-    container_name: offerpilot-redis
-    restart: unless-stopped
-    ports:
-      - "${OFFERPILOT_REDIS_PORT:-6379}:6379"
-    volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes --loadmodule /opt/redis-stack/lib/redisearch.so --loadmodule /opt/redis-stack/lib/rejson.so
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   backend:
     build:
       context: ../backend
       dockerfile: Dockerfile
     container_name: offerpilot-backend
     restart: unless-stopped
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+    network_mode: host
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      OFFERPILOT_DB_HOST: mysql
-      OFFERPILOT_DB_PORT: 3306
+      OFFERPILOT_DB_HOST: ${OFFERPILOT_DB_HOST:-127.0.0.1}
+      OFFERPILOT_DB_PORT: ${OFFERPILOT_DB_PORT:-3306}
       OFFERPILOT_DB_NAME: ${OFFERPILOT_DB_NAME:-offerpilot}
       OFFERPILOT_DB_USERNAME: ${OFFERPILOT_DB_USERNAME:-offerpilot}
-      OFFERPILOT_DB_PASSWORD: ${OFFERPILOT_DB_PASSWORD:-offerpilot}
-      OFFERPILOT_REDIS_HOST: redis
-      OFFERPILOT_REDIS_PORT: 6379
+      OFFERPILOT_DB_PASSWORD: ${OFFERPILOT_DB_PASSWORD:?Set OFFERPILOT_DB_PASSWORD}
+      OFFERPILOT_REDIS_HOST: ${OFFERPILOT_REDIS_HOST:-127.0.0.1}
+      OFFERPILOT_REDIS_PORT: ${OFFERPILOT_REDIS_PORT:-6379}
       OFFERPILOT_REDIS_PASSWORD: ${OFFERPILOT_REDIS_PASSWORD:-}
       OFFERPILOT_JWT_SECRET: ${OFFERPILOT_JWT_SECRET:?Set OFFERPILOT_JWT_SECRET}
       OFFERPILOT_CORS_ORIGINS: ${OFFERPILOT_CORS_ORIGINS:-http://localhost}
@@ -63,8 +24,30 @@ services:
       OFFERPILOT_LLM_BASE_URL: ${OFFERPILOT_LLM_BASE_URL:-https://api.openai.com/v1}
       OFFERPILOT_LLM_API_KEY: ${OFFERPILOT_LLM_API_KEY:-}
       OFFERPILOT_LLM_MODEL: ${OFFERPILOT_LLM_MODEL:-gpt-4.1-mini}
-    ports:
-      - "${OFFERPILOT_BACKEND_PORT:-8080}:8080"
+      OFFERPILOT_EMBEDDING_ENABLED: ${OFFERPILOT_EMBEDDING_ENABLED:-false}
+      OFFERPILOT_EMBEDDING_BASE_URL: ${OFFERPILOT_EMBEDDING_BASE_URL:-${OFFERPILOT_LLM_BASE_URL:-https://api.openai.com/v1}}
+      OFFERPILOT_EMBEDDING_API_KEY: ${OFFERPILOT_EMBEDDING_API_KEY:-${OFFERPILOT_LLM_API_KEY:-}}
+      OFFERPILOT_EMBEDDING_MODEL: ${OFFERPILOT_EMBEDDING_MODEL:-text-embedding-3-small}
+      OFFERPILOT_EMBEDDING_DIMENSIONS: ${OFFERPILOT_EMBEDDING_DIMENSIONS:-1536}
+      OFFERPILOT_VECTOR_PROVIDER: ${OFFERPILOT_VECTOR_PROVIDER:-postgres}
+      OFFERPILOT_VECTOR_PG_HOST: ${OFFERPILOT_VECTOR_PG_HOST:-127.0.0.1}
+      OFFERPILOT_VECTOR_PG_PORT: ${OFFERPILOT_VECTOR_PG_PORT:-5432}
+      OFFERPILOT_VECTOR_PG_DATABASE: ${OFFERPILOT_VECTOR_PG_DATABASE:-offerpilot_rag}
+      OFFERPILOT_VECTOR_PG_USERNAME: ${OFFERPILOT_VECTOR_PG_USERNAME:-offerpilot}
+      OFFERPILOT_VECTOR_PG_PASSWORD: ${OFFERPILOT_VECTOR_PG_PASSWORD:-offerpilot}
+      OFFERPILOT_VECTOR_PG_SCHEMA: ${OFFERPILOT_VECTOR_PG_SCHEMA:-public}
+      OFFERPILOT_VECTOR_PG_TABLE: ${OFFERPILOT_VECTOR_PG_TABLE:-knowledge_embedding}
+      OFFERPILOT_VECTOR_THRESHOLD: ${OFFERPILOT_VECTOR_THRESHOLD:-0.3}
+      OFFERPILOT_STORAGE_PROVIDER: ${OFFERPILOT_STORAGE_PROVIDER:-local}
+      OFFERPILOT_STORAGE_LOCAL_ROOT: ${OFFERPILOT_STORAGE_LOCAL_ROOT:-/var/lib/offerpilot/storage}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    volumes:
+      - offerpilot_storage:/var/lib/offerpilot/storage
 
   frontend:
     build:
@@ -73,10 +56,10 @@ services:
     container_name: offerpilot-frontend
     restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
-      - "${OFFERPILOT_HTTP_PORT:-80}:80"
+      - "${OFFERPILOT_HTTP_BIND_HOST:-0.0.0.0}:${OFFERPILOT_HTTP_PORT:-80}:80"
 
 volumes:
-  mysql_data:
-  redis_data:
+  offerpilot_storage:

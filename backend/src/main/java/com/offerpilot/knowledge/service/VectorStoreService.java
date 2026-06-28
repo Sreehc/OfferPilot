@@ -5,7 +5,7 @@ import java.util.List;
 public interface VectorStoreService {
 
     /**
-     * Ensure the vector index exists in Redis. Called at application startup.
+     * Ensure the vector storage schema exists. Called at application startup.
      */
     void ensureIndex();
 
@@ -15,7 +15,7 @@ public interface VectorStoreService {
      * @param docId the knowledge_doc.id
      * @param content the chunk text content
      * @param embedding the embedding float array
-     * @return the Redis key used for storage
+     * @return provider-specific storage identifier
      */
     String store(Long chunkId, Long docId, String content, float[] embedding);
 
